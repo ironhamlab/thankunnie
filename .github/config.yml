@@ -1,0 +1,6 @@
+# 빈 이슈(Blank issue) 생성을 막아 모든 이슈가 템플릿을 거치도록 강제합니다.
+blank_issues_enabled: false
+contact_links:
+  - name: "📘 Git 협업 가이드 / 코드 컨벤션"
+    url: "https://github.com/OWNER/REPO/tree/develop/docs"
+    about: "이슈 작성 전 docs/ 폴더의 가이드와 컨벤션 문서를 먼저 확인하세요."
