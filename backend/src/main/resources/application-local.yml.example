@@ -1,0 +1,10 @@
+# 복사해서 application-local.yml 로 사용 (Git 제외 파일)
+# DB: 루트에서 docker compose up -d 로 Oracle 실행
+spring:
+  datasource:
+    url: jdbc:oracle:thin:@localhost:1521/FREEPDB1
+    username: SCOTT
+    password: TIGER
+    driver-class-name: oracle.jdbc.OracleDriver
+  jpa:
+    show-sql: true
