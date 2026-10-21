@@ -370,4 +370,32 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# local file
+application-local.yml
+application-local.yaml
+
+# Gradle
+.gradle/
+build/
+
+# Gradle Wrapper는 커밋 대상 (*.jar 제외 규칙의 예외)
+!gradle-wrapper.jar
+
+# IntelliJ module files
+*.iml
+*.ipr
+
+# Vite cache
+.vite/
+
+# Additional local environment files
+.env.*.local
+
+# H2 local database files
+*.mv.db
+*.trace.db
+
+# JVM heap dumps
+*.hprof
+
 # End of https://www.toptal.com/developers/gitignore/api/java,react,node,intellij,visualstudiocode,windows,macos
