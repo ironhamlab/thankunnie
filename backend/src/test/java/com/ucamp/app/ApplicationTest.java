@@ -9,9 +9,9 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class ApplicationTest {
 
-	@Test
-	@DisplayName("애플리케이션 컨텍스트가 정상적으로 로드된다")
-	void contextLoads() {
-	}
+    @Test
+    @DisplayName("애플리케이션 컨텍스트가 정상적으로 로드된다")
+    void contextLoads() {
+    }
 
 }

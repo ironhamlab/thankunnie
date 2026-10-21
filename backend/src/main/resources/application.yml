@@ -8,3 +8,8 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: validate
+
+app:
+  cors:
+    # 쉼표로 여러 Origin 지정 가능
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
