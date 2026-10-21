@@ -316,11 +316,10 @@ generatePath(ROUTES.PRODUCT_DETAIL, { id: productId });
 - 브랜치:
   - 기능: `feature/fe/{이슈번호}-{기능명}`
   - 버그: `fix/fe/{이슈번호}-{결함명}`
-- 커밋 scope:
-  - `auth`, `product`, `cart`, `order`, `router`, `store`, `api`, `layout`, `components` 등
+- 커밋 메시지는 scope 없이 `type: subject` 형식으로 작성한다.
 - 커밋 예시:
-  - `feat(auth): 사용자 로그인 LoginForm 컴포넌트 구현`
-  - `fix(router): 비로그인 리다이렉트 경로 수정`
+  - `feat: 사용자 로그인 LoginForm 컴포넌트 구현`
+  - `fix: 비로그인 리다이렉트 경로 수정`
 - `node_modules/`, `dist/`, `.env.local`, `.vite/`는 Git에서 제외한다.
 - `git pull` 후 `package.json` 또는 `package-lock.json`이 변경되면 의존성을 다시 설치한다.
 - 의존성 추가·변경 시 `package.json`과 `package-lock.json`을 함께 커밋한다.
