@@ -323,11 +323,10 @@ public class MemberController {
 - 브랜치:
   - 기능: `feature/be/{이슈번호}-{기능명}`
   - 버그: `fix/be/{이슈번호}-{결함명}`
-- 커밋 scope는 도메인·패키지명을 사용한다.
-  - 예: `member`, `auth`, `order`, `product`, `payment`, `config`, `common`
+- 커밋 메시지는 scope 없이 `type: subject` 형식으로 작성한다.
 - 커밋 예시:
-  - `feat(auth): JWT 토큰 발급 및 검증 필터 구현`
-  - `fix(order): 주문 수량 음수 검증 추가`
+  - `feat: JWT 토큰 발급 및 검증 필터 구현`
+  - `fix: 주문 수량 음수 검증 추가`
 - `.gradle/`, `build/`, `out/`, `*.iml` 등 로컬 캐시·빌드 산출물은 Git에서 제외한다.
 - `.idea/`의 개인 설정은 제외하고, 팀 공통 설정은 합의한 파일만 추적한다.
 - Gradle Wrapper(`gradlew`, `gradlew.bat`, `gradle/wrapper/`)는 Git으로 관리한다.
