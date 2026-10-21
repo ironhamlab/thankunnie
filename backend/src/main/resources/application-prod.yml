@@ -1,0 +1,13 @@
+# 운영: Oracle, 접속 정보는 환경변수로 주입한다
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: oracle.jdbc.OracleDriver
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    root: info
