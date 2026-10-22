@@ -55,6 +55,21 @@ class AuthUserTest {
     }
 
     @Test
+    @DisplayName("매장 ID 가 null 이면 사장님이어도 FORBIDDEN 예외가 발생한다")
+    void requireShopOwner_nullShopId_throwsForbidden() {
+        assertThatThrownBy(() -> owner.requireShopOwner(null))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.FORBIDDEN);
+    }
+
+    @Test
+    @DisplayName("매장 ID 가 없는 사장님은 생성할 수 없다")
+    void create_ownerWithoutShop_throwsException() {
+        assertThatThrownBy(() -> new AuthUser(99L, UserRole.OWNER, null))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     @DisplayName("헤더 값은 대소문자와 앞뒤 공백을 무시하고 테스트 사용자로 변환한다")
     void testUserFrom_caseInsensitive_returnsTestUser() {
         assertThat(TestUser.from(" owner_1 ")).contains(TestUser.OWNER_1);

@@ -18,6 +18,10 @@ public record AuthUser(Long userId, UserRole role, Long shopId) {
     public AuthUser {
         Objects.requireNonNull(userId, "userId");
         Objects.requireNonNull(role, "role");
+        // 사장님은 계정당 매장 1개를 가진다. 매장 없는 사장님은 권한 검사를 우회할 수 있어 생성 단계에서 막는다
+        if (role == UserRole.OWNER && shopId == null) {
+            throw new IllegalArgumentException("OWNER must have shopId");
+        }
     }
 
     public boolean hasRole(UserRole role) {
@@ -34,10 +38,10 @@ public record AuthUser(Long userId, UserRole role, Long shopId) {
     }
 
     /**
-     * 해당 매장의 사장님이 아니면 FORBIDDEN 예외를 던진다.
+     * 해당 매장의 사장님이 아니면 FORBIDDEN 예외를 던진다. 매장 ID 가 null 이면 항상 거부한다.
      */
     public void requireShopOwner(Long shopId) {
-        if (!hasRole(UserRole.OWNER) || !Objects.equals(this.shopId, shopId)) {
+        if (shopId == null || !hasRole(UserRole.OWNER) || !shopId.equals(this.shopId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
     }
