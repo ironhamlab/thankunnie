@@ -399,3 +399,7 @@ build/
 *.hprof
 
 # End of https://www.toptal.com/developers/gitignore/api/java,react,node,intellij,visualstudiocode,windows,macos
+### Project ###
+application-local.yml
+.env.local
+.idea/

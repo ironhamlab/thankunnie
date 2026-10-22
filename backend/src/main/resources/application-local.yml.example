@@ -1,0 +1,27 @@
+# 복사해서 application-local.yml 로 사용 (Git 제외 파일)
+# 로컬 개발: H2 (Oracle 호환 모드)
+spring:
+  datasource:
+    url: jdbc:h2:mem:thankunnie;MODE=Oracle;DB_CLOSE_DELAY=-1;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      enabled: true
+
+app:
+  cors:
+    allowed-origins: http://localhost:5173
+
+# Oracle 전용 기능 확인이 필요하면 루트에서 docker compose up -d 후 위 datasource 를 아래로 교체
+#  datasource:
+#    url: jdbc:oracle:thin:@localhost:1521/FREEPDB1
+#    username: SCOTT
+#    password: TIGER
+#    driver-class-name: oracle.jdbc.OracleDriver
