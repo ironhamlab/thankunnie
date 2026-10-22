@@ -1,0 +1,47 @@
+import { lazy, Suspense } from 'react';
+import { Route, Routes } from 'react-router-dom';
+import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
+import DesignLayout from './DesignLayout';
+import './design.css';
+
+const DesignHomePage = lazy(() => import('./DesignHomePage'));
+const ReservationPage = lazy(() => import('./ReservationPage'));
+const CheckoutPage = lazy(() => import('./CheckoutPage'));
+const BookingsPage = lazy(() => import('./BookingsPage'));
+const OwnerPage = lazy(() => import('./OwnerPage'));
+const ExplorePage = lazy(() => import('./ExplorePage'));
+
+export default function DesignApp() {
+  return (
+    <div className="beauty-app">
+      <Suspense
+        fallback={
+          <div className="b-empty" role="status">
+            화면을 불러오는 중입니다.
+          </div>
+        }
+      >
+        <Routes>
+          <Route element={<DesignLayout />}>
+            <Route index element={<DesignHomePage />} />
+            <Route path="explore" element={<ExplorePage />} />
+            <Route path="explore-classic" element={<ExplorePage classic />} />
+            <Route path="reserve/:id" element={<ReservationPage />} />
+            <Route path="checkout" element={<CheckoutPage />} />
+            <Route path="bookings" element={<BookingsPage />} />
+            <Route path="owner/*" element={<OwnerPage />} />
+            <Route
+              path="*"
+              element={
+                <div className="b-empty">
+                  <h1>화면을 찾을 수 없어요</h1>
+                  <a href={R.HOME}>빈자리 탐색으로</a>
+                </div>
+              }
+            />
+          </Route>
+        </Routes>
+      </Suspense>
+    </div>
+  );
+}
