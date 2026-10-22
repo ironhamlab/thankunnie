@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
 import DesignLayout from './DesignLayout';
 import './design.css';
+import './remaining-screens.css';
 
 const DesignHomePage = lazy(() => import('./DesignHomePage'));
 const ReservationPage = lazy(() => import('./ReservationPage'));
@@ -10,6 +11,9 @@ const CheckoutPage = lazy(() => import('./CheckoutPage'));
 const BookingsPage = lazy(() => import('./BookingsPage'));
 const OwnerPage = lazy(() => import('./OwnerPage'));
 const ExplorePage = lazy(() => import('./ExplorePage'));
+const ServiceDetailPage = lazy(() => import('./ServiceDetailPage'));
+const BookingResultPage = lazy(() => import('./BookingResultPage'));
+const CustomerProfilePage = lazy(() => import('./CustomerProfilePage'));
 
 export default function DesignApp() {
   return (
@@ -27,7 +31,10 @@ export default function DesignApp() {
             <Route path="explore" element={<ExplorePage />} />
             <Route path="explore-classic" element={<ExplorePage classic />} />
             <Route path="reserve/:id" element={<ReservationPage />} />
+            <Route path="services/:id" element={<ServiceDetailPage />} />
             <Route path="checkout" element={<CheckoutPage />} />
+            <Route path="result" element={<BookingResultPage />} />
+            <Route path="profile" element={<CustomerProfilePage />} />
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="owner/*" element={<OwnerPage />} />
             <Route

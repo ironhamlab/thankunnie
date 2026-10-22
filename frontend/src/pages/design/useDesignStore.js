@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { BOOKINGS, MENUS, SERVICES, SHOP, SLOTS, overlaps } from './data';
+import { BOOKINGS, MENUS, SERVICES, SHOP, SLOTS, overlaps, validateSlot } from './data';
 
 export const useDesignStore = create((set, get) => ({
   shop: SHOP,
@@ -8,6 +8,16 @@ export const useDesignStore = create((set, get) => ({
   slots: SLOTS,
   hold: null,
   search: '',
+  profile: { name: '김언니', phone: '010-12**-56**', alerts: true },
+  favorites: ['nail', 'hair', 'lash'],
+  lastBookingId: null,
+  saveProfile: (profile) => set((state) => ({ profile: { ...state.profile, ...profile } })),
+  toggleFavorite: (id) =>
+    set((state) => ({
+      favorites: state.favorites.includes(id)
+        ? state.favorites.filter((item) => item !== id)
+        : [...state.favorites, id],
+    })),
   setSearch: (search) => set({ search }),
   saveShop: (shop) => set({ shop }),
   saveMenu: (menu) =>
@@ -21,23 +31,8 @@ export const useDesignStore = create((set, get) => ({
       menus: state.menus.map((item) => (item.id === id ? { ...item, active: !item.active } : item)),
     })),
   saveSlot: (slot) => {
-    const menu = get().menus.find((item) => item.id === slot.serviceId);
-    if (!menu?.active) throw new Error('활성 시술을 선택해 주세요.');
-    if (
-      get().slots.some(
-        (item) =>
-          item.id !== slot.id &&
-          item.date === slot.date &&
-          item.status !== 'stopped' &&
-          overlaps(
-            slot.time,
-            menu.duration,
-            item.time,
-            get().menus.find((m) => m.id === item.serviceId)?.duration ?? 60,
-          ),
-      )
-    )
-      throw new Error('기존 빈자리와 시간이 겹칩니다. 다른 시간을 선택해 주세요.');
+    const validationError = validateSlot(slot, get().menus, get().slots, get().bookings);
+    if (validationError) throw new Error(validationError);
     set((state) => ({
       slots: state.slots.some((item) => item.id === slot.id)
         ? state.slots.map((item) => (item.id === slot.id ? slot : item))
@@ -89,13 +84,17 @@ export const useDesignStore = create((set, get) => ({
     const booking = {
       ...hold,
       id: `BK-DEMO-${Date.now()}`,
-      name: '김언니',
-      phone: '010-12**-56**',
+      name: get().profile.name,
+      phone: get().profile.phone,
       request,
       status: 'confirmed',
       isCustomer: true,
     };
-    set((state) => ({ bookings: [booking, ...state.bookings], hold: null }));
+    set((state) => ({
+      bookings: [booking, ...state.bookings],
+      hold: null,
+      lastBookingId: booking.id,
+    }));
     return booking.id;
   },
   cancelBooking: (id) =>

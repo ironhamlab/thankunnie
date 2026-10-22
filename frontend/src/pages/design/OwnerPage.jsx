@@ -7,6 +7,7 @@ import MenusPage from './MenusPage';
 import SlotsPage from './SlotsPage';
 import OwnerBookingsPage from './OwnerBookingsPage';
 import Asset from './Asset';
+import NewSlotPage from './NewSlotPage';
 
 const navigation = [
   [R.SHOP, '매장 정보', '12-1798-6.svg'],
@@ -31,7 +32,7 @@ export default function OwnerPage() {
             <small className="b-green-text">● 영업 중</small>
           </div>
         </div>
-        <Link className="b-button b-primary b-wide" to={R.SLOTS + '?new=1'}>
+        <Link className="b-button b-primary b-wide" to={R.SLOT_NEW}>
           ⊕ 빈자리 즉시 등록
         </Link>
         <nav aria-label="사장님 메뉴">
@@ -69,6 +70,7 @@ export default function OwnerPage() {
             <Route path="shop" element={<ShopPage />} />
             <Route path="menus" element={<MenusPage />} />
             <Route path="slots" element={<SlotsPage />} />
+            <Route path="slots/new" element={<NewSlotPage />} />
             <Route path="bookings" element={<OwnerBookingsPage />} />
             <Route path="*" element={<div className="b-empty">화면을 찾을 수 없습니다.</div>} />
           </Routes>

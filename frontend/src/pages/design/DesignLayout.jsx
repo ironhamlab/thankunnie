@@ -45,6 +45,7 @@ export default function DesignLayout() {
               빈자리 탐색
             </NavLink>
             <NavLink to={R.EXPLORE}>타임세일</NavLink>
+            <NavLink to={R.PROFILE}>마이페이지</NavLink>
             <NavLink to={R.BOOKINGS} className="b-reservation-link">
               <Asset name="8-3-16.svg" />내 예약 <b>{count}</b>
             </NavLink>

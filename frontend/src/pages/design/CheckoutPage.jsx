@@ -7,6 +7,7 @@ import Asset from './Asset';
 
 export default function CheckoutPage() {
   const hold = useDesignStore((s) => s.hold);
+  const profile = useDesignStore((s) => s.profile);
   const release = useDesignStore((s) => s.releaseHold);
   const expire = useDesignStore((s) => s.expireHold);
   const confirm = useDesignStore((s) => s.confirmBooking);
@@ -49,8 +50,8 @@ export default function CheckoutPage() {
       return;
     }
     try {
-      confirm(request);
-      navigate(R.BOOKINGS, { state: { confirmed: true } });
+      const bookingId = confirm(request);
+      navigate(R.RESULT, { state: { bookingId, confirmed: true } });
     } catch (err) {
       setError(err.message);
     }
@@ -102,11 +103,11 @@ export default function CheckoutPage() {
               <div className="b-form-grid">
                 <label>
                   예약자명
-                  <input value="김언니 (테스트 고객)" readOnly />
+                  <input value={`${profile.name} (테스트 고객)`} readOnly />
                 </label>
                 <label>
                   휴대폰 번호
-                  <input value="010-12**-56**" readOnly />
+                  <input value={profile.phone} readOnly />
                   <small>예약 확정 및 매장 안내 알림톡 수신 번호</small>
                 </label>
                 <label className="b-span-two">

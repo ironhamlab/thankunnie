@@ -60,7 +60,7 @@ export default function ServiceCard({ service }) {
           </div>
           <Link
             className={'b-button b-small ' + (service.discount ? 'b-primary' : 'b-soft')}
-            to={generatePath(R.RESERVE, { id: service.id })}
+            to={generatePath(R.DETAIL, { id: service.id })}
           >
             빈자리 확인
           </Link>

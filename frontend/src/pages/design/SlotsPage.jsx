@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
 import { useDesignStore } from './useDesignStore';
 import { DEMO_DATE, STATUS, finish, minutes, money } from './data';
 import Dialog from './Dialog';
@@ -66,15 +67,9 @@ export default function SlotsPage() {
           </h1>
           <p className="b-muted">당일 및 임박 타임세일 빈자리를 등록하고 판매 상태를 관리합니다.</p>
         </div>
-        <button
-          className="b-button b-primary"
-          onClick={() => {
-            setEdit(blank);
-            setError('');
-          }}
-        >
+        <Link className="b-button b-primary" to={R.SLOT_NEW}>
           + 신규 빈자리 등록
-        </button>
+        </Link>
       </div>
       <div className="b-notice">
         <p>※ 확정된 예약은 빈자리 수정이나 판매 중지 동작으로 취소되지 않습니다.</p>

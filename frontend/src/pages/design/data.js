@@ -223,3 +223,49 @@ export const STATUS = {
   reserved: '예약 확정',
   stopped: '판매 중지',
 };
+
+export const serviceDate = (service) => {
+  const date = new Date(DEMO_DATE + 'T00:00:00Z');
+  date.setUTCDate(date.getUTCDate() + service.day);
+  return date.toISOString().slice(0, 10);
+};
+
+export function validateSlot(slot, menus, slots, bookings) {
+  const menu = menus.find((item) => item.id === slot.serviceId);
+  if (!menu?.active) return '활성 시술을 선택해 주세요.';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(slot.date) || slot.date < DEMO_DATE || slot.date > '2025-11-24')
+    return '시연 기준일부터 31일 이내 날짜를 선택해 주세요.';
+  if (
+    !/^\d{2}:(00|30)$/.test(slot.time) ||
+    minutes(slot.time) < 600 ||
+    minutes(slot.time) + menu.duration > 1260
+  )
+    return '30분 단위로, 운영 시간(10:00~21:00) 안에 시술이 끝나도록 선택해 주세요.';
+  if (
+    !Number.isFinite(Number(slot.discount)) ||
+    Number(slot.discount) < 0 ||
+    Number(slot.discount) > 70
+  )
+    return '할인율은 0~70% 범위여야 합니다.';
+  const occupied = slots.some(
+    (item) =>
+      item.id !== slot.id &&
+      item.date === slot.date &&
+      item.status !== 'stopped' &&
+      overlaps(
+        slot.time,
+        menu.duration,
+        item.time,
+        menus.find((m) => m.id === item.serviceId)?.duration ?? 60,
+      ),
+  );
+  const booked = bookings.some(
+    (item) =>
+      item.status === 'confirmed' &&
+      item.date === slot.date &&
+      overlaps(slot.time, menu.duration, item.time, item.duration),
+  );
+  if (occupied || booked)
+    return '선택한 시간대에 기존 예약 또는 빈자리가 겹칩니다. 다른 시간을 선택해 주세요.';
+  return '';
+}
