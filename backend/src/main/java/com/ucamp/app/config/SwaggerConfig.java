@@ -9,6 +9,9 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 
+import org.springdoc.core.utils.SpringDocUtils;
+
+import com.ucamp.app.common.auth.LoginUser;
 import com.ucamp.app.common.auth.StubAuthFilter;
 
 /**
@@ -18,6 +21,11 @@ import com.ucamp.app.common.auth.StubAuthFilter;
 public class SwaggerConfig {
 
     private static final String TEST_USER_SCHEME = "testUser";
+
+    static {
+        // @LoginUser 파라미터는 서버가 인증 정보로 채우므로 요청 파라미터로 문서화하지 않는다
+        SpringDocUtils.getConfig().addAnnotationsToIgnore(LoginUser.class);
+    }
 
     @Bean
     public OpenAPI openApi() {
