@@ -1,0 +1,10 @@
+.main-page { max-width: 1120px; margin: 0 auto; padding: 24px; color: #1e293b; }
+.main-section { margin: 32px 0; }
+.main-section-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.main-section button { font: inherit; cursor: pointer; }
+.main-item-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 0; list-style: none; }
+.main-item-card { box-sizing: border-box; width: 100%; height: 100%; padding: 20px; text-align: left; color: inherit; background: #fff; border: 1px solid #cbd5e1; border-radius: 12px; overflow-wrap: anywhere; }
+.main-item-card:hover { border-color: #475569; }
+.main-section button:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
+@media (max-width: 768px) { .main-item-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .main-item-list { grid-template-columns: 1fr; } }
