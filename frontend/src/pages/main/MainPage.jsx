@@ -69,12 +69,12 @@ export default function MainPage({ useMainStore, onExplore, onSelectItem }) {
   }, [fetchAll]);
 
   return (
-    <main className="main-page">
+    <div className="main-page">
       <h1>지금 살펴보기</h1>
       {Object.keys(MAIN_PRESETS).map((preset) => (
         <MainSection key={preset} preset={preset} useMainStore={useMainStore}
           onExplore={onExplore} onSelectItem={onSelectItem} />
       ))}
-    </main>
+    </div>
   );
 }

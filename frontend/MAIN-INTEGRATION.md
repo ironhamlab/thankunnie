@@ -31,4 +31,13 @@ const useMainStore = createMainStore(create, createItemApi(axiosInstance));
 node --test frontend/tests/main.test.mjs
 ```
 
-이는 날짜 경계·프리셋·API 전달·조회 독립성·재시도·응답 경합을 검증한다. 테스트 6개가 통과했다. React 렌더링, 실제 Zustand/axios 통합, 서버 필터링은 이 테스트 범위에 포함하지 않는다. 의존성 설치 후 lint/build 및 브라우저 검증이 필요하다.
+이는 날짜 경계·프리셋·API 전달·조회 독립성·재시도·응답 경합을 검증한다. 실제 Zustand vanilla store를 사용한 테스트 8개가 통과했다. 한국 날짜 경계, 프리셋, API 전달, 독립 조회·재시도, 최신 요청 우선 처리, 정규화된 공통 오류를 검증했다. npm run lint와 npm run build도 통과했다. React 브라우저 동작, 실제 HTTP/DB 필터링은 아직 검증하지 않았다.
+
+## dev 기준 재검증 (2026-10-22)
+
+- 별도 worktree에서 `git pull --ff-only origin dev`를 실행했다. dev는 `c824326`으로 이미 최신이었고, A-01 브랜치에도 포함돼 있었다.
+- 공통 axiosInstance의 `/api` baseURL, `/v1/items` 요청 경로 조합, ApiResponse의 data 추출, `{ code, message, status }` 오류 형식과 호환된다.
+- 공통 MainLayout이 이미 main 요소를 제공하므로 MainPage의 최상위 요소를 div로 수정했다.
+- README의 서비스 도메인은 뷰티샵의 취소·임박 예약이다. C의 탐색 컨트롤러·DTO·API 명세는 현재 dev에 없으므로 `/items`, `applicationClosesAt`, 24시간 조건이 실제 빈자리 계약과 일치한다고 판단할 근거는 없다. C와 예약 가능한 슬롯의 시작 시각·판매 마감 시각·상태 조건을 확정해야 한다.
+- 더보기·상세 화면 연결은 해당 라우트가 생길 때 진행한다. 현재 미연결 버튼은 표시하지 않는다.
+- 원래 작업 폴더의 Figma 변경은 수정하지 않았다. A-01은 `C:/UCAMP/Final/thankunnie-a01-review`에서 계속 작업할 수 있다.

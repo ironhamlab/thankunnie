@@ -1,17 +1,9 @@
 import test from 'node:test';
+import { createStore as createState } from 'zustand/vanilla';
 import assert from 'node:assert/strict';
 import { buildMainParams } from '../src/constants/mainPresets.js';
 import { createItemApi } from '../src/api/itemApi.js';
 import { createMainStore } from '../src/store/createMainStore.js';
-
-// Zustand 상태 생성 계약만 재현해 외부 의존성 없이 비동기 업무 로직을 검증한다.
-function createState(initializer) {
-  let state;
-  const get = () => state;
-  const set = (patch) => { state = { ...state, ...(typeof patch === 'function' ? patch(state) : patch) }; };
-  state = initializer(set, get);
-  return { getState: get };
-}
 
 test('한국 자정 전후에 오늘 프리셋의 날짜가 바뀐다', () => {
   const before = buildMainParams('TODAY', new Date('2026-10-22T14:59:59Z'));
@@ -71,4 +63,28 @@ test('잘못된 API 응답을 빈 목록으로 표시하지 않는다', async ()
   const store = createMainStore(createState, { search: async () => ({ unexpected: [] }) });
   await store.getState().fetchSection('TODAY');
   assert.equal(store.getState().sections.TODAY.status, 'failed');
+});
+
+test('공통 axiosInstance의 정규화된 오류를 보존한다', async () => {
+  const store = createMainStore(createState, { search: async () => {
+    throw { code: 'COMMON_400', message: '잘못된 요청입니다.', status: 400 };
+  } });
+  await store.getState().fetchSection('TODAY');
+  assert.deepEqual(store.getState().sections.TODAY.error, {
+    code: 'COMMON_400', message: '잘못된 요청입니다.',
+  });
+});
+
+test('오래된 요청 실패가 최신 성공 결과를 변경하지 않는다', async () => {
+  const pending = [];
+  const store = createMainStore(createState, { search: () => new Promise((resolve, reject) => pending.push({ resolve, reject })) });
+  const first = store.getState().fetchSection('TODAY');
+  const second = store.getState().fetchSection('TODAY');
+  pending[1].resolve({ content: [{ id: 2 }] });
+  await second;
+  pending[0].reject(new Error('이전 요청 실패'));
+  await first;
+  assert.equal(store.getState().sections.TODAY.status, 'succeeded');
+  assert.equal(store.getState().sections.TODAY.data.content[0].id, 2);
+  assert.equal(store.getState().sections.TODAY.error, null);
 });
