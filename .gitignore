@@ -398,6 +398,11 @@ build/
 # JVM heap dumps
 *.hprof
 
+# 개인용 AI 지침 및 설정
+AGENTS.override.md
+CLAUDE.local.md
+.claude/settings.local.json
+
 # End of https://www.toptal.com/developers/gitignore/api/java,react,node,intellij,visualstudiocode,windows,macos
 ### Project ###
 application-local.yml
