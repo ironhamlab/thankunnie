@@ -2,11 +2,16 @@ package com.ucamp.app.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+
+import com.ucamp.app.common.auth.StubAuthFilter;
 
 /**
  * Spring Security 설정.
@@ -21,8 +26,20 @@ public class SecurityConfig {
             "/h2-console/**"
     };
 
+    // 테스트 사용자 stub 은 운영(prod)에서 동작하지 않도록 이 프로필에서만 등록한다
+    private static final String[] STUB_AUTH_PROFILES = {"local", "test"};
+
+    private final Environment environment;
+
+    public SecurityConfig(Environment environment) {
+        this.environment = environment;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        if (environment.acceptsProfiles(Profiles.of(STUB_AUTH_PROFILES))) {
+            http.addFilterBefore(new StubAuthFilter(), AnonymousAuthenticationFilter.class);
+        }
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
