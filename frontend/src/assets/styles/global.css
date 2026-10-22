@@ -1,0 +1,44 @@
+/* 전역 스타일: reset, 공통 CSS 변수. 색상·간격 값은 디자인 확정 시 조정한다. */
+:root {
+  --color-primary: #2f6fed;
+  --color-text: #1f2933;
+  --color-text-muted: #6b7785;
+  --color-border: #e1e5ea;
+  --color-background: #ffffff;
+
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    'Noto Sans KR',
+    sans-serif;
+  line-height: 1.5;
+  color: var(--color-text);
+  background-color: var(--color-background);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0 0 var(--spacing-md);
+}

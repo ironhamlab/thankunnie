@@ -6,10 +6,15 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 
 import com.ucamp.app.common.entity.BaseTimeEntity;
+import com.ucamp.app.common.exception.BusinessException;
+import com.ucamp.app.common.exception.ErrorCode;
 
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -23,11 +28,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "NOTIFICATION_SUBSCRIPTION")
+@SequenceGenerator(
+        name = "SEQ_NOTIFICATION_SUBSCRIPTION_GENERATOR",
+        sequenceName = "SEQ_NOTIFICATION_SUBSCRIPTION",
+        allocationSize = 1)
 public class NotificationSubscription extends BaseTimeEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_NOTIFICATION_SUBSCRIPTION_GENERATOR")
     @Column(name = "SUBSCRIPTION_ID")
-    private Long id;   // ID 생성 방식은 팀 확정 후 적용
+    private Long id;
 
     @Column(name = "USER_ID", nullable = false)
     private Long userId;
@@ -58,6 +68,8 @@ public class NotificationSubscription extends BaseTimeEntity {
     @Builder
     private NotificationSubscription(Long userId, SubscriptionType subscriptionType, Long shopId,
             String categoryCode, String regionCode, LocalDateTime startTime, LocalDateTime endTime) {
+        validateTarget(subscriptionType, shopId, categoryCode, regionCode);
+        validateTime(startTime, endTime);
         this.userId = userId;
         this.subscriptionType = subscriptionType;
         this.shopId = shopId;
@@ -66,5 +78,49 @@ public class NotificationSubscription extends BaseTimeEntity {
         this.startTime = startTime;
         this.endTime = endTime;
         this.status = SubscriptionStatus.ACTIVE;
+    }
+
+    /**
+     * 구독 대상과 희망 시간을 변경한다. 구독 유형은 바꿀 수 없으며, 기존 유형에 맞는 대상만 허용한다.
+     */
+    public void changeCondition(Long shopId, String categoryCode, String regionCode,
+            LocalDateTime startTime, LocalDateTime endTime) {
+        validateTarget(subscriptionType, shopId, categoryCode, regionCode);
+        validateTime(startTime, endTime);
+        this.shopId = shopId;
+        this.categoryCode = categoryCode;
+        this.regionCode = regionCode;
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
+
+    public void deactivate() {
+        this.status = SubscriptionStatus.INACTIVE;
+    }
+
+    public boolean isActive() {
+        return status == SubscriptionStatus.ACTIVE;
+    }
+
+    // DB 의 CK_SUBSCRIPTION_TARGET 과 같은 조건. DB 제약 위반(500) 전에 업무 예외(400)로 거절한다
+    private static void validateTarget(SubscriptionType subscriptionType, Long shopId,
+            String categoryCode, String regionCode) {
+        boolean valid = switch (subscriptionType) {
+            case STORE -> shopId != null && categoryCode == null && regionCode == null;
+            case CATEGORY_REGION -> shopId == null && hasText(categoryCode) && hasText(regionCode);
+        };
+        if (!valid) {
+            throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TARGET);
+        }
+    }
+
+    private static void validateTime(LocalDateTime startTime, LocalDateTime endTime) {
+        if (startTime == null || endTime == null || !startTime.isBefore(endTime)) {
+            throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TIME);
+        }
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

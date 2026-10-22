@@ -403,6 +403,7 @@ AGENTS.override.md
 CLAUDE.local.md
 .claude/settings.local.json
 
+<<<<<<< HEAD
 # End of https://www.toptal.com/developers/gitignore/api/java,react,node,intellij,visualstudiocode,windows,macos
 ### Project ###
 application-local.yml
