@@ -24,6 +24,18 @@ com.ucamp.app.common
 모든 JSON 응답 본문은 `ApiResponse`로 감싼다.
 
 ```java
+@RestController
+@RequestMapping("/api/v1/members")   // /api/v1/{리소스 복수형}
+public class MemberController {
+
+    private final MemberService memberService;
+
+    public MemberController(MemberService memberService) {
+        this.memberService = memberService;
+    }
+```
+
+```java
 @PostMapping
 public ResponseEntity<ApiResponse<MemberDetailResponse>> signup(
         @Valid @RequestBody MemberSignupRequest request) {
