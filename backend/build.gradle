@@ -48,6 +48,6 @@ tasks.named('test') {
 tasks.named('processResources') {
     from('../docs/erd') {
         include '01_schema_ddl.sql'
-        into 'db'
+        rename '01_schema_ddl.sql', 'schema.sql'
     }
 }
