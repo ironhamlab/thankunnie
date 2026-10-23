@@ -6,9 +6,9 @@ description: 땡잡은 언니 백엔드(backend/, Spring Boot) Java 코드를 �
 # 백엔드 공통 코드 형식 (땡잡은 언니)
 
 이 스킬은 **공통 코드를 쓰는 형식**만 다룬다. 그 밖의 규칙은 `docs/convention/BACKEND_CONVENTION.md`가 원본이며, 충돌하면 컨벤션 문서가 우선한다.
-테이블·컬럼의 기준은 `docs/erd/01_schema_ddl.sql`이다. 엔티티를 만들 때 이름·타입·제약을 반드시 이 파일에서 확인한다.
+테이블·컬럼의 기준은 `schema.sql`(`docs/erd/01_schema_ddl.sql`)이다. 엔티티를 만들 때 이름·타입·제약을 반드시 이 파일에서 확인한다.
 
-아래 예시는 실제 도메인인 **시술(`Treatment`, 테이블 `TREATMENT`)**을 사용한다. 다른 도메인에 그대로 복사하지 말고 DDL의 컬럼에 맞춰 바꾼다.
+아래 예시는 실제 도메인인 **시술(`Treatment`, 테이블 `TREATMENT`)**을 사용한다. 다른 도메인에 그대로 복사하지 말고 `schema.sql`의 컬럼에 맞춰 바꾼다.
 
 ## 1. 공통 코드 위치
 
@@ -156,14 +156,14 @@ public class Treatment extends BaseTimeEntity {
 
 ### 4.1 ID: 시퀀스
 
-- PK는 `SEQ_{테이블}` 시퀀스로 발급한다. `allocationSize = 1`로 고정한다(DDL의 `INCREMENT BY 1`과 일치해야 함).
+- PK는 `SEQ_{테이블}` 시퀀스로 발급한다. `allocationSize = 1`로 고정한다(`schema.sql`의 `INCREMENT BY 1`과 일치해야 함).
 - generator 이름은 `seq_{테이블 소문자}`로 쓴다. 예: `seq_treatment`, `seq_app_user`.
 - `IDENTITY`, `AUTO`, `UUID`를 쓰지 않는다.
 
 ### 4.2 Enum: 반드시 `EnumType.STRING`
 
 - `STATUS`, `CANCEL_TYPE`, `EXCEPTION_TYPE`처럼 문자열 코드 컬럼은 enum으로 매핑하고 **반드시 `@Enumerated(EnumType.STRING)`**을 붙인다. 생략하면 숫자(ORDINAL)로 저장되어 DB 값과 어긋난다.
-- enum 상수 이름은 DDL 주석의 값과 철자까지 같게 만든다. 예: `HOLD, CONFIRMED, CANCEL_PENDING, CANCELLED, EXPIRED`.
+- enum 상수 이름은 `schema.sql` 주석의 값과 철자까지 같게 만든다. 예: `HOLD, CONFIRMED, CANCEL_PENDING, CANCELLED, EXPIRED`.
 - enum은 해당 도메인의 `entity/` 패키지에 둔다.
 
 ### 4.3 `CHAR(1)` Y/N 컬럼: `BooleanToYnConverter`
@@ -339,7 +339,7 @@ public class CancelService {
 
 ## 8. 체크리스트
 
-- [ ] 테이블·컬럼 이름과 타입이 `docs/erd/01_schema_ddl.sql`과 일치
+- [ ] 테이블·컬럼 이름과 타입이 `schema.sql`과 일치
 - [ ] 응답은 `ApiResponse<T>`, 204는 본문 없음
 - [ ] 업무 실패는 `BusinessException(ErrorCode.XXX)`, 새 ErrorCode는 `docs/api/error-codes.md`에도 반영
 - [ ] 엔티티는 `BaseTimeEntity` 상속, 요청·응답에 엔티티 직접 노출 없음

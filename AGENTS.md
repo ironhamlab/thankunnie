@@ -17,7 +17,7 @@
 |---|---|---|
 | Back-end | Java 21, Spring Boot 3.5, Spring Data JPA, Gradle | 패키지 루트 `com.ucamp.app` |
 | Front-end | React 19, JavaScript (ES6+), Vite, React Router v6, Zustand, Axios | 개발 포트 5173 |
-| 개발·테스트 DB | H2 (MODE=Oracle) | 앱 시작 시 `classpath:db/01_schema_ddl.sql`로 스키마 자동 생성 |
+| 개발·테스트 DB | H2 (MODE=Oracle) | 앱 시작 시 `schema.sql`로 스키마 자동 생성 |
 | 운영 DB | Oracle 21c XE | 스키마 기준: `docs/erd/01_schema_ddl.sql` |
 | 로컬 Oracle 확인용 | Docker Compose의 Oracle Free | `localhost:1521`, 서비스명 `FREEPDB1`, 계정 `SCOTT / TIGER` |
 | 기준 시간대 | Asia/Seoul | JVM·Clock·DB 컨테이너 모두 KST |
@@ -67,7 +67,7 @@ project-root/
 ```
 
 - Gradle Kotlin DSL 사용 시 `build.gradle.kts`, `settings.gradle.kts`를 사용함.
-- `docs/erd/01_schema_ddl.sql`은 빌드 시 `classpath:db/01_schema_ddl.sql` 리소스로 복사됨. 스키마는 `docs/erd/` 원본만 수정하고, 복사본을 만들거나 수정하지 않음.
+- `docs/erd/01_schema_ddl.sql`은 빌드 시 H2용 `schema.sql` 리소스로 복사됨. 스키마는 `docs/erd/` 원본만 수정함.
 
 ---
 
@@ -85,7 +85,7 @@ project-root/
 
 - Windows CMD에서는 `gradlew.bat`, PowerShell에서는 `.\gradlew.bat`을 사용.
 - 로컬 설정이 필요하면 `application-local.yml.example`을 복사하라고 안내하되 **실제 자격 증명은 사람이 직접 입력**.
-- 로컬·테스트 H2는 앱 시작 시 DDL로 스키마를 자동 생성함(`spring.sql.init.mode: embedded`, Oracle에는 실행 안 됨). `ddl-auto: validate`는 유지함.
+- 로컬·테스트 H2는 앱 시작 시 `schema.sql`로 스키마를 자동 생성함(`spring.sql.init.mode: embedded`, `always`로 바꾸지 않음 — 운영 Oracle에서 실행되면 안 됨). `ddl-auto: validate`는 유지함.
 - `spring.jpa.defer-datasource-initialization`을 `true`로 설정하지 않음. 스키마 생성이 엔티티 검증보다 먼저 실행되어야 함.
 
 ### Front-end (`frontend/`에서 실행)
@@ -160,6 +160,8 @@ git log --oneline --graph -n 10
 <타입>: <제목>                  ← 간결하게 작성, 마침표 없음, 한글 허용
 
 <본문 (선택)>                   ← 변경 이유와 요점
+
+Resolves: UNNIE-<이슈번호>      ← 이슈 완료 시 (Jira 키, 대문자)
 ```
 
 - 타입: `init`, `feat`, `fix`, `refactor`, `style`, `docs`, `test`, `chore`
