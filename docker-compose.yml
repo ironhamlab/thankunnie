@@ -4,6 +4,7 @@ services:
     ports:
       - "127.0.0.1:1521:1521"
     environment:
+      TZ: Asia/Seoul
       ORACLE_PASSWORD: LocalAdmin123
       APP_USER: SCOTT
       APP_USER_PASSWORD: TIGER

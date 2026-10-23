@@ -6,47 +6,40 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
-import com.ucamp.app.domain.shop.dto.request.ShopSaveRequest;
+import com.ucamp.app.domain.shop.dto.request.ShopUpdateRequest;
 import com.ucamp.app.domain.shop.dto.response.ShopDetailResponse;
 import com.ucamp.app.domain.shop.entity.Shop;
 import com.ucamp.app.domain.shop.repository.ShopRepository;
+import com.ucamp.app.domain.shop.repository.ShopCategoryRepository;
 
-/** 본인 매장 정보 관리. 모든 접근에서 인증된 매장 ID를 검사한다. */
+/** 본인 매장 조회 및 프로필 저장. */
 @Service
 @Transactional(readOnly = true)
 public class ShopService {
 
     private final ShopRepository shopRepository;
+    private final ShopCategoryRepository categoryRepository;
 
-    public ShopService(ShopRepository shopRepository) {
+    public ShopService(ShopRepository shopRepository, ShopCategoryRepository categoryRepository) {
         this.shopRepository = shopRepository;
+        this.categoryRepository = categoryRepository;
     }
 
-    /** 인증에서 할당된 본인 매장 정보를 최초 등록한다. */
-    @Transactional
-    public ShopDetailResponse createShop(AuthUser user, ShopSaveRequest request) {
-        user.requireShopOwner(user.shopId());
-        if (shopRepository.existsById(user.shopId())) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
-        }
-        Shop shop = new Shop(user.shopId(), request.name(), request.description(), request.address(),
-                request.addressDetail(), request.latitude(), request.longitude());
-        return ShopDetailResponse.from(shopRepository.save(shop));
-    }
-
-    /** 본인 매장 정보를 조회한다. */
+    /** 본인 매장의 프로필을 조회한다. */
     public ShopDetailResponse getShop(AuthUser user, Long shopId) {
         user.requireShopOwner(shopId);
         return ShopDetailResponse.from(findShop(shopId));
     }
 
-    /** 본인 매장 정보를 전체 수정한다. */
+    /** 계정 정보와 상태를 유지하면서 본인 매장 프로필을 저장한다. */
     @Transactional
-    public ShopDetailResponse updateShop(AuthUser user, Long shopId, ShopSaveRequest request) {
+    public ShopDetailResponse updateShop(AuthUser user, Long shopId, ShopUpdateRequest request) {
         user.requireShopOwner(shopId);
         Shop shop = findShop(shopId);
-        shop.updateInformation(request.name(), request.description(), request.address(), request.addressDetail(),
-                request.latitude(), request.longitude());
+        if (!categoryRepository.existsById(request.categoryId())) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "존재하지 않는 매장 카테고리입니다.");
+        }
+        shop.updateProfile(request);
         return ShopDetailResponse.from(shop);
     }
 
