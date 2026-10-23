@@ -52,14 +52,17 @@ public class NotificationSubscription extends BaseTimeEntity {
     @Column(name = "SUBSCRIPTION_TYPE", nullable = false, length = 20)
     private SubscriptionType subscriptionType;
 
+    /** 업장 구독(STORE)일 때만 넣는다. */
     @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "SHOP_ID")
     private Long shopId;
 
+    /** 카테고리 구독(CATEGORY_REGION)일 때만 넣는다. */
     @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "CATEGORY_ID")
     private Long categoryId;
 
+    /** 카테고리 구독(CATEGORY_REGION)일 때만 넣는다. */
     @Column(name = "REGION_CODE", length = 20)
     private String regionCode;
 
@@ -122,25 +125,33 @@ public class NotificationSubscription extends BaseTimeEntity {
         return status == SubscriptionStatus.ACTIVE;
     }
 
-    // DB 의 CK_SUBSCRIPTION_TARGET 과 같은 조건. DB 제약 위반(500) 전에 업무 예외(400)로 거절한다
+    /**
+     * 구독 유형과 대상이 맞는지 확인한다.
+     * 업장 구독은 매장 ID만, 카테고리 구독은 카테고리 ID와 지역코드만 허용한다.
+     */
     private static void validateTarget(SubscriptionType subscriptionType, Long shopId,
             Long categoryId, String regionCode) {
-        boolean valid = switch (subscriptionType) {
-            case STORE -> shopId != null && categoryId == null && regionCode == null;
-            case CATEGORY_REGION -> shopId == null && categoryId != null && hasText(regionCode);
-        };
-        if (!valid) {
-            throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TARGET);
+        switch (subscriptionType) {
+            case STORE -> {
+                if (shopId == null || categoryId != null || regionCode != null) {
+                    throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TARGET);
+                }
+            }
+            case CATEGORY_REGION -> {
+                if (shopId != null || categoryId == null || regionCode == null || regionCode.isBlank()) {
+                    throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TARGET);
+                }
+            }
         }
     }
 
+    /** 희망 시간은 시작이 종료보다 앞이어야 한다. 비어 있거나 같으면 거절한다. */
     private static void validateTime(LocalDateTime startTime, LocalDateTime endTime) {
-        if (startTime == null || endTime == null || !startTime.isBefore(endTime)) {
+        if (startTime == null || endTime == null) {
             throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TIME);
         }
-    }
-
-    private static boolean hasText(String value) {
-        return value != null && !value.isBlank();
+        if (!startTime.isBefore(endTime)) {
+            throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TIME);
+        }
     }
 }
