@@ -38,8 +38,13 @@ export default function ServiceDetailPage() {
   const reserve = () => {
     setError('');
     try {
-      if (hold?.serviceId !== id || hold.expiresAt <= Date.now())
-        createHold(id, date, service.time);
+      const reusable =
+        hold?.serviceId === id &&
+        hold.date === date &&
+        hold.time === service.time &&
+        !hold.general &&
+        hold.expiresAt > Date.now();
+      if (!reusable) createHold(id, date, service.time);
       navigate(R.CHECKOUT);
     } catch (err) {
       setError(err.message);
