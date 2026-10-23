@@ -18,7 +18,17 @@ public enum ErrorCode {
     FORBIDDEN(HttpStatus.FORBIDDEN, "COMMON_403", "접근 권한이 없습니다."),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMON_404", "요청한 리소스를 찾을 수 없습니다."),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "COMMON_405", "지원하지 않는 HTTP 메서드입니다."),
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_500", "서버 내부 오류가 발생했습니다.");
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_500", "서버 내부 오류가 발생했습니다."),
+
+    // VACANCY
+    VACANCY_BOOKING_CLOSED(HttpStatus.CONFLICT, "VACANCY_001", "예약 접수가 마감된 시간입니다."),
+    VACANCY_PAYMENT_CLOSED(HttpStatus.CONFLICT, "VACANCY_002", "결제 마감 시간이 지났습니다."),
+    VACANCY_OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "VACANCY_003", "오늘부터 60일 이내만 예약할 수 있습니다."),
+    VACANCY_INVALID_TIME_UNIT(HttpStatus.BAD_REQUEST, "VACANCY_004", "시각은 30분 단위여야 합니다."),
+    VACANCY_INVALID_TIME_RANGE(HttpStatus.BAD_REQUEST, "VACANCY_005", "종료 시각은 시작 시각보다 뒤여야 합니다."),
+    VACANCY_TIME_TAKEN(HttpStatus.CONFLICT, "VACANCY_006", "이미 예약된 시간입니다."),
+    VACANCY_INVALID_SALE_PRICE(HttpStatus.BAD_REQUEST, "VACANCY_007", "판매가는 100원 단위이며 정가보다 낮아야 합니다."),
+    VACANCY_INVALID_LAST_MINUTE_PRICE(HttpStatus.BAD_REQUEST, "VACANCY_008", "초임박 판매가는 일반 판매가보다 낮아야 합니다.");
 
     private final HttpStatus status;
     private final String code;

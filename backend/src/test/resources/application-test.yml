@@ -1,7 +1,8 @@
 # 테스트: H2 (Oracle 호환 모드)
 spring:
   datasource:
-    url: jdbc:h2:mem:thankunnie-test;MODE=Oracle;DB_CLOSE_DELAY=-1;DEFAULT_NULL_ORDERING=HIGH
+    # 테스트 컨텍스트마다 별도 DB 를 써서 스키마 생성이 겹치지 않게 한다
+    url: jdbc:h2:mem:thankunnie-test-${random.uuid};MODE=Oracle;DEFAULT_NULL_ORDERING=HIGH
     username: sa
     password:
     driver-class-name: org.h2.Driver
