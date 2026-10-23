@@ -11,6 +11,7 @@ const categories = ['전체', '네일', '헤어', '속눈썹', '피부관리', '
 const regions = ['강남/서초', '홍대/연남', '성수/건대', '잠실/송파', '판교/분당'];
 const times = ['전체', '오전 (09~12시)', '오후 (12~18시)', '저녁 (18시 이후)'];
 const sorts = ['임박 빈자리 우선순', '할인율순', '빠른 시작순'];
+const URGENCY_RANK = { '초임박 특가': 0, '임박 특가': 1, '일반 빈자리': 2 };
 function Filter({ label, options, value, onChange, segmented = false }) {
   return (
     <div className={'b-filter-group ' + (segmented ? 'b-segmented' : '')}>
@@ -67,6 +68,13 @@ export default function DesignHomePage() {
           Number(s.time.slice(0, 2)) < 18) ||
         (time.startsWith('저녁') && Number(s.time.slice(0, 2)) >= 18)),
   );
+  if (sort === sorts[0])
+    results = [...results].sort(
+      (a, b) =>
+        (URGENCY_RANK[a.urgency] ?? 3) - (URGENCY_RANK[b.urgency] ?? 3) ||
+        a.day - b.day ||
+        a.time.localeCompare(b.time),
+    );
   if (sort === '할인율순') results = [...results].sort((a, b) => b.discount - a.discount);
   if (sort === '빠른 시작순')
     results = [...results].sort((a, b) => a.day - b.day || a.time.localeCompare(b.time));
