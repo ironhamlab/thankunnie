@@ -4,8 +4,12 @@ export default function Dialog({ title, onClose, children }) {
   const ref = useRef(null);
   useEffect(() => {
     const dialog = ref.current;
+    const previousFocus = document.activeElement;
     dialog.showModal();
-    return () => dialog.close();
+    return () => {
+      dialog.close();
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
   }, []);
   return (
     <dialog

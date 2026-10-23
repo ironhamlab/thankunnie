@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
 import { useDesignStore } from './useDesignStore';
 import Asset from './Asset';
+import Dialog from './Dialog';
 
 export default function DesignLayout() {
   const location = useLocation();
@@ -80,18 +81,15 @@ export default function DesignLayout() {
         </div>
       </footer>
       {notice && (
-        <div className="b-modal-backdrop">
-          <section role="dialog" aria-modal="true" aria-label={notice} className="b-panel b-modal">
-            <h2>{notice}</h2>
-            <p>
-              현재는 Figma 디자인 시연 화면입니다. 실제 서비스의 {notice} 내용은 운영 정책 확정 후
-              연결됩니다.
-            </p>
-            <button autoFocus className="b-button b-primary" onClick={() => setNotice('')}>
-              닫기
-            </button>
-          </section>
-        </div>
+        <Dialog title={notice} onClose={() => setNotice('')}>
+          <p>
+            현재는 Figma 디자인 시연 화면입니다. 실제 서비스의 {notice} 내용은 운영 정책 확정 후
+            연결됩니다.
+          </p>
+          <button className="b-button b-primary" onClick={() => setNotice('')}>
+            닫기
+          </button>
+        </Dialog>
       )}
     </div>
   );
