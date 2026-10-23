@@ -48,7 +48,7 @@ public class NotificationController {
      * @return 등록된 구독
      */
     @Operation(summary = "알림 구독 등록",
-            description = "매장 ID는 항상 보내고, CATEGORY_REGION 만 categoryName·regionName 과 희망 시작·종료 시각을 보낸다")
+            description = "매장 ID는 항상 보내고, CATEGORY_REGION 만 categoryName·regionCode 과 희망 시작·종료 시각을 보낸다")
     @PostMapping("/subscriptions")
     public ResponseEntity<ApiResponse<NotificationSubscriptionResponse>> subscribe(
             @LoginUser AuthUser loginUser,

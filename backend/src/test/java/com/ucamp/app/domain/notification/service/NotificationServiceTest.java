@@ -64,7 +64,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리 구독을 등록하면 매장 ID와 카테고리명·지역명이 저장된다")
+    @DisplayName("카테고리 구독을 등록하면 매장 ID와 카테고리명·지역코드가 저장된다")
     void subscribe_categoryRegion_savesNames() {
         given(repository.save(any(NotificationSubscription.class))).willAnswer(invocation -> invocation.getArgument(0));
 
@@ -73,7 +73,7 @@ class NotificationServiceTest {
 
         assertThat(response.shopId()).isEqualTo(1L);
         assertThat(response.categoryName()).isEqualTo("NAIL");
-        assertThat(response.regionName()).isEqualTo("SEOUL_GANGNAM");
+        assertThat(response.regionCode()).isEqualTo("SEOUL_GANGNAM");
     }
 
     @Test
@@ -101,7 +101,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리 구독에 지역명이 없으면 대상 오류다")
+    @DisplayName("카테고리 구독에 지역코드가 없으면 대상 오류다")
     void subscribe_categoryRegionWithoutRegion_throwsInvalidTarget() {
         assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
                 createRequest(SubscriptionType.CATEGORY_REGION, 1L, "NAIL", " ", start, end)),

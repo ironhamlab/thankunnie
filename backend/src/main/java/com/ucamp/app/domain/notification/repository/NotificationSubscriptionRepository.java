@@ -58,7 +58,7 @@ public interface NotificationSubscriptionRepository extends JpaRepository<Notifi
      * 카테고리·지역이 같고 빈자리 시작 시각이 희망 시간에 포함되는 알림 대상 구독을 조회한다. 해제·만료 구독은 제외한다.
      *
      * @param categoryName  카테고리명
-     * @param regionName    지역명
+     * @param regionCode    지역코드
      * @param slotStartTime 빈자리 시작 시각
      * @param now           현재 시각
      * @return 알림 대상 구독 목록
@@ -68,12 +68,12 @@ public interface NotificationSubscriptionRepository extends JpaRepository<Notifi
             where s.subscriptionType = com.ucamp.app.domain.notification.entity.SubscriptionType.CATEGORY_REGION
               and s.status = com.ucamp.app.domain.notification.entity.SubscriptionStatus.ACTIVE
               and s.categoryName = :categoryName
-              and s.regionName = :regionName
+              and s.regionCode = :regionCode
               and s.startTime <= :slotStartTime
               and s.endTime >= :slotStartTime
               and s.endTime > :now
             """)
     List<NotificationSubscription> findNotifiableByCategoryRegion(@Param("categoryName") String categoryName,
-            @Param("regionName") String regionName, @Param("slotStartTime") LocalDateTime slotStartTime,
+            @Param("regionCode") String regionCode, @Param("slotStartTime") LocalDateTime slotStartTime,
             @Param("now") LocalDateTime now);
 }

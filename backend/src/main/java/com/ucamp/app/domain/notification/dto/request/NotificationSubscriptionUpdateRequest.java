@@ -13,14 +13,14 @@ import jakarta.validation.constraints.Size;
  *
  * @param shopId       매장 ID
  * @param categoryName 카테고리명. 업장 구독이면 null
- * @param regionName   지역명. 업장 구독이면 null
+ * @param regionCode   지역코드. 업장 구독이면 null
  * @param startTime    알림 희망 시작 시각
  * @param endTime      알림 희망 종료 시각
  */
 public record NotificationSubscriptionUpdateRequest(
         @NotNull Long shopId,
         @Size(max = 20) String categoryName,
-        @Size(max = 20) String regionName,
+        @Size(max = 20) String regionCode,
         @NotNull OffsetDateTime startTime,
         @NotNull OffsetDateTime endTime) {
 

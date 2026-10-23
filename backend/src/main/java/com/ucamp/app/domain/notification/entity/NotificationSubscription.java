@@ -46,14 +46,14 @@ public class NotificationSubscription extends BaseTimeEntity {
     @Column(name = "SUBSCRIPTION_TYPE", nullable = false, length = 20)
     private SubscriptionType subscriptionType;
 
-    @Column(name = "SHOP_ID", nullable = false)
+    @Column(name = "SHOP_ID")
     private Long shopId;
 
     @Column(name = "CATEGORY_NAME", length = 20)
     private String categoryName;
 
-    @Column(name = "REGION_NAME", length = 20)
-    private String regionName;
+    @Column(name = "REGION_CODE", length = 20)
+    private String regionCode;
 
     @Column(name = "START_TIME", nullable = false)
     private LocalDateTime startTime;
@@ -67,14 +67,14 @@ public class NotificationSubscription extends BaseTimeEntity {
 
     @Builder
     private NotificationSubscription(Long userId, SubscriptionType subscriptionType, Long shopId,
-            String categoryName, String regionName, LocalDateTime startTime, LocalDateTime endTime) {
-        validateTarget(subscriptionType, shopId, categoryName, regionName);
+            String categoryName, String regionCode, LocalDateTime startTime, LocalDateTime endTime) {
+        validateTarget(subscriptionType, shopId, categoryName, regionCode);
         validateTime(startTime, endTime);
         this.userId = userId;
         this.subscriptionType = subscriptionType;
         this.shopId = shopId;
         this.categoryName = categoryName;
-        this.regionName = regionName;
+        this.regionCode = regionCode;
         this.startTime = startTime;
         this.endTime = endTime;
         this.status = SubscriptionStatus.ACTIVE;
@@ -85,17 +85,17 @@ public class NotificationSubscription extends BaseTimeEntity {
      *
      * @param shopId       매장 ID
      * @param categoryName 카테고리명. 업장 구독이면 null
-     * @param regionName   지역명. 업장 구독이면 null
+     * @param regionCode   지역코드. 업장 구독이면 null
      * @param startTime    알림 희망 시작 시각
      * @param endTime      알림 희망 종료 시각
      */
-    public void changeCondition(Long shopId, String categoryName, String regionName,
+    public void changeCondition(Long shopId, String categoryName, String regionCode,
             LocalDateTime startTime, LocalDateTime endTime) {
-        validateTarget(subscriptionType, shopId, categoryName, regionName);
+        validateTarget(subscriptionType, shopId, categoryName, regionCode);
         validateTime(startTime, endTime);
         this.shopId = shopId;
         this.categoryName = categoryName;
-        this.regionName = regionName;
+        this.regionCode = regionCode;
         this.startTime = startTime;
         this.endTime = endTime;
     }
@@ -116,10 +116,10 @@ public class NotificationSubscription extends BaseTimeEntity {
 
     // DB 의 CK_SUBSCRIPTION_TARGET 과 같은 조건. DB 제약 위반(500) 전에 업무 예외(400)로 거절한다
     private static void validateTarget(SubscriptionType subscriptionType, Long shopId,
-            String categoryName, String regionName) {
+            String categoryName, String regionCode) {
         boolean valid = switch (subscriptionType) {
-            case STORE -> shopId != null && categoryName == null && regionName == null;
-            case CATEGORY_REGION -> shopId != null && hasText(categoryName) && hasText(regionName);
+            case STORE -> shopId != null && categoryName == null && regionCode == null;
+            case CATEGORY_REGION -> shopId != null && hasText(categoryName) && hasText(regionCode);
         };
         if (!valid) {
             throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TARGET);

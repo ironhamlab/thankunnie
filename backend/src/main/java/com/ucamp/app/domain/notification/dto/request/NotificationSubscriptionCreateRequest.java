@@ -11,12 +11,12 @@ import jakarta.validation.constraints.Size;
 import com.ucamp.app.domain.notification.entity.SubscriptionType;
 
 /**
- * 알림 구독 등록 요청. 매장 ID는 항상 보내고, 카테고리 구독만 categoryName·regionName 을 보낸다.
+ * 알림 구독 등록 요청. 매장 ID는 항상 보내고, 카테고리 구독만 categoryName·regionCode 을 보낸다.
  *
  * @param subscriptionType 구독 유형
  * @param shopId           매장 ID
  * @param categoryName     카테고리명. 업장 구독이면 null
- * @param regionName       지역명. 업장 구독이면 null
+ * @param regionCode       지역코드. 업장 구독이면 null
  * @param startTime        알림 희망 시작 시각
  * @param endTime          알림 희망 종료 시각
  */
@@ -24,7 +24,7 @@ public record NotificationSubscriptionCreateRequest(
         @NotNull SubscriptionType subscriptionType,
         @NotNull Long shopId,
         @Size(max = 20) String categoryName,
-        @Size(max = 20) String regionName,
+        @Size(max = 20) String regionCode,
         @NotNull OffsetDateTime startTime,
         @NotNull OffsetDateTime endTime) {
 
