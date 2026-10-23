@@ -164,7 +164,7 @@ C 담당자 및 도메인 설계와 협의할 항목:
 - [ ] 잘못된 날짜·정렬·페이지 요청은 400이다.
 - [ ] 빈 목록·한 영역 실패·재시도·더보기가 정의대로 동작한다.
 
-프런트의 프리셋·API 어댑터·store 생성 함수·메인 화면을 구현하고 기존 홈과 공통 axiosInstance에 연결했다. 연결 방법은 `frontend/MAIN-INTEGRATION.md`를 참조한다. `node --test frontend/tests/main.test.mjs`로 날짜 경계, 프리셋, API 전달, 영역별 성공·실패 및 재시도, 응답 경합, 잘못된 응답 처리의 실제 Zustand 기반 테스트 8개가 통과했고, npm run lint 및 npm run build도 통과했다. 위 수용 기준 중 실제 서버 필터링과 브라우저 통합 항목은 아직 검증하지 않았다. C API 구현, Swagger 생성 및 탐색·상세 화면 연결은 남아 있다. 더보기·상세 콜백을 주입할 수 있으나 해당 화면이 없는 현재 홈에서는 버튼을 표시하지 않는다.
+프런트의 프리셋·API 어댑터·store 생성 함수·메인 화면을 구현하고 기존 홈과 공통 axiosInstance에 연결했다. 연결 방법은 `frontend/MAIN-INTEGRATION.md`를 참조한다. `node --test frontend/tests/main.test.mjs`로 날짜 경계, 프리셋, API 전달, 영역별 성공·실패 및 재시도, 응답 경합, 잘못된 응답 처리의 실제 Zustand 기반 테스트 8개가 통과했고, npm run lint 및 npm run build도 통과했다. 위 수용 기준 중 실제 서버 필터링과 브라우저 통합 항목은 아직 검증하지 않았다. C API 구현, Swagger 생성 및 탐색·상세 화면 연결은 남아 있다. A-02는 콜백 대신 MainSection의 더보기 Link와 유효한 ID에 대한 MainItemCard 상세 Link를 구현했다. 초기에는 미등록 C 경로로 이동해 NotFound가 표시되는 문제가 있었다. 현재 26번 리뷰 수정에서는 MAIN_ROUTE_AVAILABILITY를 false로 두어 더보기·상세 링크를 숨기고 조건 탐색을 비활성화한다. C 화면을 AppRouter에 등록·검증한 뒤 해당 연결만 활성화해야 한다. 가격·상태 목록과 조회 재시도는 유지한다.
 
 
 2026-10-22 dev 재검증: README에서 뷰티샵 취소·임박 예약 도메인을 확인했다. C 탐색 API가 아직 없어 /items 및 신청 기간 필드는 임시 계약으로 유지한다. 실제 빈자리 시작·판매 마감 기준과의 매핑은 C와 합의가 필요하다. 프런트 공통 레이아웃과 응답·오류 규약은 확인했으며, 상세 검증 기록은 frontend/MAIN-INTEGRATION.md를 참조한다.

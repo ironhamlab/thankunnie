@@ -20,9 +20,11 @@
 | 오늘/마감 임박 더보기 | `/explore` | A-01 해당 프리셋의 모든 필터와 정렬, page=0 |
 | 날짜·정렬 선택 후 ‘조건으로 탐색’ | `/explore` | 선택 날짜의 startDate/endDate, sort, availableOnly=true, page=0, size=6 |
 
+아래 이동 계약은 C 화면 등록 후 연결을 활성화했을 때 적용한다. 현재는 상세·더보기 링크를 노출하지 않고 날짜·정렬 입력 및 탐색 제출을 비활성화하며, 화면에 탐색 준비 중 안내를 표시한다.
+
 상세 경로에는 가격·상태를 넘기지 않는다. C 상세는 ID로 최신 정보를 조회해야 한다. 링크는 React Router Link를 사용해 키보드 이동과 새 탭 열기를 지원한다.
 
-추가한 경로 상수는 `src/constants/routes.js`에 있다. **현재 AppRouter에는 이 경로의 C 화면이 등록되어 있지 않으므로 지금 클릭하면 기존 NotFound 화면이 표시된다.** C 화면 구현 후 이 상수에 맞춰 등록하거나 상수 값을 실제 경로로 변경해야 한다. 공통 AppRouter를 수정하거나 C 화면을 대신 구현하지 않았다.
+추가한 경로 상수는 `src/constants/routes.js`에 있다. 현재 AppRouter에는 이 경로의 C 화면이 등록되어 있지 않다. 초기 구현의 링크는 NotFound로 연결됐으나 리뷰 수정으로 MAIN_ROUTE_AVAILABILITY.EXPLORE와 ITEM_DETAIL을 false로 두고 링크 노출을 보류했다. 경로를 주소창에 직접 입력하면 여전히 NotFound가 표시된다. C 화면 구현 후 이 상수에 맞춰 등록하거나 실제 경로로 변경하고, 등록 검증 후 각 플래그를 true로 변경해야 한다. 공통 AppRouter를 수정하거나 C 화면을 대신 구현하지 않았다.
 
 ### 탐색 쿼리 예시
 
@@ -61,14 +63,15 @@
 
 다음 명령을 frontend에서 실행했다.
 
-- `node --test tests/main.test.mjs tests/main-navigation.test.mjs tests/main-render.test.mjs`: 16개 통과
+- `node --test tests/main.test.mjs tests/main-navigation.test.mjs tests/main-render.test.mjs`: 18개 통과
 - `npm run lint`: 오류·경고 없이 통과
 - `npm run build`: 통과
 
-테스트는 프리셋/선택 조건 전달, 가격·상태 누락 처리, 상세 href, 카드 전체 링크 렌더, 오류·빈 결과 독립 표시를 포함한다. 렌더 테스트는 실제 React와 MemoryRouter, Vite SSR 변환을 사용했다. 브라우저 클릭·실제 C 화면 표시·실제 HTTP/DB 필터링은 아직 검증하지 않았다.
+테스트는 프리셋/선택 조건 전달, 가격·상태 누락 처리, 상세 href, 카드 전체 링크 렌더, 오류·빈 결과 독립 표시를 포함한다. 렌더 테스트는 실제 React와 MemoryRouter, Vite SSR 변환을 사용했다. 브라우저 클릭·실제 C 화면 표시·실제 HTTP/DB 필터링은 아직 검증하지 않았다. 기본 미등록 상태에서 링크가 없고 탐색 버튼이 disabled인지, 활성화 설정을 주입하면 연결이 복원되는지 렌더 테스트로 확인했다.
 
 ## C 통합 시 확인
 
+- [ ] C 화면 등록·검증 후 MAIN_ROUTE_AVAILABILITY의 해당 항목을 활성화한다.
 - [ ] 실제 상세 리소스 ID와 경로가 일치한다.
 - [ ] 실제 탐색 경로를 공통 라우터에 등록하고 URL 쿼리를 초기 필터로 읽는다.
 - [ ] 가격·상태·시각 필드를 위 임시 계약과 맞추거나 어댑터에서 변환한다.

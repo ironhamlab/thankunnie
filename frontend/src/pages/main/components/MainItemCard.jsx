@@ -7,8 +7,8 @@ import {
   hasDiscount,
 } from '../../../utils/mainItemDisplay.js';
 
-export default function MainItemCard({ item }) {
-  const href = getItemDetailHref(item.id);
+export default function MainItemCard({ item, detailEnabled = false }) {
+  const href = detailEnabled ? getItemDetailHref(item.id) : null;
   const content = (
     <>
       <span className="main-item-status">{getItemStatusLabel(item.status)}</span>
@@ -20,7 +20,7 @@ export default function MainItemCard({ item }) {
         {hasDiscount(item) && <del aria-label="정상가">{formatItemPrice(item.originalPrice)}</del>}
         <strong aria-label="판매가">{formatItemPrice(item.price)}</strong>
       </div>
-      <span>{href ? '상세 보기 →' : '상세 정보 확인 필요'}</span>
+      {detailEnabled && <span>{href ? '상세 보기 →' : '상세 정보 확인 필요'}</span>}
     </>
   );
   return href ? (

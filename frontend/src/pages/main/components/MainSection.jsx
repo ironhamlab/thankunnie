@@ -3,7 +3,12 @@ import { buildMainParams, MAIN_PRESETS } from '../../../constants/mainPresets.js
 import { getExploreHref } from '../../../utils/mainNavigation.js';
 import MainItemCard from './MainItemCard.jsx';
 
-export default function MainSection({ preset, useMainStore }) {
+export default function MainSection({
+  preset,
+  useMainStore,
+  exploreEnabled = false,
+  detailEnabled = false,
+}) {
   const section = useMainStore((state) => state.sections[preset]);
   const fetchSection = useMainStore((state) => state.fetchSection);
   const definition = MAIN_PRESETS[preset];
@@ -15,7 +20,7 @@ export default function MainSection({ preset, useMainStore }) {
     >
       <header className="main-section-header">
         <h2 id={`main-${preset}`}>{definition.title}</h2>
-        <Link to={getExploreHref(buildMainParams(preset))}>더보기</Link>
+        {exploreEnabled && <Link to={getExploreHref(buildMainParams(preset))}>더보기</Link>}
       </header>
       {(section.status === 'idle' || section.status === 'loading') && (
         <p role="status">불러오는 중입니다.</p>
@@ -35,7 +40,7 @@ export default function MainSection({ preset, useMainStore }) {
         <ul className="main-item-list">
           {section.data.content.map((item) => (
             <li key={item.id}>
-              <MainItemCard item={item} />
+              <MainItemCard item={item} detailEnabled={detailEnabled} />
             </li>
           ))}
         </ul>
