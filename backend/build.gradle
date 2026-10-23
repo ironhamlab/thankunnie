@@ -41,6 +41,7 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+    systemProperty 'user.timezone', 'Asia/Seoul'
 }
 
 // 스키마 기준 파일(docs/erd)을 복사해 로컬·테스트 H2 가 같은 DDL 로 테이블을 만들게 한다
