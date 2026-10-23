@@ -1,43 +1,37 @@
-# A-01 메인 기능 연결
+# 메인 기능 연결 (A-01 / A-02)
 
-프리셋·API 어댑터·store·화면을 구현했다. 작업 중 추가된 React 실행 설정과 공통 axiosInstance를 사용해 `src/store/useMainStore.js`와 `src/pages/home/HomePage.jsx`에서 실제 홈에 연결했다. 기존 공통 설정은 변경하지 않았다. C 서버 구현과 탐색·상세 화면은 아직 없다. 새 라이브러리나 실행 설정은 이 기능 변경에 포함하지 않았다.
+A-01은 조회 프리셋·store·API 어댑터를, A-02(#26)는 가격·상태 카드와 C 화면 링크 및 탐색 조건 전달을 구현한다.
 
-호스트 앱에서 기존 Zustand `create`와 공통 axiosInstance를 사용해 store를 한 번 생성한다. 렌더 중 생성하지 않는다.
+## 현재 연결
 
-```jsx
-import { create } from 'zustand';
-import axiosInstance from './src/api/axiosInstance.js';
-import { createItemApi } from './src/api/itemApi.js';
-import { createMainStore } from './src/store/createMainStore.js';
-import MainPage from './src/pages/main/MainPage.jsx';
+`src/pages/home/HomePage.jsx`가 `useMainStore`를 MainPage에 전달한다. store는 기존 Zustand create와 공통 axiosInstance를 사용하며, 요청 경로는 아직 임시 `/v1/items`이다. 공통 응답의 data 추출과 오류 정규화는 기존 axiosInstance가 담당한다.
 
-const useMainStore = createMainStore(create, createItemApi(axiosInstance));
+MainPage는 React Router 내부에서 렌더해야 한다. 더보기는 Link로 프리셋 조건을 전달하고, 검색 폼은 날짜·정렬 조건을 URL 쿼리에 넣어 navigate한다. 카드는 서버 ID 기반 상세 Link로 표시한다. A-01의 선택적 onExplore/onSelectItem 콜백은 A-02에서 Router 링크로 대체했다.
 
-// 호스트 라우터의 메인 route element에 연결한다.
-// onExplore(params): 탐색 화면으로 이동하며 params를 쿼리로 전달한다.
-// onSelectItem(id): 실제 도메인의 상세 화면으로 이동한다.
-// 두 콜백은 호스트의 constants/routes.js를 이용해 구현한다.
-// 해당 화면이 없는 현재 홈에서는 콜백을 생략해 버튼을 표시하지 않는다.
-<MainPage useMainStore={useMainStore} onExplore={openSearch} onSelectItem={openDetail} />;
-```
+- 메인 화면: `src/pages/main/MainPage.jsx`
+- 카드/영역/조건 폼: `src/pages/main/components/`
+- 탐색 쿼리·상세 경로 생성: `src/utils/mainNavigation.js`
+- 가격·상태·날짜 표시: `src/utils/mainItemDisplay.js`
+- C 경로 상수: `src/constants/routes.js`
 
-공통 axiosInstance는 `http://localhost:8080/api` 등의 baseURL을 사용하고, 백엔드 공통 응답에서 `data`를 꺼내 반환하며 HTTP 오류와 `success: false`를 reject해야 한다. 실제 도메인 경로가 결정되면 `src/api/itemApi.js`의 `/v1/items`를 C 계약에 맞춘다.
+## 통합 대기 사항
 
-메인 화면은 진입 시 두 영역을 조회하며, 한국 날짜 변경을 1초 간격의 로컬 시계 확인 및 탭 가시성 변경으로 감지한다. 같은 날짜에는 이 확인으로 API를 반복 호출하지 않는다. 더보기 클릭 시 날짜를 새로 계산하고 page=0을 전달한다. 서버가 필터와 정렬을 수행하며 프런트는 응답 순서를 유지한다.
+실제 C 화면은 아직 dev에 없다. 임시 `/explore`, `/items/:id` 링크는 현재 NotFound로 연결된다. C가 경로를 등록하고 URL 필터를 읽도록 연결해야 실제 화면 전환까지 완료된다. 임시 API의 가격·상태 필드도 C 계약과 맞춰야 한다.
 
-검증 명령(Node.js 24):
+상세 계약과 완료/미완료 검증은 `docs/api/A-02-main-connection.md`에 기록했다. C 화면을 대신 만들거나 공통 인증/라우터를 변경하지 않았다.
+
+## 실행 및 검증
+
+frontend에서:
 
 ```powershell
-node --test frontend/tests/main.test.mjs
+npm ci
+node --test tests/main.test.mjs tests/main-navigation.test.mjs tests/main-render.test.mjs
+npm run lint
+npm run build
+npm run dev
 ```
 
-이는 날짜 경계·프리셋·API 전달·조회 독립성·재시도·응답 경합을 검증한다. 실제 Zustand vanilla store를 사용한 테스트 8개가 통과했다. 한국 날짜 경계, 프리셋, API 전달, 독립 조회·재시도, 최신 요청 우선 처리, 정규화된 공통 오류를 검증했다. npm run lint와 npm run build도 통과했다. React 브라우저 동작, 실제 HTTP/DB 필터링은 아직 검증하지 않았다.
+2026-10-23: 테스트 16개, lint, build 통과. 실제 서버/브라우저 통합은 C 구현 후 확인한다.
 
-## dev 기준 재검증 (2026-10-22)
-
-- 별도 worktree에서 `git pull --ff-only origin dev`를 실행했다. dev는 `c824326`으로 이미 최신이었고, A-01 브랜치에도 포함돼 있었다.
-- 공통 axiosInstance의 `/api` baseURL, `/v1/items` 요청 경로 조합, ApiResponse의 data 추출, `{ code, message, status }` 오류 형식과 호환된다.
-- 공통 MainLayout이 이미 main 요소를 제공하므로 MainPage의 최상위 요소를 div로 수정했다.
-- README의 서비스 도메인은 뷰티샵의 취소·임박 예약이다. C의 탐색 컨트롤러·DTO·API 명세는 현재 dev에 없으므로 `/items`, `applicationClosesAt`, 24시간 조건이 실제 빈자리 계약과 일치한다고 판단할 근거는 없다. C와 예약 가능한 슬롯의 시작 시각·판매 마감 시각·상태 조건을 확정해야 한다.
-- 더보기·상세 화면 연결은 해당 라우트가 생길 때 진행한다. 현재 미연결 버튼은 표시하지 않는다.
-- 원래 작업 폴더의 Figma 변경은 수정하지 않았다. A-01은 `C:/UCAMP/Final/thankunnie-a01-review`에서 계속 작업할 수 있다.
+A-01의 날짜 변경 감지와 요청 경합 방어는 유지한다. 날짜가 바뀌면 재조회하며 응답의 순서를 프런트에서 재정렬하지 않는다.

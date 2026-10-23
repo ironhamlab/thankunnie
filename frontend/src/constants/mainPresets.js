@@ -1,15 +1,25 @@
 export const MAIN_PRESETS = Object.freeze({
-  TODAY: Object.freeze({ title: '오늘', emptyMessage: '오늘 신청 가능한 항목이 없습니다.' }),
-  CLOSING_SOON: Object.freeze({ title: '마감 임박', emptyMessage: '24시간 이내 마감되는 항목이 없습니다.' }),
+  TODAY: Object.freeze({ title: '오늘', emptyMessage: '오늘 예약 가능한 빈자리가 없습니다.' }),
+  CLOSING_SOON: Object.freeze({
+    title: '마감 임박',
+    emptyMessage: '24시간 이내 마감되는 빈자리가 없습니다.',
+  }),
 });
 
 const koreaDateFormatter = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+  timeZone: 'Asia/Seoul',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
 });
 
 export function getKoreaDate(now = new Date()) {
-  const parts = Object.fromEntries(koreaDateFormatter.formatToParts(now)
-    .filter(({ type }) => type !== 'literal').map(({ type, value }) => [type, value]));
+  const parts = Object.fromEntries(
+    koreaDateFormatter
+      .formatToParts(now)
+      .filter(({ type }) => type !== 'literal')
+      .map(({ type, value }) => [type, value]),
+  );
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
