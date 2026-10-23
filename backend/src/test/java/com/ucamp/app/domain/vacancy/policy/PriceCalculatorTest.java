@@ -44,19 +44,6 @@ class PriceCalculatorTest {
     }
 
     @Test
-    @DisplayName("점유 중 3시간 경계를 넘겨도 클릭 시점 구간의 견적을 유지한다")
-    void quoteAtHold_crossesTierBoundary_keepsClickTimeTier() {
-        LocalDateTime clickedAt = STARTS_AT.minusHours(3).minusMinutes(2);
-        LocalDateTime holdExpiresAt = clickedAt.plusMinutes(5);
-
-        PriceQuote quote = PriceCalculator.quoteAtHold(35_000, SALE_PRICES, STARTS_AT, holdExpiresAt);
-
-        assertThat(quote.tier()).isEqualTo(PriceTier.IMMINENT);
-        assertThat(quote.salePrice()).isEqualTo(30_000);
-        assertThat(quote.depositAmount()).isEqualTo(20_000);
-    }
-
-    @Test
     @DisplayName("판매가가 2만 원보다 낮으면 판매가 전액이 예약금이고 잔금은 0원이다")
     void quote_salePriceUnderMaxDeposit_depositIsSalePrice() {
         PriceQuote quote = PriceCalculator.quote(20_000, new SalePrices(18_000, 15_000),

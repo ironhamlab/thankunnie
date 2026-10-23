@@ -1,7 +1,7 @@
 package com.ucamp.app.domain.vacancy.policy;
 
 /**
- * 한 구간의 가격 견적. 저장하지 않고 필요할 때 PriceCalculator 로 계산한다.
+ * 한 구간의 가격 견적. 예약 클릭 시점에 PriceCalculator 로 계산하고, 예약금만 예약에 저장한다.
  *
  * @param tier           적용 구간
  * @param regularPrice   정가

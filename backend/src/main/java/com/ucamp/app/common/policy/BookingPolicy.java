@@ -26,14 +26,11 @@ public final class BookingPolicy {
     /** 예약 클릭 마감: 결제 마감 + 점유 시간 */
     public static final Duration BOOKING_DEADLINE = PAYMENT_DEADLINE.plus(HOLD_DURATION);
 
-    /** 빈자리 등록 마감: 시작 전 */
-    public static final Duration REGISTRATION_DEADLINE = Duration.ofMinutes(30);
+    /** 예약 가능 기간(오늘 포함 일수) */
+    public static final int BOOKING_MAX_DAYS = 60;
 
-    /** 빈자리 등록 가능 기간(오늘 포함 일수) */
-    public static final int REGISTRATION_MAX_DAYS = 60;
-
-    /** 빈자리 시작 시각 단위(분) */
-    public static final int START_TIME_UNIT_MINUTES = 30;
+    /** 예약 시작 시각·예외 일정 시각 단위(분) */
+    public static final int TIME_UNIT_MINUTES = 30;
 
     /** 임박 구간 시작: 시작 전 */
     public static final Duration IMMINENT_FROM = Duration.ofHours(8);

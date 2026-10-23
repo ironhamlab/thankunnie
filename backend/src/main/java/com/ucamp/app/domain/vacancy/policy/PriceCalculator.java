@@ -17,21 +17,11 @@ public final class PriceCalculator {
     }
 
     /**
-     * 판단 시점(예약 클릭 시점)의 구간으로 견적을 계산한다.
+     * 판단 시점(예약 클릭 시점)의 구간으로 견적을 계산한다. 예약금은 예약(reservation.deposit)에 저장해 결제에 사용한다.
      */
     public static PriceQuote quote(int regularPrice, SalePrices salePrices,
             LocalDateTime startsAt, LocalDateTime now) {
         return quote(regularPrice, salePrices, PriceTier.of(startsAt, now));
-    }
-
-    /**
-     * 점유·결제 이후 견적을 다시 계산한다. 견적은 저장하지 않고, 클릭 시점(점유 만료 - 점유 시간)과
-     * 점유·예약 완료 중 수정이 막힌 행의 판매가로 복원한다. 결제 금액(예약금) 검증·환불 계산에 사용한다.
-     * 재공개로 행이 다시 판매되면 이전 고객의 견적은 복원할 수 없다.
-     */
-    public static PriceQuote quoteAtHold(int regularPrice, SalePrices salePrices,
-            LocalDateTime startsAt, LocalDateTime holdExpiresAt) {
-        return quote(regularPrice, salePrices, startsAt, holdExpiresAt.minus(BookingPolicy.HOLD_DURATION));
     }
 
     /**
