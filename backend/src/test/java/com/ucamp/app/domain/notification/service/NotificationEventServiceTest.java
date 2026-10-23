@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ucamp.app.common.policy.BookingPolicy;
-import com.ucamp.app.config.JpaAuditingConfig;
+import com.ucamp.app.config.TimeConfig;
 import com.ucamp.app.domain.notification.NotificationFixture;
 import com.ucamp.app.domain.notification.entity.NotificationEvent;
 import com.ucamp.app.domain.notification.entity.NotificationEventStatus;
@@ -33,7 +33,7 @@ import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
 // 재공개 이벤트는 새 트랜잭션에서 저장하므로 테스트 데이터도 커밋하고 매번 지운다
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({JpaAuditingConfig.class, NotificationEventService.class, VacancySlotRepository.class,
+@Import({TimeConfig.class, NotificationEventService.class, VacancySlotRepository.class,
         SlotReopenedEventListener.class})
 @ActiveProfiles("test")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -69,7 +69,7 @@ class NotificationEventServiceTest {
 
     @AfterEach
     void tearDown() {
-        List.of("NOTIFICATION_EVENT", "SHOP_SCHEDULE_EXCEPTION", "RESERVATION", "TREATMENT", "USERS", "SHOP",
+        List.of("NOTIFICATION_EVENT", "SHOP_SCHEDULE_EXCEPTION", "RESERVATION", "TREATMENT", "APP_USER", "SHOP",
                 "CATEGORY").forEach(table -> jdbcTemplate.update("DELETE FROM " + table));
     }
 

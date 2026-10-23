@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.ucamp.app.config.JpaAuditingConfig;
+import com.ucamp.app.config.TimeConfig;
 import com.ucamp.app.domain.notification.NotificationFixture;
 import com.ucamp.app.domain.notification.entity.NotificationSubscription;
 import com.ucamp.app.domain.notification.entity.SubscriptionStatus;
@@ -23,7 +23,7 @@ import com.ucamp.app.domain.notification.entity.SubscriptionType;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(JpaAuditingConfig.class)
+@Import(TimeConfig.class)
 @ActiveProfiles("test")
 class NotificationSubscriptionRepositoryTest {
 

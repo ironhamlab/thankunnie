@@ -27,7 +27,7 @@ public final class NotificationFixture {
 
     public static void user(JdbcTemplate jdbc, long userId) {
         jdbc.update("""
-                INSERT INTO USERS (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
+                INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
                 VALUES (?, ?, 'hash', '회원', '010-1111-1111', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """, userId, "user" + userId);
     }
