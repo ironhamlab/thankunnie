@@ -23,4 +23,15 @@ public final class TimeUtils {
         }
         return localDateTime.atZone(KST).toOffsetDateTime();
     }
+
+    /**
+     * 요청의 OffsetDateTime 을 엔티티용 LocalDateTime(KST)으로 변환한다.
+     * 다른 오프셋으로 와도 같은 순간의 한국 시각이 된다.
+     */
+    public static LocalDateTime toLocal(OffsetDateTime offsetDateTime) {
+        if (offsetDateTime == null) {
+            return null;
+        }
+        return offsetDateTime.atZoneSameInstant(KST).toLocalDateTime();
+    }
 }

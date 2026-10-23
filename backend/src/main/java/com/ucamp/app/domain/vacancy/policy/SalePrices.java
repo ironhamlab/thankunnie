@@ -5,10 +5,11 @@ import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.policy.BookingPolicy;
 
 /**
- * 사장님이 빈자리에 입력한 구간별 최종 판매가(원). 임박 구간은 별도 할인 없이 일반 판매가를 쓴다.
+ * 사장님이 시술에 입력한 구간별 최종 판매가(원). 임박 구간은 가격 변동 없이 일반 판매가를 쓰고 화면 강조에만 쓴다.
+ * 할인이 없으면 정가와 같은 값을, 초임박 추가 할인이 없으면 일반 판매가와 같은 값을 입력한다.
  *
- * @param normal     일반·임박 구간 판매가
- * @param lastMinute 초임박 구간 판매가 (추가 할인)
+ * @param normal     일반·임박 구간 판매가 (treatment.price)
+ * @param lastMinute 초임박 구간 판매가 (treatment.last_minute_price)
  */
 public record SalePrices(int normal, int lastMinute) {
 
@@ -20,13 +21,13 @@ public record SalePrices(int normal, int lastMinute) {
     }
 
     /**
-     * 판매가 입력을 검사한다. 100원 단위, 0원 초과, 초임박 판매가 &lt; 일반 판매가 &lt; 정가.
+     * 판매가 입력을 검사한다. 100원 단위, 0원 초과, 초임박 판매가 &lt;= 일반 판매가 &lt;= 정가.
      */
     public void validateFor(int regularPrice) {
-        if (!isValidPrice(normal) || !isValidPrice(lastMinute) || normal >= regularPrice) {
+        if (!isValidPrice(normal) || !isValidPrice(lastMinute) || normal > regularPrice) {
             throw new BusinessException(ErrorCode.VACANCY_INVALID_SALE_PRICE);
         }
-        if (lastMinute >= normal) {
+        if (lastMinute > normal) {
             throw new BusinessException(ErrorCode.VACANCY_INVALID_LAST_MINUTE_PRICE);
         }
     }

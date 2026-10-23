@@ -66,14 +66,36 @@ class PriceCalculatorTest {
                 .containsExactly(30_000, 30_000, 27_000);
     }
 
+    @Test
+    @DisplayName("판매가를 정가와 같게 입력하면 할인 없이 정가로 판매한다")
+    void quote_noDiscount_sellsAtRegularPrice() {
+        PriceQuote quote = PriceCalculator.quote(25_000, new SalePrices(25_000, 25_000),
+                STARTS_AT, STARTS_AT.minusHours(1));
+
+        assertThat(quote.salePrice()).isEqualTo(25_000);
+        assertThat(quote.discountAmount()).isZero();
+        assertThat(quote.discountRate()).isZero();
+        assertThat(quote.depositAmount()).isEqualTo(20_000);
+    }
+
+    @Test
+    @DisplayName("초임박 판매가를 일반 판매가와 같게 입력하면 초임박 추가 할인이 없다")
+    void quote_noLastMinuteDiscount_keepsNormalPrice() {
+        PriceQuote quote = PriceCalculator.quote(25_000, new SalePrices(22_000, 22_000),
+                STARTS_AT, STARTS_AT.minusHours(1));
+
+        assertThat(quote.tier()).isEqualTo(PriceTier.LAST_MINUTE);
+        assertThat(quote.salePrice()).isEqualTo(22_000);
+    }
+
     @ParameterizedTest(name = "일반 {0}, 초임박 {1}")
     @CsvSource({
             "30050, 27000",
-            "35000, 27000",
+            "35100, 27000",
             "0, 0",
             "30000, -100"
     })
-    @DisplayName("판매가가 100원 단위가 아니거나 0원 이하이거나 정가 이상이면 예외가 발생한다")
+    @DisplayName("판매가가 100원 단위가 아니거나 0원 이하이거나 정가보다 비싸면 예외가 발생한다")
     void validate_invalidSalePrice_throwsException(int normal, int lastMinute) {
         SalePrices salePrices = new SalePrices(normal, lastMinute);
 
@@ -83,9 +105,9 @@ class PriceCalculatorTest {
     }
 
     @ParameterizedTest(name = "일반 {0}, 초임박 {1}")
-    @CsvSource({"30000, 30000", "30000, 31000"})
-    @DisplayName("초임박 판매가가 일반 판매가보다 낮지 않으면 예외가 발생한다")
-    void validate_lastMinuteNotLower_throwsException(int normal, int lastMinute) {
+    @CsvSource({"30000, 30100", "30000, 31000"})
+    @DisplayName("초임박 판매가가 일반 판매가보다 비싸면 예외가 발생한다")
+    void validate_lastMinuteHigherThanNormal_throwsException(int normal, int lastMinute) {
         SalePrices salePrices = new SalePrices(normal, lastMinute);
 
         assertThatThrownBy(() -> PriceCalculator.preview(35_000, salePrices))

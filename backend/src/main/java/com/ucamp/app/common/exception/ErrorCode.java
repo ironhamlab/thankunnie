@@ -27,6 +27,11 @@ public enum ErrorCode {
     VACANCY_INVALID_TIME_UNIT(HttpStatus.BAD_REQUEST, "VACANCY_004", "시각은 30분 단위여야 합니다."),
     VACANCY_INVALID_TIME_RANGE(HttpStatus.BAD_REQUEST, "VACANCY_005", "종료 시각은 시작 시각보다 뒤여야 합니다."),
     VACANCY_TIME_TAKEN(HttpStatus.CONFLICT, "VACANCY_006", "이미 예약된 시간입니다."),
+    VACANCY_INVALID_SALE_PRICE(HttpStatus.BAD_REQUEST, "VACANCY_007", "판매가는 100원 단위이며 정가 이하여야 합니다."),
+    VACANCY_INVALID_LAST_MINUTE_PRICE(HttpStatus.BAD_REQUEST, "VACANCY_008", "초임박 판매가는 일반 판매가 이하여야 합니다."),
+    VACANCY_OPEN_CLOSED(HttpStatus.BAD_REQUEST, "VACANCY_009", "시간대 열기는 시작 30분 전까지 등록할 수 있습니다."),
+    VACANCY_SCHEDULE_EXCEPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "VACANCY_010", "시간대 열기·닫기 일정을 찾을 수 없습니다."),
+    VACANCY_RESERVED_TIME(HttpStatus.CONFLICT, "VACANCY_011", "예약이 있는 시간은 닫을 수 없습니다.");
     VACANCY_INVALID_SALE_PRICE(HttpStatus.BAD_REQUEST, "VACANCY_007", "판매가는 100원 단위이며 정가보다 낮아야 합니다."),
     VACANCY_INVALID_LAST_MINUTE_PRICE(HttpStatus.BAD_REQUEST, "VACANCY_008", "초임박 판매가는 일반 판매가보다 낮아야 합니다."),
 
