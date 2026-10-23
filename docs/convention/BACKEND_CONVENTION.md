@@ -75,7 +75,7 @@ backend/
     - `USER` → `APP_USER`. 이 경우 PK 컬럼은 `USER_ID`를 유지한다(FK 컬럼명과 일치시키기 위한 예외).
 - 컬럼: UPPER_SNAKE_CASE
   - 예: `RESERVATION_ID`, `CREATED_AT`
-- PK 컬럼: `{테이블}_ID` (위 `APP_USER` 예외 및 `schema.sql`에 이미 정의된 이름은 그대로 사용)
+- PK 컬럼: `{테이블}_ID` (위 `APP_USER` 예외 및 DDL에 이미 정의된 이름은 그대로 사용)
 - 시퀀스: `SEQ_{테이블}`
 - 인덱스: `IDX_{테이블}_{컬럼}`
 - UNIQUE 제약조건: `UK_{테이블}_{컬럼}`
@@ -152,8 +152,8 @@ public class TreatmentController {
 
 - `@Entity` 클래스에는 JPA를 위한 **protected 기본 생성자**를 둔다.
 - 테이블·컬럼 이름과 타입은 `docs/erd/01_schema_ddl.sql`과 일치시킨다.
-- 모든 엔티티는 `createdAt`, `updatedAt`을 정의한 `BaseTimeEntity`를 상속한다.
-  - `UPDATED_AT`이 없는 테이블은 예외로 하며 PR에 명시한다.
+- 엔티티는 `createdAt`, `updatedAt`을 정의한 `BaseTimeEntity`를 상속한다.
+  - 예외: `CREATED_AT`·`UPDATED_AT`이 없거나 일부만 있는 테이블(`CATEGORY`, `SHOP_BUSINESS_HOUR`, `SETTLEMENT`)은 상속하지 않고, 필요한 시각 필드만 직접 둔다.
 - `BaseTimeEntity`에는 다음을 선언한다.
   - `@MappedSuperclass`
   - `@EntityListeners(AuditingEntityListener.class)`

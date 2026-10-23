@@ -6,9 +6,9 @@ description: 땡잡은 언니 백엔드(backend/, Spring Boot) Java 코드를 �
 # 백엔드 공통 코드 형식 (땡잡은 언니)
 
 이 스킬은 **공통 코드를 쓰는 형식**만 다룬다. 그 밖의 규칙은 `docs/convention/BACKEND_CONVENTION.md`가 원본이며, 충돌하면 컨벤션 문서가 우선한다.
-테이블·컬럼의 기준은 `schema.sql`(`docs/erd/01_schema_ddl.sql`)이다. 엔티티를 만들 때 이름·타입·제약을 반드시 이 파일에서 확인한다.
+테이블·컬럼의 기준은 `docs/erd/01_schema_ddl.sql`이다. 엔티티를 만들 때 이름·타입·제약을 반드시 이 파일에서 확인한다.
 
-아래 예시는 실제 도메인인 **시술(`Treatment`, 테이블 `TREATMENT`)**을 사용한다. 다른 도메인에 그대로 복사하지 말고 `schema.sql`의 컬럼에 맞춰 바꾼다.
+아래 예시는 실제 도메인인 **시술(`Treatment`, 테이블 `TREATMENT`)**을 사용한다. 다른 도메인에 그대로 복사하지 말고 DDL의 컬럼에 맞춰 바꾼다.
 
 ## 1. 공통 코드 위치
 
@@ -148,22 +148,22 @@ public class Treatment extends BaseTimeEntity {
 }
 ```
 
-- 모든 엔티티는 `BaseTimeEntity`를 상속한다. `createdAt`, `updatedAt`은 직접 넣지 않는다(JPA Auditing이 `Clock` 기준으로 채움).
-  - 예외: `CREATED_AT`만 있고 `UPDATED_AT`이 없는 테이블(`SETTLEMENT`)은 별도 처리.
+- 엔티티는 `BaseTimeEntity`를 상속한다. `createdAt`, `updatedAt`은 직접 넣지 않는다(JPA Auditing이 `Clock` 기준으로 채움).
+  - 예외: `CREATED_AT`·`UPDATED_AT`이 없거나 일부만 있는 테이블(`CATEGORY`, `SHOP_BUSINESS_HOUR`, `SETTLEMENT`)은 상속하지 않는다. 상속하면 `validate`에서 기동이 실패한다.
 - Lombok은 `@Getter`, `@NoArgsConstructor(access = PROTECTED)`, 생성자에 `@Builder`만. `@Setter`, `@Data` 금지.
 - 상태 변경은 의미 있는 메서드(`deactivate()`, `cancel()`)로 제공한다.
 - 연관관계는 `FetchType.LAZY`를 명시한다.
 
 ### 4.1 ID: 시퀀스
 
-- PK는 `SEQ_{테이블}` 시퀀스로 발급한다. `allocationSize = 1`로 고정한다(`schema.sql`의 `INCREMENT BY 1`과 일치해야 함).
+- PK는 `SEQ_{테이블}` 시퀀스로 발급한다. `allocationSize = 1`로 고정한다(DDL의 `INCREMENT BY 1`과 일치해야 함).
 - generator 이름은 `seq_{테이블 소문자}`로 쓴다. 예: `seq_treatment`, `seq_app_user`.
 - `IDENTITY`, `AUTO`, `UUID`를 쓰지 않는다.
 
 ### 4.2 Enum: 반드시 `EnumType.STRING`
 
 - `STATUS`, `CANCEL_TYPE`, `EXCEPTION_TYPE`처럼 문자열 코드 컬럼은 enum으로 매핑하고 **반드시 `@Enumerated(EnumType.STRING)`**을 붙인다. 생략하면 숫자(ORDINAL)로 저장되어 DB 값과 어긋난다.
-- enum 상수 이름은 `schema.sql` 주석의 값과 철자까지 같게 만든다. 예: `HOLD, CONFIRMED, CANCEL_PENDING, CANCELLED, EXPIRED`.
+- enum 상수 이름은 DDL 주석의 값과 철자까지 같게 만든다. 예: `HOLD, CONFIRMED, CANCEL_PENDING, CANCELLED, EXPIRED`.
 - enum은 해당 도메인의 `entity/` 패키지에 둔다.
 
 ### 4.3 `CHAR(1)` Y/N 컬럼: `BooleanToYnConverter`
@@ -190,33 +190,33 @@ private boolean closed;
 @IdClass(GraceCancelUsageId.class)
 public class GraceCancelUsage extends BaseTimeEntity implements Persistable<GraceCancelUsageId> {
 
-  @Id
-  @Column(name = "USER_ID")
-  private Long userId;
+    @Id
+    @Column(name = "USER_ID")
+    private Long userId;
 
-  @Id
-  @Column(name = "USED_DATE")
-  private LocalDate usedDate;
+    @Id
+    @Column(name = "USED_DATE")
+    private LocalDate usedDate;
 
-  @Column(name = "CANCEL_ID", nullable = false)
-  private Long cancelId;
+    @Column(name = "CANCEL_ID", nullable = false)
+    private Long cancelId;
 
-  @Builder
-  private GraceCancelUsage(Long userId, LocalDate usedDate, Long cancelId) {
-    this.userId = userId;
-    this.usedDate = usedDate;
-    this.cancelId = cancelId;
-  }
+    @Builder
+    private GraceCancelUsage(Long userId, LocalDate usedDate, Long cancelId) {
+        this.userId = userId;
+        this.usedDate = usedDate;
+        this.cancelId = cancelId;
+    }
 
-  @Override
-  public GraceCancelUsageId getId() {
-    return new GraceCancelUsageId(userId, usedDate);
-  }
+    @Override
+    public GraceCancelUsageId getId() {
+        return new GraceCancelUsageId(userId, usedDate);
+    }
 
-  @Override
-  public boolean isNew() {
-    return getCreatedAt() == null;   // 저장 전이면 새 엔티티
-  }
+    @Override
+    public boolean isNew() {
+        return getCreatedAt() == null;   // 저장 전이면 새 엔티티
+    }
 }
 ```
 
@@ -226,8 +226,8 @@ public class GraceCancelUsage extends BaseTimeEntity implements Persistable<Grac
 @EqualsAndHashCode
 public class GraceCancelUsageId implements Serializable {
 
-  private Long userId;
-  private LocalDate usedDate;
+    private Long userId;
+    private LocalDate usedDate;
 }
 ```
 
@@ -241,22 +241,22 @@ public class GraceCancelUsageId implements Serializable {
 @Transactional(readOnly = true)
 public class TreatmentService {
 
-  private final TreatmentRepository treatmentRepository;
+    private final TreatmentRepository treatmentRepository;
 
-  public TreatmentService(TreatmentRepository treatmentRepository) {
-    this.treatmentRepository = treatmentRepository;
-  }
+    public TreatmentService(TreatmentRepository treatmentRepository) {
+        this.treatmentRepository = treatmentRepository;
+    }
 
-  public TreatmentDetailResponse getTreatment(Long treatmentId) {
-    Treatment treatment = treatmentRepository.findById(treatmentId)
-            .orElseThrow(() -> new BusinessException(ErrorCode.TREATMENT_NOT_FOUND));
-    return TreatmentDetailResponse.from(treatment);
-  }
+    public TreatmentDetailResponse getTreatment(Long treatmentId) {
+        Treatment treatment = treatmentRepository.findById(treatmentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.TREATMENT_NOT_FOUND));
+        return TreatmentDetailResponse.from(treatment);
+    }
 
-  @Transactional
-  public TreatmentDetailResponse createTreatment(TreatmentCreateRequest request) {
-    // 권한 검사 → 검증 → 엔티티 생성 → 저장 → DTO 변환
-  }
+    @Transactional
+    public TreatmentDetailResponse createTreatment(TreatmentCreateRequest request) {
+        // 권한 검사 → 검증 → 엔티티 생성 → 저장 → DTO 변환
+    }
 }
 ```
 
@@ -276,15 +276,15 @@ public record TreatmentDetailResponse(
         TreatmentType treatmentType,
         OffsetDateTime createdAt) {
 
-  public static TreatmentDetailResponse from(Treatment treatment) {
-    return new TreatmentDetailResponse(
-            treatment.getId(),
-            treatment.getName(),
-            treatment.getPrice(),
-            treatment.getDurationMinutes(),
-            treatment.getTreatmentType(),
-            TimeUtils.toOffset(treatment.getCreatedAt()));
-  }
+    public static TreatmentDetailResponse from(Treatment treatment) {
+        return new TreatmentDetailResponse(
+                treatment.getId(),
+                treatment.getName(),
+                treatment.getPrice(),
+                treatment.getDurationMinutes(),
+                treatment.getTreatmentType(),
+                TimeUtils.toOffset(treatment.getCreatedAt()));
+    }
 }
 ```
 
@@ -299,19 +299,19 @@ public record TreatmentDetailResponse(
 @Transactional(readOnly = true)
 public class CancelService {
 
-  private final ReservationRepository reservationRepository;
-  private final Clock clock;
+    private final ReservationRepository reservationRepository;
+    private final Clock clock;
 
-  public CancelService(ReservationRepository reservationRepository, Clock clock) {
-    this.reservationRepository = reservationRepository;
-    this.clock = clock;
-  }
+    public CancelService(ReservationRepository reservationRepository, Clock clock) {
+        this.reservationRepository = reservationRepository;
+        this.clock = clock;
+    }
 
-  public RefundQuoteResponse quote(Long reservationId) {
-    LocalDateTime now = LocalDateTime.now(clock);   // 인자 없는 now() 금지
-    LocalDate today = LocalDate.now(clock);
-    // ...
-  }
+    public RefundQuoteResponse quote(Long reservationId) {
+        LocalDateTime now = LocalDateTime.now(clock);   // 인자 없는 now() 금지
+        LocalDate today = LocalDate.now(clock);
+        // ...
+    }
 }
 ```
 
@@ -339,7 +339,7 @@ public class CancelService {
 
 ## 8. 체크리스트
 
-- [ ] 테이블·컬럼 이름과 타입이 `schema.sql`과 일치
+- [ ] 테이블·컬럼 이름과 타입이 `docs/erd/01_schema_ddl.sql`과 일치
 - [ ] 응답은 `ApiResponse<T>`, 204는 본문 없음
 - [ ] 업무 실패는 `BusinessException(ErrorCode.XXX)`, 새 ErrorCode는 `docs/api/error-codes.md`에도 반영
 - [ ] 엔티티는 `BaseTimeEntity` 상속, 요청·응답에 엔티티 직접 노출 없음
