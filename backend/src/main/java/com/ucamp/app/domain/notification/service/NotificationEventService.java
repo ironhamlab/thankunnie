@@ -37,14 +37,19 @@ public class NotificationEventService {
      */
     @Transactional
     public int createImminentEvents(LocalDateTime now) {
+        // 조회가 이미 임박 이벤트가 없는 빈자리만 돌려준다. 예약 ID는 없다.
         List<VacancySlot> slots = vacancySlotRepository.findImminentWithoutEvent(now);
-        slots.forEach(slot -> notificationEventRepository.save(NotificationEvent.builder()
-                .eventType(NotificationEventType.IMMINENT)
-                .exceptionId(slot.exceptionId())
-                .shopId(slot.shopId())
-                .slotStartsAt(slot.startsAt())
-                .slotEndsAt(slot.endsAt())
-                .build()));
+
+        for (VacancySlot slot : slots) {
+            NotificationEvent event = NotificationEvent.builder()
+                    .eventType(NotificationEventType.IMMINENT)
+                    .exceptionId(slot.exceptionId())
+                    .shopId(slot.shopId())
+                    .slotStartsAt(slot.startsAt())
+                    .slotEndsAt(slot.endsAt())
+                    .build();
+            notificationEventRepository.save(event);
+        }
         return slots.size();
     }
 
@@ -59,23 +64,30 @@ public class NotificationEventService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean createReopenedEvent(Long reservationId, LocalDateTime now) {
         Optional<VacancySlot> reopened = vacancySlotRepository.findReopened(reservationId, now);
+
         if (reopened.isEmpty()) {
             log.info("재공개 이벤트 생략: 판매 가능한 빈자리가 아님 reservationId={}", reservationId);
             return false;
         }
+
         VacancySlot slot = reopened.get();
-        if (notificationEventRepository.existsByExceptionIdAndEventTypeAndSlotStartsAt(
-                slot.exceptionId(), NotificationEventType.REOPENED, slot.startsAt())) {
+        // 같은 빈자리, 같은 시작 시각의 재공개 이벤트는 한 번만 만든다.
+        boolean alreadyCreated = notificationEventRepository.existsByExceptionIdAndEventTypeAndSlotStartsAt(
+                slot.exceptionId(), NotificationEventType.REOPENED, slot.startsAt());
+
+        if (alreadyCreated) {
             return false;
         }
-        notificationEventRepository.save(NotificationEvent.builder()
+        
+        NotificationEvent event = NotificationEvent.builder()
                 .eventType(NotificationEventType.REOPENED)
                 .exceptionId(slot.exceptionId())
                 .shopId(slot.shopId())
                 .reservationId(slot.reservationId())
                 .slotStartsAt(slot.startsAt())
                 .slotEndsAt(slot.endsAt())
-                .build());
+                .build();
+        notificationEventRepository.save(event);
         return true;
     }
 }
