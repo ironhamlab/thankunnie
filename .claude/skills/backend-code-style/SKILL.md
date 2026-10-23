@@ -1,6 +1,6 @@
 ---
 name: backend-code-style
-description: 땡잡은 언니 백엔드(backend/, Spring Boot) Java 코드를 작성·수정할 때 사용한다. 팀 공통 코드(ApiResponse, BusinessException, ErrorCode, BaseTimeEntity)를 쓰는 형식과 Controller·Service·Entity·DTO 기본 모양을 정리한 템플릿.
+description: 땡잡은 언니 백엔드(backend/, Spring Boot) Java 코드를 작성·수정할 때 사용한다. 팀 공통 코드(ApiResponse, BusinessException, ErrorCode, BaseTimeEntity, LoginUser, KoreaTime, Clock)를 쓰는 형식과 Controller·Service·Entity·DTO 기본 모양을 정리한 템플릿.
 ---
 
 # 백엔드 공통 코드 형식 (땡잡은 언니)
@@ -13,8 +13,14 @@ description: 땡잡은 언니 백엔드(backend/, Spring Boot) Java 코드를 �
 com.ucamp.app.common
 ├── response/   ApiResponse<T>, ErrorResponse
 ├── exception/  ErrorCode, BusinessException, GlobalExceptionHandler
-└── entity/     BaseTimeEntity
+├── entity/     BaseTimeEntity
+├── auth/       AuthUser, @LoginUser, UserRole (테스트 사용자: X-Test-User 헤더)
+├── policy/     BookingPolicy(정책 상수), ReservationStatus, ScheduleExceptionType
+├── lock/       ShopLock (매장 행 잠금)
+└── util/       KoreaTime (OffsetDateTime ↔ 한국 시간 LocalDateTime)
 ```
+
+- 스키마 기준은 `docs/erd/01_schema_ddl.sql`. 테이블·컬럼을 바꾸면 같은 PR에서 이 파일도 수정한다.
 
 - 도메인 코드는 `com.ucamp.app.domain.{도메인}/{controller,service,repository,entity,dto/request,dto/response}`에 둔다.
 - `common/` 수정은 별도 이슈 + 백엔드 파트장 리뷰.
@@ -92,11 +98,17 @@ MEMBER_DUPLICATE_EMAIL(HttpStatus.CONFLICT, "MEMBER_002", "이미 가입된 이�
 public class Member extends BaseTimeEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_MEMBER_GENERATOR")
+    @SequenceGenerator(name = "SEQ_MEMBER_GENERATOR", sequenceName = "SEQ_MEMBER", allocationSize = 1)
     @Column(name = "MEMBER_ID")
-    private Long id;   // ID 생성 방식은 팀 확정 후 적용
+    private Long id;
 
     @Column(name = "EMAIL", nullable = false)
     private String email;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "STATUS", nullable = false, length = 10)
+    private MemberStatus status;
 
     @Builder
     private Member(String email) {
@@ -109,6 +121,8 @@ public class Member extends BaseTimeEntity {
 }
 ```
 
+- PK는 시퀀스 `SEQ_{테이블}`로 발급하고 `allocationSize = 1`로 맞춘다 (DDL 이 INCREMENT BY 1).
+- enum은 `@Enumerated(EnumType.STRING)`. 숫자(`NUMBER(10)`)는 `Integer`, `NUMBER(19)`는 `Long`으로 매핑한다.
 - 모든 엔티티는 `BaseTimeEntity`를 상속한다. `createdAt`, `updatedAt`은 직접 넣지 않는다(JPA Auditing이 채움).
 - Lombok은 `@Getter`, `@NoArgsConstructor(access = PROTECTED)`, 생성자에 `@Builder`만. `@Setter`, `@Data` 금지.
 - 상태 변경은 의미 있는 메서드(`changeEmail()`, `cancel()`)로 제공한다.
@@ -156,9 +170,42 @@ public record MemberDetailResponse(Long memberId, String email) {
 - Controller에는 엔티티 대신 Response DTO를 반환한다. 변환은 DTO의 `from(...)` 정적 팩토리.
 - DTO 이름은 `{도메인}{용도}Request` / `{도메인}{용도}Response`.
 
-## 6. 체크리스트
+## 6. 로그인 사용자·시각
+
+```java
+// Controller: 로그인 사용자는 @LoginUser 로만 받는다 (요청 DTO 에 userId·shopId 를 넣지 않는다)
+@PostMapping
+public ResponseEntity<ApiResponse<XxxResponse>> create(@LoginUser AuthUser loginUser,
+        @Valid @RequestBody XxxRequest request) { ... }
+
+// Service: 권한 검사는 Service 에서, 현재 시각은 주입받은 Clock 으로
+private final Clock clock;
+
+public XxxResponse create(AuthUser loginUser, XxxRequest request) {
+    loginUser.requireRole(UserRole.OWNER);           // 실패 시 COMMON_403
+    LocalDateTime now = LocalDateTime.now(clock);
+    LocalDateTime startsAt = KoreaTime.toLocal(request.startsAt());   // 요청 OffsetDateTime → 한국 시간
+    ...
+}
+
+// Response DTO: 엔티티 LocalDateTime → +09:00
+public record XxxResponse(OffsetDateTime startsAt) {
+    public static XxxResponse from(Xxx entity) {
+        return new XxxResponse(KoreaTime.toOffset(entity.getStartsAt()));
+    }
+}
+```
+
+- 요청·응답 DTO의 시각은 `OffsetDateTime`(`2026-10-25T12:00:00+09:00`), 엔티티는 `LocalDateTime`(한국 시간).
+- 테스트는 `Clock.fixed(...)`로 현재 시각을 고정한다.
+- 같은 매장의 시간을 바꾸는 쓰기(예약 점유, 시간대 닫기)는 `shopLock.lock(shopId)` 후 겹침을 검사하고 저장한다.
+
+## 7. 체크리스트
 
 - [ ] 응답은 `ApiResponse<T>`, 204는 본문 없음
 - [ ] 업무 실패는 `BusinessException(ErrorCode.XXX)`, 새 ErrorCode는 `docs/api/error-codes.md`에도 반영
 - [ ] 엔티티는 `BaseTimeEntity` 상속, 요청·응답에 엔티티 직접 노출 없음
+- [ ] PK는 `SEQ_{테이블}` + `allocationSize = 1`, enum은 `EnumType.STRING`
+- [ ] 스키마를 바꿨다면 `docs/erd/01_schema_ddl.sql`도 수정
+- [ ] 현재 시각은 `LocalDateTime.now(clock)`, DTO 시각은 `OffsetDateTime`
 - [ ] `backend/`에서 `.\gradlew.bat test`(macOS/Linux `./gradlew test`) 통과

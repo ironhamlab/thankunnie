@@ -130,6 +130,8 @@ public class MemberController {
 - Service 간 내부 호출의 반환 타입은 용도에 맞게 정한다.
 - 예상 가능한 업무 예외는 `BusinessException(ErrorCode.XXX)`으로 표현하고, `GlobalExceptionHandler`에서 공통 에러 응답으로 변환한다.
 - 다른 도메인 Service 호출은 허용하되, 순환 의존이 생기면 파트장과 설계를 재검토한다.
+- 현재 시각은 `LocalDateTime.now()`를 직접 호출하지 않고, 주입받은 `Clock` 빈으로 `LocalDateTime.now(clock)`을 사용한다.
+  - 테스트에서 고정 `Clock`으로 바꿔 시각에 따른 동작을 검증하기 위함이다.
 
 ### 3.3 Repository
 
@@ -155,6 +157,9 @@ public class MemberController {
 - 엔티티에 Lombok `@Data`를 사용하지 않으며, `toString`에 연관 엔티티를 포함하지 않는다.
 - 엔티티에서 Lombok은 `@Getter`, `@NoArgsConstructor(access = AccessLevel.PROTECTED)`, `@Builder`를 사용한다.
 - `@Builder`는 생성에 필요한 값을 받는 생성자에 적용하여 기본 생성자 및 자동 생성 필드와 충돌하지 않도록 한다.
+- PK는 테이블별 시퀀스(`SEQ_{테이블}`, INCREMENT BY 1)로 발급한다.
+  - 엔티티는 `@GeneratedValue(strategy = GenerationType.SEQUENCE)`와 `@SequenceGenerator(sequenceName = "SEQ_{테이블}", allocationSize = 1)`로 맞춘다.
+- enum 필드는 `@Enumerated(EnumType.STRING)`으로 저장한다.
 
 ### 3.5 DTO
 
@@ -313,6 +318,7 @@ public class MemberController {
 - 날짜만 나타내는 값은 `yyyy-MM-dd` 형식을 사용한다.
 - 날짜와 시각을 나타내는 값은 시간대 오프셋을 포함한 ISO-8601 문자열을 사용한다.
   - 예: `2026-10-21T09:00:00+09:00`
+  - 요청·응답 DTO는 `OffsetDateTime`을 쓰고, 엔티티(`LocalDateTime`, 한국 시간)와는 `common/util/KoreaTime`으로 변환한다.
 - CORS 허용 Origin은 `config/WebConfig` 등 공통 설정에서 관리한다.
 - 로컬 Origin은 `http://localhost:5173`을 사용하며, 운영 Origin은 환경 설정으로 분리한다.
 
