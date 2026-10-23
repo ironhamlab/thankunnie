@@ -1,7 +1,11 @@
 import { buildMainParams, MAIN_PRESETS } from '../constants/mainPresets.js';
 
+const OFFSET_DATE_TIME_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
+
 function isValidDateString(value) {
-  return typeof value === 'string' && value.trim() !== '' && Number.isFinite(Date.parse(value));
+  return typeof value === 'string'
+    && OFFSET_DATE_TIME_PATTERN.test(value)
+    && Number.isFinite(Date.parse(value));
 }
 
 /** 팀 Zustand create와 itemApi를 받아 독립적인 메인 store를 만든다. */
