@@ -108,9 +108,9 @@ class ReservationRepositoryTest {
                 VALUES (?, 1, ?, 'hash', '매장', 'SEOUL', '주소', 37.5, 127.0, '010', TIMESTAMP '2026-10-22 09:00:00', TIMESTAMP '2026-10-22 09:00:00')
                 """, shopId, "owner" + shopId);
         jdbcTemplate.update("""
-                INSERT INTO TREATMENT (TREATMENT_ID, SHOP_ID, NAME, REGULAR_PRICE, PRICE, LAST_MINUTE_PRICE,
+                INSERT INTO TREATMENT (TREATMENT_ID, SHOP_ID, CATEGORY_ID, NAME, REGULAR_PRICE, PRICE, LAST_MINUTE_PRICE,
                     DURATION_MINUTES, TREATMENT_TYPE, CREATED_AT, UPDATED_AT)
-                VALUES (?, ?, '젤네일', 25000, 22000, 18000, 60, 'NORMAL', TIMESTAMP '2026-10-22 09:00:00', TIMESTAMP '2026-10-22 09:00:00')
+                VALUES (?, ?, 1, '젤네일', 25000, 22000, 18000, 60, 'NORMAL', TIMESTAMP '2026-10-22 09:00:00', TIMESTAMP '2026-10-22 09:00:00')
                 """, treatmentId, shopId);
     }
 
