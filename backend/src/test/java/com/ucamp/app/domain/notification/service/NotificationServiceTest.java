@@ -7,17 +7,20 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.Optional;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.ucamp.app.common.util.TimeUtils;
 
 import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.TestUser;
@@ -34,18 +37,22 @@ import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepo
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceTest {
 
-    private static final ZoneId ZONE_SEOUL = ZoneId.of("Asia/Seoul");
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-23T06:00:00Z"), TimeUtils.KST);
     private static final AuthUser CUSTOMER = TestUser.CUSTOMER_1.toAuthUser();
     private static final AuthUser OWNER = TestUser.OWNER_1.toAuthUser();
 
-    private final OffsetDateTime start = OffsetDateTime.now(ZONE_SEOUL).plusDays(1).withNano(0);
+    private final OffsetDateTime start = OffsetDateTime.now(CLOCK).plusDays(1).withNano(0);
     private final OffsetDateTime end = start.plusHours(3);
 
     @Mock
     private NotificationSubscriptionRepository repository;
 
-    @InjectMocks
     private NotificationService notificationService;
+
+    @BeforeEach
+    void setUp() {
+        notificationService = new NotificationService(repository, CLOCK);
+    }
 
     @Test
     @DisplayName("업장 구독을 등록하면 매장 ID 와 희망 시간이 ACTIVE 상태로 저장된다")
@@ -127,7 +134,7 @@ class NotificationServiceTest {
     @Test
     @DisplayName("종료 시각이 이미 지났으면 시간 오류다")
     void subscribe_expiredEndTime_throwsInvalidTime() {
-        OffsetDateTime pastStart = OffsetDateTime.now(ZONE_SEOUL).minusDays(2);
+        OffsetDateTime pastStart = OffsetDateTime.now(CLOCK).minusDays(2);
         assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
                 createRequest(SubscriptionType.STORE, 1L, null, null, pastStart, pastStart.plusHours(1))),
                 ErrorCode.SUBSCRIPTION_INVALID_TIME);
@@ -144,9 +151,8 @@ class NotificationServiceTest {
                 new NotificationSubscriptionUpdateRequest(2L, null, null, newStart, newStart.plusHours(2)));
 
         assertThat(response.shopId()).isEqualTo(2L);
-        assertThat(subscription.getStartTime()).isEqualTo(newStart.atZoneSameInstant(ZONE_SEOUL).toLocalDateTime());
-        assertThat(subscription.getEndTime())
-                .isEqualTo(newStart.plusHours(2).atZoneSameInstant(ZONE_SEOUL).toLocalDateTime());
+        assertThat(subscription.getStartTime()).isEqualTo(TimeUtils.toLocal(newStart));
+        assertThat(subscription.getEndTime()).isEqualTo(TimeUtils.toLocal(newStart.plusHours(2)));
     }
 
     @Test
@@ -206,7 +212,7 @@ class NotificationServiceTest {
     }
 
     private static LocalDateTime toLocal(OffsetDateTime time) {
-        return time.atZoneSameInstant(ZONE_SEOUL).toLocalDateTime();
+        return TimeUtils.toLocal(time);
     }
 
     private static void assertErrorCode(Runnable action, ErrorCode errorCode) {

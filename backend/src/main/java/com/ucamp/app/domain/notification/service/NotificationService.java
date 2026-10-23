@@ -1,7 +1,7 @@
 package com.ucamp.app.domain.notification.service;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -29,9 +29,8 @@ import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepo
 @RequiredArgsConstructor
 public class NotificationService {
 
-    private static final ZoneId ZONE_SEOUL = ZoneId.of("Asia/Seoul");
-
     private final NotificationSubscriptionRepository notificationSubscriptionRepository;
+    private final Clock clock;
 
     /**
      * 업장 구독 또는 카테고리·지역 구독을 등록한다.
@@ -142,6 +141,6 @@ public class NotificationService {
     }
 
     private LocalDateTime now() {
-        return LocalDateTime.now(ZONE_SEOUL);
+        return LocalDateTime.now(clock);
     }
 }
