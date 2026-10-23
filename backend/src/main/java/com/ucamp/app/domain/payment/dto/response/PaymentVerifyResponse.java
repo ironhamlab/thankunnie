@@ -1,10 +1,10 @@
 package com.ucamp.app.domain.payment.dto.response;
 
+import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.payment.client.PortOnePayment;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.OffsetDateTime;
 
 public record PaymentVerifyResponse(
         String impUid,
@@ -12,9 +12,7 @@ public record PaymentVerifyResponse(
         Long amount,
         String status,
         String payMethod,
-        LocalDateTime paidAt) {
-
-    private static final ZoneId ZONE_SEOUL = ZoneId.of("Asia/Seoul");
+        OffsetDateTime paidAt) {
 
     public static PaymentVerifyResponse from(PortOnePayment payment) {
         return new PaymentVerifyResponse(
@@ -26,10 +24,11 @@ public record PaymentVerifyResponse(
                 toDateTime(payment.paidAt()));
     }
 
-    private static LocalDateTime toDateTime(Long epochSecond) {
+    // 포트원은 결제 시각을 Unix 초로 주므로 한국 시간(+09:00)으로 바꾼다. 미결제면 0
+    private static OffsetDateTime toDateTime(Long epochSecond) {
         if (epochSecond == null || epochSecond == 0) {
             return null;
         }
-        return LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSecond), ZONE_SEOUL);
+        return OffsetDateTime.ofInstant(Instant.ofEpochSecond(epochSecond), TimeUtils.KST);
     }
 }
