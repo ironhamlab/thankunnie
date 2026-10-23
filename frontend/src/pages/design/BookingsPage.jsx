@@ -5,6 +5,7 @@ import { SERVICES, STATUS, finish, money } from './data';
 import { useDesignStore } from './useDesignStore';
 import Asset from './Asset';
 import Dialog from './Dialog';
+import getServiceShop from './getServiceShop';
 
 export default function BookingsPage() {
   const bookings = useDesignStore((s) => s.bookings);
@@ -20,6 +21,7 @@ export default function BookingsPage() {
   );
   const selected = list.find((b) => b.id === selectedId) ?? list[0];
   const service = selected && SERVICES.find((s) => s.id === selected.serviceId);
+  const selectedShop = getServiceShop(service, shop);
   const [notice, setNotice] = useState('');
   return (
     <div className="b-container b-page">
@@ -57,33 +59,41 @@ export default function BookingsPage() {
       </div>
       <div className="b-bookings-grid">
         <div className="b-stack">
-          {list.map((b) => (
-            <button
-              key={b.id}
-              className={'b-panel b-booking-card ' + (selected?.id === b.id ? 'is-active' : '')}
-              onClick={() => setSelectedId(b.id)}
-            >
-              <span className="b-badge">{STATUS[b.status]}</span>
-              <div className="b-booking-service">
-                <Asset name="8-8-0.png" alt="살롱 드 르네 매장" className="b-thumb" />
-                <div>
-                  <small>{shop.name}</small>
-                  <h3>{SERVICES.find((s) => s.id === b.serviceId)?.name}</h3>
-                  <p>
-                    {b.date} {b.time} ~ {finish(b.time, b.duration)}
-                  </p>
+          {list.map((b) => {
+            const bookingService = SERVICES.find((s) => s.id === b.serviceId);
+            const bookingShop = getServiceShop(bookingService, shop);
+            return (
+              <button
+                key={b.id}
+                className={'b-panel b-booking-card ' + (selected?.id === b.id ? 'is-active' : '')}
+                onClick={() => setSelectedId(b.id)}
+              >
+                <span className="b-badge">{STATUS[b.status]}</span>
+                <div className="b-booking-service">
+                  <Asset
+                    name={b.serviceId === 'nail' ? '8-8-0.png' : bookingService?.image}
+                    alt={bookingShop.name + ' 매장'}
+                    className="b-thumb"
+                  />
+                  <div>
+                    <small>{bookingShop.name}</small>
+                    <h3>{bookingService?.name}</h3>
+                    <p>
+                      {b.date} {b.time} ~ {finish(b.time, b.duration)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="b-notice b-row">
-                <span>
-                  모의 예약금: <strong className="b-pink">{money(b.deposit)}</strong>
-                </span>
-                <span>현장 잔금: {money(b.price - b.deposit)}</span>
-              </div>
-              <small className="b-muted">예약번호: {b.id}</small>
-              <span className="b-pink">예약 상세 보기 →</span>
-            </button>
-          ))}
+                <div className="b-notice b-row">
+                  <span>
+                    모의 예약금: <strong className="b-pink">{money(b.deposit)}</strong>
+                  </span>
+                  <span>현장 잔금: {money(b.price - b.deposit)}</span>
+                </div>
+                <small className="b-muted">예약번호: {b.id}</small>
+                <span className="b-pink">예약 상세 보기 →</span>
+              </button>
+            );
+          })}
           {!list.length && (
             <div className="b-panel b-empty">
               <h2>예약 내역이 없어요</h2>
@@ -105,15 +115,10 @@ export default function BookingsPage() {
             </div>
             <h3>매장 및 담당 디자이너 안내</h3>
             <div className="b-notice">
-              <strong>{shop.name}</strong>
-              <p>
-                {shop.address} {shop.detail}
-              </p>
+              <strong>{selectedShop.name}</strong>
+              <p>{selectedShop.address}</p>
               <small>담당 디자이너: 유나 수석 디자이너 · {service?.name}</small>
-              <button
-                className="b-button b-small"
-                onClick={() => setNotice(shop.address + ' ' + shop.detail)}
-              >
+              <button className="b-button b-small" onClick={() => setNotice(selectedShop.address)}>
                 주소 보기
               </button>
             </div>

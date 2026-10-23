@@ -5,6 +5,7 @@ import { SERVICES, finish, money, serviceDate } from './data';
 import { useDesignStore } from './useDesignStore';
 import Asset from './Asset';
 import Dialog from './Dialog';
+import getServiceShop from './getServiceShop';
 
 export default function ServiceDetailPage() {
   const { id } = useParams();
@@ -31,7 +32,7 @@ export default function ServiceDetailPage() {
     );
   const date = serviceDate(service);
   const ownShop = service.id === 'nail';
-  const name = ownShop ? shop.name : service.shop;
+  const { name, address: shopAddress } = getServiceShop(service, shop);
   const remaining =
     hold?.serviceId === id ? Math.max(0, Math.ceil((hold.expiresAt - now) / 1000)) : 300;
   const reserve = () => {
@@ -85,9 +86,7 @@ export default function ServiceDetailPage() {
                 <h1>
                   {name} <span className="b-badge b-green">영업중</span>
                 </h1>
-                <p className="b-pink b-help">
-                  {ownShop ? shop.address + ' ' + shop.detail : service.location}
-                </p>
+                <p className="b-pink b-help">{shopAddress}</p>
               </div>
               <button
                 className="b-button b-small"
@@ -213,7 +212,7 @@ export default function ServiceDetailPage() {
       </div>
       {address && (
         <Dialog title={name + ' 위치'} onClose={() => setAddress(false)}>
-          <p>{ownShop ? shop.address + ' ' + shop.detail : service.location}</p>
+          <p>{shopAddress}</p>
           <Link className="b-button b-primary" to={R.EXPLORE}>
             예시 지도에서 보기
           </Link>
