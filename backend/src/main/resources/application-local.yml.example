@@ -2,7 +2,8 @@
 # 로컬 개발: H2 (Oracle 호환 모드)
 spring:
   datasource:
-    url: jdbc:h2:mem:thankunnie;MODE=Oracle;DB_CLOSE_DELAY=-1;DEFAULT_NULL_ORDERING=HIGH
+    # DB_CLOSE_DELAY=-1 을 붙이면 devtools 재시작 때 기존 테이블이 남아 스키마 생성이 실패한다
+    url: jdbc:h2:mem:thankunnie;MODE=Oracle;DEFAULT_NULL_ORDERING=HIGH
     username: sa
     password:
     driver-class-name: org.h2.Driver
