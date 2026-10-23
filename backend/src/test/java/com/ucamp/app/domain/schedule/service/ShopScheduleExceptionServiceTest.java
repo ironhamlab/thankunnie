@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -145,6 +147,39 @@ class ShopScheduleExceptionServiceTest {
         assertThatThrownBy(() -> service.updateException(owner, 99L, closeRequest(14, 16)))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_SCHEDULE_EXCEPTION_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("수정은 매장을 잠근 뒤 일정을 조회해 동시 변경된 유형을 기준으로 검사한다")
+    void updateException_locksShopBeforeLoadingException() {
+        given(shopScheduleExceptionRepository.findById(1L)).willReturn(Optional.of(existing(owner.shopId())));
+
+        service.updateException(owner, 1L, closeRequest(14, 16));
+
+        InOrder inOrder = inOrder(shopLock, shopScheduleExceptionRepository);
+        inOrder.verify(shopLock).lock(owner.shopId());
+        inOrder.verify(shopScheduleExceptionRepository).findById(1L);
+    }
+
+    @Test
+    @DisplayName("삭제는 매장을 잠근 뒤 일정을 조회한다")
+    void deleteException_locksShopBeforeLoadingException() {
+        given(shopScheduleExceptionRepository.findById(1L)).willReturn(Optional.of(existing(owner.shopId())));
+
+        service.deleteException(owner, 1L);
+
+        InOrder inOrder = inOrder(shopLock, shopScheduleExceptionRepository);
+        inOrder.verify(shopLock).lock(owner.shopId());
+        inOrder.verify(shopScheduleExceptionRepository).findById(1L);
+    }
+
+    @Test
+    @DisplayName("사장님이 아니면 삭제할 수 없고 매장을 잠그지 않는다")
+    void deleteException_customer_throwsForbidden() {
+        assertThatThrownBy(() -> service.deleteException(customer, 1L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.FORBIDDEN);
+        verify(shopLock, never()).lock(any());
     }
 
     @Test

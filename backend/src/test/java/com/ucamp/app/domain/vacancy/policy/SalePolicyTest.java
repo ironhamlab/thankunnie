@@ -163,6 +163,29 @@ class SalePolicyTest {
     }
 
     @Test
+    @DisplayName("종료 시각이 이미 지난 열기·닫기는 등록할 수 없다")
+    void validateExceptionTime_alreadyEnded_throwsOutOfRange() {
+        LocalDateTime yesterday = NOW.minusDays(1);
+
+        assertThatThrownBy(() -> SalePolicy.validateExceptionTime(
+                ScheduleExceptionType.CLOSE, yesterday, yesterday.plusHours(1), NOW))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_OUT_OF_RANGE);
+        assertThatThrownBy(() -> SalePolicy.validateExceptionTime(
+                ScheduleExceptionType.CLOSE, NOW.minusHours(1), NOW, NOW))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_OUT_OF_RANGE);
+    }
+
+    @Test
+    @DisplayName("이미 시작했지만 끝나지 않은 닫기(진행 중인 연휴)는 등록·수정할 수 있다")
+    void validateExceptionTime_ongoingClose_passes() {
+        assertThatCode(() -> SalePolicy.validateExceptionTime(
+                ScheduleExceptionType.CLOSE, NOW.minusDays(1).withHour(0), NOW.plusDays(2).withHour(0), NOW))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     @DisplayName("열기는 시작 30분 전부터 등록할 수 없다")
     void validateExceptionTime_openAtDeadline_throwsOpenClosed() {
         assertThatThrownBy(() -> SalePolicy.validateExceptionTime(

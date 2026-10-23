@@ -89,14 +89,16 @@ public class ShopScheduleExceptionService {
     @Transactional
     public ScheduleExceptionResponse updateException(AuthUser loginUser, Long exceptionId,
             ScheduleExceptionSaveRequest request) {
-        ShopScheduleException exception = findOwnedException(loginUser, exceptionId);
+        loginUser.requireRole(UserRole.OWNER);
         ScheduleExceptionType newType = request.exceptionType();
         LocalDateTime startsAt = TimeUtils.toLocal(request.startsAt());
         LocalDateTime endsAt = TimeUtils.toLocal(request.endsAt());
         LocalDateTime now = now();
         SalePolicy.validateExceptionTime(newType, startsAt, endsAt, now);
 
-        shopLock.lock(exception.getShopId());
+        // 잠금 전에 읽으면 동시 요청이 바꾼 유형(CLOSE→OPEN)을 놓치므로 잠근 뒤 조회한다
+        shopLock.lock(loginUser.shopId());
+        ShopScheduleException exception = findOwnedException(loginUser, exceptionId);
         if (newType == ScheduleExceptionType.CLOSE) {
             requireNoReservation(exception.getShopId(), startsAt, endsAt, now, reservation -> true);
         }
@@ -113,8 +115,9 @@ public class ShopScheduleExceptionService {
 
     @Transactional
     public void deleteException(AuthUser loginUser, Long exceptionId) {
+        loginUser.requireRole(UserRole.OWNER);
+        shopLock.lock(loginUser.shopId());
         ShopScheduleException exception = findOwnedException(loginUser, exceptionId);
-        shopLock.lock(exception.getShopId());
         if (exception.getExceptionType() == ScheduleExceptionType.OPEN) {
             requireNoReservation(exception.getShopId(), exception.getStartsAt(), exception.getEndsAt(), now(),
                     reservation -> true);
