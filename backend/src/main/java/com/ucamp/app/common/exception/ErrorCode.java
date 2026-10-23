@@ -32,6 +32,9 @@ public enum ErrorCode {
     VACANCY_OPEN_CLOSED(HttpStatus.BAD_REQUEST, "VACANCY_009", "시간대 열기는 시작 30분 전까지 등록할 수 있습니다."),
     VACANCY_SCHEDULE_EXCEPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "VACANCY_010", "시간대 열기·닫기 일정을 찾을 수 없습니다."),
     VACANCY_RESERVED_TIME(HttpStatus.CONFLICT, "VACANCY_011", "예약이 있는 시간은 닫을 수 없습니다."),
+    VACANCY_INVALID_BUSINESS_DAYS(HttpStatus.BAD_REQUEST, "VACANCY_012", "영업시간은 월요일부터 일요일까지 한 번씩 입력해야 합니다."),
+    VACANCY_NOT_OPEN_TIME(HttpStatus.CONFLICT, "VACANCY_013", "영업하지 않는 시간입니다."),
+    VACANCY_BUSINESS_TIME_REQUIRED(HttpStatus.BAD_REQUEST, "VACANCY_014", "영업일은 시작·종료 시각을 입력해야 합니다."),
 
     // PAYMENT
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT_001", "결제 정보를 찾을 수 없습니다."),
