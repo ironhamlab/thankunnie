@@ -233,3 +233,60 @@ test('윤년·월말·0~99년과 UTC 일자가 달라지는 유효한 오프셋 
     assert.deepEqual(store.getState().sections.TODAY.data.content, [item]);
   }
 });
+
+test('시작·마감 시각의 오프셋 누락과 달력·시각·오프셋 범위 오류는 거부한다', async () => {
+  const values = [
+    '2026-10-23',
+    '2026-10-23T18:00',
+    '2026-10-23T18:00:00',
+    '2026-10-23T18:00:00.123',
+    '2026-02-29T18:00:00+09:00',
+    '2024-02-30T18:00:00+09:00',
+    '1900-02-29T18:00:00Z',
+    '2026-04-31T18:00:00+09:00',
+    '2026-00-23T18:00:00+09:00',
+    '2026-13-23T18:00:00+09:00',
+    '2026-10-00T18:00:00+09:00',
+    '2026-10-32T18:00:00+09:00',
+    '2026-10-23T24:00:00+09:00',
+    '2026-10-23T18:60:00+09:00',
+    '2026-10-23T18:00:60+09:00',
+    '2026-10-23T18:00:00+24:00',
+    '2026-10-23T18:00:00-24:00',
+    '2026-10-23T18:00:00+09:60',
+    '2026-10-23T18:00:00+0900',
+    '2026-10-23T18:00:00+09:00junk',
+  ];
+  for (const field of ['startsAt', 'applicationClosesAt']) {
+    for (const value of values) {
+      const store = createMainStore(createState, {
+        search: async () => ({ content: [{ ...validItem, [field]: value }] }),
+      });
+      await store.getState().fetchSection('TODAY');
+      const section = store.getState().sections.TODAY;
+      assert.equal(section.status, 'failed', field + ': ' + value);
+      assert.equal(section.data, null);
+    }
+  }
+});
+
+test('UTC·양수·음수 오프셋과 실제 윤년·월말·시각 경계는 허용한다', async () => {
+  const values = [
+    '2026-10-23T09:00:00Z',
+    '2026-10-23T18:00:00+09:00',
+    '2026-10-23T05:00:00-04:00',
+    '2026-10-23T14:30:00+05:30',
+    '2026-10-23T18:00+09:00',
+    '2026-10-23T18:00:00.123456789+09:00',
+    '2024-02-29T00:00:00Z',
+    '2000-02-29T23:59:59+14:00',
+    '2026-04-30T23:59:59-03:30',
+  ];
+  for (const value of values) {
+    const item = { ...validItem, startsAt: value, applicationClosesAt: value };
+    const store = createMainStore(createState, { search: async () => ({ content: [item] }) });
+    await store.getState().fetchSection('TODAY');
+    assert.equal(store.getState().sections.TODAY.status, 'succeeded', value);
+    assert.deepEqual(store.getState().sections.TODAY.data.content, [item]);
+  }
+});
