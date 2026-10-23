@@ -115,13 +115,14 @@ class NotificationSubscriptionRepositoryTest {
                 .build();
     }
 
-    private static NotificationSubscription categoryRegion(Long userId, String categoryCode, String regionCode,
+    private static NotificationSubscription categoryRegion(Long userId, String categoryName, String regionName,
             LocalDateTime startTime, LocalDateTime endTime) {
         return NotificationSubscription.builder()
                 .userId(userId)
                 .subscriptionType(SubscriptionType.CATEGORY_REGION)
-                .categoryCode(categoryCode)
-                .regionCode(regionCode)
+                .shopId(1L)
+                .categoryName(categoryName)
+                .regionName(regionName)
                 .startTime(startTime)
                 .endTime(endTime)
                 .build();

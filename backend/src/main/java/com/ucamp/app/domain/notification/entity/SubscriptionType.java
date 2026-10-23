@@ -1,13 +1,13 @@
 package com.ucamp.app.domain.notification.entity;
 
 /**
- * 구독 유형.
+ * 구독 유형. 업장(STORE) 또는 카테고리(CATEGORY_REGION).
  */
 public enum SubscriptionType {
 
-    /** 특정 매장 구독. SHOP_ID 필수 */
+    /** 특정 매장 구독. 매장 ID만 있고 카테고리명·지역명은 없다. */
     STORE,
 
-    /** 카테고리·지역 조건 구독. CATEGORY_CODE, REGION_CODE 필수 */
+    /** 카테고리 구독. 매장 ID, 카테고리명, 지역명이 모두 필요하다. */
     CATEGORY_REGION
 }

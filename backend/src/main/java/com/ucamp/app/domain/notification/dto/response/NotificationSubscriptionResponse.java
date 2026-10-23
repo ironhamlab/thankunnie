@@ -9,13 +9,13 @@ import com.ucamp.app.domain.notification.entity.SubscriptionStatus;
 import com.ucamp.app.domain.notification.entity.SubscriptionType;
 
 /**
- * 알림 구독 응답.
+ * 알림 구독 등록·조회·수정 응답.
  *
  * @param subscriptionId   구독 ID
  * @param subscriptionType 구독 유형
- * @param shopId           매장 ID, 카테고리·지역 구독이면 null
- * @param categoryCode     카테고리 코드, 업장 구독이면 null
- * @param regionCode       지역 코드, 업장 구독이면 null
+ * @param shopId           매장 ID
+ * @param categoryName     카테고리명, 업장 구독이면 null
+ * @param regionName       지역명, 업장 구독이면 null
  * @param startTime        알림 희망 시작 시각
  * @param endTime          알림 희망 종료 시각
  * @param status           구독 상태
@@ -24,21 +24,27 @@ public record NotificationSubscriptionResponse(
         Long subscriptionId,
         SubscriptionType subscriptionType,
         Long shopId,
-        String categoryCode,
-        String regionCode,
+        String categoryName,
+        String regionName,
         OffsetDateTime startTime,
         OffsetDateTime endTime,
         SubscriptionStatus status) {
 
     private static final ZoneId ZONE_SEOUL = ZoneId.of("Asia/Seoul");
 
+    /**
+     * 구독 엔티티를 응답으로 변환한다.
+     *
+     * @param subscription 알림 구독
+     * @return 알림 구독 응답
+     */
     public static NotificationSubscriptionResponse from(NotificationSubscription subscription) {
         return new NotificationSubscriptionResponse(
                 subscription.getId(),
                 subscription.getSubscriptionType(),
                 subscription.getShopId(),
-                subscription.getCategoryCode(),
-                subscription.getRegionCode(),
+                subscription.getCategoryName(),
+                subscription.getRegionName(),
                 toOffsetTime(subscription.getStartTime()),
                 toOffsetTime(subscription.getEndTime()),
                 subscription.getStatus());
