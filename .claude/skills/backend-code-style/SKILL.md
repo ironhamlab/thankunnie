@@ -148,8 +148,8 @@ public class Treatment extends BaseTimeEntity {
 }
 ```
 
-- 모든 엔티티는 `BaseTimeEntity`를 상속한다. `createdAt`, `updatedAt`은 직접 넣지 않는다(JPA Auditing이 `Clock` 기준으로 채움).
-  - 예외: `CREATED_AT`만 있고 `UPDATED_AT`이 없는 테이블(`SETTLEMENT`)은 별도 처리.
+- 엔티티는 `BaseTimeEntity`를 상속한다. `createdAt`, `updatedAt`은 직접 넣지 않는다(JPA Auditing이 `Clock` 기준으로 채움).
+  - 예외: `CREATED_AT`·`UPDATED_AT`이 없거나 일부만 있는 테이블(`CATEGORY`, `SHOP_BUSINESS_HOUR`, `SETTLEMENT`)은 상속하지 않는다. 상속하면 `validate`에서 기동이 실패한다.
 - Lombok은 `@Getter`, `@NoArgsConstructor(access = PROTECTED)`, 생성자에 `@Builder`만. `@Setter`, `@Data` 금지.
 - 상태 변경은 의미 있는 메서드(`deactivate()`, `cancel()`)로 제공한다.
 - 연관관계는 `FetchType.LAZY`를 명시한다.
@@ -190,33 +190,33 @@ private boolean closed;
 @IdClass(GraceCancelUsageId.class)
 public class GraceCancelUsage extends BaseTimeEntity implements Persistable<GraceCancelUsageId> {
 
-  @Id
-  @Column(name = "USER_ID")
-  private Long userId;
+    @Id
+    @Column(name = "USER_ID")
+    private Long userId;
 
-  @Id
-  @Column(name = "USED_DATE")
-  private LocalDate usedDate;
+    @Id
+    @Column(name = "USED_DATE")
+    private LocalDate usedDate;
 
-  @Column(name = "CANCEL_ID", nullable = false)
-  private Long cancelId;
+    @Column(name = "CANCEL_ID", nullable = false)
+    private Long cancelId;
 
-  @Builder
-  private GraceCancelUsage(Long userId, LocalDate usedDate, Long cancelId) {
-    this.userId = userId;
-    this.usedDate = usedDate;
-    this.cancelId = cancelId;
-  }
+    @Builder
+    private GraceCancelUsage(Long userId, LocalDate usedDate, Long cancelId) {
+        this.userId = userId;
+        this.usedDate = usedDate;
+        this.cancelId = cancelId;
+    }
 
-  @Override
-  public GraceCancelUsageId getId() {
-    return new GraceCancelUsageId(userId, usedDate);
-  }
+    @Override
+    public GraceCancelUsageId getId() {
+        return new GraceCancelUsageId(userId, usedDate);
+    }
 
-  @Override
-  public boolean isNew() {
-    return getCreatedAt() == null;   // 저장 전이면 새 엔티티
-  }
+    @Override
+    public boolean isNew() {
+        return getCreatedAt() == null;   // 저장 전이면 새 엔티티
+    }
 }
 ```
 
@@ -226,8 +226,8 @@ public class GraceCancelUsage extends BaseTimeEntity implements Persistable<Grac
 @EqualsAndHashCode
 public class GraceCancelUsageId implements Serializable {
 
-  private Long userId;
-  private LocalDate usedDate;
+    private Long userId;
+    private LocalDate usedDate;
 }
 ```
 
@@ -241,22 +241,22 @@ public class GraceCancelUsageId implements Serializable {
 @Transactional(readOnly = true)
 public class TreatmentService {
 
-  private final TreatmentRepository treatmentRepository;
+    private final TreatmentRepository treatmentRepository;
 
-  public TreatmentService(TreatmentRepository treatmentRepository) {
-    this.treatmentRepository = treatmentRepository;
-  }
+    public TreatmentService(TreatmentRepository treatmentRepository) {
+        this.treatmentRepository = treatmentRepository;
+    }
 
-  public TreatmentDetailResponse getTreatment(Long treatmentId) {
-    Treatment treatment = treatmentRepository.findById(treatmentId)
-            .orElseThrow(() -> new BusinessException(ErrorCode.TREATMENT_NOT_FOUND));
-    return TreatmentDetailResponse.from(treatment);
-  }
+    public TreatmentDetailResponse getTreatment(Long treatmentId) {
+        Treatment treatment = treatmentRepository.findById(treatmentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.TREATMENT_NOT_FOUND));
+        return TreatmentDetailResponse.from(treatment);
+    }
 
-  @Transactional
-  public TreatmentDetailResponse createTreatment(TreatmentCreateRequest request) {
-    // 권한 검사 → 검증 → 엔티티 생성 → 저장 → DTO 변환
-  }
+    @Transactional
+    public TreatmentDetailResponse createTreatment(TreatmentCreateRequest request) {
+        // 권한 검사 → 검증 → 엔티티 생성 → 저장 → DTO 변환
+    }
 }
 ```
 
@@ -276,15 +276,15 @@ public record TreatmentDetailResponse(
         TreatmentType treatmentType,
         OffsetDateTime createdAt) {
 
-  public static TreatmentDetailResponse from(Treatment treatment) {
-    return new TreatmentDetailResponse(
-            treatment.getId(),
-            treatment.getName(),
-            treatment.getPrice(),
-            treatment.getDurationMinutes(),
-            treatment.getTreatmentType(),
-            TimeUtils.toOffset(treatment.getCreatedAt()));
-  }
+    public static TreatmentDetailResponse from(Treatment treatment) {
+        return new TreatmentDetailResponse(
+                treatment.getId(),
+                treatment.getName(),
+                treatment.getPrice(),
+                treatment.getDurationMinutes(),
+                treatment.getTreatmentType(),
+                TimeUtils.toOffset(treatment.getCreatedAt()));
+    }
 }
 ```
 
@@ -299,19 +299,19 @@ public record TreatmentDetailResponse(
 @Transactional(readOnly = true)
 public class CancelService {
 
-  private final ReservationRepository reservationRepository;
-  private final Clock clock;
+    private final ReservationRepository reservationRepository;
+    private final Clock clock;
 
-  public CancelService(ReservationRepository reservationRepository, Clock clock) {
-    this.reservationRepository = reservationRepository;
-    this.clock = clock;
-  }
+    public CancelService(ReservationRepository reservationRepository, Clock clock) {
+        this.reservationRepository = reservationRepository;
+        this.clock = clock;
+    }
 
-  public RefundQuoteResponse quote(Long reservationId) {
-    LocalDateTime now = LocalDateTime.now(clock);   // 인자 없는 now() 금지
-    LocalDate today = LocalDate.now(clock);
-    // ...
-  }
+    public RefundQuoteResponse quote(Long reservationId) {
+        LocalDateTime now = LocalDateTime.now(clock);   // 인자 없는 now() 금지
+        LocalDate today = LocalDate.now(clock);
+        // ...
+    }
 }
 ```
 

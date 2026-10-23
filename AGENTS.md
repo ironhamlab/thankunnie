@@ -85,7 +85,7 @@ project-root/
 
 - Windows CMD에서는 `gradlew.bat`, PowerShell에서는 `.\gradlew.bat`을 사용.
 - 로컬 설정이 필요하면 `application-local.yml.example`을 복사하라고 안내하되 **실제 자격 증명은 사람이 직접 입력**.
-- 로컬·테스트 H2는 앱 시작 시 `schema.sql`로 스키마를 자동 생성함. `ddl-auto: validate`는 유지함.
+- 로컬·테스트 H2는 앱 시작 시 `schema.sql`로 스키마를 자동 생성함(`spring.sql.init.mode: embedded`, `always`로 바꾸지 않음 — 운영 Oracle에서 실행되면 안 됨). `ddl-auto: validate`는 유지함.
 - `spring.jpa.defer-datasource-initialization`을 `true`로 설정하지 않음. 스키마 생성이 엔티티 검증보다 먼저 실행되어야 함.
 
 ### Front-end (`frontend/`에서 실행)
@@ -196,8 +196,7 @@ Resolves: UNNIE-<이슈번호>      ← 이슈 완료 시 (Jira 키, 대문자)
 - PR 생성 시 base는 항상 `dev` (hotfix 제외).
 - PR 생성 전 `git pull origin dev`로 최신 dev를 반영하고 충돌을 해결한 뒤 검증 명령을 다시 실행.
 - 본문은 `.github/PULL_REQUEST_TEMPLATE.md` 양식(변경 요약 / 관련 이슈 / 세부 변경 사항 / 테스트 및 검증 결과 / 리뷰어 요청 사항)을 채움.
-- PR 제목은 `[UNNIE-{번호}] 제목` 형식. 예: `[UNNIE-30] 한국 시간대(KST) 기준 시간 처리 설정`
-- 관련 이슈는 본문에 `Resolves: UNNIE-30` 형식으로 기재 (`#` 붙이지 않음).
+- 관련 이슈는 Jira 키(`UNNIE-30`)로 기재.
 - 테스트 및 검증 결과에는 **실제로 실행한 명령과 결과만** 기재. 실행하지 않은 검증을 완료로 표기하지 않음.
 - PR 병합은 사람이 Approve 후 Squash and merge로 수행. 에이전트는 병합하지 않음.
 
