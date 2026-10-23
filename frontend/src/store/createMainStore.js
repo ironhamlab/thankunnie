@@ -1,5 +1,9 @@
 import { buildMainParams, MAIN_PRESETS } from '../constants/mainPresets.js';
 
+function isValidDateString(value) {
+  return typeof value === 'string' && value.trim() !== '' && Number.isFinite(Date.parse(value));
+}
+
 /** 팀 Zustand create와 itemApi를 받아 독립적인 메인 store를 만든다. */
 export function createMainStore(create, itemApi) {
   let sequence = 0;
@@ -18,7 +22,18 @@ export function createMainStore(create, itemApi) {
       update({ data: null, status: 'loading', error: null, requestId });
       try {
         const data = await itemApi.search(params);
-        if (!data || !Array.isArray(data.content)) {
+        const validContent = data
+          && Array.isArray(data.content)
+          && data.content.every((item) => (
+            item !== null
+            && typeof item === 'object'
+            && Number.isSafeInteger(item.id)
+            && item.id > 0
+            && typeof item.title === 'string'
+            && isValidDateString(item.startsAt)
+            && (item.applicationClosesAt == null || isValidDateString(item.applicationClosesAt))
+          ));
+        if (!validContent) {
           throw new Error('목록 응답 형식이 올바르지 않습니다.');
         }
         if (get().sections[preset].requestId === requestId) {
