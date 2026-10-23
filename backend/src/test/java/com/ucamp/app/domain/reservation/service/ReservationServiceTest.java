@@ -3,7 +3,6 @@ package com.ucamp.app.domain.reservation.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -27,11 +26,12 @@ import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.TestUser;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
+import com.ucamp.app.common.lock.ShopLock;
 import com.ucamp.app.common.policy.BookingPolicy;
-import com.ucamp.app.common.policy.ReservationStatus;
 import com.ucamp.app.domain.reservation.dto.request.ReservationCreateRequest;
 import com.ucamp.app.domain.reservation.dto.response.ReservationCreateResponse;
 import com.ucamp.app.domain.reservation.entity.Reservation;
+import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.treatment.entity.Treatment;
 import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
@@ -51,12 +51,15 @@ class ReservationServiceTest {
     @Mock
     private TreatmentRepository treatmentRepository;
 
+    @Mock
+    private ShopLock shopLock;
+
     private ReservationService reservationService;
 
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(NOW.atZone(BookingPolicy.ZONE).toInstant(), BookingPolicy.ZONE);
-        reservationService = new ReservationService(reservationRepository, treatmentRepository, clock);
+        reservationService = new ReservationService(reservationRepository, treatmentRepository, shopLock, clock);
     }
 
     @Test
@@ -81,7 +84,7 @@ class ReservationServiceTest {
         assertThat(saved.getCustomerRequest()).isEqualTo("손톱이 짧아요");
         assertThat(response.treatmentId()).isEqualTo(TREATMENT_ID);
         assertThat(response.startsAt()).isEqualTo(OffsetDateTime.parse("2026-11-01T20:00:00+09:00"));
-        verify(reservationRepository).lockShop(SHOP_ID);
+        verify(shopLock).lock(SHOP_ID);
     }
 
     @Test
@@ -114,7 +117,7 @@ class ReservationServiceTest {
     void createReservation_overlappingOccupied_throwsTimeTaken() {
         givenTreatment(TreatmentStatus.ACTIVE);
         Reservation existing = reservation(NOW.plusMinutes(3));
-        given(reservationRepository.findOverlappingInShop(eq(SHOP_ID), any(), any(), anyCollection()))
+        given(reservationRepository.findActiveOverlapping(eq(SHOP_ID), any(), any()))
                 .willReturn(List.of(existing));
 
         assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11), null)),
@@ -127,7 +130,7 @@ class ReservationServiceTest {
     void createReservation_overlappingExpiredHold_saves() {
         givenTreatment(TreatmentStatus.ACTIVE);
         Reservation expired = reservation(NOW.minusMinutes(1));
-        given(reservationRepository.findOverlappingInShop(eq(SHOP_ID), any(), any(), anyCollection()))
+        given(reservationRepository.findActiveOverlapping(eq(SHOP_ID), any(), any()))
                 .willReturn(List.of(expired));
         given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
 
@@ -160,7 +163,7 @@ class ReservationServiceTest {
     void createReservation_afterBookingDeadline_throwsBookingClosed() {
         // 09:10 에 09:30 시작을 클릭하면 시작까지 20분이라 마감이다
         LocalDateTime now = NOW.plusMinutes(10);
-        ReservationService service = new ReservationService(reservationRepository, treatmentRepository,
+        ReservationService service = new ReservationService(reservationRepository, treatmentRepository, shopLock,
                 Clock.fixed(now.atZone(BookingPolicy.ZONE).toInstant(), BookingPolicy.ZONE));
 
         assertErrorCode(() -> service.createReservation(CUSTOMER, request(NOW.plusMinutes(30), null)),
@@ -194,7 +197,7 @@ class ReservationServiceTest {
     private static Reservation reservation(LocalDateTime holdExpiresAt) {
         return Reservation.builder()
                 .userId(TestUser.CUSTOMER_2.toAuthUser().userId())
-                .treatment(treatment(TreatmentStatus.ACTIVE))
+                .treatmentId(TREATMENT_ID)
                 .startsAt(NOW.plusHours(11))
                 .endsAt(NOW.plusHours(12))
                 .appliedPrice(30_000)

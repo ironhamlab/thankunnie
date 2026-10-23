@@ -24,9 +24,9 @@ import com.ucamp.app.common.auth.StubAuthFilter;
 import com.ucamp.app.common.auth.TestUser;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
-import com.ucamp.app.common.policy.ReservationStatus;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.domain.reservation.dto.response.ReservationCreateResponse;
+import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.service.ReservationService;
 
 @WebMvcTest(controllers = ReservationController.class)

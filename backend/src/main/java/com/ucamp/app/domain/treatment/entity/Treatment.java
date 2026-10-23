@@ -10,9 +10,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,31 +31,25 @@ public class Treatment extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_TREATMENT")
     @SequenceGenerator(name = "SEQ_TREATMENT", sequenceName = "SEQ_TREATMENT", allocationSize = 1)
-    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "TREATMENT_ID")
     private Long id;
 
-    // 매장 엔티티가 생기기 전까지 ID 로만 참조한다
-    @JdbcTypeCode(SqlTypes.NUMERIC)
+    // 예약 엔티티와 같이 매장은 ID 로만 참조한다
     @Column(name = "SHOP_ID", nullable = false)
     private Long shopId;
 
     @Column(name = "NAME", nullable = false, length = 100)
     private String name;
 
-    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "REGULAR_PRICE", nullable = false)
     private int regularPrice;
 
-    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "PRICE", nullable = false)
     private int price;
 
-    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "LAST_MINUTE_PRICE", nullable = false)
     private int lastMinutePrice;
 
-    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "DURATION_MINUTES", nullable = false)
     private int durationMinutes;
 

@@ -2,8 +2,6 @@ package com.ucamp.app.domain.reservation.service;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.EnumSet;
-import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,8 +10,8 @@ import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.UserRole;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
-import com.ucamp.app.common.policy.BookingPolicy;
-import com.ucamp.app.common.policy.ReservationStatus;
+import com.ucamp.app.common.lock.ShopLock;
+import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.reservation.dto.request.ReservationCreateRequest;
 import com.ucamp.app.domain.reservation.dto.response.ReservationCreateResponse;
 import com.ucamp.app.domain.reservation.entity.Reservation;
@@ -28,18 +26,16 @@ import com.ucamp.app.domain.vacancy.policy.SalePolicy;
 @Transactional(readOnly = true)
 public class ReservationService {
 
-    // 시간을 잡고 있을 수 있는 상태. HOLD 는 만료 여부를 SalePolicy.isOccupying 으로 한 번 더 본다
-    private static final Set<ReservationStatus> OCCUPYING_STATUSES = EnumSet.of(
-            ReservationStatus.HOLD, ReservationStatus.CONFIRMED, ReservationStatus.CANCEL_PENDING);
-
     private final ReservationRepository reservationRepository;
     private final TreatmentRepository treatmentRepository;
+    private final ShopLock shopLock;
     private final Clock clock;
 
     public ReservationService(ReservationRepository reservationRepository,
-            TreatmentRepository treatmentRepository, Clock clock) {
+            TreatmentRepository treatmentRepository, ShopLock shopLock, Clock clock) {
         this.reservationRepository = reservationRepository;
         this.treatmentRepository = treatmentRepository;
+        this.shopLock = shopLock;
         this.clock = clock;
     }
 
@@ -50,9 +46,9 @@ public class ReservationService {
     public ReservationCreateResponse createReservation(AuthUser loginUser, ReservationCreateRequest request) {
         loginUser.requireRole(UserRole.CUSTOMER);
 
-        // 헌재 시각 clock으로 고정
+        // 현재 시각 clock으로 고정
         LocalDateTime now = LocalDateTime.now(clock);
-        LocalDateTime startsAt = request.startsAt().atZoneSameInstant(BookingPolicy.ZONE).toLocalDateTime();
+        LocalDateTime startsAt = TimeUtils.toLocal(request.startsAt());
         SalePolicy.validateBookable(startsAt, now);
 
         Treatment treatment = treatmentRepository.findById(request.treatmentId())
@@ -61,14 +57,15 @@ public class ReservationService {
         LocalDateTime endsAt = startsAt.plusMinutes(treatment.getDurationMinutes());
 
         // 같은 시간에 두 고객이 동시에 클릭해도 한 명만 점유하도록 매장 단위로 순서를 맞춘다
-        reservationRepository.lockShop(treatment.getShopId());
+        shopLock.lock(treatment.getShopId());
         validateNotTaken(treatment.getShopId(), startsAt, endsAt, now);
 
         PriceQuote quote = PriceCalculator.quote(
                 treatment.getRegularPrice(), treatment.salePrices(), startsAt, now);
+
         Reservation reservation = Reservation.builder()
                 .userId(loginUser.userId())
-                .treatment(treatment)
+                .treatmentId(treatment.getId())
                 .startsAt(startsAt)
                 .endsAt(endsAt)
                 .appliedPrice(quote.salePrice())
@@ -79,8 +76,9 @@ public class ReservationService {
         return ReservationCreateResponse.from(reservationRepository.save(reservation));
     }
 
+    // 조회 결과에는 만료된 점유(HOLD)도 섞여 있으므로 SalePolicy.isOccupying 으로 한 번 더 거른다
     private void validateNotTaken(Long shopId, LocalDateTime startsAt, LocalDateTime endsAt, LocalDateTime now) {
-        boolean taken = reservationRepository.findOverlappingInShop(shopId, startsAt, endsAt, OCCUPYING_STATUSES)
+        boolean taken = reservationRepository.findActiveOverlapping(shopId, startsAt, endsAt)
                 .stream()
                 .anyMatch(reservation -> SalePolicy.isOccupying(
                         reservation.getStatus(), reservation.getHoldExpiresAt(), now));

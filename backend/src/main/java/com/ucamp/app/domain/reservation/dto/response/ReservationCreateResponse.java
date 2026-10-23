@@ -1,11 +1,10 @@
 package com.ucamp.app.domain.reservation.dto.response;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
-import com.ucamp.app.common.policy.BookingPolicy;
-import com.ucamp.app.common.policy.ReservationStatus;
+import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.reservation.entity.Reservation;
+import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 
 /**
  * 생성된 예약(점유). 고객은 holdExpiresAt 전까지 예약금(deposit)을 결제해야 한다.
@@ -32,16 +31,12 @@ public record ReservationCreateResponse(
     public static ReservationCreateResponse from(Reservation reservation) {
         return new ReservationCreateResponse(
                 reservation.getId(),
-                reservation.getTreatment().getId(),
+                reservation.getTreatmentId(),
                 reservation.getStatus(),
-                toOffset(reservation.getStartsAt()),
-                toOffset(reservation.getEndsAt()),
+                TimeUtils.toOffset(reservation.getStartsAt()),
+                TimeUtils.toOffset(reservation.getEndsAt()),
                 reservation.getAppliedPrice(),
                 reservation.getDeposit(),
-                toOffset(reservation.getHoldExpiresAt()));
-    }
-
-    private static OffsetDateTime toOffset(LocalDateTime dateTime) {
-        return dateTime.atZone(BookingPolicy.ZONE).toOffsetDateTime();
+                TimeUtils.toOffset(reservation.getHoldExpiresAt()));
     }
 }
