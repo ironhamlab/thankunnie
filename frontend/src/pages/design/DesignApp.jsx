@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
 import DesignLayout from './DesignLayout';
 import './design.css';
@@ -44,7 +44,7 @@ export default function DesignApp() {
               element={
                 <div className="b-empty">
                   <h1>화면을 찾을 수 없어요</h1>
-                  <a href={R.HOME}>빈자리 탐색으로</a>
+                  <Link to={R.HOME}>빈자리 탐색으로</Link>
                 </div>
               }
             />
