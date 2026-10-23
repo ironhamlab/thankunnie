@@ -116,6 +116,28 @@ class NotificationEventServiceTest {
     }
 
     @Test
+    @DisplayName("확정·취소 처리 중·만료 전 점유와 겹치는 OPEN 은 임박 이벤트를 만들지 않는다")
+    void createImminentEvents_occupied_excludesThoseSlots() {
+        openSlot(1L, NOW.plusHours(1), NOW.plusHours(3));
+        reservation(600L, NORMAL_TREATMENT, "CONFIRMED", NOW.plusHours(1), NOW.plusHours(2));
+        openSlot(2L, NOW.plusHours(3), NOW.plusHours(5));
+        reservation(601L, NORMAL_TREATMENT, "CANCEL_PENDING", NOW.plusHours(3), NOW.plusHours(4));
+        openSlot(3L, NOW.plusHours(5), NOW.plusHours(7));
+        NotificationFixture.reservation(jdbcTemplate, 602L, 2L, NORMAL_TREATMENT, "HOLD",
+                NOW.plusHours(5), NOW.plusHours(6), NOW.plusMinutes(5));
+        openSlot(4L, NOW.plusHours(7), NOW.plusHours(8));
+        NotificationFixture.reservation(jdbcTemplate, 603L, 1L, NORMAL_TREATMENT, "HOLD",
+                NOW.plusHours(7), NOW.plusHours(8), NOW.minusMinutes(1));
+
+        int created = notificationEventService.createImminentEvents(NOW);
+
+        assertThat(created).isEqualTo(1);
+        assertThat(notificationEventRepository.findAll())
+                .extracting(NotificationEvent::getExceptionId)
+                .containsExactly(4L);
+    }
+
+    @Test
     @DisplayName("취소 완료 후 다시 판매 가능한 시간이면 재공개 이벤트를 한 번만 만든다")
     void createReopenedEvent_sellableAfterCancel_createsOnce() {
         openSlot(1L, NOW.plusHours(10), NOW.plusHours(14));

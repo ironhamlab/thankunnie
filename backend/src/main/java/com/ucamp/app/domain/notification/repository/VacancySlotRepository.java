@@ -32,6 +32,19 @@ public class VacancySlotRepository {
                   AND c.ENDS_AT >= o.ENDS_AT)
             """;
 
+    // 점유는 SalePolicy.isOccupying, 겹침은 종료 시각을 포함하지 않는 SalePolicy.overlaps 와 같다
+    private static final String NOT_OCCUPIED = """
+            NOT EXISTS (
+                SELECT 1 FROM RESERVATION x
+                JOIN TREATMENT xt ON xt.TREATMENT_ID = x.TREATMENT_ID
+                WHERE xt.SHOP_ID = o.SHOP_ID
+                  AND x.STARTS_AT < o.ENDS_AT
+                  AND o.STARTS_AT < x.ENDS_AT
+                  AND (x.STATUS IN ('CONFIRMED', 'CANCEL_PENDING')
+                       OR (x.STATUS = 'HOLD'
+                           AND (x.HOLD_EXPIRES_AT IS NULL OR x.HOLD_EXPIRES_AT > :now))))
+            """;
+
     private static final String FIND_IMMINENT_SQL = """
             SELECT o.EXCEPTION_ID, o.SHOP_ID, o.STARTS_AT, o.ENDS_AT
             FROM SHOP_SCHEDULE_EXCEPTION o
@@ -41,12 +54,13 @@ public class VacancySlotRepository {
               AND o.STARTS_AT <= :imminentUntil
               AND o.ENDS_AT > :bookableEndsAfter
               AND %s
+              AND %s
               AND NOT EXISTS (
                   SELECT 1 FROM NOTIFICATION_EVENT e
                   WHERE e.EXCEPTION_ID = o.EXCEPTION_ID
                     AND e.EVENT_TYPE = 'IMMINENT')
             ORDER BY o.STARTS_AT, o.EXCEPTION_ID
-            """.formatted(NOT_FULLY_CLOSED);
+            """.formatted(NOT_FULLY_CLOSED, NOT_OCCUPIED);
 
     // 점유 판단은 SalePolicy.isOccupying 과 같은 조건이다
     private static final String FIND_REOPENED_SQL = """
@@ -87,7 +101,7 @@ public class VacancySlotRepository {
 
     /**
      * 임박 구간에 들어왔고 아직 임박 이벤트가 없는 빈자리를 조회한다.
-     * 마지막 시작 가능 시각(종료 30분 전)의 예약 접수가 끝난 빈자리는 제외한다.
+     * 마지막 시작 가능 시각(종료 30분 전)의 예약 접수가 끝난 빈자리와, 점유 중인 예약이 겹치는 빈자리는 제외한다.
      *
      * @param now 현재 시각 (서울)
      * @return 임박 이벤트를 만들 빈자리 목록
@@ -96,7 +110,8 @@ public class VacancySlotRepository {
         Map<String, Object> params = Map.of(
                 "imminentUntil", now.plus(BookingPolicy.IMMINENT_FROM),
                 "bookableEndsAfter", now.plus(BookingPolicy.BOOKING_DEADLINE)
-                        .plusMinutes(BookingPolicy.TIME_UNIT_MINUTES));
+                        .plusMinutes(BookingPolicy.TIME_UNIT_MINUTES),
+                "now", now);
         return jdbcTemplate.query(FIND_IMMINENT_SQL, params, (rs, rowNum) -> new VacancySlot(
                 rs.getLong("EXCEPTION_ID"),
                 rs.getLong("SHOP_ID"),
