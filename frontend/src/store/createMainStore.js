@@ -1,10 +1,25 @@
 import { buildMainParams, MAIN_PRESETS } from '../constants/mainPresets.js';
 
-const OFFSET_DATE_TIME_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
+const OFFSET_DATE_TIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(?:Z|[+-](\d{2}):(\d{2}))$/;
 
 function isValidDateString(value) {
-  return typeof value === 'string'
-    && OFFSET_DATE_TIME_PATTERN.test(value)
+  if (typeof value !== 'string') return false;
+  const parts = OFFSET_DATE_TIME_PATTERN.exec(value);
+  if (!parts) return false;
+  const [year, month, day, hour, minute, second] = parts.slice(1, 7)
+    .map((part) => Number(part ?? 0));
+  const offsetHour = Number(parts[7] ?? 0);
+  const offsetMinute = Number(parts[8] ?? 0);
+  if (month < 1 || month > 12 || day < 1 || day > 31
+      || hour > 23 || minute > 59 || second > 59
+      || offsetHour > 23 || offsetMinute > 59) return false;
+
+  // Date.UTC의 0~99년 보정을 피하고 입력 달력 날짜를 UTC에서 비교한다.
+  const calendarDate = new Date(0);
+  calendarDate.setUTCFullYear(year, month - 1, day);
+  return calendarDate.getUTCFullYear() === year
+    && calendarDate.getUTCMonth() === month - 1
+    && calendarDate.getUTCDate() === day
     && Number.isFinite(Date.parse(value));
 }
 
