@@ -141,6 +141,99 @@ test('유효한 필수 필드와 생략·null·유효한 선택 날짜는 허용
   assert.equal(store.getState().sections.TODAY.status, 'succeeded');
   assert.deepEqual(store.getState().sections.TODAY.data.content, content);
 });
+test('시간대 없는 날짜와 ISO 시각은 시작·마감 필드 모두 거부한다', async (t) => {
+  const values = [
+    '2026-10-23',
+    '2026-10-23T18:00',
+    '2026-10-23T18:00:00',
+    '2026-10-23T18:00:00.123',
+  ];
+  for (const field of ['startsAt', 'applicationClosesAt']) {
+    for (const value of values) {
+      await t.test(field + ': ' + value, async () => {
+        const store = createMainStore(createState, {
+          search: async () => ({ content: [{ ...validItem, [field]: value }] }),
+        });
+        await store.getState().fetchSection('TODAY');
+        const section = store.getState().sections.TODAY;
+        assert.equal(section.status, 'failed');
+        assert.equal(section.data, null);
+        assert.equal(section.error.message, '목록 응답 형식이 올바르지 않습니다.');
+      });
+    }
+  }
+});
+
+test('명시적 UTC 또는 양수·음수 오프셋이 있는 ISO 시각은 허용한다', async (t) => {
+  const values = [
+    '2026-10-23T09:00:00Z',
+    '2026-10-23T18:00:00+09:00',
+    '2026-10-23T05:00:00-04:00',
+    '2026-10-23T18:00+09:00',
+    '2026-10-23T18:00:00.123456789+09:00',
+  ];
+  for (const value of values) {
+    await t.test(value, async () => {
+      const item = { ...validItem, startsAt: value, applicationClosesAt: value };
+      const store = createMainStore(createState, { search: async () => ({ content: [item] }) });
+      await store.getState().fetchSection('TODAY');
+      assert.equal(store.getState().sections.TODAY.status, 'succeeded');
+      assert.deepEqual(store.getState().sections.TODAY.data.content, [item]);
+    });
+  }
+});
+test('UTC 달력 구성요소와 시각·오프셋 범위를 벗어난 시작·마감 날짜는 거부한다', async () => {
+  const values = [
+    '2026-02-29T18:00:00+09:00',
+    '1900-02-29T18:00:00Z',
+    '2024-02-30T18:00:00+09:00',
+    '2026-04-31T18:00:00+09:00',
+    '2026-00-23T18:00:00+09:00',
+    '2026-13-23T18:00:00+09:00',
+    '2026-10-00T18:00:00+09:00',
+    '2026-10-32T18:00:00+09:00',
+    '2026-10-23T24:00:00+09:00',
+    '2026-10-23T18:60:00+09:00',
+    '2026-10-23T18:00:60+09:00',
+    '2026-10-23T18:00:00+24:00',
+    '2026-10-23T18:00:00-24:00',
+    '2026-10-23T18:00:00+09:60',
+  ];
+  for (const field of ['startsAt', 'applicationClosesAt']) {
+    for (const value of values) {
+      const store = createMainStore(createState, {
+        search: async () => ({ content: [{ ...validItem, [field]: value }] }),
+      });
+      await store.getState().fetchSection('TODAY');
+      const section = store.getState().sections.TODAY;
+      assert.equal(section.status, 'failed', field + ': ' + value);
+      assert.equal(section.data, null);
+      assert.equal(section.error.message, '목록 응답 형식이 올바르지 않습니다.');
+    }
+  }
+});
+
+test('윤년·월말·0~99년과 UTC 일자가 달라지는 유효한 오프셋 경계는 허용한다', async () => {
+  const values = [
+    '2024-02-29T00:00:00Z',
+    '2000-02-29T23:59:59+09:00',
+    '0000-02-29T00:00:00Z',
+    '0099-01-31T23:59:59Z',
+    '1900-02-28T18:00:00Z',
+    '2026-04-30T23:59:59-03:30',
+    '2026-01-01T00:00:00+14:00',
+    '2026-12-31T23:59:59-12:00',
+    '2026-10-23T18:00:00+23:59',
+  ];
+  for (const value of values) {
+    const item = { ...validItem, startsAt: value, applicationClosesAt: value };
+    const store = createMainStore(createState, { search: async () => ({ content: [item] }) });
+    await store.getState().fetchSection('TODAY');
+    assert.equal(store.getState().sections.TODAY.status, 'succeeded', value);
+    assert.deepEqual(store.getState().sections.TODAY.data.content, [item]);
+  }
+});
+
 test('시작·마감 시각의 오프셋 누락과 달력·시각·오프셋 범위 오류는 거부한다', async () => {
   const values = [
     '2026-10-23',
