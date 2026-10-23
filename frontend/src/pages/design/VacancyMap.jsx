@@ -3,16 +3,17 @@ import { generatePath, Link } from 'react-router-dom';
 import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
 import MapArtwork from './MapArtwork';
 import Asset from './Asset';
-import { money, SERVICES } from './data';
+import { money } from './data';
 
-const positions = [
-  [30, 30],
-  [65, 24],
-  [42, 52],
-  [73, 60],
-  [23, 70],
-  [61, 80],
-];
+const PIN_POSITIONS = {
+  nail: [30, 30],
+  hair: [65, 24],
+  lash: [42, 52],
+  facial: [73, 60],
+  art: [23, 70],
+  clinic: [61, 80],
+};
+const DEFAULT_PIN_POSITION = [50, 50];
 
 export default function VacancyMap({ services }) {
   const [selectedId, setSelectedId] = useState(null);
@@ -22,21 +23,26 @@ export default function VacancyMap({ services }) {
     <section className="b-map b-vacancy-map" aria-label="빈자리 예시 지도">
       <div className="b-map-canvas" style={{ transform: `scale(${zoom})` }}>
         <MapArtwork />
-        {services.map((service) => (
-          <button
-            key={service.id}
-            className={`b-map-pin ${selected.id === service.id ? 'is-selected' : ''}`}
-            style={{
-              left: `${positions[SERVICES.findIndex((item) => item.id === service.id)][0]}%`,
-              top: `${positions[SERVICES.findIndex((item) => item.id === service.id)][1]}%`,
-            }}
-            aria-label={`${service.shop} ${money(service.price)}`}
-            aria-pressed={selected.id === service.id}
-            onClick={() => setSelectedId(service.id)}
-          >
-            {money(service.price)}
-          </button>
-        ))}
+        {services.map((service) => {
+          const [left, top] = Object.hasOwn(PIN_POSITIONS, service.id)
+            ? PIN_POSITIONS[service.id]
+            : DEFAULT_PIN_POSITION;
+          return (
+            <button
+              key={service.id}
+              className={`b-map-pin ${selected.id === service.id ? 'is-selected' : ''}`}
+              style={{
+                left: `${left}%`,
+                top: `${top}%`,
+              }}
+              aria-label={`${service.shop} ${money(service.price)}`}
+              aria-pressed={selected.id === service.id}
+              onClick={() => setSelectedId(service.id)}
+            >
+              {money(service.price)}
+            </button>
+          );
+        })}
       </div>
       <span className="b-vacancy-map-note">예시 지도 · 실제 위치와 다를 수 있어요</span>
       <div className="b-map-tools">
