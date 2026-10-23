@@ -20,6 +20,11 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "COMMON_405", "지원하지 않는 HTTP 메서드입니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_500", "서버 내부 오류가 발생했습니다."),
 
+    // NOTIFICATION
+    SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION_001", "구독을 찾을 수 없습니다."),
+    SUBSCRIPTION_INVALID_TARGET(HttpStatus.BAD_REQUEST, "NOTIFICATION_002", "구독 유형에 맞지 않는 구독 대상입니다."),
+    SUBSCRIPTION_INVALID_TIME(HttpStatus.BAD_REQUEST, "NOTIFICATION_003", "알림 희망 시간이 올바르지 않습니다."),
+
     // VACANCY
     VACANCY_BOOKING_CLOSED(HttpStatus.CONFLICT, "VACANCY_001", "예약 접수가 마감된 시간입니다."),
     VACANCY_PAYMENT_CLOSED(HttpStatus.CONFLICT, "VACANCY_002", "결제 마감 시간이 지났습니다."),
