@@ -7,6 +7,7 @@ import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.policy.BookingPolicy;
 import com.ucamp.app.common.policy.ReservationStatus;
+import com.ucamp.app.common.policy.ScheduleExceptionType;
 
 /**
  * 예약 가능 시간 판단 공통 규칙 (B-06). A·C·D·E 가 재사용한다.
@@ -80,14 +81,24 @@ public final class SalePolicy {
     }
 
     /**
-     * 사장님 예외 일정(추가 열기·닫기)의 시각을 검사한다. 30분 단위, 종료가 시작보다 뒤.
+     * 사장님 시간대 열기·닫기(예외 일정)의 시각을 검사한다.
+     * 30분 단위, 종료가 시작보다 뒤, 시작일이 오늘 포함 60일 이내, 열기는 시작 30분 전까지.
      */
-    public static void validateExceptionTime(LocalDateTime startsAt, LocalDateTime endsAt) {
+    public static void validateExceptionTime(ScheduleExceptionType type, LocalDateTime startsAt,
+            LocalDateTime endsAt, LocalDateTime now) {
         if (!isOnTimeUnit(startsAt) || !isOnTimeUnit(endsAt)) {
             throw new BusinessException(ErrorCode.VACANCY_INVALID_TIME_UNIT);
         }
         if (!endsAt.isAfter(startsAt)) {
             throw new BusinessException(ErrorCode.VACANCY_INVALID_TIME_RANGE);
+        }
+        if (!isWithinBookingDays(startsAt, now)) {
+            throw new BusinessException(ErrorCode.VACANCY_OUT_OF_RANGE);
+        }
+        boolean openTooLate = type == ScheduleExceptionType.OPEN
+                && !now.isBefore(startsAt.minus(BookingPolicy.OPEN_REGISTRATION_DEADLINE));
+        if (openTooLate) {
+            throw new BusinessException(ErrorCode.VACANCY_OPEN_CLOSED);
         }
     }
 

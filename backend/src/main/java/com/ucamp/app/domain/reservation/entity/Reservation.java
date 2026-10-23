@@ -1,0 +1,88 @@
+package com.ucamp.app.domain.reservation.entity;
+
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
+
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import com.ucamp.app.common.entity.BaseTimeEntity;
+import com.ucamp.app.common.policy.ReservationStatus;
+
+/**
+ * 예약. 고객이 예약 클릭(점유)할 때 HOLD 로 생성되고, 적용 가격·예약금은 클릭 시점 값으로 고정된다.
+ * 회원·시술은 해당 엔티티가 생기기 전까지 ID 로만 참조한다.
+ * 상태 변경(확정·취소·만료) 메서드는 예약 담당(D)이 추가한다.
+ */
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Entity
+@Table(name = "RESERVATION")
+public class Reservation extends BaseTimeEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_RESERVATION_GENERATOR")
+    @SequenceGenerator(name = "SEQ_RESERVATION_GENERATOR", sequenceName = "SEQ_RESERVATION", allocationSize = 1)
+    @Column(name = "RESERVATION_ID")
+    private Long id;
+
+    @Column(name = "USER_ID", nullable = false)
+    private Long userId;
+
+    @Column(name = "TREATMENT_ID", nullable = false)
+    private Long treatmentId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "STATUS", nullable = false, length = 20)
+    private ReservationStatus status;
+
+    @Column(name = "STARTS_AT", nullable = false)
+    private LocalDateTime startsAt;
+
+    /** 종료 시각은 구간에 포함하지 않는다 */
+    @Column(name = "ENDS_AT", nullable = false)
+    private LocalDateTime endsAt;
+
+    /** 클릭 시점 적용 판매가 */
+    @Column(name = "APPLIED_PRICE", nullable = false)
+    private Integer appliedPrice;
+
+    /** 예약금 = min(적용 판매가, 20,000) */
+    @Column(name = "DEPOSIT", nullable = false)
+    private Integer deposit;
+
+    /** 점유 만료 = 클릭 + 5분 */
+    @Column(name = "HOLD_EXPIRES_AT", nullable = false)
+    private LocalDateTime holdExpiresAt;
+
+    @Column(name = "CONFIRMED_AT")
+    private LocalDateTime confirmedAt;
+
+    @Column(name = "CUSTOMER_REQUEST", length = 1000)
+    private String customerRequest;
+
+    @Builder
+    private Reservation(Long userId, Long treatmentId, LocalDateTime startsAt, LocalDateTime endsAt,
+            Integer appliedPrice, Integer deposit, LocalDateTime holdExpiresAt, String customerRequest) {
+        this.userId = userId;
+        this.treatmentId = treatmentId;
+        this.status = ReservationStatus.HOLD;
+        this.startsAt = startsAt;
+        this.endsAt = endsAt;
+        this.appliedPrice = appliedPrice;
+        this.deposit = deposit;
+        this.holdExpiresAt = holdExpiresAt;
+        this.customerRequest = customerRequest;
+    }
+}

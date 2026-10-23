@@ -8,6 +8,10 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: validate
+    properties:
+      hibernate:
+        # H2 에서만 NUMBER 컬럼 검증을 맞춘 방언을 쓴다 (Oracle 은 기본 방언)
+        dialect_resolvers: com.ucamp.app.config.H2OracleModeDialectResolver
   sql:
     init:
       # 내장 DB(H2)일 때만 docs/erd/01_schema_ddl.sql 로 테이블을 만든다. Oracle(prod)에는 실행하지 않는다
