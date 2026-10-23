@@ -254,6 +254,29 @@ CREATE TABLE NOTIFICATION_SUBSCRIPTION (
 CREATE SEQUENCE SEQ_NOTIFICATION_SUBSCRIPTION START WITH 1 INCREMENT BY 1;
 
 -- ---------------------------------------------------------------------
+-- 알림 이벤트 (빈자리 = 예외 일정 OPEN 행. 임박 진입·취소 재공개 시 1건씩 쌓고 이후 매칭·발송한다)
+-- ---------------------------------------------------------------------
+CREATE TABLE NOTIFICATION_EVENT (
+    EVENT_ID        NUMBER(19)          NOT NULL,
+    EVENT_TYPE      VARCHAR2(20 CHAR)   NOT NULL,   -- IMMINENT, REOPENED
+    EXCEPTION_ID    NUMBER(19)          NOT NULL,   -- OPEN 행 ID. 담당 도메인이 지울 수 있어 FK 없음
+    SHOP_ID         NUMBER(19)          NOT NULL,
+    RESERVATION_ID  NUMBER(19),                     -- 취소 재공개만, 취소된 예약
+    SLOT_STARTS_AT  TIMESTAMP(0)        NOT NULL,   -- 임박: OPEN 시작, 재공개: 취소된 예약 시작
+    SLOT_ENDS_AT    TIMESTAMP(0)        NOT NULL,   -- 종료 미포함
+    STATUS          VARCHAR2(10 CHAR)   DEFAULT 'PENDING' NOT NULL,  -- PENDING, PROCESSED
+    CREATED_AT      TIMESTAMP(3)        NOT NULL,
+    UPDATED_AT      TIMESTAMP(3)        NOT NULL,
+    CONSTRAINT PK_NOTIFICATION_EVENT PRIMARY KEY (EVENT_ID),
+    -- 같은 빈자리·같은 시각의 같은 이벤트는 한 번만 만든다
+    CONSTRAINT UK_NOTIFICATION_EVENT_SLOT UNIQUE (EXCEPTION_ID, EVENT_TYPE, SLOT_STARTS_AT),
+    CONSTRAINT FK_NOTIFICATION_EVENT_SHOP FOREIGN KEY (SHOP_ID) REFERENCES SHOP (SHOP_ID),
+    CONSTRAINT FK_NOTIFICATION_EVENT_RESERVATION FOREIGN KEY (RESERVATION_ID) REFERENCES RESERVATION (RESERVATION_ID)
+);
+CREATE SEQUENCE SEQ_NOTIFICATION_EVENT START WITH 1 INCREMENT BY 1;
+CREATE INDEX IDX_NOTIFICATION_EVENT_STATUS ON NOTIFICATION_EVENT (STATUS, EVENT_ID);
+
+-- ---------------------------------------------------------------------
 -- 정산 — MVP 범위 밖
 -- ---------------------------------------------------------------------
 CREATE TABLE SETTLEMENT (
