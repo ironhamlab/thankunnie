@@ -15,7 +15,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
-import com.ucamp.app.common.policy.ReservationStatus;
+import com.ucamp.app.domain.reservation.entity.ReservationStatus;
+import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
 
 class SalePolicyTest {
 
@@ -124,26 +125,80 @@ class SalePolicyTest {
         assertThat(SalePolicy.holdExpiresAt(NOW)).isEqualTo(NOW.plusMinutes(5));
     }
 
-    @Test
-    @DisplayName("30분 단위이고 종료가 시작보다 뒤인 예외 일정은 등록할 수 있다")
-    void validateExceptionTime_valid_passes() {
-        assertThatCode(() -> SalePolicy.validateExceptionTime(STARTS_AT, STARTS_AT.plusDays(3)))
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(ScheduleExceptionType.class)
+    @DisplayName("30분 단위이고 종료가 시작보다 뒤이며 60일 이내인 열기·닫기는 등록할 수 있다")
+    void validateExceptionTime_valid_passes(ScheduleExceptionType type) {
+        assertThatCode(() -> SalePolicy.validateExceptionTime(type, STARTS_AT, STARTS_AT.plusDays(3), NOW))
                 .doesNotThrowAnyException();
     }
 
     @Test
-    @DisplayName("예외 일정 시각이 30분 단위가 아니면 예외가 발생한다")
+    @DisplayName("열기·닫기 시각이 30분 단위가 아니면 예외가 발생한다")
     void validateExceptionTime_notOnUnit_throwsInvalidTimeUnit() {
-        assertThatThrownBy(() -> SalePolicy.validateExceptionTime(STARTS_AT, STARTS_AT.plusMinutes(45)))
+        assertThatThrownBy(() -> SalePolicy.validateExceptionTime(
+                ScheduleExceptionType.CLOSE, STARTS_AT, STARTS_AT.plusMinutes(45), NOW))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_INVALID_TIME_UNIT);
     }
 
     @Test
-    @DisplayName("예외 일정 종료가 시작보다 뒤가 아니면 예외가 발생한다")
+    @DisplayName("열기·닫기 종료가 시작보다 뒤가 아니면 예외가 발생한다")
     void validateExceptionTime_endNotAfterStart_throwsInvalidTimeRange() {
-        assertThatThrownBy(() -> SalePolicy.validateExceptionTime(STARTS_AT, STARTS_AT))
+        assertThatThrownBy(() -> SalePolicy.validateExceptionTime(
+                ScheduleExceptionType.CLOSE, STARTS_AT, STARTS_AT, NOW))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_INVALID_TIME_RANGE);
+    }
+
+    @Test
+    @DisplayName("오늘 포함 60일을 넘는 날짜는 열거나 닫을 수 없다")
+    void validateExceptionTime_after60Days_throwsOutOfRange() {
+        LocalDateTime tooFar = LocalDateTime.of(2026, 12, 21, 10, 0);
+
+        assertThatThrownBy(() -> SalePolicy.validateExceptionTime(
+                ScheduleExceptionType.CLOSE, tooFar, tooFar.plusHours(1), NOW))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_OUT_OF_RANGE);
+    }
+
+    @Test
+    @DisplayName("종료 시각이 이미 지난 열기·닫기는 등록할 수 없다")
+    void validateExceptionTime_alreadyEnded_throwsOutOfRange() {
+        LocalDateTime yesterday = NOW.minusDays(1);
+
+        assertThatThrownBy(() -> SalePolicy.validateExceptionTime(
+                ScheduleExceptionType.CLOSE, yesterday, yesterday.plusHours(1), NOW))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_OUT_OF_RANGE);
+        assertThatThrownBy(() -> SalePolicy.validateExceptionTime(
+                ScheduleExceptionType.CLOSE, NOW.minusHours(1), NOW, NOW))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_OUT_OF_RANGE);
+    }
+
+    @Test
+    @DisplayName("이미 시작했지만 끝나지 않은 닫기(진행 중인 연휴)는 등록·수정할 수 있다")
+    void validateExceptionTime_ongoingClose_passes() {
+        assertThatCode(() -> SalePolicy.validateExceptionTime(
+                ScheduleExceptionType.CLOSE, NOW.minusDays(1).withHour(0), NOW.plusDays(2).withHour(0), NOW))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("열기는 시작 30분 전부터 등록할 수 없다")
+    void validateExceptionTime_openAtDeadline_throwsOpenClosed() {
+        assertThatThrownBy(() -> SalePolicy.validateExceptionTime(
+                ScheduleExceptionType.OPEN, STARTS_AT, STARTS_AT.plusHours(2), STARTS_AT.minusMinutes(30)))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_OPEN_CLOSED);
+    }
+
+    @Test
+    @DisplayName("닫기는 시작 30분 전 이후에도 등록할 수 있다")
+    void validateExceptionTime_closeNearStart_passes() {
+        assertThatCode(() -> SalePolicy.validateExceptionTime(
+                ScheduleExceptionType.CLOSE, STARTS_AT, STARTS_AT.plusHours(1), STARTS_AT.minusMinutes(10)))
+                .doesNotThrowAnyException();
     }
 }

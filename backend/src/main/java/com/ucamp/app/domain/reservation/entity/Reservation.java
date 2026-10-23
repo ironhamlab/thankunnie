@@ -6,17 +6,11 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
-
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -24,11 +18,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import com.ucamp.app.common.entity.BaseTimeEntity;
-import com.ucamp.app.common.policy.ReservationStatus;
-import com.ucamp.app.domain.treatment.entity.Treatment;
 
 /**
- * 예약. 고객이 예약을 클릭할 때 점유(HOLD) 상태로 생성되며, 가격·예약금은 클릭 시점 값으로 고정한다.
+ * 예약. 고객이 예약 클릭(점유)할 때 HOLD 로 생성되고, 적용 가격·예약금은 클릭 시점 값으로 고정된다.
+ * 회원·시술은 해당 엔티티가 생기기 전까지 ID 로만 참조한다.
+ * 상태 변경(확정·취소·만료) 메서드는 예약 담당(D)이 추가한다.
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -36,23 +30,17 @@ import com.ucamp.app.domain.treatment.entity.Treatment;
 @Table(name = "RESERVATION")
 public class Reservation extends BaseTimeEntity {
 
-    // 숫자 컬럼은 DDL 의 NUMBER(p) 와 맞춘다. H2(Oracle 모드)는 NUMBER 를 NUMERIC 으로 보고해
-    // 기본 매핑(BIGINT, INTEGER)이면 ddl-auto: validate 가 실패한다
-    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_RESERVATION")
-    @SequenceGenerator(name = "SEQ_RESERVATION", sequenceName = "SEQ_RESERVATION", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_RESERVATION_GENERATOR")
+    @SequenceGenerator(name = "SEQ_RESERVATION_GENERATOR", sequenceName = "SEQ_RESERVATION", allocationSize = 1)
     @Column(name = "RESERVATION_ID")
     private Long id;
 
-    // 회원 엔티티가 생기기 전까지 ID 로만 참조한다
-    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "USER_ID", nullable = false)
     private Long userId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "TREATMENT_ID", nullable = false)
-    private Treatment treatment;
+    @Column(name = "TREATMENT_ID", nullable = false)
+    private Long treatmentId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", nullable = false, length = 20)
@@ -61,17 +49,19 @@ public class Reservation extends BaseTimeEntity {
     @Column(name = "STARTS_AT", nullable = false)
     private LocalDateTime startsAt;
 
+    /** 종료 시각은 구간에 포함하지 않는다 */
     @Column(name = "ENDS_AT", nullable = false)
     private LocalDateTime endsAt;
 
-    @JdbcTypeCode(SqlTypes.NUMERIC)
+    /** 클릭 시점 적용 판매가 */
     @Column(name = "APPLIED_PRICE", nullable = false)
-    private int appliedPrice;
+    private Integer appliedPrice;
 
-    @JdbcTypeCode(SqlTypes.NUMERIC)
+    /** 예약금 = min(적용 판매가, 20,000) */
     @Column(name = "DEPOSIT", nullable = false)
-    private int deposit;
+    private Integer deposit;
 
+    /** 점유 만료 = 클릭 + 5분 */
     @Column(name = "HOLD_EXPIRES_AT", nullable = false)
     private LocalDateTime holdExpiresAt;
 
@@ -82,10 +72,10 @@ public class Reservation extends BaseTimeEntity {
     private String customerRequest;
 
     @Builder
-    private Reservation(Long userId, Treatment treatment, LocalDateTime startsAt, LocalDateTime endsAt,
-            int appliedPrice, int deposit, LocalDateTime holdExpiresAt, String customerRequest) {
+    private Reservation(Long userId, Long treatmentId, LocalDateTime startsAt, LocalDateTime endsAt,
+            Integer appliedPrice, Integer deposit, LocalDateTime holdExpiresAt, String customerRequest) {
         this.userId = userId;
-        this.treatment = treatment;
+        this.treatmentId = treatmentId;
         this.status = ReservationStatus.HOLD;
         this.startsAt = startsAt;
         this.endsAt = endsAt;
