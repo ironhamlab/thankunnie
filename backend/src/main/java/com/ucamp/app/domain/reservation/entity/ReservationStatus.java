@@ -1,4 +1,4 @@
-package com.ucamp.app.common.policy;
+package com.ucamp.app.domain.reservation.entity;
 
 /**
  * 예약 상태. 예약은 고객이 예약 클릭(점유)할 때 HOLD 로 생성된다.

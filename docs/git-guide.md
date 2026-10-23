@@ -115,6 +115,6 @@ Gradle Wrapper, `package-lock.json`, 환경 설정 example 파일은 커밋한�
 ## 6. 관련 변경 반영
 
 - 실제 DB 스키마 변경은 기준 DDL(`docs/erd/01_schema_ddl.sql`)과 기존 DB 적용 SQL을 함께 반영한다.
-- `backend/src/main/resources/schema.sql`은 빌드 시 복사되는 사본이므로 직접 수정하지 않는다.
+- `schema.sql`은 빌드 시 `docs/erd/01_schema_ddl.sql`에서 복사되는 사본이므로 `backend/src/main/resources`에 직접 만들거나 수정하지 않는다.
 - 환경 설정 키 추가는 관련 example 파일에도 반영한다.
 - 의존성 변경은 빌드 설정과 lock 파일을 함께 반영한다.
