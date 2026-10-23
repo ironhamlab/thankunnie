@@ -49,7 +49,7 @@ public class NotificationService {
                 .userId(loginUser.userId())
                 .subscriptionType(request.subscriptionType())
                 .shopId(request.shopId())
-                .categoryName(request.categoryName())
+                .categoryId(request.categoryId())
                 .regionCode(request.regionCode())
                 .startTime(request.localStartTime())
                 .endTime(request.localEndTime())
@@ -86,7 +86,7 @@ public class NotificationService {
         loginUser.requireRole(UserRole.CUSTOMER);
         NotificationSubscription subscription = getActiveSubscription(loginUser, subscriptionId);
         validateNotExpired(request.localEndTime());
-        subscription.changeCondition(request.shopId(), request.categoryName(), request.regionCode(),
+        subscription.changeCondition(request.shopId(), request.categoryId(), request.regionCode(),
                 request.localStartTime(), request.localEndTime());
         return NotificationSubscriptionResponse.from(subscription);
     }
@@ -117,15 +117,15 @@ public class NotificationService {
     /**
      * 카테고리·지역 빈자리의 알림 대상 구독을 조회한다. 해제·만료 구독은 제외한다.
      *
-     * @param categoryName  카테고리명
+     * @param categoryId    카테고리 ID
      * @param regionCode    지역코드
      * @param slotStartTime 빈자리 시작 시각
      * @return 알림 대상 구독 목록
      */
-    public List<NotificationSubscription> findNotifiableByCategoryRegion(String categoryName, String regionCode,
+    public List<NotificationSubscription> findNotifiableByCategoryRegion(Long categoryId, String regionCode,
             LocalDateTime slotStartTime) {
         return notificationSubscriptionRepository.findNotifiableByCategoryRegion(
-                categoryName, regionCode, slotStartTime, now());
+                categoryId, regionCode, slotStartTime, now());
     }
 
     // 다른 고객의 구독과 이미 해제한 구독은 존재 여부를 드러내지 않도록 모두 NOT_FOUND 로 처리한다

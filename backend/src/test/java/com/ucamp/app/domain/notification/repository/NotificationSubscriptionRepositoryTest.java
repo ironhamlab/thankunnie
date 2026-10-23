@@ -45,7 +45,7 @@ class NotificationSubscriptionRepositoryTest {
     @DisplayName("내 구독 목록은 본인의 ACTIVE 구독만 최신 등록 순으로 반환한다")
     void findAllByUserIdAndStatus_mixedSubscriptions_returnsOwnActiveOnly() {
         NotificationSubscription first = repository.save(store(1L, 1L, NOW, NOW.plusDays(1)));
-        NotificationSubscription second = repository.save(categoryRegion(1L, "NAIL", "SEOUL_GANGNAM",
+        NotificationSubscription second = repository.save(categoryRegion(1L, 10L, "SEOUL_GANGNAM",
                 NOW, NOW.plusDays(1)));
         NotificationSubscription inactive = store(1L, 2L, NOW, NOW.plusDays(1));
         inactive.deactivate();
@@ -92,14 +92,14 @@ class NotificationSubscriptionRepositoryTest {
     @Test
     @DisplayName("카테고리·지역 알림 대상은 카테고리와 지역이 모두 같은 ACTIVE 구독이다")
     void findNotifiableByCategoryRegion_sameCategoryAndRegion_returnsSubscription() {
-        NotificationSubscription target = repository.save(categoryRegion(1L, "NAIL", "SEOUL_GANGNAM",
+        NotificationSubscription target = repository.save(categoryRegion(1L, 10L, "SEOUL_GANGNAM",
                 NOW, NOW.plusHours(5)));
-        repository.save(categoryRegion(2L, "NAIL", "SEOUL_MAPO", NOW, NOW.plusHours(5)));
-        repository.save(categoryRegion(3L, "HAIR", "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
+        repository.save(categoryRegion(2L, 10L, "SEOUL_MAPO", NOW, NOW.plusHours(5)));
+        repository.save(categoryRegion(3L, 20L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
         repository.save(store(4L, 1L, NOW, NOW.plusHours(5)));
 
         List<NotificationSubscription> result =
-                repository.findNotifiableByCategoryRegion("NAIL", "SEOUL_GANGNAM", SLOT_START, NOW);
+                repository.findNotifiableByCategoryRegion(10L, "SEOUL_GANGNAM", SLOT_START, NOW);
 
         assertThat(result).extracting(NotificationSubscription::getId).containsExactly(target.getId());
     }
@@ -115,13 +115,12 @@ class NotificationSubscriptionRepositoryTest {
                 .build();
     }
 
-    private static NotificationSubscription categoryRegion(Long userId, String categoryName, String regionCode,
+    private static NotificationSubscription categoryRegion(Long userId, Long categoryId, String regionCode,
             LocalDateTime startTime, LocalDateTime endTime) {
         return NotificationSubscription.builder()
                 .userId(userId)
                 .subscriptionType(SubscriptionType.CATEGORY_REGION)
-                .shopId(1L)
-                .categoryName(categoryName)
+                .categoryId(categoryId)
                 .regionCode(regionCode)
                 .startTime(startTime)
                 .endTime(endTime)

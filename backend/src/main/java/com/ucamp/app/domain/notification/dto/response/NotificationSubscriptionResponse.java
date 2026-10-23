@@ -13,9 +13,9 @@ import com.ucamp.app.domain.notification.entity.SubscriptionType;
  *
  * @param subscriptionId   구독 ID
  * @param subscriptionType 구독 유형
- * @param shopId           매장 ID
- * @param categoryName     카테고리명, 업장 구독이면 null
- * @param regionCode       지역코드, 업장 구독이면 null
+ * @param shopId           매장 ID. 카테고리 구독이면 null
+ * @param categoryId       카테고리 ID. 업장 구독이면 null
+ * @param regionCode       지역코드. 업장 구독이면 null
  * @param startTime        알림 희망 시작 시각
  * @param endTime          알림 희망 종료 시각
  * @param status           구독 상태
@@ -24,7 +24,7 @@ public record NotificationSubscriptionResponse(
         Long subscriptionId,
         SubscriptionType subscriptionType,
         Long shopId,
-        String categoryName,
+        Long categoryId,
         String regionCode,
         OffsetDateTime startTime,
         OffsetDateTime endTime,
@@ -43,7 +43,7 @@ public record NotificationSubscriptionResponse(
                 subscription.getId(),
                 subscription.getSubscriptionType(),
                 subscription.getShopId(),
-                subscription.getCategoryName(),
+                subscription.getCategoryId(),
                 subscription.getRegionCode(),
                 toOffsetTime(subscription.getStartTime()),
                 toOffsetTime(subscription.getEndTime()),

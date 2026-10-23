@@ -57,22 +57,22 @@ class NotificationServiceTest {
 
         assertThat(response.subscriptionType()).isEqualTo(SubscriptionType.STORE);
         assertThat(response.shopId()).isEqualTo(1L);
-        assertThat(response.categoryName()).isNull();
+        assertThat(response.categoryId()).isNull();
         assertThat(response.startTime()).isEqualTo(start);
         assertThat(response.endTime()).isEqualTo(end);
         assertThat(response.status()).isEqualTo(SubscriptionStatus.ACTIVE);
     }
 
     @Test
-    @DisplayName("카테고리 구독을 등록하면 매장 ID와 카테고리명·지역코드가 저장된다")
-    void subscribe_categoryRegion_savesNames() {
+    @DisplayName("카테고리 구독을 등록하면 카테고리 ID와 지역코드가 저장되고 매장 ID는 없다")
+    void subscribe_categoryRegion_savesCategoryAndRegion() {
         given(repository.save(any(NotificationSubscription.class))).willAnswer(invocation -> invocation.getArgument(0));
 
         NotificationSubscriptionResponse response = notificationService.subscribe(CUSTOMER,
-                createRequest(SubscriptionType.CATEGORY_REGION, 1L, "NAIL", "SEOUL_GANGNAM", start, end));
+                createRequest(SubscriptionType.CATEGORY_REGION, null, 10L, "SEOUL_GANGNAM", start, end));
 
-        assertThat(response.shopId()).isEqualTo(1L);
-        assertThat(response.categoryName()).isEqualTo("NAIL");
+        assertThat(response.shopId()).isNull();
+        assertThat(response.categoryId()).isEqualTo(10L);
         assertThat(response.regionCode()).isEqualTo("SEOUL_GANGNAM");
     }
 
@@ -88,7 +88,7 @@ class NotificationServiceTest {
     @DisplayName("업장 구독에 카테고리가 함께 오면 대상 오류다")
     void subscribe_storeWithCategory_throwsInvalidTarget() {
         assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
-                createRequest(SubscriptionType.STORE, 1L, "NAIL", null, start, end)),
+                createRequest(SubscriptionType.STORE, 1L, 10L, null, start, end)),
                 ErrorCode.SUBSCRIPTION_INVALID_TARGET);
     }
 
@@ -104,7 +104,15 @@ class NotificationServiceTest {
     @DisplayName("카테고리 구독에 지역코드가 없으면 대상 오류다")
     void subscribe_categoryRegionWithoutRegion_throwsInvalidTarget() {
         assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
-                createRequest(SubscriptionType.CATEGORY_REGION, 1L, "NAIL", " ", start, end)),
+                createRequest(SubscriptionType.CATEGORY_REGION, null, 10L, " ", start, end)),
+                ErrorCode.SUBSCRIPTION_INVALID_TARGET);
+    }
+
+    @Test
+    @DisplayName("카테고리 구독에 매장 ID가 있으면 대상 오류다")
+    void subscribe_categoryRegionWithShop_throwsInvalidTarget() {
+        assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
+                createRequest(SubscriptionType.CATEGORY_REGION, 1L, 10L, "SEOUL_GANGNAM", start, end)),
                 ErrorCode.SUBSCRIPTION_INVALID_TARGET);
     }
 
@@ -147,7 +155,7 @@ class NotificationServiceTest {
         given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(storeSubscription()));
 
         assertErrorCode(() -> notificationService.updateSubscription(CUSTOMER, 10L,
-                new NotificationSubscriptionUpdateRequest(null, "NAIL", "SEOUL_GANGNAM", start, end)),
+                new NotificationSubscriptionUpdateRequest(null, 10L, "SEOUL_GANGNAM", start, end)),
                 ErrorCode.SUBSCRIPTION_INVALID_TARGET);
     }
 
@@ -193,8 +201,8 @@ class NotificationServiceTest {
     }
 
     private static NotificationSubscriptionCreateRequest createRequest(SubscriptionType type, Long shopId,
-            String categoryCode, String regionCode, OffsetDateTime startTime, OffsetDateTime endTime) {
-        return new NotificationSubscriptionCreateRequest(type, shopId, categoryCode, regionCode, startTime, endTime);
+            Long categoryId, String regionCode, OffsetDateTime startTime, OffsetDateTime endTime) {
+        return new NotificationSubscriptionCreateRequest(type, shopId, categoryId, regionCode, startTime, endTime);
     }
 
     private static LocalDateTime toLocal(OffsetDateTime time) {

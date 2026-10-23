@@ -11,15 +11,15 @@ import jakarta.validation.constraints.Size;
 /**
  * 알림 구독 수정 요청. 구독 유형은 바꿀 수 없으며, 기존 유형에 맞는 대상 값을 모두 보낸다.
  *
- * @param shopId       매장 ID
- * @param categoryName 카테고리명. 업장 구독이면 null
- * @param regionCode   지역코드. 업장 구독이면 null
- * @param startTime    알림 희망 시작 시각
- * @param endTime      알림 희망 종료 시각
+ * @param shopId     매장 ID. 카테고리 구독이면 null
+ * @param categoryId 카테고리 ID. 업장 구독이면 null
+ * @param regionCode 지역코드. 업장 구독이면 null
+ * @param startTime  알림 희망 시작 시각
+ * @param endTime    알림 희망 종료 시각
  */
 public record NotificationSubscriptionUpdateRequest(
-        @NotNull Long shopId,
-        @Size(max = 20) String categoryName,
+        Long shopId,
+        Long categoryId,
         @Size(max = 20) String regionCode,
         @NotNull OffsetDateTime startTime,
         @NotNull OffsetDateTime endTime) {
