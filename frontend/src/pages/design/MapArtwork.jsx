@@ -1,7 +1,6 @@
 import Asset from './Asset';
 
-export default function MapArtwork({ classic = false }) {
-  if (classic) return <Asset name="17-2-34.svg" alt="홍대 일대 예시 지도" />;
+export default function MapArtwork() {
   return (
     <div className="b-map-artwork">
       <Asset name="18-3548-35.svg" alt="강남역 일대 예시 지도" />
