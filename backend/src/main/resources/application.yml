@@ -23,3 +23,11 @@ app:
   cors:
     # 쉼표로 여러 Origin 지정 가능
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+iamport:
+  base-url: https://api.iamport.kr
+  # 실제 키는 application-local.yml 또는 환경변수로 주입한다
+  imp-key: ${IAMPORT_IMP_KEY:}
+  imp-secret: ${IAMPORT_IMP_SECRET:}
+  # 테스트 채널 결제까지 조회할지 여부. 운영에서는 반드시 false
+  include-sandbox: ${IAMPORT_INCLUDE_SANDBOX:false}
