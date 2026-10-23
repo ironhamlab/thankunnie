@@ -6,3 +6,8 @@ spring:
     username: sa
     password:
     driver-class-name: org.h2.Driver
+
+app:
+  scheduling:
+    # 주기 작업이 테스트 데이터에 끼어들지 않게 끈다
+    enabled: false

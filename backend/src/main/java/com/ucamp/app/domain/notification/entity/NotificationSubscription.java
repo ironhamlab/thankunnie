@@ -12,6 +12,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import com.ucamp.app.common.entity.BaseTimeEntity;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
@@ -34,11 +37,14 @@ import lombok.NoArgsConstructor;
         allocationSize = 1)
 public class NotificationSubscription extends BaseTimeEntity {
 
+    // NUMBER(19) 는 H2 에서도 NUMERIC 으로 읽히므로 스키마 검증이 BIGINT 를 기대하지 않게 맞춘다
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_NOTIFICATION_SUBSCRIPTION_GENERATOR")
+    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "SUBSCRIPTION_ID")
     private Long id;
 
+    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "USER_ID", nullable = false)
     private Long userId;
 
@@ -46,9 +52,11 @@ public class NotificationSubscription extends BaseTimeEntity {
     @Column(name = "SUBSCRIPTION_TYPE", nullable = false, length = 20)
     private SubscriptionType subscriptionType;
 
+    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "SHOP_ID")
     private Long shopId;
 
+    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "CATEGORY_ID")
     private Long categoryId;
 

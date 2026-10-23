@@ -5,15 +5,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.ucamp.app.config.JpaAuditingConfig;
+import com.ucamp.app.domain.notification.NotificationFixture;
 import com.ucamp.app.domain.notification.entity.NotificationSubscription;
 import com.ucamp.app.domain.notification.entity.SubscriptionStatus;
 import com.ucamp.app.domain.notification.entity.SubscriptionType;
@@ -29,6 +32,21 @@ class NotificationSubscriptionRepositoryTest {
 
     @Autowired
     private NotificationSubscriptionRepository repository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    // 구독은 회원·매장·카테고리를 FK 로 참조한다
+    @BeforeEach
+    void setUp() {
+        NotificationFixture.category(jdbcTemplate, 10L, "NAIL");
+        NotificationFixture.category(jdbcTemplate, 20L, "HAIR");
+        NotificationFixture.shop(jdbcTemplate, 1L, 10L, "SEOUL_GANGNAM", "ACTIVE");
+        NotificationFixture.shop(jdbcTemplate, 2L, 10L, "SEOUL_MAPO", "ACTIVE");
+        for (long userId = 1L; userId <= 4L; userId++) {
+            NotificationFixture.user(jdbcTemplate, userId);
+        }
+    }
 
     @Test
     @DisplayName("저장하면 시퀀스 ID 와 생성·수정 시각이 채워지고 ACTIVE 로 시작한다")
