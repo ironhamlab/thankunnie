@@ -45,3 +45,15 @@ export function hasDiscount(item) {
     item.originalPrice > item.price
   );
 }
+
+/** API가 제공한 이미지 URL만 사용하고 누락 이미지는 카드의 빈 이미지 상태로 표시한다. */
+export function getItemImageUrl(value) {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  if (value.startsWith('/') && !value.startsWith('//') && !value.includes('\\')) return value;
+  try {
+    const url = new URL(value);
+    return ['https:', 'http:'].includes(url.protocol) ? url.href : null;
+  } catch {
+    return null;
+  }
+}

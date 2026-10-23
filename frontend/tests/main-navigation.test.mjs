@@ -9,6 +9,7 @@ import {
 } from '../src/utils/mainNavigation.js';
 import {
   formatItemDate,
+  getItemImageUrl,
   formatItemPrice,
   getItemStatusLabel,
   hasDiscount,
@@ -73,4 +74,21 @@ test('정상가가 판매가보다 높을 때만 할인 가격을 표시하고 �
   assert.equal(hasDiscount({ price: null, originalPrice: 35000 }), false);
   assert.equal(formatItemDate('invalid'), '일정 확인 필요');
   assert.equal(formatItemDate(null), '일정 확인 필요');
+});
+
+test('이미지는 API의 웹 URL만 사용하고 누락·잘못된 URL은 빈 이미지로 처리한다', () => {
+  assert.equal(getItemImageUrl('/uploads/shop.jpg'), '/uploads/shop.jpg');
+  assert.equal(getItemImageUrl('https://example.test/shop.jpg'), 'https://example.test/shop.jpg');
+  for (const value of [
+    null,
+    undefined,
+    '',
+    123,
+    'javascript:alert(1)',
+    'data:image/svg+xml,test',
+    '//example.test/shop.jpg',
+    'not-a-url',
+  ]) {
+    assert.equal(getItemImageUrl(value), null);
+  }
 });
