@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
 import DesignLayout from './DesignLayout';
 import './design.css';
@@ -10,7 +10,6 @@ const ReservationPage = lazy(() => import('./ReservationPage'));
 const CheckoutPage = lazy(() => import('./CheckoutPage'));
 const BookingsPage = lazy(() => import('./BookingsPage'));
 const OwnerPage = lazy(() => import('./OwnerPage'));
-const ExplorePage = lazy(() => import('./ExplorePage'));
 const ServiceDetailPage = lazy(() => import('./ServiceDetailPage'));
 const BookingResultPage = lazy(() => import('./BookingResultPage'));
 const CustomerProfilePage = lazy(() => import('./CustomerProfilePage'));
@@ -28,8 +27,11 @@ export default function DesignApp() {
         <Routes>
           <Route element={<DesignLayout />}>
             <Route index element={<DesignHomePage />} />
-            <Route path="explore" element={<ExplorePage />} />
-            <Route path="explore-classic" element={<ExplorePage classic />} />
+            <Route path="explore" element={<Navigate to={`${R.HOME}?view=map`} replace />} />
+            <Route
+              path="explore-classic"
+              element={<Navigate to={`${R.HOME}?view=map`} replace />}
+            />
             <Route path="reserve/:id" element={<ReservationPage />} />
             <Route path="services/:id" element={<ServiceDetailPage />} />
             <Route path="checkout" element={<CheckoutPage />} />
