@@ -189,3 +189,14 @@ test('공통 헤더·푸터도 디자인 테마를 사용하며 시연용 고객
   assert.doesNotMatch(html, /테스트.*고객 계정/);
   assert.match(html, /aria-label="검색 기능 준비 중" disabled=""/);
 });
+
+test('예약 마감이 없으면 확인 안내를 표시하고 유효한 마감 날짜는 그대로 표시한다', () => {
+  const item = { id: 101, title: '젤 네일', startsAt: '2026-10-23T18:00:00+09:00' };
+  for (const applicationClosesAt of [undefined, null]) {
+    const html = render(React.createElement(MainItemCard, { item: { ...item, applicationClosesAt } }));
+    assert.match(html, /예약 마감 일정 확인 필요/);
+  }
+  const html = render(React.createElement(MainItemCard, { item: { ...item, applicationClosesAt: '2026-10-23T17:00:00+09:00' } }));
+  assert.match(html, /예약 마감 10월 23일 오후 05:00/);
+  assert.doesNotMatch(html, /예약 마감 일정 확인 필요/);
+});

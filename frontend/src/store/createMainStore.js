@@ -1,7 +1,22 @@
 import { buildMainParams, MAIN_PRESETS } from '../constants/mainPresets.js';
 
+const OFFSET_DATE_TIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,9})?)?(?:Z|[+-](\d{2}):(\d{2}))$/;
+
 function isValidDateString(value) {
-  return typeof value === 'string' && value.trim() !== '' && Number.isFinite(Date.parse(value));
+  if (typeof value !== 'string') return false;
+  const parts = OFFSET_DATE_TIME_PATTERN.exec(value);
+  if (!parts) return false;
+  const [year, month, day, hour, minute, second] = parts.slice(1, 7)
+    .map((part) => Number(part ?? 0));
+  const offsetHour = Number(parts[7] ?? 0);
+  const offsetMinute = Number(parts[8] ?? 0);
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return month >= 1 && month <= 12
+    && day >= 1 && day <= daysInMonth[month - 1]
+    && hour <= 23 && minute <= 59 && second <= 59
+    && offsetHour <= 23 && offsetMinute <= 59
+    && Number.isFinite(Date.parse(value));
 }
 
 /** 팀 Zustand create와 itemApi를 받아 독립적인 메인 store를 만든다. */

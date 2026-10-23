@@ -43,9 +43,7 @@ export default function MainItemCard({ item, detailEnabled = false }) {
         )}
         <h3>{item.title || '제목 확인 필요'}</h3>
         <p className="b-service-time">시작 {formatItemDate(item.startsAt)}</p>
-        {item.applicationClosesAt && (
-          <p className="main-api-closing">예약 마감 {formatItemDate(item.applicationClosesAt)}</p>
-        )}
+        <p className="main-api-closing">예약 마감 {formatItemDate(item.applicationClosesAt)}</p>
         <div className="b-row b-price-row">
           <div>
             {hasDiscount(item) && (
