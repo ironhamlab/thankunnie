@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
 import { useDesignStore } from './useDesignStore';
 import { DEMO_DATE, STATUS, finish, minutes, money } from './data';
@@ -11,12 +11,15 @@ export default function SlotsPage() {
   const save = useDesignStore((s) => s.saveSlot);
   const toggle = useDesignStore((s) => s.toggleSlot);
   const [params, setParams] = useSearchParams();
+  const location = useLocation();
   const [edit, setEdit] = useState(null);
   const [status, setStatus] = useState('');
   const [serviceId, setServiceId] = useState('');
   const [date, setDate] = useState('');
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState(
+    location.state?.slotCreated ? '빈자리를 저장했습니다.' : '',
+  );
   const blank = {
     id: 'slot-' + Date.now(),
     serviceId: menus.find((m) => m.active)?.id || '',
