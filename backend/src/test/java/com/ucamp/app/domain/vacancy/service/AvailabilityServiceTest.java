@@ -85,6 +85,20 @@ class AvailabilityServiceTest {
     }
 
     @Test
+    @DisplayName("환불 처리 중(CANCEL_PENDING) 예약도 시간을 잡고 있어 같은 시간에 예약할 수 없다")
+    void validateAvailable_cancelPendingReservation_throwsTimeTaken() {
+        given(reservationRepository.findActiveOverlapping(eq(SHOP_ID), any(), any()))
+                .willReturn(List.of(reservation(14, 0, ReservationStatus.CANCEL_PENDING)));
+
+        assertThatThrownBy(() -> service.validateAvailable(SHOP_ID, at(14, 0), ONE_HOUR))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_TIME_TAKEN);
+        assertThat(service.getAvailableStartTimes(SHOP_ID, DATE, ONE_HOUR))
+                .doesNotContain(at(13, 30), at(14, 0), at(14, 30))
+                .contains(at(13, 0), at(15, 0));
+    }
+
+    @Test
     @DisplayName("점유가 만료된 예약은 시간을 잡지 않는다")
     void validateAvailable_expiredHold_passes() {
         given(reservationRepository.findActiveOverlapping(eq(SHOP_ID), any(), any()))
