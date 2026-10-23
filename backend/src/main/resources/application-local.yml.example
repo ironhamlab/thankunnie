@@ -25,3 +25,10 @@ app:
 #    username: SCOTT
 #    password: TIGER
 #    driver-class-name: oracle.jdbc.OracleDriver
+
+
+iamport:
+  imp-key: CHANGE_ME
+  imp-secret: CHANGE_ME
+  # 테스트 채널 결제 조회용. 로컬에서만 true
+  include-sandbox: true
