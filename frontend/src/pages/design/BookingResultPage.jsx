@@ -130,22 +130,24 @@ export default function BookingResultPage() {
           </Link>
         </div>
       </section>
-      <section className="b-result-notification">
-        <div className="b-row">
-          <h3>카카오 알림톡 자동 발송 내역</h3>
-          <small className="b-pink">● 실제 발송 없는 시연</small>
-        </div>
-        <div className="b-panel b-pad b-flex">
-          <span className="b-talk">TALK</span>
-          <div>
-            <strong>[땡잡은 언니] 예약 확정 안내</strong>
-            <p>
-              {booking.name}님, [{service.shop}] {booking.date} {booking.time} 예약이
-              확정되었습니다. 예약 번호와 매장 약도를 확인해 주세요.
-            </p>
+      {success && (
+        <section className="b-result-notification">
+          <div className="b-row">
+            <h3>카카오 알림톡 자동 발송 내역</h3>
+            <small className="b-pink">● 실제 발송 없는 시연</small>
           </div>
-        </div>
-      </section>
+          <div className="b-panel b-pad b-flex">
+            <span className="b-talk">TALK</span>
+            <div>
+              <strong>[땡잡은 언니] 예약 확정 안내</strong>
+              <p>
+                {booking.name}님, [{service.shop}] {booking.date} {booking.time} 예약이
+                확정되었습니다. 예약 번호와 매장 약도를 확인해 주세요.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
