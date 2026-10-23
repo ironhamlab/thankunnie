@@ -5,6 +5,12 @@ import { buildMainParams } from '../src/constants/mainPresets.js';
 import { createItemApi } from '../src/api/itemApi.js';
 import { createMainStore } from '../src/store/createMainStore.js';
 
+
+const validItem = {
+  id: 1,
+  title: '예시 항목',
+  startsAt: '2026-10-23T18:00:00+09:00',
+};
 test('한국 자정 전후에 오늘 프리셋의 날짜가 바뀐다', () => {
   const before = buildMainParams('TODAY', new Date('2026-10-22T14:59:59Z'));
   const after = buildMainParams('TODAY', new Date('2026-10-22T15:00:00Z'));
@@ -52,9 +58,9 @@ test('이전 요청이 늦게 완료되어도 최신 응답을 덮어쓰지 않�
   const store = createMainStore(createState, { search: () => new Promise((resolve) => pending.push(resolve)) });
   const first = store.getState().fetchSection('TODAY');
   const second = store.getState().fetchSection('TODAY');
-  pending[1]({ content: [{ id: 2 }] });
+  pending[1]({ content: [{ ...validItem, id: 2 }] });
   await second;
-  pending[0]({ content: [{ id: 1 }] });
+  pending[0]({ content: [{ ...validItem, id: 1 }] });
   await first;
   assert.equal(store.getState().sections.TODAY.data.content[0].id, 2);
 });
@@ -80,11 +86,58 @@ test('오래된 요청 실패가 최신 성공 결과를 변경하지 않는다'
   const store = createMainStore(createState, { search: () => new Promise((resolve, reject) => pending.push({ resolve, reject })) });
   const first = store.getState().fetchSection('TODAY');
   const second = store.getState().fetchSection('TODAY');
-  pending[1].resolve({ content: [{ id: 2 }] });
+  pending[1].resolve({ content: [{ ...validItem, id: 2 }] });
   await second;
   pending[0].reject(new Error('이전 요청 실패'));
   await first;
   assert.equal(store.getState().sections.TODAY.status, 'succeeded');
   assert.equal(store.getState().sections.TODAY.data.content[0].id, 2);
   assert.equal(store.getState().sections.TODAY.error, null);
+});
+test('잘못된 목록 원소가 하나라도 있으면 성공 대신 실패 상태로 처리한다', async (t) => {
+  const cases = [
+    ['null 원소', null],
+    ['문자열 원소', 'invalid'],
+    ['ID 누락', { ...validItem, id: undefined }],
+    ['음수 ID', { ...validItem, id: -1 }],
+    ['소수 ID', { ...validItem, id: 1.5 }],
+    ['문자열 ID', { ...validItem, id: '1' }],
+    ['안전한 정수 범위 초과 ID', { ...validItem, id: Number.MAX_SAFE_INTEGER + 1 }],
+    ['제목 누락', { ...validItem, title: undefined }],
+    ['문자열 아닌 제목', { ...validItem, title: 123 }],
+    ['시작 시각 누락', { ...validItem, startsAt: undefined }],
+    ['null 시작 시각', { ...validItem, startsAt: null }],
+    ['숫자 시작 시각', { ...validItem, startsAt: 123 }],
+    ['빈 시작 시각', { ...validItem, startsAt: '' }],
+    ['잘못된 시작 시각', { ...validItem, startsAt: 'invalid-date' }],
+    ['잘못된 마감 시각', { ...validItem, applicationClosesAt: 'invalid-date' }],
+    ['숫자 마감 시각', { ...validItem, applicationClosesAt: 123 }],
+    ['0 마감 시각', { ...validItem, applicationClosesAt: 0 }],
+    ['false 마감 시각', { ...validItem, applicationClosesAt: false }],
+    ['빈 마감 시각', { ...validItem, applicationClosesAt: '' }],
+  ];
+  for (const [name, invalidItem] of cases) {
+    await t.test(name, async () => {
+      const store = createMainStore(createState, {
+        search: async () => ({ content: [validItem, invalidItem] }),
+      });
+      await store.getState().fetchSection('TODAY');
+      const section = store.getState().sections.TODAY;
+      assert.equal(section.status, 'failed');
+      assert.equal(section.data, null);
+      assert.equal(section.error.message, '목록 응답 형식이 올바르지 않습니다.');
+    });
+  }
+});
+
+test('유효한 필수 필드와 생략·null·유효한 선택 날짜는 허용한다', async () => {
+  const content = [
+    validItem,
+    { ...validItem, id: 2, applicationClosesAt: null },
+    { ...validItem, id: 3, applicationClosesAt: '2026-10-23T17:00:00+09:00' },
+  ];
+  const store = createMainStore(createState, { search: async () => ({ content }) });
+  await store.getState().fetchSection('TODAY');
+  assert.equal(store.getState().sections.TODAY.status, 'succeeded');
+  assert.deepEqual(store.getState().sections.TODAY.data.content, content);
 });
