@@ -35,7 +35,7 @@ backend/
     ├── application.yml               # 공통 설정: Git 추적
     ├── application-local.yml.example # 로컬 설정 템플릿: Git 추적
     ├── application-local.yml         # 개인 로컬 설정: Git 제외
-    └── schema.sql                    # H2용 스키마: 빌드 시 docs/erd/01_schema_ddl.sql에서 복사 (직접 수정 금지)
+    └── db/01_schema_ddl.sql          # H2용 스키마: 빌드 시 docs/erd/01_schema_ddl.sql에서 복사 (직접 수정 금지)
 ```
 
 ### 1.1 패키지 배치 원칙
@@ -110,19 +110,19 @@ backend/
 @RequestMapping("/api/v1/treatments")
 public class TreatmentController {
 
-  private final TreatmentService treatmentService;
+    private final TreatmentService treatmentService;
 
-  public TreatmentController(TreatmentService treatmentService) {
-    this.treatmentService = treatmentService;
-  }
+    public TreatmentController(TreatmentService treatmentService) {
+        this.treatmentService = treatmentService;
+    }
 
-  @PostMapping
-  public ResponseEntity<ApiResponse<TreatmentDetailResponse>> createTreatment(
-          @Valid @RequestBody TreatmentCreateRequest request) {
-    TreatmentDetailResponse response = treatmentService.createTreatment(request);
-    return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success(response));
-  }
+    @PostMapping
+    public ResponseEntity<ApiResponse<TreatmentDetailResponse>> createTreatment(
+            @Valid @RequestBody TreatmentCreateRequest request) {
+        TreatmentDetailResponse response = treatmentService.createTreatment(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response));
+    }
 }
 ```
 
@@ -259,8 +259,8 @@ public class TreatmentController {
   - local: H2 (MODE=Oracle)
   - test: H2 (MODE=Oracle)
   - prod: Oracle 21c XE
-- local·test의 H2는 앱 시작 시 `schema.sql`로 스키마를 생성한다.
-  - `spring.sql.init.mode=always`로 설정한다.
+- local·test의 H2는 앱 시작 시 `classpath:db/01_schema_ddl.sql`로 스키마를 생성한다.
+  - `spring.sql.init.mode=embedded`로 설정한다. 내장 DB(H2)에서만 실행되고 Oracle(prod)에는 실행되지 않는다.
   - `spring.jpa.defer-datasource-initialization`은 사용하지 않는다. 스키마 생성이 엔티티 검증보다 먼저 실행되어야 한다.
 - 로컬에서 Oracle 동작을 확인할 때는 Docker Oracle Free를 사용한다. 운영 Oracle 21c XE와 버전이 다르므로, 버전 차이에 영향을 받는 기능은 21c XE에서도 확인한다.
 - H2의 Oracle 호환 모드가 Oracle의 모든 동작을 보장하지는 않으므로, Oracle 전용 기능은 Oracle에서도 확인한다.
@@ -282,7 +282,7 @@ public class TreatmentController {
 ## 6. DB 스키마 변경 규칙
 
 - 현재 스키마의 기준은 `docs/erd/01_schema_ddl.sql`, 초기 데이터의 기준은 `docs/erd/02_init_data_dml.sql`로 한다.
-- `src/main/resources/schema.sql`은 빌드 시 복사되는 사본이므로 직접 수정하지 않는다.
+- 빌드 시 리소스(`classpath:db/01_schema_ddl.sql`)로 복사되는 사본은 직접 수정하지 않는다.
 - 테이블·컬럼·제약조건 등 실제 스키마를 변경하면 같은 피처 브랜치에서 관련 코드와 스키마 SQL을 함께 수정하고 PR에 포함한다.
 - DDL은 Oracle과 H2(MODE=Oracle) 양쪽에서 동작하는 문법만 사용한다.
 - 엔티티 메서드·주석 변경처럼 스키마에 영향이 없는 수정은 DDL 수정 대상이 아니다.
@@ -330,7 +330,7 @@ public class TreatmentController {
   - 특히 가격·환불 계산, 가용 시간 계산, 점유·만료·취소 상태 전이는 경계값 테스트를 포함한다.
 - 시각에 의존하는 테스트는 `Clock.fixed(...)`를 주입한다. 실제 현재 시각에 의존하는 테스트를 작성하지 않는다.
 - Repository 테스트는 `@DataJpaTest`를 사용한다.
-- 테스트 DB는 H2(`schema.sql` 자동 생성) 또는 별도 Oracle 테스트 계정을 사용하고, Oracle을 쓰면 스키마 준비 방법을 실행 안내에 기록한다.
+- 테스트 DB는 H2(DDL 자동 생성) 또는 별도 Oracle 테스트 계정을 사용하고, Oracle을 쓰면 스키마 준비 방법을 실행 안내에 기록한다.
 - 개인 개발 데이터와 테스트 데이터가 섞이지 않도록 한다.
 - H2 테스트만으로 Oracle 전용 SQL이나 시퀀스 동작 검증을 대체하지 않는다.
 - Oracle을 사용하는 `@DataJpaTest`는 `@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)`으로 DB 자동 교체를 막는다.
@@ -369,7 +369,7 @@ public class TreatmentController {
   - 서버·Docker·배포 설정: `infra/{이슈번호}-{작업명}`
   - 이슈번호는 Jira 키의 숫자 부분을 사용한다. `UNNIE-30` → `30`
 - dev의 최신 변경은 작업 브랜치에서 `git pull origin dev`로 받는다. rebase는 사용하지 않는다.
-- 커밋 메시지는 scope 없이 `type: subject` 형식으로 작성한다. 이슈 완료 시 본문에 `Resolves: UNNIE-{번호}`를 적는다.
+- 커밋 메시지는 scope 없이 `type: subject` 형식으로 작성한다.
 - 커밋 예시:
   - `feat: 예약 점유 API 구현`
   - `fix: 자정 경계 환불액 계산 오류 수정`

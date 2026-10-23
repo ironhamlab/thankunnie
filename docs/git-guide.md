@@ -40,8 +40,6 @@ infra/30-kst-timezone
 <type>: <subject>
 
 <body: optional>
-
-Resolves: UNNIE-<이슈번호>   ← 이슈 완료 시 (Jira 키, 대문자)
 ```
 
 - type은 아래 표의 영문 타입을 그대로 사용한다.
@@ -67,8 +65,6 @@ Resolves: UNNIE-<이슈번호>   ← 이슈 완료 시 (Jira 키, 대문자)
 feat: 로그인 API 추가
 
 아이디와 비밀번호로 로그인하고 JWT를 발급하는 API를 추가한다.
-
-Resolves: UNNIE-12
 ```
 
 ## 3. 이력 관리
@@ -85,8 +81,6 @@ Resolves: UNNIE-12
 ## 4. PR 및 리뷰
 
 - PR 생성 전 `git pull origin dev`로 최신 dev를 반영하고 충돌을 해결한다.
-- PR 제목은 `[UNNIE-{번호}] 제목` 형식으로 작성한다. Squash and merge 시 이 제목이 dev의 커밋 메시지가 되어 Jira 이슈와 연결된다.
-  - 예: `[UNNIE-30] 한국 시간대(KST) 기준 시간 처리 설정`
 - PR에 변경 요약, 관련 이슈(Jira 키, 예: `UNNIE-30`), 실제 검증 결과를 작성한다.
 - 작성자 외 팀원 최소 1명의 승인 후 병합한다. 파트장 승인은 필수가 아니다.
 - 실패한 검증과 미해결 수정 요청은 병합 전에 해결한다.
@@ -115,6 +109,6 @@ Gradle Wrapper, `package-lock.json`, 환경 설정 example 파일은 커밋한�
 ## 6. 관련 변경 반영
 
 - 실제 DB 스키마 변경은 기준 DDL(`docs/erd/01_schema_ddl.sql`)과 기존 DB 적용 SQL을 함께 반영한다.
-- `backend/src/main/resources/schema.sql`은 빌드 시 복사되는 사본이므로 직접 수정하지 않는다.
+- 빌드 시 리소스(`classpath:db/01_schema_ddl.sql`)로 복사되는 사본은 직접 수정하지 않는다.
 - 환경 설정 키 추가는 관련 example 파일에도 반영한다.
 - 의존성 변경은 빌드 설정과 lock 파일을 함께 반영한다.

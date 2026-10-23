@@ -17,7 +17,7 @@
 |---|---|---|
 | Back-end | Java 21, Spring Boot 3.5, Spring Data JPA, Gradle | 패키지 루트 `com.ucamp.app` |
 | Front-end | React 19, JavaScript (ES6+), Vite, React Router v6, Zustand, Axios | 개발 포트 5173 |
-| 개발·테스트 DB | H2 (MODE=Oracle) | 앱 시작 시 `schema.sql`로 스키마 자동 생성 |
+| 개발·테스트 DB | H2 (MODE=Oracle) | 앱 시작 시 `classpath:db/01_schema_ddl.sql`로 스키마 자동 생성 |
 | 운영 DB | Oracle 21c XE | 스키마 기준: `docs/erd/01_schema_ddl.sql` |
 | 로컬 Oracle 확인용 | Docker Compose의 Oracle Free | `localhost:1521`, 서비스명 `FREEPDB1`, 계정 `SCOTT / TIGER` |
 | 기준 시간대 | Asia/Seoul | JVM·Clock·DB 컨테이너 모두 KST |
@@ -67,7 +67,7 @@ project-root/
 ```
 
 - Gradle Kotlin DSL 사용 시 `build.gradle.kts`, `settings.gradle.kts`를 사용함.
-- `docs/erd/01_schema_ddl.sql`은 빌드 시 H2용 `schema.sql` 리소스로 복사됨. 스키마는 `docs/erd/` 원본만 수정함.
+- `docs/erd/01_schema_ddl.sql`은 빌드 시 `classpath:db/01_schema_ddl.sql` 리소스로 복사됨. 스키마는 `docs/erd/` 원본만 수정하고, 복사본을 만들거나 수정하지 않음.
 
 ---
 
@@ -85,7 +85,7 @@ project-root/
 
 - Windows CMD에서는 `gradlew.bat`, PowerShell에서는 `.\gradlew.bat`을 사용.
 - 로컬 설정이 필요하면 `application-local.yml.example`을 복사하라고 안내하되 **실제 자격 증명은 사람이 직접 입력**.
-- 로컬·테스트 H2는 앱 시작 시 `schema.sql`로 스키마를 자동 생성함. `ddl-auto: validate`는 유지함.
+- 로컬·테스트 H2는 앱 시작 시 DDL로 스키마를 자동 생성함(`spring.sql.init.mode: embedded`, Oracle에는 실행 안 됨). `ddl-auto: validate`는 유지함.
 - `spring.jpa.defer-datasource-initialization`을 `true`로 설정하지 않음. 스키마 생성이 엔티티 검증보다 먼저 실행되어야 함.
 
 ### Front-end (`frontend/`에서 실행)
@@ -160,8 +160,6 @@ git log --oneline --graph -n 10
 <타입>: <제목>                  ← 간결하게 작성, 마침표 없음, 한글 허용
 
 <본문 (선택)>                   ← 변경 이유와 요점
-
-Resolves: UNNIE-<이슈번호>      ← 이슈 완료 시 (Jira 키, 대문자)
 ```
 
 - 타입: `init`, `feat`, `fix`, `refactor`, `style`, `docs`, `test`, `chore`
@@ -196,8 +194,7 @@ Resolves: UNNIE-<이슈번호>      ← 이슈 완료 시 (Jira 키, 대문자)
 - PR 생성 시 base는 항상 `dev` (hotfix 제외).
 - PR 생성 전 `git pull origin dev`로 최신 dev를 반영하고 충돌을 해결한 뒤 검증 명령을 다시 실행.
 - 본문은 `.github/PULL_REQUEST_TEMPLATE.md` 양식(변경 요약 / 관련 이슈 / 세부 변경 사항 / 테스트 및 검증 결과 / 리뷰어 요청 사항)을 채움.
-- PR 제목은 `[UNNIE-{번호}] 제목` 형식. 예: `[UNNIE-30] 한국 시간대(KST) 기준 시간 처리 설정`
-- 관련 이슈는 본문에 `Resolves: UNNIE-30` 형식으로 기재 (`#` 붙이지 않음).
+- 관련 이슈는 Jira 키(`UNNIE-30`)로 기재.
 - 테스트 및 검증 결과에는 **실제로 실행한 명령과 결과만** 기재. 실행하지 않은 검증을 완료로 표기하지 않음.
 - PR 병합은 사람이 Approve 후 Squash and merge로 수행. 에이전트는 병합하지 않음.
 
