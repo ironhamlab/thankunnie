@@ -21,13 +21,13 @@ import org.springframework.test.context.ActiveProfiles;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.lock.ShopLock;
-import com.ucamp.app.config.JpaAuditingConfig;
+import com.ucamp.app.config.TimeConfig;
 import com.ucamp.app.domain.reservation.entity.Reservation;
 
 // 스키마는 docs/erd/01_schema_ddl.sql 로 만든 test 프로필 H2(MODE=Oracle)를 그대로 쓴다
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({JpaAuditingConfig.class, ShopLock.class})
+@Import({TimeConfig.class, ShopLock.class})
 @ActiveProfiles("test")
 class ReservationRepositoryTest {
 
@@ -52,8 +52,8 @@ class ReservationRepositoryTest {
     void setUp() {
         jdbcTemplate.update("INSERT INTO CATEGORY (CATEGORY_ID, NAME) VALUES (1, '네일')");
         jdbcTemplate.update("""
-                INSERT INTO USERS (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
-                VALUES (1, 'customer1', 'hash', '고객', '010', SYSTIMESTAMP, SYSTIMESTAMP)
+                INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
+                VALUES (1, 'customer1', 'hash', '고객', '010', TIMESTAMP '2026-10-22 09:00:00', TIMESTAMP '2026-10-22 09:00:00')
                 """);
         insertShopWithTreatment(SHOP_ID, TREATMENT_ID);
         insertShopWithTreatment(OTHER_SHOP_ID, OTHER_TREATMENT_ID);
@@ -105,12 +105,12 @@ class ReservationRepositoryTest {
         jdbcTemplate.update("""
                 INSERT INTO SHOP (SHOP_ID, CATEGORY_ID, LOGIN_ID, PASSWORD_HASH, NAME, REGION_CODE, ADDRESS,
                     LATITUDE, LONGITUDE, PHONE, CREATED_AT, UPDATED_AT)
-                VALUES (?, 1, ?, 'hash', '매장', 'SEOUL', '주소', 37.5, 127.0, '010', SYSTIMESTAMP, SYSTIMESTAMP)
+                VALUES (?, 1, ?, 'hash', '매장', 'SEOUL', '주소', 37.5, 127.0, '010', TIMESTAMP '2026-10-22 09:00:00', TIMESTAMP '2026-10-22 09:00:00')
                 """, shopId, "owner" + shopId);
         jdbcTemplate.update("""
                 INSERT INTO TREATMENT (TREATMENT_ID, SHOP_ID, NAME, REGULAR_PRICE, PRICE, LAST_MINUTE_PRICE,
                     DURATION_MINUTES, TREATMENT_TYPE, CREATED_AT, UPDATED_AT)
-                VALUES (?, ?, '젤네일', 25000, 22000, 18000, 60, 'NORMAL', SYSTIMESTAMP, SYSTIMESTAMP)
+                VALUES (?, ?, '젤네일', 25000, 22000, 18000, 60, 'NORMAL', TIMESTAMP '2026-10-22 09:00:00', TIMESTAMP '2026-10-22 09:00:00')
                 """, treatmentId, shopId);
     }
 
@@ -119,7 +119,7 @@ class ReservationRepositoryTest {
         jdbcTemplate.update("""
                 INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT,
                     APPLIED_PRICE, DEPOSIT, HOLD_EXPIRES_AT, CREATED_AT, UPDATED_AT)
-                VALUES (?, 1, ?, ?, ?, ?, 22000, 20000, ?, SYSTIMESTAMP, SYSTIMESTAMP)
+                VALUES (?, 1, ?, ?, ?, ?, 22000, 20000, ?, TIMESTAMP '2026-10-22 09:00:00', TIMESTAMP '2026-10-22 09:00:00')
                 """, id, treatmentId, status, Timestamp.valueOf(startsAt), Timestamp.valueOf(endsAt),
                 Timestamp.valueOf(startsAt.minusHours(3)));
         return id;

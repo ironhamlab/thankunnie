@@ -14,12 +14,12 @@ import com.ucamp.app.common.auth.UserRole;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.lock.ShopLock;
-import com.ucamp.app.common.policy.ScheduleExceptionType;
-import com.ucamp.app.common.util.KoreaTime;
+import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.reservation.entity.Reservation;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.schedule.dto.request.ScheduleExceptionSaveRequest;
 import com.ucamp.app.domain.schedule.dto.response.ScheduleExceptionResponse;
+import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
 import com.ucamp.app.domain.schedule.entity.ShopScheduleException;
 import com.ucamp.app.domain.schedule.repository.ShopScheduleExceptionRepository;
 import com.ucamp.app.domain.vacancy.policy.SalePolicy;
@@ -51,8 +51,8 @@ public class ShopScheduleExceptionService {
     public ScheduleExceptionResponse createException(AuthUser loginUser, ScheduleExceptionSaveRequest request) {
         loginUser.requireRole(UserRole.OWNER);
         Long shopId = loginUser.shopId();
-        LocalDateTime startsAt = KoreaTime.toLocal(request.startsAt());
-        LocalDateTime endsAt = KoreaTime.toLocal(request.endsAt());
+        LocalDateTime startsAt = TimeUtils.toLocal(request.startsAt());
+        LocalDateTime endsAt = TimeUtils.toLocal(request.endsAt());
         LocalDateTime now = now();
         SalePolicy.validateExceptionTime(request.exceptionType(), startsAt, endsAt, now);
 
@@ -91,8 +91,8 @@ public class ShopScheduleExceptionService {
             ScheduleExceptionSaveRequest request) {
         ShopScheduleException exception = findOwnedException(loginUser, exceptionId);
         ScheduleExceptionType newType = request.exceptionType();
-        LocalDateTime startsAt = KoreaTime.toLocal(request.startsAt());
-        LocalDateTime endsAt = KoreaTime.toLocal(request.endsAt());
+        LocalDateTime startsAt = TimeUtils.toLocal(request.startsAt());
+        LocalDateTime endsAt = TimeUtils.toLocal(request.endsAt());
         LocalDateTime now = now();
         SalePolicy.validateExceptionTime(newType, startsAt, endsAt, now);
 

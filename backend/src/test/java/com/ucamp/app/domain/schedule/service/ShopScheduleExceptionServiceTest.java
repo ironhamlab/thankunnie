@@ -29,12 +29,12 @@ import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.lock.ShopLock;
 import com.ucamp.app.common.policy.BookingPolicy;
-import com.ucamp.app.common.policy.ReservationStatus;
-import com.ucamp.app.common.policy.ScheduleExceptionType;
 import com.ucamp.app.domain.reservation.entity.Reservation;
+import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.schedule.dto.request.ScheduleExceptionSaveRequest;
 import com.ucamp.app.domain.schedule.dto.response.ScheduleExceptionResponse;
+import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
 import com.ucamp.app.domain.schedule.entity.ShopScheduleException;
 import com.ucamp.app.domain.schedule.repository.ShopScheduleExceptionRepository;
 

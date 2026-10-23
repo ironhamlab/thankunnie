@@ -1,4 +1,4 @@
-package com.ucamp.app.common.policy;
+package com.ucamp.app.domain.schedule.entity;
 
 /**
  * 시간대 열기·닫기(예외 일정) 유형. 같은 시간에 열기와 닫기가 겹치면 닫기가 우선한다.

@@ -18,7 +18,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import com.ucamp.app.common.entity.BaseTimeEntity;
-import com.ucamp.app.common.policy.ReservationStatus;
 
 /**
  * 예약. 고객이 예약 클릭(점유)할 때 HOLD 로 생성되고, 적용 가격·예약금은 클릭 시점 값으로 고정된다.

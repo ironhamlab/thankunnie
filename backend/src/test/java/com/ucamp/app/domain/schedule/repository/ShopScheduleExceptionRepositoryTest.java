@@ -15,14 +15,14 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.ucamp.app.common.policy.ScheduleExceptionType;
-import com.ucamp.app.config.JpaAuditingConfig;
+import com.ucamp.app.config.TimeConfig;
+import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
 import com.ucamp.app.domain.schedule.entity.ShopScheduleException;
 
 // 스키마는 docs/erd/01_schema_ddl.sql 로 만든 test 프로필 H2(MODE=Oracle)를 그대로 쓴다
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(JpaAuditingConfig.class)
+@Import(TimeConfig.class)
 @ActiveProfiles("test")
 class ShopScheduleExceptionRepositoryTest {
 
@@ -44,7 +44,7 @@ class ShopScheduleExceptionRepositoryTest {
             jdbcTemplate.update("""
                     INSERT INTO SHOP (SHOP_ID, CATEGORY_ID, LOGIN_ID, PASSWORD_HASH, NAME, REGION_CODE, ADDRESS,
                         LATITUDE, LONGITUDE, PHONE, CREATED_AT, UPDATED_AT)
-                    VALUES (?, 1, ?, 'hash', '매장', 'SEOUL', '주소', 37.5, 127.0, '010', SYSTIMESTAMP, SYSTIMESTAMP)
+                    VALUES (?, 1, ?, 'hash', '매장', 'SEOUL', '주소', 37.5, 127.0, '010', TIMESTAMP '2026-10-22 09:00:00', TIMESTAMP '2026-10-22 09:00:00')
                     """, shopId, "owner" + shopId);
         }
     }

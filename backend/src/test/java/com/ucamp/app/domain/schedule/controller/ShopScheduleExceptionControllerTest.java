@@ -25,10 +25,10 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.StubAuthFilter;
-import com.ucamp.app.common.policy.ScheduleExceptionType;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.domain.schedule.dto.request.ScheduleExceptionSaveRequest;
 import com.ucamp.app.domain.schedule.dto.response.ScheduleExceptionResponse;
+import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
 import com.ucamp.app.domain.schedule.service.ShopScheduleExceptionService;
 
 @WebMvcTest(controllers = ShopScheduleExceptionController.class)

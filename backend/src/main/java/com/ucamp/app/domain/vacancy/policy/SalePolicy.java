@@ -6,8 +6,8 @@ import java.time.LocalDateTime;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.policy.BookingPolicy;
-import com.ucamp.app.common.policy.ReservationStatus;
-import com.ucamp.app.common.policy.ScheduleExceptionType;
+import com.ucamp.app.domain.reservation.entity.ReservationStatus;
+import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
 
 /**
  * 예약 가능 시간 판단 공통 규칙 (B-06). A·C·D·E 가 재사용한다.

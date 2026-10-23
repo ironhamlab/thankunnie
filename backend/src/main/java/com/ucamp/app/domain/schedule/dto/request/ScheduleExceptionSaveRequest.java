@@ -5,7 +5,7 @@ import java.time.OffsetDateTime;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import com.ucamp.app.common.policy.ScheduleExceptionType;
+import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
 
 /**
  * 시간대 열기·닫기 등록·수정 요청.

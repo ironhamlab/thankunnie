@@ -2,8 +2,8 @@ package com.ucamp.app.domain.schedule.dto.response;
 
 import java.time.OffsetDateTime;
 
-import com.ucamp.app.common.policy.ScheduleExceptionType;
-import com.ucamp.app.common.util.KoreaTime;
+import com.ucamp.app.common.util.TimeUtils;
+import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
 import com.ucamp.app.domain.schedule.entity.ShopScheduleException;
 
 /**
@@ -23,8 +23,8 @@ public record ScheduleExceptionResponse(
         return new ScheduleExceptionResponse(
                 exception.getId(),
                 exception.getExceptionType(),
-                KoreaTime.toOffset(exception.getStartsAt()),
-                KoreaTime.toOffset(exception.getEndsAt()),
+                TimeUtils.toOffset(exception.getStartsAt()),
+                TimeUtils.toOffset(exception.getEndsAt()),
                 exception.getReason(),
                 exception.getReservationId());
     }

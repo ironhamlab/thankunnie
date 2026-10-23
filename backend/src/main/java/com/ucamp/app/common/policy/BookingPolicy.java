@@ -3,13 +3,15 @@ package com.ucamp.app.common.policy;
 import java.time.Duration;
 import java.time.ZoneId;
 
+import com.ucamp.app.common.util.TimeUtils;
+
 /**
  * 빈자리 판매·예약 공통 정책값. 정책이 바뀌면 이 클래스만 수정한다.
  */
 public final class BookingPolicy {
 
     /** 모든 시각 판단의 기준 시간대 */
-    public static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
+    public static final ZoneId ZONE = TimeUtils.KST;
 
     /** 예약금 상한. 실제 예약금은 min(할인가, 이 값) */
     public static final int MAX_DEPOSIT_AMOUNT = 20_000;

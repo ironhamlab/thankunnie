@@ -15,8 +15,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
-import com.ucamp.app.common.policy.ReservationStatus;
-import com.ucamp.app.common.policy.ScheduleExceptionType;
+import com.ucamp.app.domain.reservation.entity.ReservationStatus;
+import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
 
 class SalePolicyTest {
 

@@ -18,7 +18,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import com.ucamp.app.common.entity.BaseTimeEntity;
-import com.ucamp.app.common.policy.ScheduleExceptionType;
 
 /**
  * 시간대 열기·닫기(예외 일정). 매주 반복 영업시간과 다른 일회성 연장 영업·휴무를 담는다.
