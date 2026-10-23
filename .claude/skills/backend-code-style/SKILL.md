@@ -1,11 +1,14 @@
 ---
 name: backend-code-style
-description: 땡잡은 언니 백엔드(backend/, Spring Boot) Java 코드를 작성·수정할 때 사용한다. 팀 공통 코드(ApiResponse, BusinessException, ErrorCode, BaseTimeEntity)를 쓰는 형식과 Controller·Service·Entity·DTO 기본 모양을 정리한 템플릿.
+description: 땡잡은 언니 백엔드(backend/, Spring Boot) Java 코드를 작성·수정할 때 사용한다. 팀 공통 코드(ApiResponse, BusinessException, ErrorCode, BaseTimeEntity, Clock, Y/N 변환기)를 쓰는 형식과 Controller·Service·Entity·DTO 기본 모양을 정리한 템플릿.
 ---
 
 # 백엔드 공통 코드 형식 (땡잡은 언니)
 
 이 스킬은 **공통 코드를 쓰는 형식**만 다룬다. 그 밖의 규칙은 `docs/convention/BACKEND_CONVENTION.md`가 원본이며, 충돌하면 컨벤션 문서가 우선한다.
+테이블·컬럼의 기준은 `schema.sql`(`docs/erd/01_schema_ddl.sql`)이다. 엔티티를 만들 때 이름·타입·제약을 반드시 이 파일에서 확인한다.
+
+아래 예시는 실제 도메인인 **시술(`Treatment`, 테이블 `TREATMENT`)**을 사용한다. 다른 도메인에 그대로 복사하지 말고 `schema.sql`의 컬럼에 맞춰 바꾼다.
 
 ## 1. 공통 코드 위치
 
@@ -13,11 +16,21 @@ description: 땡잡은 언니 백엔드(backend/, Spring Boot) Java 코드를 �
 com.ucamp.app.common
 ├── response/   ApiResponse<T>, ErrorResponse
 ├── exception/  ErrorCode, BusinessException, GlobalExceptionHandler
-└── entity/     BaseTimeEntity
+├── entity/     BaseTimeEntity
+├── converter/  BooleanToYnConverter
+└── util/       TimeUtils
+com.ucamp.app.config
+└── TimeConfig  (Clock 빈, JPA Auditing 시각 제공자)
 ```
 
 - 도메인 코드는 `com.ucamp.app.domain.{도메인}/{controller,service,repository,entity,dto/request,dto/response}`에 둔다.
-- `common/` 수정은 별도 이슈 + 백엔드 파트장 리뷰.
+- `common/`, `config/` 수정은 별도 이슈 + 백엔드 파트장 리뷰.
+
+### 도메인 패키지
+
+- 작업 전 `domain/` 아래 기존 패키지를 확인하고, 해당 테이블을 다루는 패키지가 있으면 그곳에 작성한다.
+- 새 도메인 패키지가 필요하면 만들기 전에 사용자에게 이름을 확인한다.
+- 회원은 `user` 패키지, 엔티티 `AppUser`, 테이블 `APP_USER`(PK 컬럼 `USER_ID`)다. `member` 패키지를 만들지 않으며, 로그인 키는 `email`이 아니라 `loginId`다.
 
 ## 2. 응답: `ApiResponse<T>`
 
@@ -25,34 +38,33 @@ com.ucamp.app.common
 
 ```java
 @RestController
-@RequestMapping("/api/v1/members")   // /api/v1/{리소스 복수형}
-public class MemberController {
+@RequestMapping("/api/v1/treatments")   // /api/v1/{리소스 복수형}
+public class TreatmentController {
 
-    private final MemberService memberService;
+    private final TreatmentService treatmentService;
 
-    public MemberController(MemberService memberService) {
-        this.memberService = memberService;
+    public TreatmentController(TreatmentService treatmentService) {
+        this.treatmentService = treatmentService;
     }
-```
 
-```java
-@PostMapping
-public ResponseEntity<ApiResponse<MemberDetailResponse>> signup(
-        @Valid @RequestBody MemberSignupRequest request) {
-    MemberDetailResponse response = memberService.signup(request);
-    return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success(response));
-}
+    @PostMapping
+    public ResponseEntity<ApiResponse<TreatmentDetailResponse>> createTreatment(
+            @Valid @RequestBody TreatmentCreateRequest request) {
+        TreatmentDetailResponse response = treatmentService.createTreatment(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response));
+    }
 
-@GetMapping("/{memberId}")
-public ResponseEntity<ApiResponse<MemberDetailResponse>> getMember(@PathVariable Long memberId) {
-    return ResponseEntity.ok(ApiResponse.success(memberService.getMember(memberId)));
-}
+    @GetMapping("/{treatmentId}")
+    public ResponseEntity<ApiResponse<TreatmentDetailResponse>> getTreatment(@PathVariable Long treatmentId) {
+        return ResponseEntity.ok(ApiResponse.success(treatmentService.getTreatment(treatmentId)));
+    }
 
-@DeleteMapping("/{memberId}")
-public ResponseEntity<Void> deleteMember(@PathVariable Long memberId) {
-    memberService.deleteMember(memberId);
-    return ResponseEntity.noContent().build();   // 204는 본문 없음
+    @PatchMapping("/{treatmentId}/deactivate")
+    public ResponseEntity<Void> deactivateTreatment(@PathVariable Long treatmentId) {
+        treatmentService.deactivateTreatment(treatmentId);
+        return ResponseEntity.noContent().build();   // 204는 본문 없음
+    }
 }
 ```
 
@@ -63,20 +75,21 @@ public ResponseEntity<Void> deleteMember(@PathVariable Long memberId) {
 ## 3. 예외: `BusinessException` + `ErrorCode`
 
 ```java
-Member member = memberRepository.findById(memberId)
-        .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+Treatment treatment = treatmentRepository.findById(treatmentId)
+        .orElseThrow(() -> new BusinessException(ErrorCode.TREATMENT_NOT_FOUND));
 ```
 
 - 예상 가능한 업무 실패는 `throw new BusinessException(ErrorCode.XXX)`. 메시지를 바꿔야 하면 `new BusinessException(ErrorCode.XXX, "상세 메시지")`.
 - Controller·Service에서 try-catch로 삼키지 않는다. 로깅은 `GlobalExceptionHandler`에서 한 번만 한다.
 - 요청 검증 실패(`@Valid`), JSON 파싱 실패, 파라미터 타입 오류는 핸들러가 `COMMON_400`으로 처리하므로 따로 잡지 않는다.
+- 예외: DB 제약 위반을 업무 결과로 바꿔야 하는 경우(예: 무료 취소 PK 중복 → "오늘 이미 사용")에만 `DataIntegrityViolationException`을 잡아 `BusinessException`으로 변환한다.
 
 ### ErrorCode 추가
 
 ```java
 // ErrorCode.java — 도메인별로 묶어서 추가
-MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_001", "회원을 찾을 수 없습니다."),
-MEMBER_DUPLICATE_EMAIL(HttpStatus.CONFLICT, "MEMBER_002", "이미 가입된 이메일입니다."),
+TREATMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "TREATMENT_001", "시술을 찾을 수 없습니다."),
+TREATMENT_INVALID_PRICE(HttpStatus.BAD_REQUEST, "TREATMENT_002", "가격은 초임박가 < 판매가 < 정상가, 100원 단위여야 합니다."),
 ```
 
 - 코드 형식은 `{도메인}_{3자리 번호}`.
@@ -88,67 +101,190 @@ MEMBER_DUPLICATE_EMAIL(HttpStatus.CONFLICT, "MEMBER_002", "이미 가입된 이�
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "MEMBER")
-public class Member extends BaseTimeEntity {
+@Table(name = "TREATMENT")
+public class Treatment extends BaseTimeEntity {
 
     @Id
-    @Column(name = "MEMBER_ID")
-    private Long id;   // ID 생성 방식은 팀 확정 후 적용
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_treatment")
+    @SequenceGenerator(name = "seq_treatment", sequenceName = "SEQ_TREATMENT", allocationSize = 1)
+    @Column(name = "TREATMENT_ID")
+    private Long id;
 
-    @Column(name = "EMAIL", nullable = false)
-    private String email;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "SHOP_ID", nullable = false)
+    private Shop shop;
+
+    @Column(name = "NAME", nullable = false, length = 100)
+    private String name;
+
+    @Column(name = "PRICE", nullable = false)
+    private Integer price;
+
+    @Column(name = "DURATION_MINUTES", nullable = false)
+    private Integer durationMinutes;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "TREATMENT_TYPE", nullable = false, length = 20)
+    private TreatmentType treatmentType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "STATUS", nullable = false, length = 10)
+    private TreatmentStatus status;
 
     @Builder
-    private Member(String email) {
-        this.email = email;
+    private Treatment(Shop shop, String name, Integer price, Integer durationMinutes,
+                      TreatmentType treatmentType) {
+        this.shop = shop;
+        this.name = name;
+        this.price = price;
+        this.durationMinutes = durationMinutes;
+        this.treatmentType = treatmentType;
+        this.status = TreatmentStatus.ACTIVE;
     }
 
-    public void changeEmail(String email) {
-        this.email = email;
+    public void deactivate() {
+        this.status = TreatmentStatus.INACTIVE;
     }
 }
 ```
 
-- 모든 엔티티는 `BaseTimeEntity`를 상속한다. `createdAt`, `updatedAt`은 직접 넣지 않는다(JPA Auditing이 채움).
+- 모든 엔티티는 `BaseTimeEntity`를 상속한다. `createdAt`, `updatedAt`은 직접 넣지 않는다(JPA Auditing이 `Clock` 기준으로 채움).
+  - 예외: `CREATED_AT`만 있고 `UPDATED_AT`이 없는 테이블(`SETTLEMENT`)은 별도 처리.
 - Lombok은 `@Getter`, `@NoArgsConstructor(access = PROTECTED)`, 생성자에 `@Builder`만. `@Setter`, `@Data` 금지.
-- 상태 변경은 의미 있는 메서드(`changeEmail()`, `cancel()`)로 제공한다.
+- 상태 변경은 의미 있는 메서드(`deactivate()`, `cancel()`)로 제공한다.
 - 연관관계는 `FetchType.LAZY`를 명시한다.
+
+### 4.1 ID: 시퀀스
+
+- PK는 `SEQ_{테이블}` 시퀀스로 발급한다. `allocationSize = 1`로 고정한다(`schema.sql`의 `INCREMENT BY 1`과 일치해야 함).
+- generator 이름은 `seq_{테이블 소문자}`로 쓴다. 예: `seq_treatment`, `seq_app_user`.
+- `IDENTITY`, `AUTO`, `UUID`를 쓰지 않는다.
+
+### 4.2 Enum: 반드시 `EnumType.STRING`
+
+- `STATUS`, `CANCEL_TYPE`, `EXCEPTION_TYPE`처럼 문자열 코드 컬럼은 enum으로 매핑하고 **반드시 `@Enumerated(EnumType.STRING)`**을 붙인다. 생략하면 숫자(ORDINAL)로 저장되어 DB 값과 어긋난다.
+- enum 상수 이름은 `schema.sql` 주석의 값과 철자까지 같게 만든다. 예: `HOLD, CONFIRMED, CANCEL_PENDING, CANCELLED, EXPIRED`.
+- enum은 해당 도메인의 `entity/` 패키지에 둔다.
+
+### 4.3 `CHAR(1)` Y/N 컬럼: `BooleanToYnConverter`
+
+`'Y'/'N'`으로 저장하는 컬럼은 `boolean` 필드로 받고 공통 변환기를 쓴다. 필드명에는 `is`를 붙이지 않는다.
+
+```java
+@Convert(converter = BooleanToYnConverter.class)
+@Column(name = "IS_CLOSED", nullable = false, length = 1, columnDefinition = "CHAR(1)")
+private boolean closed;
+```
+
+- 변환기를 직접 만들지 않는다. `common/converter/BooleanToYnConverter`를 쓴다.
+
+### 4.4 복합 PK: `@IdClass` + `Persistable`
+
+시퀀스가 아닌 복합 키 테이블(`GRACE_CANCEL_USAGE`)은 `@IdClass`로 매핑한다.
+
+```java
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Entity
+@Table(name = "GRACE_CANCEL_USAGE")
+@IdClass(GraceCancelUsageId.class)
+public class GraceCancelUsage extends BaseTimeEntity implements Persistable<GraceCancelUsageId> {
+
+  @Id
+  @Column(name = "USER_ID")
+  private Long userId;
+
+  @Id
+  @Column(name = "USED_DATE")
+  private LocalDate usedDate;
+
+  @Column(name = "CANCEL_ID", nullable = false)
+  private Long cancelId;
+
+  @Builder
+  private GraceCancelUsage(Long userId, LocalDate usedDate, Long cancelId) {
+    this.userId = userId;
+    this.usedDate = usedDate;
+    this.cancelId = cancelId;
+  }
+
+  @Override
+  public GraceCancelUsageId getId() {
+    return new GraceCancelUsageId(userId, usedDate);
+  }
+
+  @Override
+  public boolean isNew() {
+    return getCreatedAt() == null;   // 저장 전이면 새 엔티티
+  }
+}
+```
+
+```java
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@EqualsAndHashCode
+public class GraceCancelUsageId implements Serializable {
+
+  private Long userId;
+  private LocalDate usedDate;
+}
+```
+
+- **`Persistable`을 반드시 구현한다.** ID를 직접 넣는 엔티티는 Spring Data `save()`가 insert 대신 merge(조회 후 update)를 한다. 그러면 같은 날 두 번째 무료 취소가 PK 중복 오류 없이 기존 행을 덮어써서 하루 1회 제한이 깨진다.
+- ID 클래스의 필드 이름·타입은 엔티티의 `@Id` 필드와 같아야 한다.
 
 ## 5. Service와 DTO 변환
 
 ```java
 @Service
 @Transactional(readOnly = true)
-public class MemberService {
+public class TreatmentService {
 
-    private final MemberRepository memberRepository;
+  private final TreatmentRepository treatmentRepository;
 
-    public MemberService(MemberRepository memberRepository) {
-        this.memberRepository = memberRepository;
-    }
+  public TreatmentService(TreatmentRepository treatmentRepository) {
+    this.treatmentRepository = treatmentRepository;
+  }
 
-    public MemberDetailResponse getMember(Long memberId) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-        return MemberDetailResponse.from(member);
-    }
+  public TreatmentDetailResponse getTreatment(Long treatmentId) {
+    Treatment treatment = treatmentRepository.findById(treatmentId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.TREATMENT_NOT_FOUND));
+    return TreatmentDetailResponse.from(treatment);
+  }
 
-    @Transactional
-    public MemberDetailResponse signup(MemberSignupRequest request) {
-        // 검증 → 엔티티 생성 → 저장 → DTO 변환
-    }
+  @Transactional
+  public TreatmentDetailResponse createTreatment(TreatmentCreateRequest request) {
+    // 권한 검사 → 검증 → 엔티티 생성 → 저장 → DTO 변환
+  }
 }
 ```
 
 ```java
-public record MemberSignupRequest(@NotBlank @Email String email) {
+public record TreatmentCreateRequest(
+        @NotBlank @Size(max = 100) String name,
+        @NotNull @Positive Integer price,
+        @NotNull @Positive Integer durationMinutes,
+        @NotNull TreatmentType treatmentType) {
 }
 
-public record MemberDetailResponse(Long memberId, String email) {
+public record TreatmentDetailResponse(
+        Long treatmentId,
+        String name,
+        Integer price,
+        Integer durationMinutes,
+        TreatmentType treatmentType,
+        OffsetDateTime createdAt) {
 
-    public static MemberDetailResponse from(Member member) {
-        return new MemberDetailResponse(member.getId(), member.getEmail());
-    }
+  public static TreatmentDetailResponse from(Treatment treatment) {
+    return new TreatmentDetailResponse(
+            treatment.getId(),
+            treatment.getName(),
+            treatment.getPrice(),
+            treatment.getDurationMinutes(),
+            treatment.getTreatmentType(),
+            TimeUtils.toOffset(treatment.getCreatedAt()));
+  }
 }
 ```
 
@@ -156,9 +292,60 @@ public record MemberDetailResponse(Long memberId, String email) {
 - Controller에는 엔티티 대신 Response DTO를 반환한다. 변환은 DTO의 `from(...)` 정적 팩토리.
 - DTO 이름은 `{도메인}{용도}Request` / `{도메인}{용도}Response`.
 
-## 6. 체크리스트
+## 6. 시간: `Clock` 주입
 
+```java
+@Service
+@Transactional(readOnly = true)
+public class CancelService {
+
+  private final ReservationRepository reservationRepository;
+  private final Clock clock;
+
+  public CancelService(ReservationRepository reservationRepository, Clock clock) {
+    this.reservationRepository = reservationRepository;
+    this.clock = clock;
+  }
+
+  public RefundQuoteResponse quote(Long reservationId) {
+    LocalDateTime now = LocalDateTime.now(clock);   // 인자 없는 now() 금지
+    LocalDate today = LocalDate.now(clock);
+    // ...
+  }
+}
+```
+
+- 현재 시각·날짜는 항상 주입받은 `Clock`으로 구한다. `LocalDateTime.now()`, `LocalDate.now()`, `new Date()`, `System.currentTimeMillis()`를 쓰지 않는다.
+- 쿼리에 `SYSDATE`, `SYSTIMESTAMP`, `CURRENT_TIMESTAMP`를 쓰지 않는다. 기준 시각은 파라미터로 넘긴다.
+  ```java
+  @Query("select r from Reservation r where r.status = :status and r.holdExpiresAt < :now")
+  List<Reservation> findExpiredHolds(@Param("status") ReservationStatus status, @Param("now") LocalDateTime now);
+  ```
+- 엔티티의 시각 필드는 `LocalDateTime`, 날짜만 필요하면 `LocalDate`.
+- 응답 DTO의 시각 필드는 `OffsetDateTime`이며 `TimeUtils.toOffset(...)`으로 변환한다(+09:00). 날짜만 있으면 `LocalDate`(`yyyy-MM-dd`).
+- 시간 구간은 `[start, end)` 시작 포함·끝 제외.
+- 경계값 테스트는 `Clock.fixed(...)`로 시각을 고정한다.
+  ```java
+  Clock fixed = Clock.fixed(Instant.parse("2026-10-24T14:59:59Z"), ZoneId.of("Asia/Seoul"));   // KST 23:59:59
+  ```
+
+## 7. 현재 사용자 (B-01 인증 stub 머지 후 갱신)
+
+- 현재 사용자 ID·역할·매장 ID를 꺼내는 공통 방식은 **B-01(인증 stub)**에서 제공한다.
+- 머지 전까지 각자 `SecurityContextHolder`, 요청 헤더 파싱, 임시 파라미터 등으로 **직접 만들지 않는다.** 필요하면 Service 메서드 인자로 `userId`·`shopId`를 받아두고, B-01 머지 후 Controller에서 공통 방식으로 채운다.
+- 권한 규칙: 고객은 본인 예약만, 사장님은 본인 매장(`shopId`) 데이터만, 관리자는 전체 조회.
+
+> TODO(B-01 머지 후): 이 절에 실제 사용 코드 예시를 추가한다.
+
+## 8. 체크리스트
+
+- [ ] 테이블·컬럼 이름과 타입이 `schema.sql`과 일치
 - [ ] 응답은 `ApiResponse<T>`, 204는 본문 없음
 - [ ] 업무 실패는 `BusinessException(ErrorCode.XXX)`, 새 ErrorCode는 `docs/api/error-codes.md`에도 반영
 - [ ] 엔티티는 `BaseTimeEntity` 상속, 요청·응답에 엔티티 직접 노출 없음
+- [ ] PK는 `SEQ_{테이블}` 시퀀스 + `allocationSize = 1` (복합 키는 `@IdClass` + `Persistable`)
+- [ ] enum 필드에 `@Enumerated(EnumType.STRING)`
+- [ ] Y/N 컬럼은 `BooleanToYnConverter`
+- [ ] 인자 없는 `now()` 호출 없음 (`Clock` 주입 사용), 쿼리에 DB 시각 함수 없음
+- [ ] 응답 시각은 `OffsetDateTime`
 - [ ] `backend/`에서 `.\gradlew.bat test`(macOS/Linux `./gradlew test`) 통과
