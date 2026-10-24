@@ -50,7 +50,7 @@ public class ReservationQueryRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<ReservationView> search(ReservationSearch search, int offset, int limit) {
+    public List<ReservationView> search(ReservationSearch search, long offset, int limit) {
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("offset", offset)
                 .addValue("limit", limit);

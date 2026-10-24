@@ -87,7 +87,9 @@ public class ReservationQueryService {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "page 는 0 이상, size 는 1~100 이어야 합니다.");
         }
         long total = reservationQueryRepository.count(search);
-        List<ReservationSummaryResponse> content = reservationQueryRepository.search(search, page * size, size)
+        // 큰 page 에서 int 곱셈이 넘쳐 음수 offset 이 되면 Oracle 이 0 으로 보고 첫 페이지를 돌려준다
+        long offset = (long) page * size;
+        List<ReservationSummaryResponse> content = reservationQueryRepository.search(search, offset, size)
                 .stream()
                 .map(view -> ReservationSummaryResponse.from(view, isCancellable(view)))
                 .toList();

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -54,7 +55,7 @@ class ReservationQueryServiceTest {
     @DisplayName("사장님 목록은 본인 매장·만료 제외·날짜 경계로 조회하고 페이지 정보를 채운다")
     void getOwnerReservations_defaultFilter_searchesOwnShop() {
         given(reservationQueryRepository.count(any())).willReturn(21L);
-        given(reservationQueryRepository.search(any(), eq(20), eq(20)))
+        given(reservationQueryRepository.search(any(), eq(20L), eq(20)))
                 .willReturn(List.of(view(ReservationStatus.CONFIRMED, NOW.plusHours(2))));
 
         PageResponse<ReservationSummaryResponse> result = reservationQueryService.getOwnerReservations(
@@ -76,7 +77,7 @@ class ReservationQueryServiceTest {
     @Test
     @DisplayName("확정 예약은 시작 전에만 취소 가능으로 표시한다")
     void getOwnerReservations_cancellable_onlyConfirmedBeforeStart() {
-        given(reservationQueryRepository.search(any(), anyInt(), anyInt())).willReturn(List.of(
+        given(reservationQueryRepository.search(any(), anyLong(), anyInt())).willReturn(List.of(
                 view(ReservationStatus.CONFIRMED, NOW.plusMinutes(30)),
                 view(ReservationStatus.CONFIRMED, NOW),
                 view(ReservationStatus.CANCEL_PENDING, NOW.plusHours(1))));
@@ -135,7 +136,7 @@ class ReservationQueryServiceTest {
     @Test
     @DisplayName("고객 목록은 매장 구분 없이 본인 예약으로 조회한다")
     void getMyReservations_customer_searchesOwnReservations() {
-        given(reservationQueryRepository.search(any(), anyInt(), anyInt())).willReturn(List.of());
+        given(reservationQueryRepository.search(any(), anyLong(), anyInt())).willReturn(List.of());
 
         reservationQueryService.getMyReservations(CUSTOMER, null, null, null, 0, 20);
 
@@ -172,6 +173,14 @@ class ReservationQueryServiceTest {
 
         assertThat(result.summary().reservationId()).isEqualTo(1L);
         assertThat(result.summary().cancellable()).isTrue();
+    }
+
+    @Test
+    @DisplayName("큰 페이지 번호도 offset 이 넘치지 않고 그대로 전달된다")
+    void getOwnerReservations_largePage_passesLongOffset() {
+        reservationQueryService.getOwnerReservations(OWNER, null, null, null, 30_000_000, 100);
+
+        verify(reservationQueryRepository).search(any(), eq(3_000_000_000L), eq(100));
     }
 
     private static ReservationView view(ReservationStatus status, LocalDateTime startsAt) {
