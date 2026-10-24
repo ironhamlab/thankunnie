@@ -52,6 +52,7 @@ public class AvailabilityService {
      * 날짜에 시술을 시작할 수 있는 시각 목록 (C: 검색·상세 화면용).
      */
     public List<LocalDateTime> getAvailableStartTimes(Long shopId, LocalDate date, int durationMinutes) {
+        requirePositive(durationMinutes);
         Duration duration = Duration.ofMinutes(durationMinutes);
         LocalDateTime from = date.atStartOfDay();
         LocalDateTime to = date.plusDays(1).atStartOfDay().plus(duration);
@@ -66,6 +67,7 @@ public class AvailabilityService {
      * 같은 시간 동시 예약을 막으려면 ShopLock 으로 매장을 잠근 뒤 호출하고 같은 트랜잭션에서 저장한다.
      */
     public void validateAvailable(Long shopId, LocalDateTime startsAt, int durationMinutes) {
+        requirePositive(durationMinutes);
         LocalDateTime now = LocalDateTime.now(clock);
         SalePolicy.validateBookable(startsAt, now);
         TimeRange range = new TimeRange(startsAt, startsAt.plusMinutes(durationMinutes));
@@ -75,6 +77,13 @@ public class AvailabilityService {
         }
         if (!AvailabilityCalculator.isFree(range, schedule.openRanges(), schedule.closedRanges())) {
             throw new BusinessException(ErrorCode.VACANCY_NOT_OPEN_TIME);
+        }
+    }
+
+    // 시술 데이터가 잘못돼 0분 이하가 오면 구간을 만들 수 없어 500 이 되므로 업무 오류로 바꾼다
+    private static void requirePositive(int durationMinutes) {
+        if (durationMinutes <= 0) {
+            throw new BusinessException(ErrorCode.VACANCY_INVALID_DURATION);
         }
     }
 

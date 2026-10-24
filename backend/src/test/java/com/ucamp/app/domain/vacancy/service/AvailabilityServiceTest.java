@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -17,6 +19,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -58,7 +62,8 @@ class AvailabilityServiceTest {
         Clock fixedClock = Clock.fixed(NOW.atZone(TimeUtils.KST).toInstant(), TimeUtils.KST);
         service = new AvailabilityService(
                 shopBusinessHourRepository, shopScheduleExceptionRepository, reservationRepository, fixedClock);
-        given(shopBusinessHourRepository.findByShopId(SHOP_ID)).willReturn(List.of(ShopBusinessHour.builder()
+        // 소요 시간 검증 테스트는 DB 조회 전에 끝나므로 lenient 로 둔다
+        lenient().when(shopBusinessHourRepository.findByShopId(SHOP_ID)).thenReturn(List.of(ShopBusinessHour.builder()
                 .shopId(SHOP_ID)
                 .dayOfWeek(BusinessDay.of(DATE))
                 .closed(false)
@@ -96,6 +101,19 @@ class AvailabilityServiceTest {
         assertThat(service.getAvailableStartTimes(SHOP_ID, DATE, ONE_HOUR))
                 .doesNotContain(at(13, 30), at(14, 0), at(14, 30))
                 .contains(at(13, 0), at(15, 0));
+    }
+
+    @ParameterizedTest(name = "소요 시간 {0}분")
+    @ValueSource(ints = {0, -30})
+    @DisplayName("소요 시간이 0분 이하이면 업무 오류가 발생하고 DB 를 조회하지 않는다")
+    void availability_nonPositiveDuration_throwsInvalidDuration(int durationMinutes) {
+        assertThatThrownBy(() -> service.validateAvailable(SHOP_ID, at(14, 0), durationMinutes))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_INVALID_DURATION);
+        assertThatThrownBy(() -> service.getAvailableStartTimes(SHOP_ID, DATE, durationMinutes))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_INVALID_DURATION);
+        verifyNoInteractions(shopScheduleExceptionRepository, reservationRepository);
     }
 
     @Test
