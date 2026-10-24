@@ -159,6 +159,37 @@ class RefundPolicyTest {
     }
 
     @Test
+    @DisplayName("결제 승인 시각이 현재 시각보다 늦으면 무료 취소로 판정하지 않고 거부한다")
+    void quote_approvedAfterNow_throws() {
+        LocalDateTime heldAt = LocalDateTime.of(2026, 11, 2, 6, 0);
+        LocalDateTime now = heldAt.plusMinutes(3);
+
+        assertThatThrownBy(() -> RefundPolicy.quote(20_000, STARTS_AT, now.plusSeconds(1), heldAt, false, now))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("결제 승인 시각과 현재 시각이 같으면 무료 취소를 적용한다")
+    void quote_approvedAtNow_graceApplied() {
+        LocalDateTime heldAt = LocalDateTime.of(2026, 11, 2, 6, 0);
+        LocalDateTime approvedAt = heldAt.plusMinutes(3);
+
+        RefundQuote quote = RefundPolicy.quote(20_000, STARTS_AT, approvedAt, heldAt, false, approvedAt);
+
+        assertThat(quote.graceCancelResult()).isEqualTo(GraceCancelResult.APPLIED);
+    }
+
+    @Test
+    @DisplayName("점유 시각이 결제 승인 시각보다 늦으면 거부한다")
+    void quote_heldAfterApproved_throws() {
+        LocalDateTime approvedAt = LocalDateTime.of(2026, 11, 2, 6, 0);
+
+        assertThatThrownBy(() -> RefundPolicy.quote(20_000, STARTS_AT, approvedAt, approvedAt.plusSeconds(1),
+                false, approvedAt.plusMinutes(1)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     @DisplayName("무료 취소 사용일은 취소 요청을 접수한 한국 날짜다")
     void graceUsageDate_isRequestDate() {
         assertThat(RefundPolicy.graceUsageDate(LocalDateTime.of(2026, 11, 1, 23, 59, 59)))

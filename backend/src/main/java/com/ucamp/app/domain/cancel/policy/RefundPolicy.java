@@ -33,7 +33,7 @@ public final class RefundPolicy {
      *
      * @param paidAmount      실제 납부 예약금
      * @param startsAt        예약 시작 시각
-     * @param approvedAt      예약금 결제 승인 시각
+     * @param approvedAt      예약금 결제 승인 시각 (서버 Clock 기준, heldAt 이후·now 이전)
      * @param heldAt          점유(HOLD 생성) 시각
      * @param graceUsedToday  오늘(now 의 날짜) 무료 취소를 이미 사용했는지
      * @param now             판단 시각
@@ -50,6 +50,14 @@ public final class RefundPolicy {
         // 시작 이후 취소는 E-04 에서 막는다. 여기까지 오면 호출 순서 오류다
         if (!now.isBefore(startsAt)) {
             throw new IllegalArgumentException("시술 시작 이후에는 환불 견적을 계산하지 않습니다");
+        }
+        // 점유 → 결제 승인 → 취소 순서가 뒤집힌 입력은 저장 오류다. 무료 취소(전액 환불)로 판정되지 않도록 막는다.
+        // 결제 승인 시각은 서버 Clock 기준으로 저장한다는 전제다 (PG 시각을 쓰면 시계 차이로 정상 요청이 막힐 수 있음)
+        if (heldAt.isAfter(approvedAt)) {
+            throw new IllegalArgumentException("점유 시각이 결제 승인 시각보다 늦습니다");
+        }
+        if (approvedAt.isAfter(now)) {
+            throw new IllegalArgumentException("결제 승인 시각이 현재 시각보다 늦습니다");
         }
 
         int refundRate = refundRate(startsAt, now);
