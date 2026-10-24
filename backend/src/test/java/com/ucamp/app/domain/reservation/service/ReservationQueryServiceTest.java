@@ -132,6 +132,48 @@ class ReservationQueryServiceTest {
         assertThat(result.summary().startsAt().getOffset()).isEqualTo(java.time.ZoneOffset.ofHours(9));
     }
 
+    @Test
+    @DisplayName("고객 목록은 매장 구분 없이 본인 예약으로 조회한다")
+    void getMyReservations_customer_searchesOwnReservations() {
+        given(reservationQueryRepository.search(any(), anyInt(), anyInt())).willReturn(List.of());
+
+        reservationQueryService.getMyReservations(CUSTOMER, null, null, null, 0, 20);
+
+        ArgumentCaptor<ReservationSearch> captor = ArgumentCaptor.forClass(ReservationSearch.class);
+        verify(reservationQueryRepository).count(captor.capture());
+        assertThat(captor.getValue().userId()).isEqualTo(1L);
+        assertThat(captor.getValue().shopId()).isNull();
+    }
+
+    @Test
+    @DisplayName("고객이 아니면 내 예약 조회는 403 예외가 난다")
+    void getMyReservations_owner_throwsForbidden() {
+        assertThatThrownBy(() -> reservationQueryService.getMyReservations(OWNER, null, null, null, 0, 20))
+                .extracting("errorCode").isEqualTo(ErrorCode.FORBIDDEN);
+        verifyNoInteractions(reservationQueryRepository);
+    }
+
+    @Test
+    @DisplayName("다른 고객 예약 상세는 404 예외가 난다")
+    void getMyReservation_otherCustomer_throwsNotFound() {
+        given(reservationQueryRepository.findOne(5L, null, 1L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> reservationQueryService.getMyReservation(CUSTOMER, 5L))
+                .extracting("errorCode").isEqualTo(ErrorCode.RESOURCE_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("본인 예약 상세는 본인 범위로 조회한다")
+    void getMyReservation_own_returnsDetail() {
+        given(reservationQueryRepository.findOne(1L, null, 1L))
+                .willReturn(Optional.of(view(ReservationStatus.CONFIRMED, NOW.plusHours(2))));
+
+        ReservationDetailResponse result = reservationQueryService.getMyReservation(CUSTOMER, 1L);
+
+        assertThat(result.summary().reservationId()).isEqualTo(1L);
+        assertThat(result.summary().cancellable()).isTrue();
+    }
+
     private static ReservationView view(ReservationStatus status, LocalDateTime startsAt) {
         return new ReservationView(1L, status, startsAt, startsAt.plusHours(1), 30000, 20000,
                 null, NOW.minusDays(1), null, NOW.minusDays(1),
