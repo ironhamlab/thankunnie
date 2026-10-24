@@ -64,7 +64,6 @@ public class NotificationEventService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean createReopenedEvent(Long reservationId, LocalDateTime now) {
         Optional<VacancySlot> reopened = vacancySlotRepository.findReopened(reservationId, now);
-
         if (reopened.isEmpty()) {
             log.info("재공개 이벤트 생략: 판매 가능한 빈자리가 아님 reservationId={}", reservationId);
             return false;
