@@ -35,17 +35,19 @@ import lombok.NoArgsConstructor;
         allocationSize = 1)
 public class NotificationEvent extends BaseTimeEntity {
 
-    // NUMBER(19) 는 H2 에서도 NUMERIC 으로 읽히므로 스키마 검증이 BIGINT 를 기대하지 않게 맞춘다
+    // 숫자 ID는 DB에서 NUMBER(19)다. H2는 이 컬럼을 NUMERIC으로 읽으므로, Long 기본값인 BIGINT로 두면 스키마 검증이 실패한다.
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_NOTIFICATION_EVENT_GENERATOR")
     @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "EVENT_ID")
     private Long id;
 
+    /** 임박(IMMINENT) 또는 취소 재공개(REOPENED). */
     @Enumerated(EnumType.STRING)
     @Column(name = "EVENT_TYPE", nullable = false, length = 20)
     private NotificationEventType eventType;
 
+    /** 빈자리인 예외 일정 OPEN 행 ID. 다른 도메인이 지울 수 있어 외래키는 없다. */
     @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "EXCEPTION_ID", nullable = false)
     private Long exceptionId;
@@ -54,6 +56,7 @@ public class NotificationEvent extends BaseTimeEntity {
     @Column(name = "SHOP_ID", nullable = false)
     private Long shopId;
 
+    /** 취소 재공개일 때만 취소된 예약 ID. 임박이면 null. */
     @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "RESERVATION_ID")
     private Long reservationId;
@@ -61,9 +64,11 @@ public class NotificationEvent extends BaseTimeEntity {
     @Column(name = "SLOT_STARTS_AT", nullable = false)
     private LocalDateTime slotStartsAt;
 
+    /** 빈자리 종료 시각. 이 시각은 구간에 포함하지 않는다. */
     @Column(name = "SLOT_ENDS_AT", nullable = false)
     private LocalDateTime slotEndsAt;
 
+    /** 만들 때는 PENDING. 매칭·발송 대기열을 만들면 PROCESSED. */
     @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", nullable = false, length = 10)
     private NotificationEventStatus status;
