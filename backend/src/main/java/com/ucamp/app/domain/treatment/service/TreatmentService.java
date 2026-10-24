@@ -16,6 +16,7 @@ import com.ucamp.app.domain.treatment.dto.request.TreatmentStatusUpdateRequest;
 import com.ucamp.app.domain.treatment.dto.response.TreatmentCategoryResponse;
 import com.ucamp.app.domain.treatment.dto.response.TreatmentDetailResponse;
 import com.ucamp.app.domain.treatment.entity.Treatment;
+import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
 import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
 
 @Service
@@ -38,6 +39,24 @@ public class TreatmentService {
         requireShop(shopId);
         return treatmentRepository.findByShopShopIdOrderByTreatmentIdDesc(shopId).stream()
                 .map(TreatmentDetailResponse::from).toList();
+    }
+
+    /** 신규 빈자리 선택용 시술만 반환한다. 관리·이력 조회에는 전체 목록을 사용한다. */
+    public List<TreatmentDetailResponse> getSelectableTreatments(AuthUser user, Long shopId) {
+        user.requireShopOwner(shopId);
+        requireShop(shopId);
+        return treatmentRepository.findByShopShopIdAndStatusOrderByTreatmentIdDesc(shopId, TreatmentStatus.ACTIVE)
+                .stream().map(TreatmentDetailResponse::from).toList();
+    }
+
+    /** 빈자리 생성 서비스에서 저장 직전 호출할 시술 선택 검증이다. 기존 이력 조회에는 사용하지 않는다. */
+    public TreatmentDetailResponse requireSelectableTreatment(AuthUser user, Long shopId, Long treatmentId) {
+        user.requireShopOwner(shopId);
+        Treatment treatment = findTreatment(shopId, treatmentId);
+        if (treatment.getStatus() != TreatmentStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "비활성 시술은 신규 빈자리에 선택할 수 없습니다.");
+        }
+        return TreatmentDetailResponse.from(treatment);
     }
 
     public List<TreatmentCategoryResponse> getCategories(AuthUser user, Long shopId) {

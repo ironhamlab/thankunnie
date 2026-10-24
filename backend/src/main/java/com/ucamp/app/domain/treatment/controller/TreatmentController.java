@@ -45,6 +45,14 @@ public class TreatmentController {
         return ApiResponse.success(treatmentService.getTreatments(user, shopId));
     }
 
+    /** 신규 빈자리 등록 화면에 제공할 활성 시술 목록. */
+    @Operation(summary = "신규 빈자리 선택용 활성 시술 목록 조회")
+    @GetMapping("/selectable")
+    public ApiResponse<List<TreatmentDetailResponse>> getSelectableTreatments(
+            @LoginUser AuthUser user, @PathVariable Long shopId) {
+        return ApiResponse.success(treatmentService.getSelectableTreatments(user, shopId));
+    }
+
     @Operation(summary = "선택 가능한 시술 카테고리 조회")
     @GetMapping("/categories")
     public ApiResponse<List<TreatmentCategoryResponse>> getCategories(

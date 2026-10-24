@@ -42,6 +42,37 @@
 상태 변경 요청: `{"status":"INACTIVE"}` 또는 `{"status":"ACTIVE"}`.
 물리 삭제 API는 제공하지 않는다.
 
+## 시술 비활성화 (A-05 / UNNIE-44)
+
+- 기존 `PATCH /{treatmentId}/status`를 사용한다. 같은 상태로 반복 요청해도 성공한다.
+- `GET /api/v1/shops/{shopId}/treatments/selectable`: 신규 빈자리 선택용 ACTIVE 시술만
+  ID 내림차순으로 반환한다. 본인 매장 사장님만 접근하며 선택 가능한 시술이 없으면 빈 배열을 반환한다.
+  응답 필드는 기존 시술 목록과 같다.
+- 관리용 전체 목록과 단건 조회는 INACTIVE 시술도 계속 반환한다.
+- 비활성화는 TREATMENT의 상태만 변경하며 기존 OPEN 빈자리 일정과 예약 행·스냅샷을 변경하거나 삭제하지 않는다.
+- 재활성화하면 신규 선택 목록에 다시 포함된다.
+- 빈자리 생성 서비스에서 사용할 `TreatmentService.requireSelectableTreatment(user, shopId, treatmentId)`를
+  제공한다. 비활성 시술은 COMMON_400, 다른 매장은 COMMON_403, 없는 시술·타 매장 시술은 COMMON_404다.
+- **연결 필요:** 현재 브랜치에는 빈자리 생성 API가 없다. 해당 API 구현 시 저장 트랜잭션 안에서 위 검증을
+  호출해야 하며, 동시 비활성화와 빈자리 생성의 직렬화도 생성 서비스에서 함께 설계해야 한다.
+  이번 변경만으로 빈자리 생성 API의 비활성 시술 등록 차단까지 완료한 것은 아니다.
+- 프론트엔드의 신규 빈자리 화면 연결은 이번 변경 범위에 포함하지 않는다.
+- UNNIE-32 브랜치의 `091523d`를 작업 브랜치에 반영한 기반 변경이며 dev에는 병합하지 않았다.
+
+### UNNIE-44 로컬 검증 환경
+
+기본 JAVA_HOME은 Java 17이므로 검증 프로세스에만 Eclipse에 포함된 Java 21 경로를 지정했다.
+Gradle의 JDK 자동 탐색 지연을 피하기 위해 실행 인자에
+`-Dorg.gradle.java.installations.auto-detect=false`와
+`-Dorg.gradle.java.installations.paths=<Java 21 경로>`를 전달했다.
+Unix 소켓 임시 경로 설정은 아래 UNNIE-32 검증 안내와 동일하게 사용한다.
+
+- `classes test`: 컴파일 성공, 전체 167개 중 142개 통과·25개 실패.
+- 같은 실행의 시술 테스트: 통합 19개와 엔티티 5개, 총 24개 모두 통과.
+  활성 목록 제외·재활성화·반복 비활성화·권한 검사·빈 목록·선택 검증과 기존 예약 및 OPEN 일정 보존을 확인했다.
+- 전체 실패는 기존 알림 구독 스키마 검증 문제로 남아 있다. 아래 UNNIE-32 차단 사항을 참조한다.
+- `frontend/`의 `npm run lint`, `npm run build`: 통과. 신규 화면 연결을 검증한 것은 아니다.
+
 시술 응답 필드: `treatmentId`, `shopId`, `name`, `description`, `regularPrice`,
 `categoryId`, `categoryName`, `durationMinutes`, `status`, `createdAt`, `updatedAt`.
 시각은 `+09:00` 오프셋이다.

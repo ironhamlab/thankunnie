@@ -7,8 +7,12 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.ucamp.app.domain.treatment.entity.Treatment;
+import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
 
 public interface TreatmentRepository extends JpaRepository<Treatment, Long> {
+
+    @EntityGraph(attributePaths = {"shop", "category"})
+    List<Treatment> findByShopShopIdAndStatusOrderByTreatmentIdDesc(Long shopId, TreatmentStatus status);
 
     @EntityGraph(attributePaths = {"shop", "category"})
     List<Treatment> findByShopShopIdOrderByTreatmentIdDesc(Long shopId);

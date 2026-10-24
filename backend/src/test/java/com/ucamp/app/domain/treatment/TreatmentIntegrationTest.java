@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.treatment;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -34,6 +35,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ucamp.app.common.auth.StubAuthFilter;
+import com.ucamp.app.common.auth.AuthUser;
+import com.ucamp.app.common.auth.UserRole;
+import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.GlobalExceptionHandler;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.config.TimeConfig;
@@ -72,6 +76,8 @@ class TreatmentIntegrationTest {
     private ObjectMapper mapper;
     @Autowired
     private EntityManager entityManager;
+    @Autowired
+    private TreatmentService treatmentService;
 
     @BeforeEach
     void setUp() {
@@ -197,7 +203,7 @@ class TreatmentIntegrationTest {
     }
 
     @Test
-    @DisplayName("할인가·모델 조건·기존 예약 스냅샷을 보존하고 판매가보다 낮은 정상가를 거절한다")
+    @DisplayName("비활성화·수정 시 빈자리와 예약을 보존하고 잘못된 정상가를 거절한다")
     void update_discountedTreatment_preservesPricesAndReservation() throws Exception {
         long id = create(60, 50000, 9002).get("treatmentId").asLong();
         jdbc.update("""
@@ -218,6 +224,24 @@ class TreatmentIntegrationTest {
                 """, id);
         entityManager.clear();
 
+        jdbc.update("""
+                INSERT INTO SHOP_SCHEDULE_EXCEPTION (EXCEPTION_ID, SHOP_ID, EXCEPTION_TYPE,
+                    STARTS_AT, ENDS_AT, CREATED_AT, UPDATED_AT)
+                VALUES (9001, 1, 'OPEN', TIMESTAMP '2026-10-25 12:00:00',
+                    TIMESTAMP '2026-10-25 14:00:00', TIMESTAMP '2026-10-23 12:00:00',
+                    TIMESTAMP '2026-10-23 12:00:00')
+                """);
+        var reservationBefore = jdbc.queryForMap("SELECT * FROM RESERVATION WHERE RESERVATION_ID = 9001");
+        var slotBefore = jdbc.queryForMap("SELECT * FROM SHOP_SCHEDULE_EXCEPTION WHERE EXCEPTION_ID = 9001");
+        mvc.perform(patch(URL + "/" + id + "/status").header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"INACTIVE\"}"))
+                .andExpect(status().isOk());
+        entityManager.clear();
+        assertThat(jdbc.queryForMap("SELECT * FROM RESERVATION WHERE RESERVATION_ID = 9001"))
+                .isEqualTo(reservationBefore);
+        assertThat(jdbc.queryForMap("SELECT * FROM SHOP_SCHEDULE_EXCEPTION WHERE EXCEPTION_ID = 9001"))
+                .isEqualTo(slotBefore);
+
         mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
                         .contentType(MediaType.APPLICATION_JSON).content(body(90, 60000, 9001)))
                 .andExpect(status().isOk());
@@ -234,6 +258,50 @@ class TreatmentIntegrationTest {
         mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
                         .contentType(MediaType.APPLICATION_JSON).content(body(90, 35000, 9001)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("비활성화는 신규 선택에서 제외하고 전체 조회를 유지하며 재활성화하면 다시 선택된다")
+    void deactivate_excludesSelectionAndAllowsReactivation() throws Exception {
+        long inactiveId = create(60, 50000, 9002).get("treatmentId").asLong();
+        long activeId = create(30, 30000, 9001).get("treatmentId").asLong();
+        AuthUser owner = new AuthUser(1L, UserRole.OWNER, 1L);
+        for (String value : new String[]{"INACTIVE", "INACTIVE"}) {
+            mvc.perform(patch(URL + "/" + inactiveId + "/status")
+                            .header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                            .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"" + value + "\"}"))
+                    .andExpect(status().isOk());
+        }
+        entityManager.clear();
+        mvc.perform(get(URL + "/selectable").header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].treatmentId").value(activeId));
+        mvc.perform(get(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(jsonPath("$.data.length()").value(2));
+        mvc.perform(get(URL + "/" + inactiveId).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("INACTIVE"));
+        assertThatThrownBy(() -> treatmentService.requireSelectableTreatment(owner, 1L, inactiveId))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("비활성 시술");
+        assertThat(treatmentService.requireSelectableTreatment(owner, 1L, activeId).treatmentId())
+                .isEqualTo(activeId);
+        mvc.perform(patch(URL + "/" + inactiveId + "/status")
+                        .header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"ACTIVE\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(get(URL + "/selectable").header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(jsonPath("$.data.length()").value(2));
+    }
+
+    @Test
+    @DisplayName("신규 선택 목록은 비로그인과 다른 매장 접근을 거절하고 빈 목록을 허용한다")
+    void selectable_checksOwnerAndReturnsEmptyList() throws Exception {
+        mvc.perform(get(URL + "/selectable")).andExpect(status().isUnauthorized());
+        for (String actor : new String[]{"OWNER_2", "CUSTOMER_1", "ADMIN"}) {
+            mvc.perform(get(URL + "/selectable").header(StubAuthFilter.HEADER_NAME, actor))
+                    .andExpect(status().isForbidden());
+        }
+        mvc.perform(get(URL + "/selectable").header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(0));
     }
 
     private JsonNode create(int duration, int price, long category) throws Exception {
