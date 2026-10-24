@@ -14,7 +14,7 @@ description: 땡잡은 언니 백엔드(backend/, Spring Boot) Java 코드를 �
 
 ```text
 com.ucamp.app.common
-├── response/   ApiResponse<T>, ErrorResponse
+├── response/   ApiResponse<T>, ErrorResponse, PageResponse<T>
 ├── exception/  ErrorCode, BusinessException, GlobalExceptionHandler
 ├── entity/     BaseTimeEntity
 ├── converter/  BooleanToYnConverter
@@ -71,6 +71,28 @@ public class TreatmentController {
 - 성공: `ApiResponse.success(data)` → `{ "success": true, "data": ..., "error": null, "timestamp": ... }`
 - 실패 응답은 직접 만들지 않는다. 예외를 던지면 `GlobalExceptionHandler`가 `ApiResponse.fail(...)`로 바꾼다.
 - 상태 코드: 조회 200, 생성 201, 수정 200, 삭제 204.
+
+### 2.1 목록 페이지 응답: `PageResponse<T>`
+
+페이지로 나누는 목록은 `ApiResponse<PageResponse<T>>`로 반환한다. 형식은 `docs/api/A-01-main-exposure.md`의 페이지 응답과 같다.
+
+```java
+@GetMapping
+public ResponseEntity<ApiResponse<PageResponse<TreatmentSummaryResponse>>> getTreatments(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size) {
+    return ResponseEntity.ok(ApiResponse.success(treatmentService.getTreatments(page, size)));
+}
+
+// Service: 전체 개수와 현재 페이지 목록을 구해 PageResponse.of 로 만든다
+return PageResponse.of(content, page, size, totalElements);
+```
+
+- 응답 필드: `content`, `page`, `size`, `totalElements`, `totalPages`, `hasNext`
+- `page`는 0부터, `size` 기본 20·범위 1~100. 벗어나면 `BusinessException(ErrorCode.INVALID_INPUT)`(400)
+- 결과가 없거나 범위를 넘은 페이지는 빈 `content`로 200을 반환하고, `totalElements`·`totalPages`는 실제 값을 유지한다. `PageResponse.of`가 이렇게 계산한다
+- 동률일 때 페이지 사이 순서가 바뀌지 않도록 마지막 정렬 키로 ID를 둔다 (예: `ORDER BY STARTS_AT, RESERVATION_ID`)
+- Spring Data `Page`를 쓰면 `PageResponse.of(page.getContent(), page.getNumber(), page.getSize(), page.getTotalElements())`로 바꿔 반환한다. `Page`를 응답에 그대로 노출하지 않는다
 
 ## 3. 예외: `BusinessException` + `ErrorCode`
 
@@ -341,6 +363,7 @@ public class CancelService {
 
 - [ ] 테이블·컬럼 이름과 타입이 `schema.sql`과 일치
 - [ ] 응답은 `ApiResponse<T>`, 204는 본문 없음
+- [ ] 페이지 목록은 `ApiResponse<PageResponse<T>>`, page 0부터·size 1~100
 - [ ] 업무 실패는 `BusinessException(ErrorCode.XXX)`, 새 ErrorCode는 `docs/api/error-codes.md`에도 반영
 - [ ] 엔티티는 `BaseTimeEntity` 상속, 요청·응답에 엔티티 직접 노출 없음
 - [ ] PK는 `SEQ_{테이블}` 시퀀스 + `allocationSize = 1` (복합 키는 `@IdClass` + `Persistable`)
