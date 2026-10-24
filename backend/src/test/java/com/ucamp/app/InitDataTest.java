@@ -38,7 +38,7 @@ class InitDataTest {
 
     @Test
     @DisplayName("테스트 사용자에 맞는 회원·매장이 들어간다")
-    void initData_matchesTestUsers() {
+    void load_localInitData_insertsTestUsersAndShops() {
         assertThat(jdbcTemplate.queryForList("SELECT USER_ID FROM APP_USER ORDER BY USER_ID", Long.class))
                 .containsExactly(1L, 2L, 21L);
         assertThat(jdbcTemplate.queryForObject("SELECT ROLE FROM APP_USER WHERE USER_ID = 21", String.class))
@@ -49,7 +49,7 @@ class InitDataTest {
 
     @Test
     @DisplayName("영업시간은 엔티티로 읽히고 매장 1 은 일요일이 휴무다")
-    void initData_businessHoursReadableAsEntities() {
+    void findByShopId_initDataShop1_readsSevenDaysWithSundayClosed() {
         List<ShopBusinessHour> hours = shopBusinessHourRepository.findByShopId(SHOP_1);
 
         assertThat(hours).hasSize(7);
@@ -60,7 +60,7 @@ class InitDataTest {
 
     @Test
     @DisplayName("매장 1 의 11/2~11/4 활성 예약은 확정 예약만 조회되고 취소·만료는 빠진다")
-    void initData_activeReservationsExcludeCancelledAndExpired() {
+    void findActiveOverlapping_initDataShop1_excludesCancelledAndExpired() {
         List<Reservation> active = reservationRepository.findActiveOverlapping(SHOP_1,
                 LocalDateTime.of(2026, 11, 2, 0, 0), LocalDateTime.of(2026, 11, 6, 0, 0));
 
@@ -69,7 +69,7 @@ class InitDataTest {
 
     @Test
     @DisplayName("시퀀스는 초기 데이터 ID 와 겹치지 않도록 1000 부터 발급한다")
-    void initData_sequencesStartAfterSeedIds() {
+    void nextval_afterInitData_startsFrom1000() {
         Long nextReservationId = jdbcTemplate.queryForObject("SELECT SEQ_RESERVATION.NEXTVAL FROM DUAL", Long.class);
 
         assertThat(nextReservationId).isGreaterThanOrEqualTo(1000L);
