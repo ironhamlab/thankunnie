@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
 
 SHA="${1:?Commit SHA is required}"
 IMAGE_BASE="${2:?Image base is required}"
@@ -74,10 +74,27 @@ current_image() {
       fi
     fi
   fi
+
+  return 0
 }
 
-BACKEND_IMAGE=$(current_image backend)
-FRONTEND_IMAGE=$(current_image frontend)
+PREVIOUS_BACKEND_IMAGE=$(current_image backend)
+PREVIOUS_FRONTEND_IMAGE=$(current_image frontend)
+
+# 성공 배포 기록이 있으면 실행 중 컨테이너보다 그 기록을 우선한다.
+# 이전 배포 실패로 컨테이너만 교체된 경우에도 정상 버전을 유지한다.
+if [ "$LAST" != NONE ] && [ -f "$STATE_DIR/images-$LAST.env" ]; then
+  record="$STATE_DIR/images-$LAST.env"
+
+  saved_backend=$(sed -n 's/^BACKEND_IMAGE=//p' "$record")
+  saved_frontend=$(sed -n 's/^FRONTEND_IMAGE=//p' "$record")
+
+  PREVIOUS_BACKEND_IMAGE="${saved_backend:-$PREVIOUS_BACKEND_IMAGE}"
+  PREVIOUS_FRONTEND_IMAGE="${saved_frontend:-$PREVIOUS_FRONTEND_IMAGE}"
+fi
+
+BACKEND_IMAGE="$PREVIOUS_BACKEND_IMAGE"
+FRONTEND_IMAGE="$PREVIOUS_FRONTEND_IMAGE"
 
 services=()
 
@@ -90,6 +107,76 @@ if [ "$BUILD_FRONTEND" = true ]; then
   FRONTEND_IMAGE="$IMAGE_BASE-frontend:$SHA"
   services+=(frontend)
 fi
+
+compose() {
+  sudo env \
+    BACKEND_IMAGE="$BACKEND_IMAGE" \
+    FRONTEND_IMAGE="$FRONTEND_IMAGE" \
+    docker compose \
+    -p unnie-app \
+    --env-file "$ENV_FILE" \
+    -f "$RELEASE_DIR/compose.app.yml" "$@"
+}
+
+handle_deploy_failure() {
+  local failure_code="${1:-1}"
+  local rollback_ready=false
+  local image attempt
+
+  # 롤백 중 오류로 실패 처리 함수가 다시 호출되는 것을 방지한다.
+  trap - ERR
+  set +e
+
+  echo "Deployment failed; restoring previous images"
+
+  compose ps
+  compose logs --tail=80 backend frontend
+
+  if [ -z "$PREVIOUS_BACKEND_IMAGE" ] \
+    || [ -z "$PREVIOUS_FRONTEND_IMAGE" ]; then
+    echo "No complete previous deployment is available for rollback"
+    exit "$failure_code"
+  fi
+
+  BACKEND_IMAGE="$PREVIOUS_BACKEND_IMAGE"
+  FRONTEND_IMAGE="$PREVIOUS_FRONTEND_IMAGE"
+
+  # 서버에 이전 이미지가 없으면 GHCR에서 다시 받는다.
+  for image in "$BACKEND_IMAGE" "$FRONTEND_IMAGE"; do
+    if ! sudo docker image inspect "$image" >/dev/null 2>&1; then
+      if ! sudo docker pull "$image"; then
+        echo "Rollback failed: previous image is unavailable"
+        exit "$failure_code"
+      fi
+    fi
+  done
+
+  # 이전 프론트·백엔드 이미지를 복구한다.
+  if ! compose up -d --no-build --no-deps backend frontend; then
+    echo "Rollback failed while restoring containers"
+    exit "$failure_code"
+  fi
+
+  for attempt in $(seq 1 24); do
+    if python3 "$RELEASE_DIR/check-deployment.py"; then
+      rollback_ready=true
+      break
+    fi
+
+    sleep 5
+  done
+
+  if [ "$rollback_ready" = true ]; then
+    echo "Previous deployment restored successfully"
+  else
+    echo "Rollback containers started, but verification failed"
+    compose ps
+  fi
+
+  # 복구됐더라도 이번 배포는 실패로 반환한다.
+  # 마지막 성공 SHA와 이미지 기록은 갱신하지 않는다.
+  exit "$failure_code"
+}
 
 if [ "${#services[@]}" -gt 0 ]; then
   : "${BACKEND_IMAGE:?Backend image is missing; run a full deployment}"
@@ -107,18 +194,13 @@ if [ "${#services[@]}" -gt 0 ]; then
     fi
   done
 
-  compose() {
-    sudo env \
-      BACKEND_IMAGE="$BACKEND_IMAGE" \
-      FRONTEND_IMAGE="$FRONTEND_IMAGE" \
-      docker compose \
-      -p unnie-app \
-      --env-file "$ENV_FILE" \
-      -f "$RELEASE_DIR/compose.app.yml" "$@"
-  }
-
+  # 설정 검사와 이미지 다운로드는 기존 서비스 교체 전에 수행한다.
   compose config --quiet
   compose pull "${services[@]}"
+
+  # 실제 컨테이너 교체부터 오류 발생 시 롤백한다.
+  trap 'handle_deploy_failure "$?"' ERR
+
   compose up -d --no-build --no-deps "${services[@]}"
 
   ready=false
@@ -133,11 +215,10 @@ if [ "${#services[@]}" -gt 0 ]; then
   done
 
   if [ "$ready" != true ]; then
-    echo "Deployment verification failed; success marker is unchanged"
-    compose ps
-    compose logs --tail=80 backend frontend
-    exit 1
+    handle_deploy_failure 1
   fi
+
+  trap - ERR
 fi
 
 # 이미지 기록을 먼저 저장한다.
