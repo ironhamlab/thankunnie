@@ -217,8 +217,6 @@ if [ "${#services[@]}" -gt 0 ]; then
   if [ "$ready" != true ]; then
     handle_deploy_failure 1
   fi
-
-  trap - ERR
 fi
 
 # 이미지 기록을 먼저 저장한다.
@@ -235,5 +233,8 @@ printf '%s\n' "$SHA" \
 
 mv "$STATE_DIR/last-successful-sha.tmp" \
   "$STATE_DIR/last-successful-sha"
+
+# 상태 기록까지 완료한 뒤 실패 트랩을 해제한다.
+trap - ERR
 
 echo "Deployment succeeded: $SHA"
