@@ -158,7 +158,7 @@ handle_deploy_failure() {
   fi
 
   for attempt in $(seq 1 24); do
-    if python3 "$RELEASE_DIR/check-deployment.py"; then
+    if python3 "$RELEASE_DIR/check-deployment.py" --allow-http-fallback; then
       rollback_ready=true
       break
     fi
