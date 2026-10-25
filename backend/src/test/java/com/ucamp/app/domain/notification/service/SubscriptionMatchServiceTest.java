@@ -26,10 +26,12 @@ import com.ucamp.app.domain.notification.NotificationFixture;
 import com.ucamp.app.domain.notification.entity.NotificationSubscription;
 import com.ucamp.app.domain.notification.entity.SubscriptionType;
 import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepository;
+import com.ucamp.app.domain.notification.repository.ShopCategoryRegionRepository;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({SubscriptionMatchService.class, SubscriptionMatchServiceTest.FixedClock.class})
+@Import({SubscriptionMatchService.class, ShopCategoryRegionRepository.class,
+        SubscriptionMatchServiceTest.FixedClock.class})
 @ActiveProfiles("test")
 class SubscriptionMatchServiceTest {
 
@@ -59,7 +61,7 @@ class SubscriptionMatchServiceTest {
     void findStoreMatches_sameShopAndTime_returnsThoseSubscriptions() {
         NotificationSubscription target = repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
         repository.save(store(2L, 2L, NOW, NOW.plusHours(5)));
-        repository.save(categoryRegion(2L, NOW, NOW.plusHours(5)));
+        repository.save(categoryRegion(2L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
 
         List<NotificationSubscription> result = subscriptionMatchService.findStoreMatches(1L, SLOT_START);
 
@@ -90,6 +92,59 @@ class SubscriptionMatchServiceTest {
         repository.save(store(2L, 1L, NOW.minusHours(5), NOW.minusHours(1)));
 
         assertThat(subscriptionMatchService.findStoreMatches(1L, NOW.minusHours(2))).isEmpty();
+    }
+
+    @Test
+    @DisplayName("매장 카테고리·지역코드와 같고 빈자리 시작이 희망 시간 안인 구독만 고른다")
+    void findCategoryRegionMatches_sameCategoryRegionAndTime_returnsThoseSubscriptions() {
+        NotificationSubscription target = repository.save(
+                categoryRegion(1L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
+        repository.save(categoryRegion(2L, 10L, "SEOUL_MAPO", NOW, NOW.plusHours(5)));
+        repository.save(store(2L, 1L, NOW, NOW.plusHours(5)));
+
+        List<NotificationSubscription> result = subscriptionMatchService.findCategoryRegionMatches(1L, SLOT_START);
+
+        assertThat(result).extracting(NotificationSubscription::getId).containsExactly(target.getId());
+    }
+
+    @Test
+    @DisplayName("카테고리가 다른 매장의 빈자리는 고르지 않는다")
+    void findCategoryRegionMatches_differentCategory_isExcluded() {
+        NotificationFixture.category(jdbcTemplate, 20L, "HAIR");
+        NotificationFixture.shop(jdbcTemplate, 3L, 20L, "SEOUL_GANGNAM", "ACTIVE");
+        repository.save(categoryRegion(1L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
+
+        assertThat(subscriptionMatchService.findCategoryRegionMatches(3L, SLOT_START)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("카테고리 구독도 희망 시간 경계는 포함하고 해제·만료는 뺀다")
+    void findCategoryRegionMatches_timeBoundaryAndInactiveOrExpired() {
+        NotificationSubscription startsAtSlot = repository.save(
+                categoryRegion(1L, 10L, "SEOUL_GANGNAM", SLOT_START, SLOT_START.plusHours(1)));
+        NotificationSubscription endsAtSlot = repository.save(
+                categoryRegion(2L, 10L, "SEOUL_GANGNAM", NOW, SLOT_START));
+        repository.save(categoryRegion(1L, 10L, "SEOUL_GANGNAM", SLOT_START.plusHours(1), SLOT_START.plusHours(2)));
+
+        NotificationSubscription inactive = categoryRegion(2L, 10L, "SEOUL_MAPO", NOW, NOW.plusHours(5));
+        inactive.deactivate();
+        repository.save(inactive);
+        repository.save(categoryRegion(1L, 10L, "SEOUL_MAPO", NOW.minusHours(5), NOW.minusHours(1)));
+
+        assertThat(subscriptionMatchService.findCategoryRegionMatches(1L, SLOT_START))
+                .extracting(NotificationSubscription::getId)
+                .containsExactlyInAnyOrder(startsAtSlot.getId(), endsAtSlot.getId());
+        assertThat(subscriptionMatchService.findCategoryRegionMatches(2L, NOW.minusHours(2))).isEmpty();
+    }
+
+    @Test
+    @DisplayName("매장이 없거나 매장 ID·빈자리 시작 시각이 없으면 카테고리 구독은 빈 목록이다")
+    void findCategoryRegionMatches_missingShopOrInput_returnsEmpty() {
+        repository.save(categoryRegion(1L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
+
+        assertThat(subscriptionMatchService.findCategoryRegionMatches(999L, SLOT_START)).isEmpty();
+        assertThat(subscriptionMatchService.findCategoryRegionMatches(null, SLOT_START)).isEmpty();
+        assertThat(subscriptionMatchService.findCategoryRegionMatches(1L, null)).isEmpty();
     }
 
     @Test
@@ -128,12 +183,13 @@ class SubscriptionMatchServiceTest {
         }
     }
 
-    private static NotificationSubscription categoryRegion(Long userId, LocalDateTime startTime, LocalDateTime endTime) {
+    private static NotificationSubscription categoryRegion(Long userId, Long categoryId, String regionCode,
+            LocalDateTime startTime, LocalDateTime endTime) {
         return NotificationSubscription.builder()
                 .userId(userId)
                 .subscriptionType(SubscriptionType.CATEGORY_REGION)
-                .categoryId(10L)
-                .regionCode("SEOUL_GANGNAM")
+                .categoryId(categoryId)
+                .regionCode(regionCode)
                 .startTime(startTime)
                 .endTime(endTime)
                 .build();
