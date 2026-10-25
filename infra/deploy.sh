@@ -178,21 +178,31 @@ handle_deploy_failure() {
   exit "$failure_code"
 }
 
+: "${BACKEND_IMAGE:?Backend image is missing; run a full deployment}"
+: "${FRONTEND_IMAGE:?Frontend image is missing; run a full deployment}"
+
+# 변경 여부와 관계없이 실제 상태와 목표 이미지를 비교한다.
+# 중지·삭제됐거나 다른 이미지가 실행 중이면 배포 대상에 포함한다.
+for service in backend frontend; do
+  running=$(sudo docker ps -q \
+    --filter "label=com.docker.compose.project=unnie-app" \
+    --filter "label=com.docker.compose.service=$service")
+
+  current=$(current_image "$service")
+
+  if [ "$service" = backend ]; then
+    desired="$BACKEND_IMAGE"
+  else
+    desired="$FRONTEND_IMAGE"
+  fi
+
+  if { [ -z "$running" ] || [ "$current" != "$desired" ]; } \
+    && [[ " ${services[*]} " != *" $service "* ]]; then
+    services+=("$service")
+  fi
+done
+
 if [ "${#services[@]}" -gt 0 ]; then
-  : "${BACKEND_IMAGE:?Backend image is missing; run a full deployment}"
-  : "${FRONTEND_IMAGE:?Frontend image is missing; run a full deployment}"
-
-  # 변경되지 않은 서비스도 중지·삭제 상태면 함께 복구한다.
-  for service in backend frontend; do
-    running=$(sudo docker ps -q \
-      --filter "label=com.docker.compose.project=unnie-app" \
-      --filter "label=com.docker.compose.service=$service")
-
-    if [ -z "$running" ] \
-      && [[ " ${services[*]} " != *" $service "* ]]; then
-      services+=("$service")
-    fi
-  done
 
   # 설정 검사와 이미지 다운로드는 기존 서비스 교체 전에 수행한다.
   compose config --quiet
