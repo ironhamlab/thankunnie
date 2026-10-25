@@ -2,6 +2,7 @@ package com.ucamp.app.domain.notification.service;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,6 +67,32 @@ public class SubscriptionMatchService {
         ShopCategoryRegion categoryRegion = shop.get();
         return notificationSubscriptionRepository.findNotifiableByCategoryRegion(
                 categoryRegion.categoryId(), categoryRegion.regionCode(), slotStartsAt, now());
+    }
+
+    /**
+     * 조건 A와 조건 B에 맞는 발송 대상 회원을 고른다.
+     * 둘 중 하나라도 맞으면 포함한다. 두 조건에 모두 맞아도 회원은 한 번만 넣는다.
+     *
+     * @param shopId       빈자리 매장 ID
+     * @param slotStartsAt 빈자리 시작 시각
+     * @return 발송 대상 회원 ID. 업장 구독 회원이 먼저이고, 이어서 카테고리 구독만 맞는 회원이다
+     */
+    public List<Long> findRecipientUserIds(Long shopId, LocalDateTime slotStartsAt) {
+        List<Long> userIds = new ArrayList<>();
+        addUserIds(userIds, findStoreMatches(shopId, slotStartsAt));
+        addUserIds(userIds, findCategoryRegionMatches(shopId, slotStartsAt));
+        return userIds;
+    }
+
+    // 이미 넣은 회원은 다시 넣지 않는다.
+    private void addUserIds(List<Long> userIds, List<NotificationSubscription> matches) {
+        for (NotificationSubscription match : matches) {
+            Long userId = match.getUserId();
+            if (userIds.contains(userId)) {
+                continue;
+            }
+            userIds.add(userId);
+        }
     }
 
     // 테스트에서 시각을 고정할 수 있게, 주입받은 Clock으로 현재 시각을 구한다.

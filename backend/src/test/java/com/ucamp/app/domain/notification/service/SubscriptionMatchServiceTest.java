@@ -148,6 +148,58 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
+    @DisplayName("업장 구독만 맞아도 그 회원을 발송 대상으로 고른다")
+    void findRecipientUserIds_storeOnly_returnsThatUser() {
+        repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
+        repository.save(categoryRegion(2L, 10L, "SEOUL_MAPO", NOW, NOW.plusHours(5)));
+
+        assertThat(subscriptionMatchService.findRecipientUserIds(1L, SLOT_START)).containsExactly(1L);
+    }
+
+    @Test
+    @DisplayName("카테고리·지역 구독만 맞아도 그 회원을 발송 대상으로 고른다")
+    void findRecipientUserIds_categoryOnly_returnsThatUser() {
+        repository.save(store(1L, 2L, NOW, NOW.plusHours(5)));
+        repository.save(categoryRegion(2L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
+
+        assertThat(subscriptionMatchService.findRecipientUserIds(1L, SLOT_START)).containsExactly(2L);
+    }
+
+    @Test
+    @DisplayName("한 회원이 업장 구독과 카테고리 구독에 모두 맞아도 한 번만 고른다")
+    void findRecipientUserIds_bothConditions_returnsUserOnce() {
+        repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
+        repository.save(store(1L, 1L, NOW, NOW.plusHours(4)));
+        repository.save(categoryRegion(1L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
+        repository.save(categoryRegion(2L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
+
+        assertThat(subscriptionMatchService.findRecipientUserIds(1L, SLOT_START)).containsExactly(1L, 2L);
+    }
+
+    @Test
+    @DisplayName("둘 다 안 맞거나 해제·만료된 구독의 회원은 발송 대상이 아니다")
+    void findRecipientUserIds_noMatchOrInactiveOrExpired_isExcluded() {
+        repository.save(store(1L, 2L, NOW, NOW.plusHours(5)));
+        repository.save(categoryRegion(2L, 10L, "SEOUL_MAPO", NOW, NOW.plusHours(5)));
+
+        NotificationSubscription inactive = store(1L, 1L, NOW, NOW.plusHours(5));
+        inactive.deactivate();
+        repository.save(inactive);
+        repository.save(categoryRegion(2L, 10L, "SEOUL_GANGNAM", NOW.minusHours(5), NOW.minusHours(1)));
+
+        assertThat(subscriptionMatchService.findRecipientUserIds(1L, SLOT_START)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("매장 ID나 빈자리 시작 시각이 없으면 발송 대상도 빈 목록이다")
+    void findRecipientUserIds_missingInput_returnsEmpty() {
+        repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
+
+        assertThat(subscriptionMatchService.findRecipientUserIds(null, SLOT_START)).isEmpty();
+        assertThat(subscriptionMatchService.findRecipientUserIds(1L, null)).isEmpty();
+    }
+
+    @Test
     @DisplayName("매장 ID나 빈자리 시작 시각이 없으면 빈 목록이다")
     void findStoreMatches_missingInput_returnsEmpty() {
         repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
