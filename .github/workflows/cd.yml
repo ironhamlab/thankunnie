@@ -1,0 +1,178 @@
+name: CD
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: unnie-dev-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+      SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+      SSH_FINGERPRINT: ${{ secrets.EC2_SSH_FINGERPRINT }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_USER: ${{ github.actor }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/unnie_deploy
+          chmod 600 ~/.ssh/unnie_deploy
+
+          ssh-keyscan -T 10 -t ed25519 "$EC2_HOST" \
+            > ~/.ssh/unnie_host_key
+
+          ACTUAL=$(ssh-keygen -lf ~/.ssh/unnie_host_key -E sha256 | awk '{print $2}')
+          if [ "$ACTUAL" != "$SSH_FINGERPRINT" ]; then
+            echo "SSH host fingerprint mismatch"
+            exit 1
+          fi
+
+          cat ~/.ssh/unnie_host_key >> ~/.ssh/known_hosts
+
+          cat > ~/.ssh/config <<EOF
+          Host unnie-server
+            HostName $EC2_HOST
+            User $EC2_USERNAME
+            IdentityFile ~/.ssh/unnie_deploy
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            BatchMode yes
+            ConnectTimeout 15
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Detect changes since successful deployment
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE=$(ssh unnie-server \
+            'if [ -f /home/ubuntu/unnie/deploy-state/last-successful-sha ]; then cat /home/ubuntu/unnie/deploy-state/last-successful-sha; fi')
+
+          BE=true
+          FE=true
+
+          if [[ "$BASE" =~ ^[0-9a-f]{40}$ ]] \
+            && git cat-file -e "$BASE^{commit}" 2>/dev/null \
+            && git merge-base --is-ancestor "$BASE" "$GITHUB_SHA"; then
+
+            git diff --name-only "$BASE" "$GITHUB_SHA" > /tmp/unnie-changes
+            BE=false
+            FE=false
+
+            if grep -Eq '^(backend/|docs/erd/|\.dockerignore$|infra/|\.github/workflows/cd\.yml$)' /tmp/unnie-changes; then
+              BE=true
+            fi
+
+            if grep -Eq '^(frontend/|infra/|\.github/workflows/cd\.yml$)' /tmp/unnie-changes; then
+              FE=true
+            fi
+          fi
+
+          echo "backend=$BE" >> "$GITHUB_OUTPUT"
+          echo "frontend=$FE" >> "$GITHUB_OUTPUT"
+          echo "Backend: $BE / Frontend: $FE"
+
+          IMAGE_BASE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          echo "IMAGE_BASE=$IMAGE_BASE" >> "$GITHUB_ENV"
+
+      - name: Set up Java 21
+        if: steps.changes.outputs.backend == 'true'
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+          cache-dependency-path: |
+            backend/**/*.gradle*
+            backend/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Test backend
+        if: steps.changes.outputs.backend == 'true'
+        working-directory: backend
+        run: bash ./gradlew --no-daemon test
+
+      - name: Set up Node.js 22
+        if: steps.changes.outputs.frontend == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Lint frontend
+        if: steps.changes.outputs.frontend == 'true'
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run lint
+
+      - name: Login to GHCR
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.frontend == 'true'
+        run: printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GH_USER" --password-stdin
+
+      - name: Build and push backend
+        if: steps.changes.outputs.backend == 'true'
+        run: |
+          set -euo pipefail
+          docker build \
+            -f backend/Dockerfile \
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            -t "$IMAGE_BASE-backend:$GITHUB_SHA" .
+          docker push "$IMAGE_BASE-backend:$GITHUB_SHA"
+
+      - name: Build and push frontend
+        if: steps.changes.outputs.frontend == 'true'
+        run: |
+          set -euo pipefail
+          docker build \
+            --build-arg VITE_API_BASE_URL=/api \
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            -t "$IMAGE_BASE-frontend:$GITHUB_SHA" frontend
+          docker push "$IMAGE_BASE-frontend:$GITHUB_SHA"
+
+      - name: Upload deployment files
+        run: |
+          set -euo pipefail
+          ssh unnie-server "mkdir -p /home/ubuntu/unnie/releases/$GITHUB_SHA"
+          scp infra/compose.app.yml infra/deploy.sh \
+            "unnie-server:/home/ubuntu/unnie/releases/$GITHUB_SHA/"
+
+      - name: Deploy
+        env:
+          BUILD_BACKEND: ${{ steps.changes.outputs.backend }}
+          BUILD_FRONTEND: ${{ steps.changes.outputs.frontend }}
+        run: |
+          set -euo pipefail
+          ssh unnie-server \
+            "bash /home/ubuntu/unnie/releases/$GITHUB_SHA/deploy.sh '$GITHUB_SHA' '$IMAGE_BASE' '$BUILD_BACKEND' '$BUILD_FRONTEND'"
+
+      - name: Remove SSH private key
+        if: always()
+        run: rm -f ~/.ssh/unnie_deploy

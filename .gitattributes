@@ -1,0 +1,5 @@
+.gitattributes text eol=lf
+
+# GitHub Actions and Linux deployment scripts
+.github/workflows/*.yml text eol=lf
+infra/*.sh text eol=lf
