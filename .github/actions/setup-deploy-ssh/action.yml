@@ -1,0 +1,63 @@
+name: Configure deployment SSH
+description: Verify the server host key and configure the deployment identity
+
+inputs:
+  host:
+    required: true
+    description: EC2 host
+
+  username:
+    required: true
+    description: SSH username
+
+  private-key:
+    required: true
+    description: Deployment private key
+
+  fingerprint:
+    required: true
+    description: Expected ED25519 SHA256 fingerprint
+
+runs:
+  using: composite
+
+  steps:
+    - shell: bash
+      env:
+        DEPLOY_HOST: ${{ inputs.host }}
+        DEPLOY_USER: ${{ inputs.username }}
+        DEPLOY_KEY: ${{ inputs.private-key }}
+        DEPLOY_FINGERPRINT: ${{ inputs.fingerprint }}
+      run: |
+        set -euo pipefail
+
+        install -m 700 -d ~/.ssh
+
+        printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/unnie_deploy
+        chmod 600 ~/.ssh/unnie_deploy
+
+        ssh-keyscan -T 10 -t ed25519 "$DEPLOY_HOST" \
+          > ~/.ssh/unnie_host_key
+
+        ACTUAL=$(ssh-keygen -lf ~/.ssh/unnie_host_key -E sha256 \
+          | awk '{print $2}')
+
+        if [ "$ACTUAL" != "$DEPLOY_FINGERPRINT" ]; then
+          echo "SSH host fingerprint mismatch"
+          exit 1
+        fi
+
+        cat ~/.ssh/unnie_host_key >> ~/.ssh/known_hosts
+
+        cat > ~/.ssh/config <<EOF
+        Host unnie-server
+          HostName $DEPLOY_HOST
+          User $DEPLOY_USER
+          IdentityFile ~/.ssh/unnie_deploy
+          IdentitiesOnly yes
+          StrictHostKeyChecking yes
+          BatchMode yes
+          ConnectTimeout 15
+        EOF
+
+        chmod 600 ~/.ssh/config
