@@ -21,6 +21,7 @@ import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
 import com.ucamp.app.domain.vacancy.policy.PriceCalculator;
 import com.ucamp.app.domain.vacancy.policy.PriceQuote;
 import com.ucamp.app.domain.vacancy.policy.SalePolicy;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 @Service
 @Transactional(readOnly = true)
@@ -28,13 +29,16 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final TreatmentRepository treatmentRepository;
+    private final AvailabilityService availabilityService;
     private final ShopLock shopLock;
     private final Clock clock;
 
     public ReservationService(ReservationRepository reservationRepository,
-            TreatmentRepository treatmentRepository, ShopLock shopLock, Clock clock) {
+            TreatmentRepository treatmentRepository, AvailabilityService availabilityService,
+            ShopLock shopLock, Clock clock) {
         this.reservationRepository = reservationRepository;
         this.treatmentRepository = treatmentRepository;
+        this.availabilityService = availabilityService;
         this.shopLock = shopLock;
         this.clock = clock;
     }
@@ -46,10 +50,9 @@ public class ReservationService {
     public ReservationCreateResponse createReservation(AuthUser loginUser, ReservationCreateRequest request) {
         loginUser.requireRole(UserRole.CUSTOMER);
 
-        // 현재 시각 clock으로 고정
-        LocalDateTime now = LocalDateTime.now(clock);
         LocalDateTime startsAt = TimeUtils.toLocal(request.startsAt());
-        SalePolicy.validateBookable(startsAt, now);
+        // 잠금을 기다리기 전에 마감·단위·기간이 틀린 요청은 바로 돌려보낸다
+        SalePolicy.validateBookable(startsAt, LocalDateTime.now(clock));
 
         Treatment treatment = treatmentRepository.findById(request.treatmentId())
                 .filter(Treatment::isActive)
@@ -58,7 +61,9 @@ public class ReservationService {
 
         // 같은 시간에 두 고객이 동시에 클릭해도 한 명만 점유하도록 매장 단위로 순서를 맞춘다
         shopLock.lock(treatment.getShopId());
-        validateNotTaken(treatment.getShopId(), startsAt, endsAt, now);
+        // 잠금 대기 중 마감이 지나거나 점유가 만료될 수 있으므로 잠금 뒤 시각으로 검사·가격·만료를 정한다
+        LocalDateTime now = LocalDateTime.now(clock);
+        availabilityService.validateAvailable(treatment.getShopId(), startsAt, treatment.getDurationMinutes());
 
         PriceQuote quote = PriceCalculator.quote(
                 treatment.getRegularPrice(), treatment.salePrices(), startsAt, now);
@@ -74,16 +79,5 @@ public class ReservationService {
                 .customerRequest(request.customerRequest())
                 .build();
         return ReservationCreateResponse.from(reservationRepository.save(reservation));
-    }
-
-    // 조회 결과에는 만료된 점유(HOLD)도 섞여 있으므로 SalePolicy.isOccupying 으로 한 번 더 거른다
-    private void validateNotTaken(Long shopId, LocalDateTime startsAt, LocalDateTime endsAt, LocalDateTime now) {
-        boolean taken = reservationRepository.findActiveOverlapping(shopId, startsAt, endsAt)
-                .stream()
-                .anyMatch(reservation -> SalePolicy.isOccupying(
-                        reservation.getStatus(), reservation.getHoldExpiresAt(), now));
-        if (taken) {
-            throw new BusinessException(ErrorCode.VACANCY_TIME_TAKEN);
-        }
     }
 }

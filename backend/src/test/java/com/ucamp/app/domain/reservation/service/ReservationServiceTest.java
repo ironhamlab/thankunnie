@@ -3,15 +3,16 @@ package com.ucamp.app.domain.reservation.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -36,6 +38,7 @@ import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.treatment.entity.Treatment;
 import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
 import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 @ExtendWith(MockitoExtension.class)
 class ReservationServiceTest {
@@ -52,6 +55,9 @@ class ReservationServiceTest {
     private TreatmentRepository treatmentRepository;
 
     @Mock
+    private AvailabilityService availabilityService;
+
+    @Mock
     private ShopLock shopLock;
 
     private ReservationService reservationService;
@@ -59,7 +65,8 @@ class ReservationServiceTest {
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(NOW.atZone(BookingPolicy.ZONE).toInstant(), BookingPolicy.ZONE);
-        reservationService = new ReservationService(reservationRepository, treatmentRepository, shopLock, clock);
+        reservationService = new ReservationService(
+                reservationRepository, treatmentRepository, availabilityService, shopLock, clock);
     }
 
     @Test
@@ -113,12 +120,25 @@ class ReservationServiceTest {
     }
 
     @Test
-    @DisplayName("같은 매장에서 시간을 잡고 있는 예약과 겹치면 VACANCY_TIME_TAKEN 예외가 발생한다")
-    void createReservation_overlappingOccupied_throwsTimeTaken() {
+    @DisplayName("매장을 잠근 뒤 영업시간·열기·닫기·예약 겹침을 시술 소요 시간으로 검사한다")
+    void createReservation_validatesAvailabilityAfterLock() {
         givenTreatment(TreatmentStatus.ACTIVE);
-        Reservation existing = reservation(NOW.plusMinutes(3));
-        given(reservationRepository.findActiveOverlapping(eq(SHOP_ID), any(), any()))
-                .willReturn(List.of(existing));
+        given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11), null));
+
+        InOrder inOrder = inOrder(shopLock, availabilityService, reservationRepository);
+        inOrder.verify(shopLock).lock(SHOP_ID);
+        inOrder.verify(availabilityService).validateAvailable(SHOP_ID, NOW.plusHours(11), 60);
+        inOrder.verify(reservationRepository).save(any(Reservation.class));
+    }
+
+    @Test
+    @DisplayName("같은 매장에서 시간을 잡고 있는 예약과 겹치면 VACANCY_TIME_TAKEN 예외가 발생한다")
+    void createReservation_timeTaken_throwsTimeTaken() {
+        givenTreatment(TreatmentStatus.ACTIVE);
+        willThrow(new BusinessException(ErrorCode.VACANCY_TIME_TAKEN))
+                .given(availabilityService).validateAvailable(SHOP_ID, NOW.plusHours(11), 60);
 
         assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11), null)),
                 ErrorCode.VACANCY_TIME_TAKEN);
@@ -126,18 +146,35 @@ class ReservationServiceTest {
     }
 
     @Test
-    @DisplayName("겹치는 예약이 만료된 점유뿐이면 예약할 수 있다")
-    void createReservation_overlappingExpiredHold_saves() {
+    @DisplayName("영업 외 시간이나 사장님이 닫은 시간이면 VACANCY_NOT_OPEN_TIME 예외가 발생한다")
+    void createReservation_notOpenTime_throwsNotOpenTime() {
         givenTreatment(TreatmentStatus.ACTIVE);
-        Reservation expired = reservation(NOW.minusMinutes(1));
-        given(reservationRepository.findActiveOverlapping(eq(SHOP_ID), any(), any()))
-                .willReturn(List.of(expired));
+        willThrow(new BusinessException(ErrorCode.VACANCY_NOT_OPEN_TIME))
+                .given(availabilityService).validateAvailable(SHOP_ID, NOW.plusHours(11), 60);
+
+        assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11), null)),
+                ErrorCode.VACANCY_NOT_OPEN_TIME);
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("점유 만료 시각은 매장 잠금을 얻은 뒤의 시각으로 계산한다")
+    void createReservation_holdExpiresFromTimeAfterLock() {
+        // 잠금 전 09:00, 잠금을 기다린 뒤 09:02 로 시계를 읽게 한다
+        LocalDateTime afterLock = NOW.plusMinutes(2);
+        Clock clock = mock(Clock.class);
+        given(clock.getZone()).willReturn(BookingPolicy.ZONE);
+        given(clock.instant()).willReturn(
+                NOW.atZone(BookingPolicy.ZONE).toInstant(), afterLock.atZone(BookingPolicy.ZONE).toInstant());
+        ReservationService service = new ReservationService(
+                reservationRepository, treatmentRepository, availabilityService, shopLock, clock);
+        givenTreatment(TreatmentStatus.ACTIVE);
         given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
 
-        ReservationCreateResponse response = reservationService.createReservation(
-                CUSTOMER, request(NOW.plusHours(11), null));
+        ReservationCreateResponse response = service.createReservation(CUSTOMER, request(NOW.plusHours(11), null));
 
-        assertThat(response.status()).isEqualTo(ReservationStatus.HOLD);
+        assertThat(response.holdExpiresAt())
+                .isEqualTo(afterLock.plusMinutes(5).atZone(BookingPolicy.ZONE).toOffsetDateTime());
     }
 
     @Test
@@ -163,8 +200,8 @@ class ReservationServiceTest {
     void createReservation_afterBookingDeadline_throwsBookingClosed() {
         // 09:10 에 09:30 시작을 클릭하면 시작까지 20분이라 마감이다
         LocalDateTime now = NOW.plusMinutes(10);
-        ReservationService service = new ReservationService(reservationRepository, treatmentRepository, shopLock,
-                Clock.fixed(now.atZone(BookingPolicy.ZONE).toInstant(), BookingPolicy.ZONE));
+        ReservationService service = new ReservationService(reservationRepository, treatmentRepository,
+                availabilityService, shopLock, Clock.fixed(now.atZone(BookingPolicy.ZONE).toInstant(), BookingPolicy.ZONE));
 
         assertErrorCode(() -> service.createReservation(CUSTOMER, request(NOW.plusMinutes(30), null)),
                 ErrorCode.VACANCY_BOOKING_CLOSED);
@@ -191,18 +228,6 @@ class ReservationServiceTest {
                 .lastMinutePrice(18_000)
                 .durationMinutes(60)
                 .status(status)
-                .build();
-    }
-
-    private static Reservation reservation(LocalDateTime holdExpiresAt) {
-        return Reservation.builder()
-                .userId(TestUser.CUSTOMER_2.toAuthUser().userId())
-                .treatmentId(TREATMENT_ID)
-                .startsAt(NOW.plusHours(11))
-                .endsAt(NOW.plusHours(12))
-                .appliedPrice(30_000)
-                .deposit(20_000)
-                .holdExpiresAt(holdExpiresAt)
                 .build();
     }
 
