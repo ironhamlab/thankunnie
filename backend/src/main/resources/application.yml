@@ -33,3 +33,13 @@ iamport:
   imp-secret: ${IAMPORT_IMP_SECRET:}
   # 테스트 채널 결제까지 조회할지 여부. 운영에서는 반드시 false
   include-sandbox: ${IAMPORT_INCLUDE_SANDBOX:false}
+
+---
+# local 프로필 H2 에만 초기 데이터(docs/erd/02_init_data_dml.sql)를 넣는다. test 는 각 테스트가 데이터를 넣는다
+spring:
+  config:
+    activate:
+      on-profile: local
+  sql:
+    init:
+      data-locations: classpath:init-data.sql

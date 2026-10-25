@@ -1,0 +1,43 @@
+name: unnie-infra
+
+services:
+  oracle:
+    image: gvenzl/oracle-xe:21.3.0-slim
+    restart: unless-stopped
+    shm_size: "1gb"
+
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:?Required}
+      APP_USER: ${APP_USER:?Required}
+      APP_USER_PASSWORD: ${APP_USER_PASSWORD:?Required}
+      TZ: Asia/Seoul
+
+    ports:
+      - "127.0.0.1:1521:1521"
+
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+
+    networks:
+      - unnie-network
+
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      start_period: 180s
+      retries: 10
+
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  oracle-data:
+    name: unnie-oracle-data
+
+networks:
+  unnie-network:
+    external: true
