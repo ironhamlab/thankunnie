@@ -36,15 +36,40 @@ public final class CancelFixture {
                 """.formatted(CREATED, CREATED), TREATMENT_ID, SHOP_ID);
     }
 
+    /**
+     * 시작 사흘 전에 점유·확정된 예약을 넣는다.
+     */
     public static void insertConfirmedReservation(JdbcTemplate jdbcTemplate, long reservationId, long userId,
             LocalDateTime startsAt) {
+        insertReservation(jdbcTemplate, reservationId, userId, "CONFIRMED", startsAt, startsAt.minusDays(3));
+    }
+
+    /**
+     * 예약을 넣는다. 점유 시각(CREATED_AT)을 지정하고, 점유 만료는 +5분, 확정은 +2분으로 둔다.
+     */
+    public static void insertReservation(JdbcTemplate jdbcTemplate, long reservationId, long userId, String status,
+            LocalDateTime startsAt, LocalDateTime heldAt) {
         jdbcTemplate.update("""
                 INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT,
                     APPLIED_PRICE, DEPOSIT, HOLD_EXPIRES_AT, CONFIRMED_AT, CREATED_AT, UPDATED_AT)
-                VALUES (?, ?, ?, 'CONFIRMED', ?, ?, 22000, 20000, ?, ?, %s, %s)
-                """.formatted(CREATED, CREATED), reservationId, userId, TREATMENT_ID,
+                VALUES (?, ?, ?, ?, ?, ?, 22000, 20000, ?, ?, ?, ?)
+                """, reservationId, userId, TREATMENT_ID, status,
                 Timestamp.valueOf(startsAt), Timestamp.valueOf(startsAt.plusHours(1)),
-                Timestamp.valueOf(startsAt.minusDays(3).plusMinutes(5)), Timestamp.valueOf(startsAt.minusDays(3)));
+                Timestamp.valueOf(heldAt.plusMinutes(5)), Timestamp.valueOf(heldAt.plusMinutes(2)),
+                Timestamp.valueOf(heldAt), Timestamp.valueOf(heldAt));
+    }
+
+    /**
+     * 예약금 결제 행을 넣는다. 승인 시각이 null 이면 미승인 건이다.
+     */
+    public static void insertPayment(JdbcTemplate jdbcTemplate, long paymentId, long reservationId, String status,
+            int amount, LocalDateTime approvedAt) {
+        jdbcTemplate.update("""
+                INSERT INTO DEPOSIT_PAYMENT (DEPOSIT_PAYMENT_ID, RESERVATION_ID, PG_PROVIDER, STATUS, AMOUNT,
+                    APPROVED_AT, CREATED_AT, UPDATED_AT)
+                VALUES (?, ?, 'MOCK', ?, ?, ?, %s, %s)
+                """.formatted(CREATED, CREATED), paymentId, reservationId, status, amount,
+                approvedAt == null ? null : Timestamp.valueOf(approvedAt));
     }
 
     private static void insertUser(JdbcTemplate jdbcTemplate, long userId) {
