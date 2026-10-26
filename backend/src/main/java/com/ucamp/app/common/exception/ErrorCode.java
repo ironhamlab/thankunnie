@@ -41,10 +41,14 @@ public enum ErrorCode {
     VACANCY_NOT_OPEN_TIME(HttpStatus.CONFLICT, "VACANCY_013", "영업하지 않는 시간입니다."),
     VACANCY_BUSINESS_TIME_REQUIRED(HttpStatus.BAD_REQUEST, "VACANCY_014", "영업일은 시작·종료 시각을 입력해야 합니다."),
     VACANCY_INVALID_DURATION(HttpStatus.BAD_REQUEST, "VACANCY_015", "시술 소요 시간이 올바르지 않습니다."),
+    VACANCY_USER_TIME_OVERLAP(HttpStatus.CONFLICT, "VACANCY_016", "같은 시간에 진행 중인 예약이 있습니다."),
 
     // PAYMENT
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT_001", "결제 정보를 찾을 수 없습니다."),
     PAYMENT_PORTONE_ERROR(HttpStatus.BAD_GATEWAY, "PAYMENT_002", "결제 대행사 연동 중 오류가 발생했습니다."),
+
+    // TREATMENT
+    TREATMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "TREATMENT_001", "시술을 찾을 수 없습니다."),
 
     // CANCEL
     CANCEL_RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "CANCEL_001", "취소할 예약을 찾을 수 없습니다."),
