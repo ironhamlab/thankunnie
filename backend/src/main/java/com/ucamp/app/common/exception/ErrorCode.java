@@ -48,7 +48,15 @@ public enum ErrorCode {
     PAYMENT_PORTONE_ERROR(HttpStatus.BAD_GATEWAY, "PAYMENT_002", "결제 대행사 연동 중 오류가 발생했습니다."),
 
     // TREATMENT
-    TREATMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "TREATMENT_001", "시술을 찾을 수 없습니다.");
+    TREATMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "TREATMENT_001", "시술을 찾을 수 없습니다."),
+
+    // CANCEL
+    CANCEL_RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "CANCEL_001", "취소할 예약을 찾을 수 없습니다."),
+    CANCEL_NOT_CONFIRMED(HttpStatus.CONFLICT, "CANCEL_002", "확정된 예약만 취소할 수 있습니다."),
+    CANCEL_ALREADY_REQUESTED(HttpStatus.CONFLICT, "CANCEL_003", "이미 취소 요청된 예약입니다."),
+    CANCEL_ALREADY_STARTED(HttpStatus.CONFLICT, "CANCEL_004", "시술 시작 이후에는 취소할 수 없습니다."),
+    CANCEL_GRACE_ALREADY_USED(HttpStatus.CONFLICT, "CANCEL_005", "오늘 무료 취소를 이미 사용했습니다."),
+    CANCEL_INVALID_REFUND_AMOUNT(HttpStatus.BAD_REQUEST, "CANCEL_006", "환불액은 정책 환불액 이상, 납부 예약금 이하여야 합니다.");
 
     private final HttpStatus status;
     private final String code;
