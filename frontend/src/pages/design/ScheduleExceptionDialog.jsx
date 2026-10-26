@@ -36,6 +36,11 @@ export default function ScheduleExceptionDialog({ exception, date, minDate, maxD
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    // HH:mm 문자열은 사전순 비교가 시각 순서와 같다
+    if (form.endTime <= form.startTime) {
+      setErrorMessage('종료 시각은 시작 시각보다 뒤여야 합니다.');
+      return;
+    }
     try {
       await saveException(exception?.exceptionId, {
         exceptionType: form.exceptionType,
