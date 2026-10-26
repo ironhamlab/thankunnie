@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { BOOKINGS, MENUS, SERVICES, SHOP, SLOTS, overlaps, validateSlot } from './data.js';
+import { BOOKINGS, MENUS, SERVICES, SHOP, SLOTS, overlaps, resolveSlotMenu, validateSlot } from './data.js';
 
 export const useDesignStore = create((set, get) => ({
   shop: SHOP,
@@ -34,10 +34,22 @@ export const useDesignStore = create((set, get) => ({
       menus: state.menus.map((item) => (item.id === id ? { ...item, active: !item.active } : item)),
     })),
   saveSlot: (slot, selectableMenus = []) => {
-    const selectedMenu = selectableMenus.find((menu) => menu.id === slot.serviceId && menu.active);
+    const existingSlot = get().slots.find((item) => item.id === slot.id);
+    const existingMenu = resolveSlotMenu(existingSlot, selectableMenus, get().menus);
+    const keepTreatment = existingSlot && (slot.serviceId === existingSlot.serviceId
+      || slot.serviceId === existingMenu?.id);
+    const selectedMenu = keepTreatment
+      ? { ...get().menus.find((menu) => menu.id === existingSlot.serviceId),
+        id: existingSlot.serviceId, duration: existingSlot.duration, active: true }
+      : selectableMenus.find((menu) => menu.id === slot.serviceId && menu.active);
     if (!selectedMenu) throw new Error('활성 시술을 선택해 주세요.');
-    // 최신 시술 정보는 저장할 빈자리에만 적용하고 기존 빈자리의 소요 시간은 보존한다.
-    const savedSlot = { ...slot, duration: selectedMenu.duration };
+    // 동일 시술의 수정은 기존 스냅샷을 보존한다. 신규·시술 교체에만 최신 활성 메뉴를 적용한다.
+    const savedSlot = {
+      ...slot,
+      serviceId: selectedMenu.id,
+      treatmentId: keepTreatment ? existingSlot.treatmentId : selectedMenu.treatmentId,
+      duration: selectedMenu.duration,
+    };
     const validationError = validateSlot(savedSlot, [selectedMenu], get().slots, get().bookings);
     if (validationError) throw new Error(validationError);
     set((state) => ({

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
 import { useDesignStore } from './useDesignStore';
-import { DEMO_DATE, STATUS, finish, minutes, money } from './data';
+import { DEMO_DATE, STATUS, finish, money, resolveSlotMenu } from './data';
 import Dialog from './Dialog';
 import useSlotTreatments from '@/hooks/useSlotTreatments';
 
@@ -37,15 +37,16 @@ export default function SlotsPage() {
     setError('');
   };
   const update = (key, value) => setEdit({ ...draft, [key]: value });
+  const existingSlot = slots.find((slot) => slot.id === draft?.id);
+  const existingMenu = resolveSlotMenu(existingSlot, selectableMenus, menus);
+  const keepTreatment = existingSlot && (draft.serviceId === existingSlot.serviceId
+    || draft.serviceId === existingMenu?.id);
   const menu = selectableMenus.find((m) => m.id === draft?.serviceId)
     ?? menus.find((m) => m.id === draft?.serviceId);
+  const duration = keepTreatment ? existingSlot.duration : menu?.duration;
   const submit = async (e) => {
     e.preventDefault();
     setError('');
-    if (minutes(draft.time) < 600 || minutes(draft.time) + (menu?.duration || 60) > 1260) {
-      setError('운영 시간(10:00~21:00) 안에서 시술이 끝나도록 선택해 주세요.');
-      return;
-    }
     if (draft.date < DEMO_DATE) {
       setError('시연 기준일 이후 날짜를 선택해 주세요.');
       return;
@@ -235,8 +236,14 @@ export default function SlotsPage() {
                 onChange={(e) => update('serviceId', e.target.value)}
               >
                 <option value="">선택해 주세요</option>
+                {existingSlot && (
+                  <option value={existingSlot.serviceId}>
+                    {existingMenu?.name ?? menus.find((m) => m.id === existingSlot.serviceId)?.name ?? '기존 시술'}
+                    {' '}({existingSlot.duration}분, 기존 시술 유지)
+                  </option>
+                )}
                 {selectableMenus
-                  .filter((m) => m.active)
+                  .filter((m) => m.active && m.id !== existingSlot?.serviceId)
                   .map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name} ({m.duration}분)
@@ -279,7 +286,7 @@ export default function SlotsPage() {
             </label>
             <div className="b-notice">
               <small>종료 시각 (자동)</small>
-              <strong>{finish(draft.time || '00:00', menu?.duration || 60)}</strong>
+              <strong>{finish(draft.time || '00:00', duration || 60)}</strong>
               <small>
                 현재 적용 가격{' '}
                 {money(Math.round((menu?.original || 0) * (1 - Number(draft.discount) / 100)))}
@@ -292,7 +299,8 @@ export default function SlotsPage() {
             )}
             <button
               className="b-button b-primary b-span-two"
-              disabled={selectionStatus !== 'succeeded' || !selectableMenus.some((m) => m.active)}
+              disabled={selectionStatus !== 'succeeded'
+                || (!existingSlot && !selectableMenus.some((m) => m.active))}
             >
               빈자리 저장하기
             </button>

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
 import { useDesignStore } from './useDesignStore.js';
-import { DEMO_DATE } from './data.js';
+import { DEMO_DATE, resolveSlotMenu } from './data.js';
 
 const initial = useDesignStore.getState();
 afterEach(() => useDesignStore.setState(initial, true));
@@ -62,5 +62,69 @@ test('다른 시술의 기존 빈자리도 저장된 소요 시간으로 검사�
   assert.throws(
     () => initial.saveSlot({ ...slot, id: 'next', serviceId: otherMenu.id, time: '11:30' }, [otherMenu]),
     /겹칩니다/,
+  );
+});
+
+test('같은 시술의 빈자리 수정은 변경된 메뉴와 요청의 시간 대신 기존 소요 시간을 보존한다', () => {
+  useDesignStore.setState({ slots: [], bookings: [] });
+  initial.saveSlot(slot, [{ ...menu, duration: 30 }]);
+  const existing = useDesignStore.getState().slots[0];
+  initial.saveSlot({ ...existing, time: '20:30', duration: 999 }, [{ ...menu, duration: 120 }]);
+  assert.equal(useDesignStore.getState().slots[0].duration, 30);
+});
+
+test('수정 대상의 보존된 시간이 다른 빈자리와 겹치면 최신 메뉴 시간이 짧아도 거절한다', () => {
+  const existing = { ...slot, duration: 120 };
+  const other = { ...slot, id: 'other', time: '12:00', duration: 30 };
+  useDesignStore.setState({ slots: [existing, other], bookings: [] });
+  assert.throws(
+    () => initial.saveSlot({ ...existing, time: '10:30' }, [{ ...menu, duration: 30 }]),
+    /겹칩니다/,
+  );
+  assert.equal(useDesignStore.getState().slots[0], existing);
+});
+
+test('연결 정보 없는 데모 빈자리는 기존 시술을 유지해 수정할 수 있다', () => {
+  const existing = { ...slot, serviceId: 'nail', duration: 60 };
+  useDesignStore.setState({ slots: [existing], bookings: [] });
+  assert.equal(resolveSlotMenu(existing, [menu], initial.menus), undefined);
+  initial.saveSlot({ ...existing, time: '11:00' }, []);
+  assert.equal(useDesignStore.getState().slots[0].serviceId, 'nail');
+  assert.equal(useDesignStore.getState().slots[0].duration, 60);
+  assert.throws(
+    () => initial.saveSlot({ ...existing, serviceId: menu.id }, [{ ...menu, active: false }]),
+    /활성 시술/,
+  );
+});
+
+test('명시적 treatmentId가 있는 데모 빈자리는 서버 시술에 연결하고 기존 시간을 보존한다', () => {
+  const existing = { ...slot, serviceId: 'nail', treatmentId: 1000, duration: 30 };
+  useDesignStore.setState({ slots: [existing], bookings: [] });
+  assert.equal(resolveSlotMenu(existing, [menu], initial.menus), menu);
+  initial.saveSlot({ ...existing, serviceId: menu.id }, [{ ...menu, duration: 120 }]);
+  assert.equal(useDesignStore.getState().slots[0].serviceId, 'nail');
+  assert.equal(useDesignStore.getState().slots[0].duration, 30);
+});
+
+test('새 시술로 바꾸면 최신 소요 시간을 적용하고 다른 빈자리와의 겹침을 검사한다', () => {
+  const existing = { ...slot, duration: 30 };
+  const other = { ...slot, id: 'other', time: '11:00', duration: 30 };
+  const replacement = { ...menu, id: 'treatment-2000', duration: 120 };
+  useDesignStore.setState({ slots: [existing, other], bookings: [] });
+  assert.throws(
+    () => initial.saveSlot({ ...existing, serviceId: replacement.id }, [replacement]),
+    /겹칩니다/,
+  );
+  initial.saveSlot({ ...existing, serviceId: replacement.id, time: '12:00' }, [replacement]);
+  assert.equal(useDesignStore.getState().slots[0].duration, 120);
+});
+
+test('신규 빈자리 운영 시간은 재조회한 최신 소요 시간으로 검증한다', () => {
+  useDesignStore.setState({ slots: [], bookings: [] });
+  initial.saveSlot({ ...slot, time: '20:30', duration: 120 }, [{ ...menu, duration: 30 }]);
+  assert.equal(useDesignStore.getState().slots[0].duration, 30);
+  assert.throws(
+    () => initial.saveSlot({ ...slot, id: 'next', time: '20:00', duration: 30 }, [{ ...menu, duration: 120 }]),
+    /운영 시간/,
   );
 });
