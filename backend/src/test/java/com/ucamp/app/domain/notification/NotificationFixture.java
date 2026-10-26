@@ -34,10 +34,11 @@ public final class NotificationFixture {
 
     public static void treatment(JdbcTemplate jdbc, long treatmentId, long shopId, String treatmentType) {
         jdbc.update("""
-                INSERT INTO TREATMENT (TREATMENT_ID, SHOP_ID, NAME, REGULAR_PRICE, PRICE, LAST_MINUTE_PRICE,
+                INSERT INTO TREATMENT (TREATMENT_ID, SHOP_ID, CATEGORY_ID, NAME, REGULAR_PRICE, PRICE, LAST_MINUTE_PRICE,
                                        DURATION_MINUTES, TREATMENT_TYPE, CREATED_AT, UPDATED_AT)
-                VALUES (?, ?, '시술', 50000, 40000, 30000, 60, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                """, treatmentId, shopId, treatmentType);
+                VALUES (?, ?, (SELECT CATEGORY_ID FROM SHOP WHERE SHOP_ID = ?), '시술',
+                        50000, 40000, 30000, 60, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """, treatmentId, shopId, shopId, treatmentType);
     }
 
     public static void exception(JdbcTemplate jdbc, long exceptionId, long shopId, Long reservationId,

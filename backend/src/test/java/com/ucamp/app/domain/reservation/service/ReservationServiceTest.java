@@ -23,6 +23,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.BeanUtils;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.TestUser;
@@ -35,6 +37,8 @@ import com.ucamp.app.domain.reservation.dto.response.ReservationCreateResponse;
 import com.ucamp.app.domain.reservation.entity.Reservation;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
+import com.ucamp.app.domain.shop.entity.Shop;
+import com.ucamp.app.domain.treatment.dto.request.TreatmentSaveRequest;
 import com.ucamp.app.domain.treatment.entity.Treatment;
 import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
 import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
@@ -219,16 +223,13 @@ class ReservationServiceTest {
     }
 
     private static Treatment treatment(TreatmentStatus status) {
-        return Treatment.builder()
-                .id(TREATMENT_ID)
-                .shopId(SHOP_ID)
-                .name("젤 네일")
-                .regularPrice(50_000)
-                .price(30_000)
-                .lastMinutePrice(18_000)
-                .durationMinutes(60)
-                .status(status)
-                .build();
+        Shop shop = BeanUtils.instantiateClass(Shop.class);
+        ReflectionTestUtils.setField(shop, "shopId", SHOP_ID);
+        Treatment treatment = Treatment.create(shop, null,
+                new TreatmentSaveRequest("젤 네일", null, 50_000, 30_000, 18_000, 1L, 60));
+        ReflectionTestUtils.setField(treatment, "treatmentId", TREATMENT_ID);
+        treatment.changeStatus(status);
+        return treatment;
     }
 
     private static ReservationCreateRequest request(LocalDateTime startsAt, String customerRequest) {

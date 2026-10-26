@@ -1,0 +1,274 @@
+name: CD
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unnie-dev-deploy
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Plan Deployment
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      base: ${{ steps.changes.outputs.base }}
+      image-base: ${{ steps.changes.outputs.image-base }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Configure SSH
+        uses: ./.github/actions/setup-deploy-ssh
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          private-key: ${{ secrets.EC2_SSH_KEY }}
+          fingerprint: ${{ secrets.EC2_SSH_FINGERPRINT }}
+
+      - name: Detect changes and reject stale deployment
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE=$(ssh unnie-server \
+            'if [ -f /home/ubuntu/unnie/deploy-state/last-successful-sha ]; then cat /home/ubuntu/unnie/deploy-state/last-successful-sha; fi')
+
+          BE=true
+          FE=true
+
+          if [ -n "$BASE" ]; then
+            if ! [[ "$BASE" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "Invalid recorded deployment SHA; inspect server state"
+              exit 1
+            fi
+
+            git cat-file -e "$BASE^{commit}"
+
+            if ! git merge-base --is-ancestor "$BASE" "$GITHUB_SHA"; then
+              echo "Refusing an older or divergent deployment"
+              exit 1
+            fi
+
+            BE=false
+            FE=false
+
+            git diff --name-only "$BASE" "$GITHUB_SHA" \
+              > /tmp/unnie-changes
+
+            if grep -Eq '^(backend/|docs/erd/|\.dockerignore$|infra/|\.github/workflows/cd\.yml$|\.github/actions/setup-deploy-ssh/)' /tmp/unnie-changes; then
+              BE=true
+            fi
+
+            if grep -Eq '^(frontend/|infra/|\.github/workflows/cd\.yml$|\.github/actions/setup-deploy-ssh/)' /tmp/unnie-changes; then
+              FE=true
+            fi
+          fi
+
+          echo "backend=$BE" >> "$GITHUB_OUTPUT"
+          echo "frontend=$FE" >> "$GITHUB_OUTPUT"
+          echo "base=${BASE:-NONE}" >> "$GITHUB_OUTPUT"
+          echo "image-base=ghcr.io/${GITHUB_REPOSITORY,,}" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/unnie_deploy
+
+  test-backend:
+    name: Test Backend
+    needs: plan
+    if: needs.plan.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+          cache-dependency-path: |
+            backend/**/*.gradle*
+            backend/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Test backend
+        working-directory: backend
+        run: bash ./gradlew --no-daemon test
+
+  test-frontend:
+    name: Lint Frontend
+    needs: plan
+    if: needs.plan.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+
+  build:
+    name: Build ${{ matrix.service }}
+    needs: [plan, test-backend, test-frontend]
+
+    if: >-
+      always() && !cancelled() &&
+      needs.plan.result == 'success' &&
+      (needs.plan.outputs.backend == 'true' || needs.plan.outputs.frontend == 'true') &&
+      (needs.test-backend.result == 'success' || needs.test-backend.result == 'skipped') &&
+      (needs.test-frontend.result == 'success' || needs.test-frontend.result == 'skipped')
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [backend, frontend]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Build image
+        if: needs.plan.outputs[matrix.service] == 'true'
+        env:
+          IMAGE_BASE: ${{ needs.plan.outputs.image-base }}
+          SERVICE: ${{ matrix.service }}
+        run: |
+          set -euo pipefail
+
+          IMAGE="$IMAGE_BASE-$SERVICE:$GITHUB_SHA"
+
+          if [ "$SERVICE" = backend ]; then
+            docker build \
+              -f backend/Dockerfile \
+              --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+              -t "$IMAGE" .
+          else
+            docker build \
+              --build-arg VITE_API_BASE_URL=/api \
+              --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+              -t "$IMAGE" frontend
+          fi
+
+      - name: Publish image
+        if: needs.plan.outputs[matrix.service] == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_USER: ${{ github.actor }}
+          IMAGE_BASE: ${{ needs.plan.outputs.image-base }}
+          SERVICE: ${{ matrix.service }}
+        run: |
+          set -euo pipefail
+
+          trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
+
+          printf '%s' "$GH_TOKEN" \
+            | docker login ghcr.io -u "$GH_USER" --password-stdin
+
+          docker push "$IMAGE_BASE-$SERVICE:$GITHUB_SHA"
+
+  deploy:
+    name: Deploy EC2
+    needs: [plan, test-backend, test-frontend, build]
+
+    if: >-
+      always() && !cancelled() &&
+      needs.plan.result == 'success' &&
+      (needs.test-backend.result == 'success' || needs.test-backend.result == 'skipped') &&
+      (needs.test-frontend.result == 'success' || needs.test-frontend.result == 'skipped') &&
+      (
+        needs.build.result == 'success' ||
+        (
+          needs.build.result == 'skipped' &&
+          needs.plan.outputs.backend == 'false' &&
+          needs.plan.outputs.frontend == 'false'
+        )
+      )
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Configure SSH
+        uses: ./.github/actions/setup-deploy-ssh
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          private-key: ${{ secrets.EC2_SSH_KEY }}
+          fingerprint: ${{ secrets.EC2_SSH_FINGERPRINT }}
+
+      - name: Upload and deploy
+        env:
+          IMAGE_BASE: ${{ needs.plan.outputs.image-base }}
+          EXPECTED_BASE: ${{ needs.plan.outputs.base }}
+          BUILD_BACKEND: ${{ needs.plan.outputs.backend }}
+          BUILD_FRONTEND: ${{ needs.plan.outputs.frontend }}
+        run: |
+          set -euo pipefail
+
+          ssh unnie-server \
+            "mkdir -p /home/ubuntu/unnie/releases/$GITHUB_SHA"
+
+          scp \
+            infra/compose.app.yml \
+            infra/deploy.sh \
+            infra/check-deployment.py \
+            "unnie-server:/home/ubuntu/unnie/releases/$GITHUB_SHA/"
+
+          ssh unnie-server \
+            "bash /home/ubuntu/unnie/releases/$GITHUB_SHA/deploy.sh '$GITHUB_SHA' '$IMAGE_BASE' '$BUILD_BACKEND' '$BUILD_FRONTEND' '$EXPECTED_BASE'"
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/unnie_deploy

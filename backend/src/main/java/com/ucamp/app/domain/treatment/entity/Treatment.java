@@ -4,80 +4,119 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import com.ucamp.app.common.entity.BaseTimeEntity;
+
+import com.ucamp.app.domain.shop.entity.Shop;
+import com.ucamp.app.domain.shop.entity.ShopCategory;
+import com.ucamp.app.domain.treatment.dto.request.TreatmentSaveRequest;
 import com.ucamp.app.domain.vacancy.policy.SalePrices;
 
-/**
- * 시술. 예약 생성에 필요한 컬럼(매장, 가격 3종, 소요 시간, 상태)만 매핑한다.
- * 시술 등록·수정 기능에서 나머지 컬럼과 상태 변경 메서드를 추가한다.
- */
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+/** 사장님 매장의 시술 메뉴. 기존 예약의 가격·시각 스냅샷은 변경하지 않는다. */
 @Entity
 @Table(name = "TREATMENT")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Treatment extends BaseTimeEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_TREATMENT")
-    @SequenceGenerator(name = "SEQ_TREATMENT", sequenceName = "SEQ_TREATMENT", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_treatment")
+    @SequenceGenerator(name = "seq_treatment", sequenceName = "SEQ_TREATMENT", allocationSize = 1)
+    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "TREATMENT_ID")
-    private Long id;
+    private Long treatmentId;
 
-    // 예약 엔티티와 같이 매장은 ID 로만 참조한다
-    @Column(name = "SHOP_ID", nullable = false)
-    private Long shopId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "SHOP_ID", nullable = false)
+    private Shop shop;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CATEGORY_ID", nullable = false)
+    private ShopCategory category;
+
+    @JdbcTypeCode(SqlTypes.NUMERIC)
+    @Column(name = "STAFF_ID")
+    private Long staffId;
 
     @Column(name = "NAME", nullable = false, length = 100)
     private String name;
 
+    @Column(name = "DESCRIPTION", length = 2000)
+    private String description;
+
+    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "REGULAR_PRICE", nullable = false)
-    private int regularPrice;
+    private Integer regularPrice;
 
+    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "PRICE", nullable = false)
-    private int price;
+    private Integer price;
 
+    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "LAST_MINUTE_PRICE", nullable = false)
-    private int lastMinutePrice;
+    private Integer lastMinutePrice;
 
+    @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "DURATION_MINUTES", nullable = false)
-    private int durationMinutes;
+    private Integer durationMinutes;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "TREATMENT_TYPE", nullable = false, length = 20)
+    private TreatmentType treatmentType;
+
+    @Column(name = "MODEL_CONDITION", length = 2000)
+    private String modelCondition;
+
+    @Column(name = "PREPARATION_NOTES", length = 1000)
+    private String preparationNotes;
+
+    @Column(name = "PHOTO_NOTICE", length = 1000)
+    private String photoNotice;
+
+    @Column(name = "IMAGE_URL", length = 1000)
+    private String imageUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", nullable = false, length = 10)
     private TreatmentStatus status;
 
-    @Builder
-    private Treatment(Long id, Long shopId, String name, int regularPrice, int price, int lastMinutePrice,
-            int durationMinutes, TreatmentStatus status) {
-        this.id = id;
-        this.shopId = shopId;
-        this.name = name;
-        this.regularPrice = regularPrice;
-        this.price = price;
-        this.lastMinutePrice = lastMinutePrice;
-        this.durationMinutes = durationMinutes;
+    public static Treatment create(Shop shop, ShopCategory category, TreatmentSaveRequest request) {
+        Treatment treatment = new Treatment();
+        treatment.shop = shop;
+
+        treatment.treatmentType = TreatmentType.NORMAL;
+        treatment.status = TreatmentStatus.ACTIVE;
+        treatment.updateMenu(category, request);
+        return treatment;
+    }
+
+    public void updateMenu(ShopCategory category, TreatmentSaveRequest request) {
+        new SalePrices(request.price(), request.lastMinutePrice()).validateFor(request.regularPrice());
+        this.price = request.price();
+        this.lastMinutePrice = request.lastMinutePrice();
+        this.category = category;
+        this.name = request.name().strip();
+        this.description = request.description();
+        this.regularPrice = request.regularPrice();
+        this.durationMinutes = request.durationMinutes();
+    }
+
+    public void changeStatus(TreatmentStatus status) {
         this.status = status;
-    }
-
-    public boolean isActive() {
-        return status == TreatmentStatus.ACTIVE;
-    }
-
-    /**
-     * 가격 계산(PriceCalculator)에 넘길 구간별 판매가.
-     */
-    public SalePrices salePrices() {
-        return new SalePrices(price, lastMinutePrice);
     }
 }

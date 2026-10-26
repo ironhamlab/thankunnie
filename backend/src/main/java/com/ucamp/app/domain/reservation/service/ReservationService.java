@@ -17,10 +17,12 @@ import com.ucamp.app.domain.reservation.dto.response.ReservationCreateResponse;
 import com.ucamp.app.domain.reservation.entity.Reservation;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.treatment.entity.Treatment;
+import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
 import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
 import com.ucamp.app.domain.vacancy.policy.PriceCalculator;
 import com.ucamp.app.domain.vacancy.policy.PriceQuote;
 import com.ucamp.app.domain.vacancy.policy.SalePolicy;
+import com.ucamp.app.domain.vacancy.policy.SalePrices;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 @Service
@@ -55,22 +57,23 @@ public class ReservationService {
         SalePolicy.validateBookable(startsAt, LocalDateTime.now(clock));
 
         Treatment treatment = treatmentRepository.findById(request.treatmentId())
-                .filter(Treatment::isActive)
+                .filter(found -> found.getStatus() == TreatmentStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TREATMENT_NOT_FOUND));
+        Long shopId = treatment.getShop().getShopId();
         LocalDateTime endsAt = startsAt.plusMinutes(treatment.getDurationMinutes());
 
         // 같은 시간에 두 고객이 동시에 클릭해도 한 명만 점유하도록 매장 단위로 순서를 맞춘다
-        shopLock.lock(treatment.getShopId());
+        shopLock.lock(shopId);
         // 잠금 대기 중 마감이 지나거나 점유가 만료될 수 있으므로 잠금 뒤 시각으로 검사·가격·만료를 정한다
         LocalDateTime now = LocalDateTime.now(clock);
-        availabilityService.validateAvailable(treatment.getShopId(), startsAt, treatment.getDurationMinutes());
+        availabilityService.validateAvailable(shopId, startsAt, treatment.getDurationMinutes());
 
-        PriceQuote quote = PriceCalculator.quote(
-                treatment.getRegularPrice(), treatment.salePrices(), startsAt, now);
+        PriceQuote quote = PriceCalculator.quote(treatment.getRegularPrice(),
+                new SalePrices(treatment.getPrice(), treatment.getLastMinutePrice()), startsAt, now);
 
         Reservation reservation = Reservation.builder()
                 .userId(loginUser.userId())
-                .treatmentId(treatment.getId())
+                .treatmentId(treatment.getTreatmentId())
                 .startsAt(startsAt)
                 .endsAt(endsAt)
                 .appliedPrice(quote.salePrice())

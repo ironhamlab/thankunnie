@@ -1,6 +1,8 @@
+import { ROUTES } from './routes';
+
 export const DESIGN_ROUTES = {
   ROOT: '/design',
-  HOME: '/design',
+  HOME: ROUTES.HOME,
   EXPLORE: '/design/explore',
   EXPLORE_CLASSIC: '/design/explore-classic',
   DETAIL: '/design/services/:id',
