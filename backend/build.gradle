@@ -50,4 +50,9 @@ tasks.named('processResources') {
         include '01_schema_ddl.sql'
         rename '01_schema_ddl.sql', 'schema.sql'
     }
+    // 초기 데이터는 local 프로필에서만 넣는다. data.sql 이름이면 test 에도 자동 실행되므로 다른 이름을 쓴다
+    from('../docs/erd') {
+        include '02_init_data_dml.sql'
+        rename '02_init_data_dml.sql', 'init-data.sql'
+    }
 }

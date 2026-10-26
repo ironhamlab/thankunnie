@@ -127,19 +127,26 @@ public class NotificationService {
                 categoryId, regionCode, slotStartTime, now());
     }
 
-    // 다른 고객의 구독과 이미 해제한 구독은 존재 여부를 드러내지 않도록 모두 NOT_FOUND 로 처리한다
+    // 다른 고객의 구독과 이미 해제한 구독은 둘 다 없는 것으로 처리한다.
     private NotificationSubscription getActiveSubscription(AuthUser loginUser, Long subscriptionId) {
-        return notificationSubscriptionRepository.findByIdAndUserId(subscriptionId, loginUser.userId())
-                .filter(NotificationSubscription::isActive)
+        NotificationSubscription subscription = notificationSubscriptionRepository
+                .findByIdAndUserId(subscriptionId, loginUser.userId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
+        if (!subscription.isActive()) {
+            throw new BusinessException(ErrorCode.SUBSCRIPTION_NOT_FOUND);
+        }
+        return subscription;
     }
 
+    // 희망 종료는 현재보다 뒤여야 한다. 같거나 지난 시각은 만료다.
     private void validateNotExpired(LocalDateTime endTime) {
-        if (!endTime.isAfter(now())) {
+        LocalDateTime current = now();
+        if (endTime.isBefore(current) || endTime.isEqual(current)) {
             throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TIME);
         }
     }
 
+    // 테스트에서 시각을 고정할 수 있게, 주입받은 Clock으로 현재 시각을 구한다.
     private LocalDateTime now() {
         return LocalDateTime.now(clock);
     }
