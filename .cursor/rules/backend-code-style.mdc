@@ -84,12 +84,16 @@ public ResponseEntity<ApiResponse<PageResponse<TreatmentSummaryResponse>>> getTr
     return ResponseEntity.ok(ApiResponse.success(treatmentService.getTreatments(page, size)));
 }
 
-// Service: 전체 개수와 현재 페이지 목록을 구해 PageResponse.of 로 만든다
+// Service: page 가 0 미만이거나 size 가 1~100 밖이면 400. 통과한 뒤에 목록을 구해 PageResponse.of 로 만든다
+if (page < 0 || size < 1 || size > 100) {
+    throw new BusinessException(ErrorCode.INVALID_INPUT, "page 는 0 이상, size 는 1~100 이어야 합니다.");
+}
 return PageResponse.of(content, page, size, totalElements);
 ```
 
 - 응답 필드: `content`, `page`, `size`, `totalElements`, `totalPages`, `hasNext`
-- `page`는 0부터, `size` 기본 20·범위 1~100. 벗어나면 `BusinessException(ErrorCode.INVALID_INPUT)`(400)
+- `page`는 0부터. `page < 0`이면 `BusinessException(ErrorCode.INVALID_INPUT)`(400)
+- `size` 기본 20·범위 1~100. 이 범위를 벗어나면 같은 400
 - 결과가 없거나 범위를 넘은 페이지는 빈 `content`로 200을 반환하고, `totalElements`·`totalPages`는 실제 값을 유지한다. `PageResponse.of`가 이렇게 계산한다
 - 동률일 때 페이지 사이 순서가 바뀌지 않도록 마지막 정렬 키로 ID를 둔다 (예: `ORDER BY STARTS_AT, RESERVATION_ID`)
 - Spring Data `Page`를 쓰면 `PageResponse.of(page.getContent(), page.getNumber(), page.getSize(), page.getTotalElements())`로 바꿔 반환한다. `Page`를 응답에 그대로 노출하지 않는다
