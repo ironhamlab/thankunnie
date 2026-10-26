@@ -98,6 +98,22 @@ class GraceCancelUsageServiceTest {
     }
 
     @Test
+    @DisplayName("기록을 지워도 같은 트랜잭션에서 먼저 조회한 취소 엔티티의 변경은 반영된다")
+    void release_keepsOtherManagedEntities() {
+        graceCancelUsageService.record(CancelFixture.CUSTOMER_ID, TODAY, firstCancelId);
+        ReservationCancel cancel = reservationCancelRepository.findById(firstCancelId).orElseThrow();
+
+        graceCancelUsageService.release(firstCancelId);
+        cancel.fail();
+        reservationCancelRepository.flush();
+
+        String status = jdbcTemplate.queryForObject(
+                "SELECT STATUS FROM RESERVATION_CANCEL WHERE CANCEL_ID = ?", String.class, firstCancelId);
+        assertThat(status).isEqualTo("FAILED");
+        assertThat(graceCancelUsageService.isUsed(CancelFixture.CUSTOMER_ID, TODAY)).isFalse();
+    }
+
+    @Test
     @DisplayName("기록이 없는 취소를 지워도 오류가 나지 않는다")
     void release_withoutRecord_noop() {
         graceCancelUsageService.release(firstCancelId);

@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.cancel.service;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -50,9 +51,14 @@ public class GraceCancelUsageService {
 
     /**
      * 결제 취소 실패 시 해당 취소의 무료 취소 기록을 지운다 (CNL-23). 기록이 없으면 아무것도 하지 않는다.
+     * 벌크 삭제 + 영속성 컨텍스트 clear 를 쓰면 같은 트랜잭션에서 먼저 조회한 취소·예약 엔티티가 분리되어
+     * 이후 변경(fail()·예약 상태 복구)이 반영되지 않으므로, 조회 후 엔티티 단위로 삭제한다.
+     * 바로 flush 해서 같은 트랜잭션에서 같은 날 무료 취소를 다시 기록해도 키가 겹치지 않게 한다.
      */
     @Transactional
     public void release(Long cancelId) {
-        graceCancelUsageRepository.deleteByCancelId(cancelId);
+        List<GraceCancelUsage> usages = graceCancelUsageRepository.findAllByCancelId(cancelId);
+        graceCancelUsageRepository.deleteAll(usages);
+        graceCancelUsageRepository.flush();
     }
 }
