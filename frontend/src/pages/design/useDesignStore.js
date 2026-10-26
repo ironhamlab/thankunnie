@@ -1,11 +1,14 @@
 import { create } from 'zustand';
-import { BOOKINGS, MENUS, SERVICES, SHOP, SLOTS, overlaps, validateSlot } from './data';
+import { BOOKINGS, MENUS, SERVICES, SHOP, SLOTS, overlaps, resolveSlotMenu, validateSlot } from './data.js';
 
 export const useDesignStore = create((set, get) => ({
   shop: SHOP,
   menus: MENUS,
   bookings: BOOKINGS,
-  slots: SLOTS,
+  slots: SLOTS.map((slot) => ({
+    ...slot,
+    duration: MENUS.find((menu) => menu.id === slot.serviceId).duration,
+  })),
   hold: null,
   search: '',
   profile: { name: '김언니', phone: '010-12**-56**', alerts: true },
@@ -30,13 +33,32 @@ export const useDesignStore = create((set, get) => ({
     set((state) => ({
       menus: state.menus.map((item) => (item.id === id ? { ...item, active: !item.active } : item)),
     })),
-  saveSlot: (slot) => {
-    const validationError = validateSlot(slot, get().menus, get().slots, get().bookings);
+  saveSlot: (slot, selectableMenus = []) => {
+    const existingSlot = get().slots.find((item) => item.id === slot.id);
+    const existingMenu = resolveSlotMenu(existingSlot, selectableMenus, get().menus);
+    const keepTreatment = existingSlot && (slot.serviceId === existingSlot.serviceId
+      || slot.serviceId === existingMenu?.id);
+    const selectedMenu = keepTreatment
+      ? { ...get().menus.find((menu) => menu.id === existingSlot.serviceId),
+        id: existingSlot.serviceId, duration: existingSlot.duration, active: true }
+      : selectableMenus.find((menu) => menu.id === slot.serviceId && menu.active);
+    if (!selectedMenu) throw new Error('활성 시술을 선택해 주세요.');
+    // 동일 시술의 수정은 기존 스냅샷을 보존한다. 신규·시술 교체에만 최신 활성 메뉴를 적용한다.
+    const savedSlot = {
+      ...slot,
+      serviceId: selectedMenu.id,
+      treatmentId: keepTreatment ? existingSlot.treatmentId : selectedMenu.treatmentId,
+      duration: selectedMenu.duration,
+    };
+    const validationError = validateSlot(savedSlot, [selectedMenu], get().slots, get().bookings);
     if (validationError) throw new Error(validationError);
     set((state) => ({
+      menus: state.menus.some((menu) => menu.id === selectedMenu.id)
+        ? state.menus
+        : [...state.menus, selectedMenu],
       slots: state.slots.some((item) => item.id === slot.id)
-        ? state.slots.map((item) => (item.id === slot.id ? slot : item))
-        : [...state.slots, slot],
+        ? state.slots.map((item) => (item.id === slot.id ? savedSlot : item))
+        : [...state.slots, savedSlot],
     }));
   },
   toggleSlot: (id) =>

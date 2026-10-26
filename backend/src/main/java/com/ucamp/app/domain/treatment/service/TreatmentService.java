@@ -16,6 +16,7 @@ import com.ucamp.app.domain.treatment.dto.request.TreatmentStatusUpdateRequest;
 import com.ucamp.app.domain.treatment.dto.response.TreatmentCategoryResponse;
 import com.ucamp.app.domain.treatment.dto.response.TreatmentDetailResponse;
 import com.ucamp.app.domain.treatment.entity.Treatment;
+import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
 import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
 
 @Service
@@ -34,9 +35,17 @@ public class TreatmentService {
     }
 
     public List<TreatmentDetailResponse> getTreatments(AuthUser user, Long shopId) {
+        return getTreatments(user, shopId, null);
+    }
+
+    /** 관리 목록은 전체 상태를, 신규 빈자리 선택은 ACTIVE 상태를 조회한다. */
+    public List<TreatmentDetailResponse> getTreatments(AuthUser user, Long shopId, TreatmentStatus status) {
         user.requireShopOwner(shopId);
         requireShop(shopId);
-        return treatmentRepository.findByShopShopIdOrderByTreatmentIdDesc(shopId).stream()
+        List<Treatment> treatments = status == null
+                ? treatmentRepository.findByShopShopIdOrderByTreatmentIdDesc(shopId)
+                : treatmentRepository.findByShopShopIdAndStatusOrderByTreatmentIdDesc(shopId, status);
+        return treatments.stream()
                 .map(TreatmentDetailResponse::from).toList();
     }
 
