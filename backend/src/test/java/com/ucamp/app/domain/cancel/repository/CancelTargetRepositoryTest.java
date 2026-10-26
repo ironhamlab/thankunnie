@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -21,7 +22,7 @@ import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({TimeConfig.class, CancelTargetRepository.class})
+@Import(TimeConfig.class)
 @ActiveProfiles("test")
 class CancelTargetRepositoryTest {
 
@@ -78,7 +79,8 @@ class CancelTargetRepositoryTest {
         CancelFixture.insertPayment(jdbcTemplate, 2L, 100L, "PAID", 20_000, HELD_AT.plusMinutes(3));
 
         assertThatThrownBy(() -> cancelTargetRepository.findByReservationId(100L))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(IncorrectResultSizeDataAccessException.class)
+                .hasMessageContaining("2건");
     }
 
     @Test
