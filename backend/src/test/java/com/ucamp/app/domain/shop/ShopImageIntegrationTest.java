@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.shop;
 
 import java.time.LocalDateTime;
+import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -44,11 +45,14 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import com.ucamp.app.domain.shop.service.ShopImageStorage;
+import com.ucamp.app.domain.shop.service.ShopImageCleanupService;
+import com.ucamp.app.domain.shop.service.ShopImageObjectStorage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -80,6 +84,12 @@ class ShopImageIntegrationTest {
     private ObjectMapper objectMapper;
     @Autowired
     private TestRestTemplate http;
+    @Autowired
+    private ShopImageCleanupService cleanupService;
+    @Autowired
+    private ShopImageObjectStorage objectStorage;
+    @Autowired
+    private Clock clock;
 
     @BeforeEach
     void setUp() {
@@ -118,6 +128,8 @@ class ShopImageIntegrationTest {
 
     @AfterEach
     void cleanUp() {
+        jdbc.execute("ALTER TABLE SHOP DROP CONSTRAINT IF EXISTS CK_TEST_SHOP_IMAGE");
+        jdbc.update("DELETE FROM SHOP_IMAGE_CLEANUP");
         jdbc.update("DELETE FROM SHOP WHERE SHOP_ID = 1");
         jdbc.update("DELETE FROM CATEGORY WHERE CATEGORY_ID = 9701");
         objects.clear();
@@ -167,11 +179,82 @@ class ShopImageIntegrationTest {
     }
 
     @Test
+    @DisplayName("S3 업로드 후 실제 DB 제약 위반으로 커밋이 실패하면 새 객체만 삭제하고 기존 이미지를 유지한다")
+    void upload_databaseConstraintFailure_rollsBackAndDeletesNewS3Object() throws Exception {
+        MockMultipartFile original = ShopImageFixture.image("png");
+        String url = upload(original);
+        String originalKey = objects.keySet().iterator().next();
+        rejectJpgInDatabase();
+
+        uploadJpgExpectDatabaseFailure();
+
+        assertThat(imageUrl()).isEqualTo(url);
+        assertThat(objects).containsOnlyKeys(originalKey);
+        assertThat(cleanupCount()).isZero();
+        mvc.perform(get(url)).andExpect(status().isOk()).andExpect(content().bytes(original.getBytes()));
+    }
+
+    @Test
+    @DisplayName("DB 저장과 S3 정리가 함께 실패하면 작업을 별도 DB 트랜잭션으로 남겨 나중에 새 객체만 정리한다")
+    void upload_databaseAndDeleteFailure_persistsRetryAndKeepsOriginal() throws Exception {
+        String url = upload(ShopImageFixture.image("png"));
+        String originalKey = objects.keySet().iterator().next();
+        rejectJpgInDatabase();
+        doThrow(SdkClientException.create("Simulated delete failure"))
+                .when(s3).deleteObject(any(DeleteObjectRequest.class));
+
+        uploadJpgExpectDatabaseFailure();
+
+        assertThat(imageUrl()).isEqualTo(url);
+        assertThat(objects).hasSize(2);
+        assertThat(cleanupCount()).isEqualTo(1);
+        restoreS3Delete();
+        retryDueCleanups();
+        assertThat(objects).containsOnlyKeys(originalKey);
+        assertThat(cleanupCount()).isZero();
+        mvc.perform(get(url)).andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("교체 커밋 후 이전 S3 삭제가 실패해도 성공 응답과 새 이미지를 유지하고 이전 객체만 재시도한다")
+    void upload_oldObjectDeleteFailure_keepsCommittedImageAndRetriesOldObject() throws Exception {
+        String oldUrl = upload(ShopImageFixture.image("png"));
+        doThrow(SdkClientException.create("Simulated delete failure"))
+                .when(s3).deleteObject(any(DeleteObjectRequest.class));
+        String newUrl = upload(ShopImageFixture.image("jpg"));
+        assertThat(imageUrl()).isEqualTo(newUrl);
+        assertThat(objects).hasSize(2);
+        assertThat(cleanupCount()).isEqualTo(1);
+        restoreS3Delete();
+        retryDueCleanups();
+        assertThat(objects).hasSize(1);
+        assertThat(cleanupCount()).isZero();
+        mvc.perform(get(oldUrl)).andExpect(status().isNotFound());
+        mvc.perform(get(newUrl)).andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("정리 작업 중복 등록을 막고 DB에서 현재 사용하는 이미지는 재시도 시에도 삭제하지 않는다")
+    void cleanup_currentImage_cancelsTaskWithoutDeletingObject() throws Exception {
+        String url = upload(ShopImageFixture.image("png"));
+        String fileName = url.substring(url.lastIndexOf('/') + 1);
+        cleanupService.enqueue(objectStorage.scope(), fileName);
+        cleanupService.enqueue(objectStorage.scope(), fileName);
+        assertThat(cleanupCount()).isEqualTo(1);
+        retryDueCleanups();
+        assertThat(cleanupCount()).isZero();
+        assertThat(objects).hasSize(1);
+        mvc.perform(get(url)).andExpect(status().isOk());
+    }
+
+    @Test
     @DisplayName("누락·위장·손상·용량 초과로 교체가 실패해도 기존 이미지가 조회된다")
     void upload_invalidFile_keepsPreviousUrlAndBytes() throws Exception {
         MockMultipartFile png = ShopImageFixture.image("png");
         String url = upload(png);
         MockMultipartFile[] invalidFiles = {
+                new MockMultipartFile("file", "empty.png", "image/png", new byte[0]),
+                new MockMultipartFile("file", "bad.txt", "text/plain", "text".getBytes()),
                 new MockMultipartFile("file", "bad.png", "image/png", "not an image".getBytes()),
                 new MockMultipartFile("file", "bad.jpg", "image/jpeg", png.getBytes()),
                 new MockMultipartFile("file", "big.png", "image/png", new byte[ShopImageStorage.MAX_BYTES + 1])
@@ -224,6 +307,24 @@ class ShopImageIntegrationTest {
         assertThat(imageUrl()).isEqualTo(url);
     }
 
+    @Test
+    @DisplayName("한 요청의 파일 중복과 boundary가 없는 손상 multipart 요청은 400이며 기존 이미지를 유지한다")
+    void upload_multipleOrMalformedMultipart_returnsBadRequest() throws Exception {
+        String url = upload(ShopImageFixture.image("png"));
+        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/1/image").file(ShopImageFixture.image("png"))
+                .file(ShopImageFixture.image("jpg")).header("X-Test-User", "OWNER_1"))
+                .andExpect(status().isBadRequest());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.set("X-Test-User", "OWNER_1");
+        var response = http.exchange("/api/v1/shops/1/image", HttpMethod.PUT,
+                new HttpEntity<>("invalid multipart", headers), JsonNode.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().path("error").path("code").asText()).isEqualTo("COMMON_400");
+        assertThat(imageUrl()).isEqualTo(url);
+        assertThat(objects).hasSize(1);
+    }
+
     private String upload(MockMultipartFile file) throws Exception {
         String response = mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/1/image").file(file)
                 .header("X-Test-User", "OWNER_1")).andExpect(status().isOk())
@@ -233,5 +334,38 @@ class ShopImageIntegrationTest {
 
     private String imageUrl() {
         return jdbc.queryForObject("SELECT IMAGE_URL FROM SHOP WHERE SHOP_ID = 1", String.class);
+    }
+
+    private void rejectJpgInDatabase() {
+        // 테스트 전용 H2 제약으로 실제 flush·commit 경로의 실패를 만든다. 운영 스키마는 변경하지 않는다.
+        jdbc.execute("""
+                ALTER TABLE SHOP ADD CONSTRAINT CK_TEST_SHOP_IMAGE
+                CHECK (IMAGE_URL IS NULL OR IMAGE_URL NOT LIKE '%.jpg')
+                """);
+    }
+
+    private void uploadJpgExpectDatabaseFailure() throws Exception {
+        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/1/image").file(ShopImageFixture.image("jpg"))
+                .header("X-Test-User", "OWNER_1")).andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error.code").value("COMMON_500"));
+    }
+
+    private int cleanupCount() {
+        return jdbc.queryForObject("SELECT COUNT(*) FROM SHOP_IMAGE_CLEANUP", Integer.class);
+    }
+
+    private void restoreS3Delete() {
+        doAnswer(invocation -> {
+            DeleteObjectRequest request = invocation.getArgument(0);
+            objects.remove(request.key());
+            return DeleteObjectResponse.builder().build();
+        }).when(s3).deleteObject(any(DeleteObjectRequest.class));
+    }
+
+    private void retryDueCleanups() {
+        jdbc.update("UPDATE SHOP_IMAGE_CLEANUP SET NEXT_ATTEMPT_AT = ?", LocalDateTime.now(clock).minusMinutes(1));
+        for (Long id : cleanupService.findDueIds()) {
+            cleanupService.retry(id);
+        }
     }
 }

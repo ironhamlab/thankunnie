@@ -29,10 +29,23 @@ public class S3ShopImageObjectStorage implements ShopImageObjectStorage {
             @Value("${app.shop-image.s3.prefix:shop-images/}") String prefix) {
         this.client = client;
         this.bucket = bucket;
-        if (prefix == null || !prefix.matches("[a-zA-Z0-9][a-zA-Z0-9/_-]*")) {
+        if (prefix == null || prefix.length() > 300 || !prefix.matches("[a-zA-Z0-9][a-zA-Z0-9/_-]*")) {
             throw new IllegalArgumentException("S3 이미지 prefix는 영문·숫자로 시작하는 경로여야 합니다.");
         }
         this.prefix = prefix.endsWith("/") ? prefix : prefix + "/";
+        if (scope().length() > 512) {
+            throw new IllegalArgumentException("S3 이미지 저장소 설정이 너무 깁니다.");
+        }
+    }
+
+    @Override
+    public String scope() {
+        return "s3:" + bucket + "/" + prefix;
+    }
+
+    @Override
+    public void checkReady() {
+        requireBucket();
     }
 
     @Override

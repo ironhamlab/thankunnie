@@ -14,6 +14,8 @@ import com.ucamp.app.domain.shop.entity.Shop;
 /** 매장 조회 저장소. */
 public interface ShopRepository extends JpaRepository<Shop, Long> {
 
+    boolean existsByImageUrlEndingWith(String suffix);
+
     /** 같은 매장의 대표 이미지 교체·삭제를 직렬화한다. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Shop s where s.shopId = :shopId")

@@ -1,5 +1,7 @@
 package com.ucamp.app.domain.shop.controller;
 
+import java.util.List;
+
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.LoginUser;
+import com.ucamp.app.common.exception.BusinessException;
+import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.response.ApiResponse;
 import com.ucamp.app.domain.shop.dto.response.ShopImageContentResponse;
 import com.ucamp.app.domain.shop.dto.response.ShopImageResponse;
@@ -37,8 +41,11 @@ public class ShopImageController {
     @Operation(summary = "본인 매장 대표 이미지 업로드·교체", description = "file: JPEG·PNG, 최대 5MB·1,600만 화소")
     @PutMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<ShopImageResponse> uploadImage(@LoginUser AuthUser user, @PathVariable Long shopId,
-            @RequestParam(value = "file", required = false) MultipartFile file) {
-        return ApiResponse.success(service.uploadImage(user, shopId, file));
+            @RequestParam(value = "file", required = false) List<MultipartFile> files) {
+        if (files != null && files.size() != 1) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "대표 이미지는 한 번에 한 개만 업로드해 주세요.");
+        }
+        return ApiResponse.success(service.uploadImage(user, shopId, files == null ? null : files.getFirst()));
     }
 
     @Operation(summary = "본인 매장 대표 이미지 삭제")

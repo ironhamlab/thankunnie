@@ -7,10 +7,12 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import software.amazon.awssdk.services.s3.S3Client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 class ShopImageS3ConfigurationTest {
 
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+            .withBean(ShopImageCleanupService.class, () -> mock(ShopImageCleanupService.class))
             .withUserConfiguration(ShopImageS3Configuration.class, S3ShopImageObjectStorage.class,
                     LocalShopImageObjectStorage.class, ShopImageStorage.class);
 

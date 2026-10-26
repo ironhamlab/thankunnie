@@ -23,6 +23,14 @@ public class LocalShopImageObjectStorage implements ShopImageObjectStorage {
     public LocalShopImageObjectStorage(
             @Value("${app.shop-image.directory:${user.home}/.thankunnie/shop-images}") String directory) {
         this.directory = Path.of(directory).toAbsolutePath().normalize();
+        if (scope().length() > 512) {
+            throw new IllegalArgumentException("로컬 이미지 저장 경로가 너무 깁니다.");
+        }
+    }
+
+    @Override
+    public String scope() {
+        return "local:" + directory;
     }
 
     @Override

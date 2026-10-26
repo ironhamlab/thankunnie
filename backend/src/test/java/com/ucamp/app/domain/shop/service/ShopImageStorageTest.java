@@ -20,6 +20,11 @@ import com.ucamp.app.domain.shop.ShopImageFixture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 class ShopImageStorageTest {
 
@@ -30,7 +35,8 @@ class ShopImageStorageTest {
 
     @BeforeEach
     void setUp() {
-        storage = new ShopImageStorage(new LocalShopImageObjectStorage(directory.toString()));
+        storage = new ShopImageStorage(new LocalShopImageObjectStorage(directory.toString()),
+                mock(ShopImageCleanupService.class));
     }
 
     @ParameterizedTest
@@ -103,11 +109,26 @@ class ShopImageStorageTest {
     void save_storageFailure_throwsInternalError() throws IOException {
         Path blockedDirectory = Files.writeString(directory.resolve("blocked"), "file");
         ShopImageStorage blockedStorage = new ShopImageStorage(
-                new LocalShopImageObjectStorage(blockedDirectory.toString()));
+                new LocalShopImageObjectStorage(blockedDirectory.toString()), mock(ShopImageCleanupService.class));
         MockMultipartFile file = ShopImageFixture.image("png");
         assertThatThrownBy(() -> blockedStorage.save(file)).isInstanceOfSatisfying(BusinessException.class,
                 e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INTERNAL_SERVER_ERROR));
         assertThat(blockedDirectory).hasContent("file");
+    }
+
+    @Test
+    @DisplayName("S3 삭제와 재시도 기록용 DB가 함께 실패해도 이미 결정된 이미지 변경 결과를 뒤집지 않는다")
+    void cleanup_storageAndQueueFailure_doesNotPropagate() {
+        ShopImageObjectStorage objectStorage = mock(ShopImageObjectStorage.class);
+        ShopImageCleanupService cleanup = mock(ShopImageCleanupService.class);
+        String fileName = "12345678-1234-1234-1234-123456789012.png";
+        when(objectStorage.scope()).thenReturn("s3:test-bucket/shop-images/");
+        doThrow(new IllegalStateException("Simulated S3 failure")).when(objectStorage).delete(fileName);
+        doThrow(new IllegalStateException("Simulated database failure"))
+                .when(cleanup).enqueue("s3:test-bucket/shop-images/", fileName);
+        assertThatCode(() -> new ShopImageStorage(objectStorage, cleanup).deleteQuietly(fileName))
+                .doesNotThrowAnyException();
+        verify(cleanup).enqueue("s3:test-bucket/shop-images/", fileName);
     }
 
     private void assertInvalid(Runnable action) {

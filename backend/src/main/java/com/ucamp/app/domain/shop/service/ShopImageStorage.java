@@ -32,9 +32,11 @@ public class ShopImageStorage {
     private static final String FILE_NAME_PATTERN = "[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}\\.(jpg|png)";
 
     private final ShopImageObjectStorage objectStorage;
+    private final ShopImageCleanupService cleanupService;
 
-    public ShopImageStorage(ShopImageObjectStorage objectStorage) {
+    public ShopImageStorage(ShopImageObjectStorage objectStorage, ShopImageCleanupService cleanupService) {
         this.objectStorage = objectStorage;
+        this.cleanupService = cleanupService;
     }
 
     /** 파일을 완전히 검증한 뒤 새 파일로 저장하고 서버가 생성한 파일명을 반환한다. */
@@ -50,6 +52,7 @@ public class ShopImageStorage {
             throw invalidImage();
         }
         validateContent(bytes, format);
+        objectStorage.checkReady();
 
         String fileName = UUID.randomUUID() + "." + format;
         try {
@@ -80,6 +83,13 @@ public class ShopImageStorage {
             objectStorage.delete(fileName);
         } catch (RuntimeException e) {
             log.warn("사용하지 않는 매장 이미지 파일 정리 실패: {}", fileName, e);
+            try {
+                cleanupService.enqueue(objectStorage.scope(), fileName);
+            } catch (RuntimeException persistenceFailure) {
+                // 정리 기록용 DB도 장애이면 원래 업로드·삭제 결과를 바꾸지 않고 수동 복구 단서를 남긴다.
+                log.error("매장 이미지 정리 작업 기록 실패, 수동 정리 필요: {} / {}",
+                        objectStorage.scope(), fileName, persistenceFailure);
+            }
         }
     }
 

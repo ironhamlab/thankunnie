@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class S3ShopImageObjectStorageTest {
@@ -44,7 +45,7 @@ class S3ShopImageObjectStorageTest {
     @DisplayName("검증된 파일을 지정한 버킷·prefix·Content-Type으로 공개 ACL 없이 저장한다")
     void put_validImage_setsObjectMetadataAndContent() throws IOException {
         var file = ShopImageFixture.image("png");
-        ShopImageStorage storage = new ShopImageStorage(storage());
+        ShopImageStorage storage = new ShopImageStorage(storage(), mock(ShopImageCleanupService.class));
         String name = storage.save(file);
         ArgumentCaptor<PutObjectRequest> request = ArgumentCaptor.forClass(PutObjectRequest.class);
         ArgumentCaptor<RequestBody> body = ArgumentCaptor.forClass(RequestBody.class);
@@ -95,9 +96,21 @@ class S3ShopImageObjectStorageTest {
     }
 
     @Test
+    @DisplayName("버킷 미설정은 업로드 전 거부하며 존재하지 않는 파일의 정리 작업을 생성하지 않는다")
+    void upload_missingBucket_doesNotCreateCleanupTask() throws IOException {
+        ShopImageCleanupService cleanup = mock(ShopImageCleanupService.class);
+        ShopImageStorage storage = new ShopImageStorage(
+                new S3ShopImageObjectStorage(client, "", "shop-images/"), cleanup);
+        var file = ShopImageFixture.image("png");
+        assertError(() -> storage.save(file), ErrorCode.INTERNAL_SERVER_ERROR);
+        verifyNoInteractions(client, cleanup);
+    }
+
+    @Test
     @DisplayName("이미지 검증 실패 시 S3를 호출하지 않는다")
     void upload_invalidImage_doesNotCallAws() {
-        assertError(() -> new ShopImageStorage(storage()).save(null), ErrorCode.INVALID_INPUT);
+        assertError(() -> new ShopImageStorage(storage(), mock(ShopImageCleanupService.class)).save(null),
+                ErrorCode.INVALID_INPUT);
         verifyNoInteractions(client);
     }
 
