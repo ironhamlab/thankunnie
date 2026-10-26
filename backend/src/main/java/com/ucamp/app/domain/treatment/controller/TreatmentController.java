@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +26,7 @@ import com.ucamp.app.domain.treatment.dto.request.TreatmentSaveRequest;
 import com.ucamp.app.domain.treatment.dto.request.TreatmentStatusUpdateRequest;
 import com.ucamp.app.domain.treatment.dto.response.TreatmentCategoryResponse;
 import com.ucamp.app.domain.treatment.dto.response.TreatmentDetailResponse;
+import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
 import com.ucamp.app.domain.treatment.service.TreatmentService;
 
 @Tag(name = "Treatment", description = "사장님 본인 매장 시술 메뉴 관리")
@@ -38,11 +40,13 @@ public class TreatmentController {
         this.treatmentService = treatmentService;
     }
 
-    @Operation(summary = "시술 목록 조회 (활성·비활성 포함)")
+    /** 상태 조건을 생략하면 관리용 전체 목록, ACTIVE를 지정하면 신규 선택 후보를 반환한다. */
+    @Operation(summary = "시술 목록 조회 (상태 생략 시 전체, 신규 빈자리 선택 시 status=ACTIVE)")
     @GetMapping
     public ApiResponse<List<TreatmentDetailResponse>> getTreatments(
-            @LoginUser AuthUser user, @PathVariable Long shopId) {
-        return ApiResponse.success(treatmentService.getTreatments(user, shopId));
+            @LoginUser AuthUser user, @PathVariable Long shopId,
+            @RequestParam(required = false) TreatmentStatus status) {
+        return ApiResponse.success(treatmentService.getTreatments(user, shopId, status));
     }
 
     @Operation(summary = "선택 가능한 시술 카테고리 조회")
