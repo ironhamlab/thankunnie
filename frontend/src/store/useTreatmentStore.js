@@ -14,6 +14,26 @@ export const useTreatmentStore = create((set, get) => ({
   mutationStatus: 'idle',
   error: null,
   mutationError: null,
+  activeTreatments: [],
+  selectionStatus: 'idle',
+  selectionError: null,
+
+  loadActiveTreatments: async () => {
+    set({ selectionStatus: 'loading', selectionError: null, activeTreatments: [] });
+    try {
+      const user = await treatmentApi.getCurrentUser();
+      if (user?.role !== 'OWNER' || !user.shopId) {
+        throw { code: 'COMMON_403', message: '사장님 계정으로 로그인해 주세요.' };
+      }
+      const activeTreatments = await treatmentApi.getActiveTreatments(user.shopId);
+      set({ activeTreatments, selectionStatus: 'succeeded' });
+      return activeTreatments;
+    } catch (error) {
+      const failure = toError(error);
+      set({ selectionStatus: 'failed', selectionError: failure });
+      throw failure;
+    }
+  },
 
   loadTreatments: async () => {
     set({
@@ -66,6 +86,9 @@ export const useTreatmentStore = create((set, get) => ({
     try {
       const treatment = await treatmentApi.updateStatus(get().shopId, treatmentId, status);
       set((state) => ({
+        activeTreatments: treatment.status === 'ACTIVE'
+          ? [treatment, ...state.activeTreatments.filter((item) => item.treatmentId !== treatmentId)]
+          : state.activeTreatments.filter((item) => item.treatmentId !== treatmentId),
         treatments: state.treatments.map((item) =>
           item.treatmentId === treatmentId ? treatment : item,
         ),

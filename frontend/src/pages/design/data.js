@@ -230,15 +230,24 @@ export const serviceDate = (service) => {
   return date.toISOString().slice(0, 10);
 };
 
+// 명시적인 서버 ID가 있을 때만 연결한다. 데모 ID를 이름이나 순서로 추측하지 않는다.
+export function resolveSlotMenu(slot, menus, historyMenus) {
+  const historyMenu = historyMenus.find((menu) => menu.id === slot?.serviceId);
+  const treatmentId = slot?.treatmentId ?? historyMenu?.treatmentId;
+  return menus.find((menu) => menu.id === slot?.serviceId)
+    ?? menus.find((menu) => treatmentId != null && menu.id === `treatment-${treatmentId}`);
+}
+
 export function validateSlot(slot, menus, slots, bookings) {
   const menu = menus.find((item) => item.id === slot.serviceId);
   if (!menu?.active) return '활성 시술을 선택해 주세요.';
+  const duration = slot.duration ?? menu.duration;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(slot.date) || slot.date < DEMO_DATE || slot.date > '2025-11-24')
     return '시연 기준일부터 31일 이내 날짜를 선택해 주세요.';
   if (
     !/^\d{2}:(00|30)$/.test(slot.time) ||
     minutes(slot.time) < 600 ||
-    minutes(slot.time) + menu.duration > 1260
+    minutes(slot.time) + duration > 1260
   )
     return '30분 단위로, 운영 시간(10:00~21:00) 안에 시술이 끝나도록 선택해 주세요.';
   if (
@@ -254,16 +263,16 @@ export function validateSlot(slot, menus, slots, bookings) {
       item.status !== 'stopped' &&
       overlaps(
         slot.time,
-        menu.duration,
+        duration,
         item.time,
-        menus.find((m) => m.id === item.serviceId)?.duration ?? 60,
+        item.duration,
       ),
   );
   const booked = bookings.some(
     (item) =>
       item.status === 'confirmed' &&
       item.date === slot.date &&
-      overlaps(slot.time, menu.duration, item.time, item.duration),
+      overlaps(slot.time, duration, item.time, item.duration),
   );
   if (occupied || booked)
     return '선택한 시간대에 기존 예약 또는 빈자리가 겹칩니다. 다른 시간을 선택해 주세요.';

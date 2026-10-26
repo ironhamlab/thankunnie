@@ -18,7 +18,7 @@ import com.ucamp.app.domain.notification.repository.VacancySlot;
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
 
 /**
- * 빈자리 알림 이벤트 생성. 임박 진입은 스케줄러가 주기적으로, 취소 재공개는 재공개 완료 시 만든다.
+ * 빈자리 알림 이벤트 생성. 임박·초임박 진입은 스케줄러가 각각 주기적으로, 취소 재공개는 재공개 완료 시 만든다.
  */
 @Slf4j
 @Service
@@ -30,7 +30,7 @@ public class NotificationEventService {
     private final VacancySlotRepository vacancySlotRepository;
 
     /**
-     * 임박 구간(시작 8시간 전)에 들어온 빈자리마다 임박 이벤트를 한 번만 만든다.
+     * 임박 구간(시작 8시간 전부터 3시간 초과 전까지)에 들어온 빈자리마다 임박 이벤트를 한 번만 만든다.
      *
      * @param now 현재 시각 (서울)
      * @return 새로 만든 임박 이벤트 수
@@ -43,6 +43,31 @@ public class NotificationEventService {
         for (VacancySlot slot : slots) {
             NotificationEvent event = NotificationEvent.builder()
                     .eventType(NotificationEventType.IMMINENT)
+                    .exceptionId(slot.exceptionId())
+                    .shopId(slot.shopId())
+                    .slotStartsAt(slot.startsAt())
+                    .slotEndsAt(slot.endsAt())
+                    .build();
+            notificationEventRepository.save(event);
+        }
+        return slots.size();
+    }
+
+    /**
+     * 초임박 구간(시작 3시간 전)에 들어온 빈자리마다 초임박 이벤트를 한 번만 만든다.
+     * 예약 ID는 없다. 같은 빈자리의 초임박 이벤트는 조회에서 이미 빠져 있다.
+     *
+     * @param now 현재 시각 (서울)
+     * @return 새로 만든 초임박 이벤트 수
+     */
+    @Transactional
+    public int createLastMinuteEvents(LocalDateTime now) {
+        // 조회가 이미 초임박 이벤트가 없는 빈자리만 돌려준다. 예약 ID는 없다.
+        List<VacancySlot> slots = vacancySlotRepository.findLastMinuteWithoutEvent(now);
+
+        for (VacancySlot slot : slots) {
+            NotificationEvent event = NotificationEvent.builder()
+                    .eventType(NotificationEventType.LAST_MINUTE)
                     .exceptionId(slot.exceptionId())
                     .shopId(slot.shopId())
                     .slotStartsAt(slot.startsAt())

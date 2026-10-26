@@ -27,4 +27,21 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             """, nativeQuery = true)
     List<Reservation> findActiveOverlapping(@Param("shopId") Long shopId,
             @Param("startsAt") LocalDateTime startsAt, @Param("endsAt") LocalDateTime endsAt);
+
+    /**
+     * 사용자의 [startsAt, endsAt) 구간과 겹치고 취소·만료가 아닌 예약을 매장과 관계없이 조회한다.
+     * 점유(HOLD)의 만료 여부는 SalePolicy.isOccupying 으로 판단한다.
+     */
+    @Query("""
+            SELECT r FROM Reservation r
+            WHERE r.userId = :userId
+              AND r.status IN (
+                  com.ucamp.app.domain.reservation.entity.ReservationStatus.HOLD,
+                  com.ucamp.app.domain.reservation.entity.ReservationStatus.CONFIRMED,
+                  com.ucamp.app.domain.reservation.entity.ReservationStatus.CANCEL_PENDING)
+              AND r.startsAt < :endsAt
+              AND r.endsAt > :startsAt
+            """)
+    List<Reservation> findActiveOverlappingByUser(@Param("userId") Long userId,
+            @Param("startsAt") LocalDateTime startsAt, @Param("endsAt") LocalDateTime endsAt);
 }

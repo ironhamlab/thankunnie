@@ -3,9 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
 import { DEMO_DATE, finish, money, validateSlot } from './data';
 import { useDesignStore } from './useDesignStore';
+import useSlotTreatments from '@/hooks/useSlotTreatments';
 
 export default function NewSlotPage() {
-  const menus = useDesignStore((s) => s.menus);
+  const { menus, status, error: loadError, refreshMenus } = useSlotTreatments();
+  const historyMenus = useDesignStore((s) => s.menus);
   const slots = useDesignStore((s) => s.slots);
   const bookings = useDesignStore((s) => s.bookings);
   const saveSlot = useDesignStore((s) => s.saveSlot);
@@ -18,7 +20,11 @@ export default function NewSlotPage() {
   const menu = menus.find((m) => m.id === serviceId);
   const discount = date === DEMO_DATE ? 35 : 25;
   const draft = { id: 'new-slot-preview', serviceId, date, time, discount, status: 'selling' };
-  const conflict = validateSlot(draft, menus, slots, bookings);
+  const validationMenus = [
+    ...historyMenus.filter((item) => !menus.some((menu) => menu.id === item.id)),
+    ...menus,
+  ];
+  const conflict = validateSlot(draft, validationMenus, slots, bookings);
   const price = Math.round((menu?.original || 0) * (1 - discount / 100));
   const changeScenario = (value) => {
     setScenario(value);
@@ -27,11 +33,12 @@ export default function NewSlotPage() {
     setTime(value === 'conflict' ? '15:30' : '14:00');
     setServiceId(menus.find((m) => m.active)?.id || '');
   };
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     setError('');
     try {
-      saveSlot({ ...draft, id: 'slot-' + Date.now() });
+      const currentMenus = await refreshMenus();
+      saveSlot({ ...draft, id: 'slot-' + Date.now() }, currentMenus);
       navigate(R.SLOTS, { state: { slotCreated: true } });
     } catch (err) {
       setError(err.message);
@@ -109,6 +116,18 @@ export default function NewSlotPage() {
                   </label>
                 ))}
             </fieldset>
+            {status === 'loading' && <p role="status">시술을 불러오는 중입니다.</p>}
+            {loadError && (
+              <div role="alert">
+                <p>{loadError.message}</p>
+                <button type="button" className="b-button" onClick={() => refreshMenus().catch(() => {})}>
+                  다시 불러오기
+                </button>
+              </div>
+            )}
+            {status === 'succeeded' && !menus.length && (
+              <p role="status">선택 가능한 활성 시술이 없습니다. 시술 메뉴에서 등록하거나 활성화해 주세요.</p>
+            )}
             <div className="b-notice b-help">
               비활성 시술은 선택할 수 없습니다. 시술 관리 메뉴에서 활성화한 뒤 등록해 주세요.
             </div>
@@ -241,7 +260,7 @@ export default function NewSlotPage() {
             <button
               className="b-button b-primary b-wide"
               type="submit"
-              disabled={Boolean(conflict)}
+              disabled={status !== 'succeeded' || !menu?.active || Boolean(conflict)}
             >
               ⚑ 빈자리 즉시 등록하기
             </button>
