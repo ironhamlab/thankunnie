@@ -1,5 +1,6 @@
 package com.ucamp.app.domain.treatment.dto.request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
@@ -15,7 +16,13 @@ public record TreatmentSaveRequest(
         @NotNull Integer price,
         @NotNull Integer lastMinutePrice,
         @NotNull @Positive Long categoryId,
-        @NotNull @Positive @Max(9990) Integer durationMinutes) {
+        @NotNull @Positive @Max(9990) Integer durationMinutes,
+        @Valid TreatmentConditionsRequest conditions) {
+
+    public TreatmentSaveRequest(String name, String description, Integer regularPrice, Integer price,
+            Integer lastMinutePrice, Long categoryId, Integer durationMinutes) {
+        this(name, description, regularPrice, price, lastMinutePrice, categoryId, durationMinutes, null);
+    }
 
     @AssertTrue(message = "소요 시간은 30분 배수여야 합니다.")
     public boolean isDurationValid() {
