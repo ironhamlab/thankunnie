@@ -4,7 +4,10 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import lombok.extern.slf4j.Slf4j;
 
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
@@ -12,22 +15,21 @@ import com.ucamp.app.domain.payment.client.PortOneClient;
 import com.ucamp.app.domain.payment.dto.request.PaymentVerifyRequest;
 import com.ucamp.app.domain.payment.dto.response.PaymentCancelResponse;
 import com.ucamp.app.domain.payment.dto.response.PaymentVerifyResponse;
-import com.ucamp.app.domain.payment.entity.DepositPayment;
-import com.ucamp.app.domain.payment.repository.DepositPaymentRepository;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 public class PaymentService {
 
     private final PortOneClient portOneClient;
-    private final DepositPaymentRepository depositPaymentRepository;
+    private final PaymentRefundStateService refundStateService;
     private final Clock clock;
 
     public PaymentService(PortOneClient portOneClient,
-                          DepositPaymentRepository depositPaymentRepository,
+                          PaymentRefundStateService refundStateService,
                           Clock clock) {
         this.portOneClient = portOneClient;
-        this.depositPaymentRepository = depositPaymentRepository;
+        this.refundStateService = refundStateService;
         this.clock = clock;
     }
 
@@ -39,34 +41,49 @@ public class PaymentService {
     /**
      * 예약금결제의 남은 금액을 전액 환불한다.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public PaymentCancelResponse cancel(Long depositPaymentId, String reason) {
-        DepositPayment payment = findForUpdate(depositPaymentId);
-        return refund(payment, payment.refundableAmount(), reason);
+        return executeRefund(refundStateService.start(depositPaymentId, null), reason);
     }
 
     /**
      * 예약금결제를 지정 금액만큼 환불한다. 예약 취소처럼 환불액을 정책으로 계산하는 다른 도메인에서 호출한다.
      *
+     * <p>PG 호출을 DB 트랜잭션 밖에서 하므로 호출한 쪽의 트랜잭션은 잠시 중단되고,
+     * 환불 상태 변경은 호출한 쪽의 트랜잭션과 별개로 커밋된다.
+     *
      * @param refundAmount 환불 금액 (남은 금액 이하)
      */
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public PaymentCancelResponse refund(Long depositPaymentId, int refundAmount, String reason) {
-        return refund(findForUpdate(depositPaymentId), refundAmount, reason);
+        return executeRefund(refundStateService.start(depositPaymentId, refundAmount), reason);
     }
 
-    private PaymentCancelResponse refund(DepositPayment payment, int refundAmount, String reason) {
-        // 포트원에 잘못된 취소 요청이 나가지 않도록 먼저 검증한다
-        payment.validateRefund(refundAmount);
+    /**
+     * 1) REFUND_PENDING 커밋 → 2) 트랜잭션 밖에서 PG 취소 → 3) 결과 반영.
+     * PG 결과가 불확실하면 REFUND_PENDING 을 유지해 중복 환불을 막고, 실제 취소 여부는 보정 작업에서 확인한다.
+     */
+    private PaymentCancelResponse executeRefund(RefundTarget target, String reason) {
+        try {
+            portOneClient.cancelPayment(target.impUid(), target.refundAmount(), reason);
+        } catch (BusinessException e) {
+            if (e.getErrorCode() == ErrorCode.PAYMENT_REFUND_UNCERTAIN) {
+                log.warn("포트원 환불 결과 불확실, REFUND_PENDING 유지: depositPaymentId={}, impUid={}",
+                        target.depositPaymentId(), target.impUid());
+                throw e;
+            }
+            // PG 가 취소를 확실히 거절했으므로 환불 시작 전 상태로 되돌린다
+            refundStateService.restore(target);
+            throw e;
+        }
 
-        portOneClient.cancelPayment(payment.getPgTransactionKey(), refundAmount, reason);
-        payment.refund(refundAmount, LocalDateTime.now(clock));
-
-        return PaymentCancelResponse.from(payment);
-    }
-
-    private DepositPayment findForUpdate(Long depositPaymentId) {
-        return depositPaymentRepository.findByIdForUpdate(depositPaymentId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
+        try {
+            return refundStateService.complete(target, LocalDateTime.now(clock));
+        } catch (RuntimeException e) {
+            // PG 환불은 끝났는데 DB 반영만 실패한 경우. REFUND_PENDING 으로 남아 보정 대상이 된다
+            log.error("포트원 환불 성공 후 DB 반영 실패: depositPaymentId={}, impUid={}, amount={}",
+                    target.depositPaymentId(), target.impUid(), target.refundAmount(), e);
+            throw new BusinessException(ErrorCode.PAYMENT_REFUND_UNCERTAIN);
+        }
     }
 }

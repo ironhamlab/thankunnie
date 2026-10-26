@@ -23,7 +23,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 알림 이벤트. 빈자리(예외 일정 OPEN 행)가 임박 구간에 들어오거나 취소 후 재공개될 때 한 건 저장한다.
+ * 알림 이벤트. 빈자리(예외 일정 OPEN 행)가 임박·초임박 구간에 들어오거나 취소 후 재공개될 때 한 건 저장한다.
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -42,7 +42,7 @@ public class NotificationEvent extends BaseTimeEntity {
     @Column(name = "EVENT_ID")
     private Long id;
 
-    /** 임박(IMMINENT) 또는 취소 재공개(REOPENED). */
+    /** 임박(IMMINENT), 초임박(LAST_MINUTE), 취소 재공개(REOPENED). */
     @Enumerated(EnumType.STRING)
     @Column(name = "EVENT_TYPE", nullable = false, length = 20)
     private NotificationEventType eventType;
@@ -56,7 +56,7 @@ public class NotificationEvent extends BaseTimeEntity {
     @Column(name = "SHOP_ID", nullable = false)
     private Long shopId;
 
-    /** 취소 재공개일 때만 취소된 예약 ID. 임박이면 null. */
+    /** 취소 재공개일 때만 취소된 예약 ID. 임박·초임박이면 null. */
     @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "RESERVATION_ID")
     private Long reservationId;

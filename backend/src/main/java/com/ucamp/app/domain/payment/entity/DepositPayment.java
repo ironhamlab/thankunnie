@@ -27,6 +27,10 @@ import com.ucamp.app.domain.reservation.entity.Reservation;
 
 /**
  * 예약금결제. 포트원 V1 의 imp_uid 를 PG_TRANSACTION_KEY 에 저장한다.
+ *
+ * <p>환불은 PG 호출을 DB 트랜잭션 밖에서 하기 위해 두 단계로 나눈다.
+ * {@link #startRefund} 로 REFUND_PENDING 을 먼저 커밋하고, PG 결과에 따라
+ * {@link #completeRefund} 또는 {@link #restoreStatus} 를 호출한다.
  */
 @Entity
 @Table(name = "DEPOSIT_PAYMENT")
@@ -85,26 +89,43 @@ public class DepositPayment extends BaseTimeEntity {
     }
 
     /**
-     * 환불 요청 전 검증. 포트원 호출 전에 불러 잘못된 요청이 PG 로 나가지 않게 한다.
+     * 환불을 시작한다. 검증 후 REFUND_PENDING 으로 바꿔 PG 호출 중 같은 결제의 다른 환불 요청을 막는다.
      */
-    public void validateRefund(int refundAmount) {
+    public void startRefund(int refundAmount) {
         if (!status.refundable()) {
             throw new BusinessException(ErrorCode.PAYMENT_NOT_REFUNDABLE);
         }
-        if (refundAmount <= 0 || refundAmount > refundableAmount()) {
-            throw new BusinessException(ErrorCode.PAYMENT_INVALID_REFUND_AMOUNT);
-        }
+        validateRefundAmount(refundAmount);
+        this.status = DepositPaymentStatus.REFUND_PENDING;
     }
 
     /**
-     * 포트원 취소 성공 후 환불 결과를 반영한다. 전액이 환불되면 REFUNDED, 아니면 PART_REFUNDED.
+     * PG 취소 성공 후 환불 결과를 반영한다. 전액이 환불되면 REFUNDED, 아니면 PART_REFUNDED.
      */
-    public void refund(int refundAmount, LocalDateTime refundedAt) {
-        validateRefund(refundAmount);
+    public void completeRefund(int refundAmount, LocalDateTime refundedAt) {
+        if (status != DepositPaymentStatus.REFUND_PENDING) {
+            throw new BusinessException(ErrorCode.PAYMENT_NOT_REFUNDABLE);
+        }
+        validateRefundAmount(refundAmount);
         this.refundedAmount += refundAmount;
         this.status = refundableAmount() == 0
                 ? DepositPaymentStatus.REFUNDED
                 : DepositPaymentStatus.PART_REFUNDED;
         this.refundedAt = refundedAt;
+    }
+
+    /**
+     * PG 가 취소를 확실히 거절했을 때 환불 시작 전 상태로 되돌린다.
+     */
+    public void restoreStatus(DepositPaymentStatus previousStatus) {
+        if (status == DepositPaymentStatus.REFUND_PENDING) {
+            this.status = previousStatus;
+        }
+    }
+
+    private void validateRefundAmount(int refundAmount) {
+        if (refundAmount <= 0 || refundAmount > refundableAmount()) {
+            throw new BusinessException(ErrorCode.PAYMENT_INVALID_REFUND_AMOUNT);
+        }
     }
 }

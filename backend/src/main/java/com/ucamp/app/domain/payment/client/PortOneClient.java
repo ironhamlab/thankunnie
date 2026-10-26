@@ -81,6 +81,9 @@ public class PortOneClient {
     /**
      * 결제를 취소(환불)한다. 이미 취소된 결제 등은 HTTP 200 + code != 0 으로 오므로 unwrap 에서 예외가 난다.
      *
+     * <p>포트원이 취소를 확실히 거절하면 PAYMENT_PORTONE_ERROR, 취소 요청을 보낸 뒤 응답을 받지 못해
+     * 실제 취소 여부를 알 수 없으면 PAYMENT_REFUND_UNCERTAIN 을 던진다.
+     *
      * @param impUid 포트원 결제 고유번호
      * @param amount 취소 금액
      * @param reason 취소 사유
@@ -91,10 +94,19 @@ public class PortOneClient {
         requestBody.put("amount", amount);
         requestBody.put("reason", reason);
 
+        // 토큰 발급 실패는 취소 요청 전이므로 결과가 확실한 실패다
+        String accessToken;
+        try {
+            accessToken = getAccessToken();
+        } catch (ResourceAccessException e) {
+            log.warn("포트원 연결 실패(토큰): impUid={}, cause={}", impUid, e.getMessage());
+            throw new BusinessException(ErrorCode.PAYMENT_PORTONE_ERROR);
+        }
+
         try {
             PortOneResponse<PortOnePayment> body = restClient.post()
                     .uri("/payments/cancel")
-                    .header(HttpHeaders.AUTHORIZATION, getAccessToken())
+                    .header(HttpHeaders.AUTHORIZATION, accessToken)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(requestBody)
                     .retrieve()
@@ -111,9 +123,9 @@ public class PortOneClient {
             }
             return unwrap(body);
         } catch (ResourceAccessException e) {
-            // 타임아웃이면 포트원에서는 취소가 됐을 수도 있다. 같은 imp_uid 를 조회해 상태를 확인해야 한다
-            log.warn("포트원 연결 실패(취소): impUid={}, cause={}", impUid, e.getMessage());
-            throw new BusinessException(ErrorCode.PAYMENT_PORTONE_ERROR);
+            // 응답 타임아웃이면 포트원에서는 취소가 됐을 수도 있어 결과를 확정하지 않는다
+            log.warn("포트원 취소 응답 없음: impUid={}, cause={}", impUid, e.getMessage());
+            throw new BusinessException(ErrorCode.PAYMENT_REFUND_UNCERTAIN);
         }
     }
 

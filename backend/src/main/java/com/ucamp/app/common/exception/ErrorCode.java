@@ -41,12 +41,25 @@ public enum ErrorCode {
     VACANCY_NOT_OPEN_TIME(HttpStatus.CONFLICT, "VACANCY_013", "영업하지 않는 시간입니다."),
     VACANCY_BUSINESS_TIME_REQUIRED(HttpStatus.BAD_REQUEST, "VACANCY_014", "영업일은 시작·종료 시각을 입력해야 합니다."),
     VACANCY_INVALID_DURATION(HttpStatus.BAD_REQUEST, "VACANCY_015", "시술 소요 시간이 올바르지 않습니다."),
+    VACANCY_USER_TIME_OVERLAP(HttpStatus.CONFLICT, "VACANCY_016", "같은 시간에 진행 중인 예약이 있습니다."),
 
     // PAYMENT
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT_001", "결제 정보를 찾을 수 없습니다."),
     PAYMENT_PORTONE_ERROR(HttpStatus.BAD_GATEWAY, "PAYMENT_002", "결제 대행사 연동 중 오류가 발생했습니다."),
     PAYMENT_NOT_REFUNDABLE(HttpStatus.CONFLICT, "PAYMENT_003", "환불할 수 없는 결제 상태입니다."),
-    PAYMENT_INVALID_REFUND_AMOUNT(HttpStatus.BAD_REQUEST, "PAYMENT_004", "환불 금액이 올바르지 않습니다.");
+    PAYMENT_INVALID_REFUND_AMOUNT(HttpStatus.BAD_REQUEST, "PAYMENT_004", "환불 금액이 올바르지 않습니다."),
+    PAYMENT_REFUND_UNCERTAIN(HttpStatus.GATEWAY_TIMEOUT, "PAYMENT_005",
+            "환불 결과를 확인하고 있습니다. 잠시 후 결제 상태를 확인해 주세요."),
+    // TREATMENT
+    TREATMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "TREATMENT_001", "시술을 찾을 수 없습니다."),
+
+    // CANCEL
+    CANCEL_RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "CANCEL_001", "취소할 예약을 찾을 수 없습니다."),
+    CANCEL_NOT_CONFIRMED(HttpStatus.CONFLICT, "CANCEL_002", "확정된 예약만 취소할 수 있습니다."),
+    CANCEL_ALREADY_REQUESTED(HttpStatus.CONFLICT, "CANCEL_003", "이미 취소 요청된 예약입니다."),
+    CANCEL_ALREADY_STARTED(HttpStatus.CONFLICT, "CANCEL_004", "시술 시작 이후에는 취소할 수 없습니다."),
+    CANCEL_GRACE_ALREADY_USED(HttpStatus.CONFLICT, "CANCEL_005", "오늘 무료 취소를 이미 사용했습니다."),
+    CANCEL_INVALID_REFUND_AMOUNT(HttpStatus.BAD_REQUEST, "CANCEL_006", "환불액은 정책 환불액 이상, 납부 예약금 이하여야 합니다.");
 
     private final HttpStatus status;
     private final String code;

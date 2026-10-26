@@ -41,23 +41,25 @@ class PaymentServiceTest {
         portOneClient = mock(PortOneClient.class);
         depositPaymentRepository = mock(DepositPaymentRepository.class);
         Clock clock = Clock.fixed(NOW.atZone(SEOUL).toInstant(), SEOUL);
-        paymentService = new PaymentService(portOneClient, depositPaymentRepository, clock);
+        PaymentRefundStateService refundStateService = new PaymentRefundStateService(depositPaymentRepository);
+        paymentService = new PaymentService(portOneClient, refundStateService, clock);
     }
 
     private DepositPayment paidPayment() {
-        return DepositPayment.builder()
+        DepositPayment payment = DepositPayment.builder()
                 .pgProvider("PORTONE")
                 .pgTransactionKey("imp_123")
                 .status(DepositPaymentStatus.PAID)
                 .amount(20000)
                 .build();
+        given(depositPaymentRepository.findByIdForUpdate(1L)).willReturn(Optional.of(payment));
+        return payment;
     }
 
     @Test
     @DisplayName("결제 취소 시 남은 금액 전액을 포트원에 취소 요청하고 REFUNDED 로 바꾼다")
     void cancel_paidPayment_refundsAll() {
         DepositPayment payment = paidPayment();
-        given(depositPaymentRepository.findByIdForUpdate(1L)).willReturn(Optional.of(payment));
 
         PaymentCancelResponse response = paymentService.cancel(1L, "테스트 취소");
 
@@ -70,8 +72,7 @@ class PaymentServiceTest {
     @Test
     @DisplayName("정책 환불액만큼 부분 환불하면 PART_REFUNDED 가 된다")
     void refund_partialAmount_partRefunded() {
-        DepositPayment payment = paidPayment();
-        given(depositPaymentRepository.findByIdForUpdate(1L)).willReturn(Optional.of(payment));
+        paidPayment();
 
         PaymentCancelResponse response = paymentService.refund(1L, 10000, "하루 전 취소");
 
@@ -110,16 +111,36 @@ class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("포트원 취소가 실패하면 결제 상태를 바꾸지 않는다")
-    void cancel_portOneFails_keepsStatus() {
+    @DisplayName("포트원이 취소를 거절하면 원래 상태로 되돌린다")
+    void cancel_portOneRejects_restoresStatus() {
         DepositPayment payment = paidPayment();
-        given(depositPaymentRepository.findByIdForUpdate(1L)).willReturn(Optional.of(payment));
         willThrow(new BusinessException(ErrorCode.PAYMENT_PORTONE_ERROR))
                 .given(portOneClient).cancelPayment(anyString(), anyInt(), anyString());
 
         assertThatThrownBy(() -> paymentService.cancel(1L, "취소"))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.PAYMENT_PORTONE_ERROR);
         assertThat(payment.getStatus()).isEqualTo(DepositPaymentStatus.PAID);
         assertThat(payment.getRefundedAmount()).isZero();
+    }
+
+    @Test
+    @DisplayName("포트원 응답이 불확실하면 REFUND_PENDING 을 유지해 재요청을 막는다")
+    void cancel_portOneUncertain_keepsRefundPending() {
+        DepositPayment payment = paidPayment();
+        willThrow(new BusinessException(ErrorCode.PAYMENT_REFUND_UNCERTAIN))
+                .given(portOneClient).cancelPayment(anyString(), anyInt(), anyString());
+
+        assertThatThrownBy(() -> paymentService.cancel(1L, "취소"))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.PAYMENT_REFUND_UNCERTAIN);
+        assertThat(payment.getStatus()).isEqualTo(DepositPaymentStatus.REFUND_PENDING);
+
+        assertThatThrownBy(() -> paymentService.cancel(1L, "재시도"))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.PAYMENT_NOT_REFUNDABLE);
     }
 }
