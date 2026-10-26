@@ -98,6 +98,29 @@ class NotificationDispatchRepositoryTest {
         assertThat(notificationDispatchRepository.count()).isEqualTo(2);
     }
 
+    @Test
+    @DisplayName("대기 작업을 처리 중으로 바꾸는 수정은 한 번만 성공한다")
+    void claimPending_secondUpdate_changesNoRow() {
+        long eventId = saveEvent(1L).getId();
+        NotificationDispatch saved = notificationDispatchRepository.saveAndFlush(dispatch(eventId, USER_ID));
+
+        int first = notificationDispatchRepository.claimPending(
+                saved.getId(),
+                NotificationDispatchStatus.PENDING,
+                NotificationDispatchStatus.PROCESSING,
+                SLOT_START);
+        int second = notificationDispatchRepository.claimPending(
+                saved.getId(),
+                NotificationDispatchStatus.PENDING,
+                NotificationDispatchStatus.PROCESSING,
+                SLOT_START);
+
+        assertThat(first).isEqualTo(1);
+        assertThat(second).isZero();
+        assertThat(notificationDispatchRepository.findById(saved.getId()).orElseThrow().getStatus())
+                .isEqualTo(NotificationDispatchStatus.PROCESSING);
+    }
+
     private NotificationEvent saveEvent(long exceptionId) {
         return notificationEventRepository.saveAndFlush(NotificationEvent.builder()
                 .eventType(NotificationEventType.IMMINENT)

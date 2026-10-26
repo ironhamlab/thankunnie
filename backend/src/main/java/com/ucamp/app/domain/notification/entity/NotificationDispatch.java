@@ -49,7 +49,7 @@ public class NotificationDispatch extends BaseTimeEntity {
     @Column(name = "USER_ID", nullable = false)
     private Long userId;
 
-    /** 만들 때는 PENDING. 처리 중·끝으로 바꾸는 일은 다음 단계다. */
+    /** 만들 때는 PENDING. 선점에 성공하면 PROCESSING. 끝으로 바꾸는 일은 다음 단계다. */
     @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", nullable = false, length = 20)
     private NotificationDispatchStatus status;

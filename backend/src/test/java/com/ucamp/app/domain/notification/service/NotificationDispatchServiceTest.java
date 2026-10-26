@@ -151,6 +151,65 @@ class NotificationDispatchServiceTest {
         assertThat(notificationDispatchRepository.count()).isZero();
     }
 
+    @Test
+    @DisplayName("대기 작업을 처리 중으로 바꾼 뒤에만 그 작업을 가져간다")
+    void claimDispatchJob_pendingJob_becomesProcessing() {
+        NotificationDispatch job = pendingJob(1L, USER_ID);
+
+        Optional<NotificationDispatch> claimed = notificationDispatchService.claimDispatchJob();
+
+        assertThat(claimed).isPresent();
+        assertThat(claimed.get().getId()).isEqualTo(job.getId());
+        assertThat(claimed.get().getStatus()).isEqualTo(NotificationDispatchStatus.PROCESSING);
+    }
+
+    @Test
+    @DisplayName("다른 프로세스가 먼저 처리 중으로 바꿨으면 수정 건수가 0이라 넘어간다")
+    void claimDispatchJob_alreadyClaimed_returnsEmpty() {
+        pendingJob(1L, USER_ID);
+        notificationDispatchService.claimDispatchJob();
+
+        Optional<NotificationDispatch> claimed = notificationDispatchService.claimDispatchJob();
+
+        assertThat(claimed).isEmpty();
+        assertThat(notificationDispatchRepository.findAll())
+                .extracting(NotificationDispatch::getStatus)
+                .containsExactly(NotificationDispatchStatus.PROCESSING);
+    }
+
+    @Test
+    @DisplayName("한 번 호출에는 ID가 작은 대기 작업 하나만 가져간다")
+    void claimDispatchJob_twoPendingJobs_claimsOlderOne() {
+        NotificationEvent savedEvent = notificationEventRepository.saveAndFlush(event(1L));
+        NotificationDispatch older = notificationDispatchRepository.saveAndFlush(dispatch(savedEvent.getId(), USER_ID));
+        NotificationDispatch newer = notificationDispatchRepository.saveAndFlush(
+                dispatch(savedEvent.getId(), OTHER_USER_ID));
+
+        Optional<NotificationDispatch> claimed = notificationDispatchService.claimDispatchJob();
+
+        assertThat(claimed).get().extracting(NotificationDispatch::getId).isEqualTo(older.getId());
+        assertThat(notificationDispatchRepository.findById(newer.getId()).orElseThrow().getStatus())
+                .isEqualTo(NotificationDispatchStatus.PENDING);
+    }
+
+    @Test
+    @DisplayName("대기 작업이 없으면 가져갈 작업이 없다")
+    void claimDispatchJob_noPendingJob_returnsEmpty() {
+        assertThat(notificationDispatchService.claimDispatchJob()).isEmpty();
+    }
+
+    private NotificationDispatch pendingJob(long exceptionId, long userId) {
+        NotificationEvent savedEvent = notificationEventRepository.saveAndFlush(event(exceptionId));
+        return notificationDispatchRepository.saveAndFlush(dispatch(savedEvent.getId(), userId));
+    }
+
+    private static NotificationDispatch dispatch(long eventId, long userId) {
+        return NotificationDispatch.builder()
+                .eventId(eventId)
+                .userId(userId)
+                .build();
+    }
+
     private static NotificationEvent event(long exceptionId) {
         return NotificationEvent.builder()
                 .eventType(NotificationEventType.IMMINENT)

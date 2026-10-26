@@ -1,5 +1,7 @@
 package com.ucamp.app.domain.notification.service;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -9,13 +11,14 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import com.ucamp.app.domain.notification.entity.NotificationDispatch;
+import com.ucamp.app.domain.notification.entity.NotificationDispatchStatus;
 import com.ucamp.app.domain.notification.entity.NotificationEvent;
 import com.ucamp.app.domain.notification.entity.NotificationEventStatus;
 import com.ucamp.app.domain.notification.repository.NotificationDispatchRepository;
 import com.ucamp.app.domain.notification.repository.NotificationEventRepository;
 
 /**
- * 알림 이벤트를 회원별 발송 대기 작업으로 저장한다.
+ * 알림 이벤트를 회원별 발송 대기 작업으로 저장하고, 그 작업을 하나씩 가져간다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -25,6 +28,7 @@ public class NotificationDispatchService {
     private final NotificationEventRepository notificationEventRepository;
     private final NotificationDispatchRepository notificationDispatchRepository;
     private final SubscriptionMatchService subscriptionMatchService;
+    private final Clock clock;
 
     /**
      * PENDING 이벤트 하나를 고른다. 맞는 회원마다 대기 작업을 넣고 그 이벤트를 PROCESSED로 바꾼다.
@@ -62,5 +66,34 @@ public class NotificationDispatchService {
         // 받을 회원이 없어도 이 이벤트 매칭은 끝이다. PENDING으로 두면 다음에 또 집는다.
         event.markProcessed();
         return created;
+    }
+
+    /**
+     * 대기 작업 하나를 처리 중으로 바꾸는 데 성공한 경우에만 그 작업을 돌려준다.
+     * 다른 프로세스가 먼저 바꿨으면 수정 건수가 0이라 빈 값을 돌려주고 넘어간다.
+     * 이미 처리 중인 작업은 다시 고르지 않는다.
+     *
+     * @return 이번에 가져간 작업. 대기 작업이 없거나 다른 프로세스가 먼저 가져갔으면 empty
+     */
+    @Transactional
+    public Optional<NotificationDispatch> claimDispatchJob() {
+        // 대기 작업 중 가장 먼저 생긴 것 하나만 고른다. 처리 중인 작업은 여기서 빠진다.
+        Optional<NotificationDispatch> found = notificationDispatchRepository
+                .findFirstByStatusOrderByIdAsc(NotificationDispatchStatus.PENDING);
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Long dispatchId = found.get().getId();
+        // 아직 대기일 때만 처리 중으로 바뀐다. 먼저 바뀐 작업은 수정 건수가 0이다.
+        int updated = notificationDispatchRepository.claimPending(
+                dispatchId,
+                NotificationDispatchStatus.PENDING,
+                NotificationDispatchStatus.PROCESSING,
+                LocalDateTime.now(clock));
+        if (updated == 0) {
+            return Optional.empty();
+        }
+        return notificationDispatchRepository.findById(dispatchId);
     }
 }
