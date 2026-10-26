@@ -8,11 +8,13 @@ import SlotsPage from './SlotsPage';
 import OwnerBookingsPage from './OwnerBookingsPage';
 import Asset from './Asset';
 import NewSlotPage from './NewSlotPage';
+import SchedulePage from './SchedulePage';
 
 const navigation = [
   [R.SHOP, '매장 정보', '12-1798-6.svg'],
   [R.MENUS, '시술 관리', '12-1798-7.svg'],
   [R.SLOTS, '빈자리 관리', '12-1798-8.svg'],
+  [R.SCHEDULE, '영업시간·일정', '12-1798-8.svg'],
   [R.OWNER_BOOKINGS, '예약 관리', '12-1798-9.svg'],
 ];
 export default function OwnerPage() {
@@ -71,6 +73,7 @@ export default function OwnerPage() {
             <Route path="menus" element={<MenusPage />} />
             <Route path="slots" element={<SlotsPage />} />
             <Route path="slots/new" element={<NewSlotPage />} />
+            <Route path="schedule" element={<SchedulePage />} />
             <Route path="bookings" element={<OwnerBookingsPage />} />
             <Route path="*" element={<div className="b-empty">화면을 찾을 수 없습니다.</div>} />
           </Routes>
