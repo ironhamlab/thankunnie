@@ -4,10 +4,12 @@ import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
 import { useDesignStore } from './useDesignStore';
 import { DEMO_DATE, STATUS, finish, minutes, money } from './data';
 import Dialog from './Dialog';
+import useSlotTreatments from '@/hooks/useSlotTreatments';
 
 export default function SlotsPage() {
   const slots = useDesignStore((s) => s.slots);
   const menus = useDesignStore((s) => s.menus);
+  const { menus: selectableMenus, status: selectionStatus, error: loadError, refreshMenus } = useSlotTreatments();
   const save = useDesignStore((s) => s.saveSlot);
   const toggle = useDesignStore((s) => s.toggleSlot);
   const [params, setParams] = useSearchParams();
@@ -22,7 +24,7 @@ export default function SlotsPage() {
   );
   const blank = {
     id: 'slot-' + Date.now(),
-    serviceId: menus.find((m) => m.active)?.id || '',
+    serviceId: selectableMenus.find((m) => m.active)?.id || '',
     date: DEMO_DATE,
     time: '17:00',
     discount: 25,
@@ -35,8 +37,9 @@ export default function SlotsPage() {
     setError('');
   };
   const update = (key, value) => setEdit({ ...draft, [key]: value });
-  const menu = menus.find((m) => m.id === draft?.serviceId);
-  const submit = (e) => {
+  const menu = selectableMenus.find((m) => m.id === draft?.serviceId)
+    ?? menus.find((m) => m.id === draft?.serviceId);
+  const submit = async (e) => {
     e.preventDefault();
     setError('');
     if (minutes(draft.time) < 600 || minutes(draft.time) + (menu?.duration || 60) > 1260) {
@@ -48,7 +51,8 @@ export default function SlotsPage() {
       return;
     }
     try {
-      save({ ...draft, discount: Number(draft.discount) });
+      const currentMenus = await refreshMenus();
+      save({ ...draft, discount: Number(draft.discount) }, currentMenus);
       close();
       setNotice('빈자리를 저장했습니다.');
     } catch (err) {
@@ -211,6 +215,18 @@ export default function SlotsPage() {
       {draft && (
         <Dialog title="빈자리 등록 및 실시간 겹침 검사" onClose={close}>
           <form className="b-form-grid" onSubmit={submit}>
+            {loadError && (
+              <div role="alert">
+                <p>{loadError.message}</p>
+                <button type="button" className="b-button" onClick={() => refreshMenus().catch(() => {})}>
+                  다시 불러오기
+                </button>
+              </div>
+            )}
+            {selectionStatus === 'loading' && <p role="status">시술을 불러오는 중입니다.</p>}
+            {selectionStatus === 'succeeded' && !selectableMenus.length && (
+              <p role="status">선택 가능한 활성 시술이 없습니다. 시술 메뉴에서 활성화해 주세요.</p>
+            )}
             <label className="b-span-two">
               연결 시술 *
               <select
@@ -219,7 +235,7 @@ export default function SlotsPage() {
                 onChange={(e) => update('serviceId', e.target.value)}
               >
                 <option value="">선택해 주세요</option>
-                {menus
+                {selectableMenus
                   .filter((m) => m.active)
                   .map((m) => (
                     <option key={m.id} value={m.id}>
@@ -276,7 +292,7 @@ export default function SlotsPage() {
             )}
             <button
               className="b-button b-primary b-span-two"
-              disabled={!menus.some((m) => m.active)}
+              disabled={selectionStatus !== 'succeeded' || !selectableMenus.some((m) => m.active)}
             >
               빈자리 저장하기
             </button>

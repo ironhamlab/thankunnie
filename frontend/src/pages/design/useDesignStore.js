@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { BOOKINGS, MENUS, SERVICES, SHOP, SLOTS, overlaps, validateSlot } from './data';
+import { BOOKINGS, MENUS, SERVICES, SHOP, SLOTS, overlaps, validateSlot } from './data.js';
 
 export const useDesignStore = create((set, get) => ({
   shop: SHOP,
@@ -30,10 +30,17 @@ export const useDesignStore = create((set, get) => ({
     set((state) => ({
       menus: state.menus.map((item) => (item.id === id ? { ...item, active: !item.active } : item)),
     })),
-  saveSlot: (slot) => {
-    const validationError = validateSlot(slot, get().menus, get().slots, get().bookings);
+  saveSlot: (slot, selectableMenus = []) => {
+    const selectedMenu = selectableMenus.find((menu) => menu.id === slot.serviceId && menu.active);
+    if (!selectedMenu) throw new Error('활성 시술을 선택해 주세요.');
+    // 기존 메뉴는 이력 표시용으로 보존하고 신규 선택만 서버에서 재조회한 목록으로 검사한다.
+    const menus = [...get().menus.filter((menu) => menu.id !== selectedMenu.id), selectedMenu];
+    const validationError = validateSlot(slot, menus, get().slots, get().bookings);
     if (validationError) throw new Error(validationError);
     set((state) => ({
+      menus: state.menus.some((menu) => menu.id === selectedMenu.id)
+        ? state.menus
+        : [...state.menus, selectedMenu],
       slots: state.slots.some((item) => item.id === slot.id)
         ? state.slots.map((item) => (item.id === slot.id ? slot : item))
         : [...state.slots, slot],
