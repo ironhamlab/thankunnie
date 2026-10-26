@@ -21,11 +21,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import com.ucamp.app.common.entity.BaseTimeEntity;
-import com.ucamp.app.common.exception.BusinessException;
-import com.ucamp.app.common.exception.ErrorCode;
+
 import com.ucamp.app.domain.shop.entity.Shop;
 import com.ucamp.app.domain.shop.entity.ShopCategory;
 import com.ucamp.app.domain.treatment.dto.request.TreatmentSaveRequest;
+import com.ucamp.app.domain.vacancy.policy.SalePrices;
 
 /** 사장님 매장의 시술 메뉴. 기존 예약의 가격·시각 스냅샷은 변경하지 않는다. */
 @Entity
@@ -98,9 +98,7 @@ public class Treatment extends BaseTimeEntity {
     public static Treatment create(Shop shop, ShopCategory category, TreatmentSaveRequest request) {
         Treatment treatment = new Treatment();
         treatment.shop = shop;
-        treatment.regularPrice = request.regularPrice();
-        treatment.price = request.regularPrice();
-        treatment.lastMinutePrice = request.regularPrice();
+
         treatment.treatmentType = TreatmentType.NORMAL;
         treatment.status = TreatmentStatus.ACTIVE;
         treatment.updateMenu(category, request);
@@ -108,22 +106,9 @@ public class Treatment extends BaseTimeEntity {
     }
 
     public void updateMenu(ShopCategory category, TreatmentSaveRequest request) {
-        // 할인 미설정 가격은 정상가를 따라가고, 별도 설정된 할인가는 보존한다.
-        boolean followsRegularPrice = price.equals(regularPrice);
-        boolean lastMinuteFollowsRegularPrice = lastMinutePrice.equals(regularPrice);
-        if (!followsRegularPrice && price > request.regularPrice()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "정상가는 설정된 판매가 이상이어야 합니다.");
-        }
-        int nextPrice = followsRegularPrice ? request.regularPrice() : price;
-        if (!lastMinuteFollowsRegularPrice && lastMinutePrice > nextPrice) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "정상가 변경 후 판매가는 설정된 초임박가 이상이어야 합니다.");
-        }
-        if (followsRegularPrice) {
-            price = request.regularPrice();
-        }
-        if (lastMinuteFollowsRegularPrice) {
-            lastMinutePrice = request.regularPrice();
-        }
+        new SalePrices(request.price(), request.lastMinutePrice()).validateFor(request.regularPrice());
+        this.price = request.price();
+        this.lastMinutePrice = request.lastMinutePrice();
         this.category = category;
         this.name = request.name().strip();
         this.description = request.description();

@@ -219,7 +219,7 @@ class TreatmentIntegrationTest {
         entityManager.clear();
 
         mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
-                        .contentType(MediaType.APPLICATION_JSON).content(body(90, 60000, 9001)))
+                        .contentType(MediaType.APPLICATION_JSON).content(body(90, 60000, 9001, 40000, 30000)))
                 .andExpect(status().isOk());
         var treatment = jdbc.queryForMap("SELECT * FROM TREATMENT WHERE TREATMENT_ID = ?", id);
         assertThat(((Number) treatment.get("PRICE")).intValue()).isEqualTo(40000);
@@ -232,8 +232,44 @@ class TreatmentIntegrationTest {
         assertThat(reservation.get("ENDS_AT").toString()).startsWith("2026-10-25 13:00:00");
 
         mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
-                        .contentType(MediaType.APPLICATION_JSON).content(body(90, 35000, 9001)))
+                        .contentType(MediaType.APPLICATION_JSON).content(body(90, 35000, 9001, 40000, 30000)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("등록·수정한 할인가를 DB와 상세 응답에서 다시 읽는다")
+    void save_discountPrices_persistsAndReturnsPrices() throws Exception {
+        String response = mvc.perform(post(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content(body(60, 50000, 9002, 40000, 30000)))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long id = mapper.readTree(response).get("data").get("treatmentId").asLong();
+        assertThat(jdbc.queryForObject("SELECT PRICE FROM TREATMENT WHERE TREATMENT_ID = ?", Integer.class, id))
+                .isEqualTo(40000);
+        assertThat(jdbc.queryForObject("SELECT LAST_MINUTE_PRICE FROM TREATMENT WHERE TREATMENT_ID = ?", Integer.class, id))
+                .isEqualTo(30000);
+        mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content(body(60, 60000, 9002, 45000, 35000)))
+                .andExpect(status().isOk());
+        entityManager.clear();
+        mvc.perform(get(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.price").value(45000))
+                .andExpect(jsonPath("$.data.lastMinutePrice").value(35000));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"50100,30000,VACANCY_007", "40001,30000,VACANCY_007",
+            "40000,30001,VACANCY_007", "0,0,VACANCY_007", "40000,40100,VACANCY_008"})
+    @DisplayName("등록·수정 시 가격 정책 오류 코드를 반환한다")
+    void save_invalidPrices_returnsPolicyError(int price, int lastMinutePrice, String code) throws Exception {
+        String payload = body(60, 50000, 9002, price, lastMinutePrice);
+        mvc.perform(post(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content(payload))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value(code));
+        long id = create(60, 50000, 9002).get("treatmentId").asLong();
+        mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content(payload))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value(code));
     }
 
     private JsonNode create(int duration, int price, long category) throws Exception {
@@ -244,9 +280,13 @@ class TreatmentIntegrationTest {
     }
 
     private String body(int duration, int price, long category) {
+        return body(duration, price, category, price, price);
+    }
+
+    private String body(int duration, int price, long category, int salePrice, int lastMinutePrice) {
         return """
                 {"name":"테스트 시술","description":"시술 설명","regularPrice":%d,
-                 "categoryId":%d,"durationMinutes":%d}
-                """.formatted(price, category, duration);
+                 "categoryId":%d,"durationMinutes":%d,"price":%d,"lastMinutePrice":%d}
+                """.formatted(price, category, duration, salePrice, lastMinutePrice);
     }
 }

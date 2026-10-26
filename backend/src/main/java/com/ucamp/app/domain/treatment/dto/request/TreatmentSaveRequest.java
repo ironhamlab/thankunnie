@@ -7,11 +7,13 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
-/** 시술 메뉴의 기본 정보. 판매가·모델 조건은 각 담당 기능에서 관리한다. */
+/** 시술 메뉴의 기본 정보와 구간별 판매가. */
 public record TreatmentSaveRequest(
         @NotBlank @Size(max = 100) String name,
         @Size(max = 2000) String description,
         @NotNull @Positive Integer regularPrice,
+        @NotNull Integer price,
+        @NotNull Integer lastMinutePrice,
         @NotNull @Positive Long categoryId,
         @NotNull @Positive @Max(9990) Integer durationMinutes) {
 

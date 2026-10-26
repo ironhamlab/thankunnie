@@ -8,7 +8,7 @@ import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
 
 public record TreatmentDetailResponse(
         Long treatmentId, Long shopId, String name, String description,
-        Integer regularPrice, Long categoryId, String categoryName,
+        Integer regularPrice, Integer price, Integer lastMinutePrice, Long categoryId, String categoryName,
         Integer durationMinutes, TreatmentStatus status,
         OffsetDateTime createdAt, OffsetDateTime updatedAt) {
 
@@ -16,6 +16,7 @@ public record TreatmentDetailResponse(
         return new TreatmentDetailResponse(
                 treatment.getTreatmentId(), treatment.getShop().getShopId(),
                 treatment.getName(), treatment.getDescription(), treatment.getRegularPrice(),
+                treatment.getPrice(), treatment.getLastMinutePrice(),
                 treatment.getCategory().getCategoryId(), treatment.getCategory().getName(),
                 treatment.getDurationMinutes(), treatment.getStatus(),
                 TimeUtils.toOffset(treatment.getCreatedAt()), TimeUtils.toOffset(treatment.getUpdatedAt()));
