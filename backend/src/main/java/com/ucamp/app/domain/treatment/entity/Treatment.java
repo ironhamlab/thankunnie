@@ -21,10 +21,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import com.ucamp.app.common.entity.BaseTimeEntity;
+import com.ucamp.app.common.exception.BusinessException;
+import com.ucamp.app.common.exception.ErrorCode;
 
 import com.ucamp.app.domain.shop.entity.Shop;
 import com.ucamp.app.domain.shop.entity.ShopCategory;
 import com.ucamp.app.domain.treatment.dto.request.TreatmentSaveRequest;
+import com.ucamp.app.domain.treatment.dto.request.TreatmentConditionsRequest;
 import com.ucamp.app.domain.vacancy.policy.SalePrices;
 
 /** 사장님 매장의 시술 메뉴. 기존 예약의 가격·시각 스냅샷은 변경하지 않는다. */
@@ -79,6 +82,10 @@ public class Treatment extends BaseTimeEntity {
     @Column(name = "TREATMENT_TYPE", nullable = false, length = 20)
     private TreatmentType treatmentType;
 
+    @JdbcTypeCode(SqlTypes.NUMERIC)
+    @Column(name = "PARTICIPATION_FEE")
+    private Integer participationFee;
+
     @Column(name = "MODEL_CONDITION", length = 2000)
     private String modelCondition;
 
@@ -107,6 +114,9 @@ public class Treatment extends BaseTimeEntity {
 
     public void updateMenu(ShopCategory category, TreatmentSaveRequest request) {
         new SalePrices(request.price(), request.lastMinutePrice()).validateFor(request.regularPrice());
+        if (request.conditions() != null) {
+            updateConditions(request.conditions());
+        }
         this.price = request.price();
         this.lastMinutePrice = request.lastMinutePrice();
         this.category = category;
@@ -114,6 +124,22 @@ public class Treatment extends BaseTimeEntity {
         this.description = request.description();
         this.regularPrice = request.regularPrice();
         this.durationMinutes = request.durationMinutes();
+    }
+
+    /** 목적·모델 조건을 함께 변경하며 일반 시술로 전환하면 기존 모델 정보를 비운다. */
+    private void updateConditions(TreatmentConditionsRequest conditions) {
+        if (conditions.treatmentType() == null || !conditions.isModelConditionsValid()
+                || !conditions.isNormalConditionsValid()
+                || conditions.modelCondition() != null && conditions.modelCondition().length() > 2000
+                || conditions.photoNotice() != null && conditions.photoNotice().length() > 1000) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "목적과 모델 모집 조건을 확인해 주세요.");
+        }
+        this.treatmentType = conditions.treatmentType();
+        this.participationFee = conditions.participationFee();
+        this.modelCondition = conditions.treatmentType() == TreatmentType.MODEL
+                ? conditions.modelCondition().strip() : null;
+        this.photoNotice = conditions.treatmentType() == TreatmentType.MODEL
+                ? conditions.photoNotice().strip() : null;
     }
 
     public void changeStatus(TreatmentStatus status) {

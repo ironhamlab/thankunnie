@@ -124,6 +124,10 @@ export default function MenusPage() {
                       <tr key={item.treatmentId}>
                         <td>
                           <strong>{item.name}</strong>
+                          <small>{item.treatmentType === 'MODEL' ? '모델 모집' : '일반 시술'}</small>
+                          {item.treatmentType === 'MODEL' && (
+                            <small>참가비 {item.participationFee == null ? '미등록' : money(item.participationFee)}</small>
+                          )}
                         </td>
                         <td>{item.categoryName}</td>
                         <td>{item.description || '상세 설명 없음'}</td>
