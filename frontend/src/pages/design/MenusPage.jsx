@@ -72,7 +72,8 @@ export default function MenusPage() {
       <div className="b-notice">
         <strong>시술 정보 변경 유의사항</strong>
         <p>
-          기존 예약의 적용 가격과 예약 시간은 유지됩니다. 소요 시간은 30분 배수로 입력해 주세요.
+          비활성 시술은 신규 빈자리 선택에서 제외됩니다. 기존 빈자리와 예약 이력은 유지됩니다.
+          소요 시간은 30분 배수로 입력해 주세요.
         </p>
       </div>
       {(status === 'idle' || status === 'loading') && (

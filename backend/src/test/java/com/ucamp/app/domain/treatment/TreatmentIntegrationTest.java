@@ -359,6 +359,85 @@ class TreatmentIntegrationTest {
         }
     }
 
+    @Test
+    @DisplayName("비활성 시술은 신규 선택 목록에서만 제외되고 재활성화하면 다시 선택할 수 있다")
+    void list_activeFilter_excludesInactiveAndRestoresReactivated() throws Exception {
+        long inactiveId = create(60, 50000, 9002).get("treatmentId").asLong();
+        long activeId = create(60, 50000, 9001).get("treatmentId").asLong();
+        mvc.perform(patch(URL + "/" + inactiveId + "/status").header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"INACTIVE\"}"))
+                .andExpect(status().isOk());
+        entityManager.clear();
+
+        mvc.perform(get(URL).param("status", "ACTIVE").header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].treatmentId").value(activeId));
+        mvc.perform(get(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(2));
+        mvc.perform(get(URL + "/" + inactiveId).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("INACTIVE"));
+        mvc.perform(get(URL).param("status", "INACTIVE").header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].treatmentId").value(inactiveId));
+
+        mvc.perform(patch(URL + "/" + inactiveId + "/status").header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"ACTIVE\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(get(URL).param("status", "ACTIVE").header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(2));
+    }
+
+    @Test
+    @DisplayName("활성 시술 목록도 인증·본인 매장 검증을 적용하고 잘못된 상태를 거절한다")
+    void list_activeFilter_validatesAccessAndStatus() throws Exception {
+        mvc.perform(get(URL).param("status", "ACTIVE")).andExpect(status().isUnauthorized());
+        mvc.perform(get(URL).param("status", "ACTIVE").header(StubAuthFilter.HEADER_NAME, "OWNER_2"))
+                .andExpect(status().isForbidden());
+        mvc.perform(get(URL).param("status", "UNKNOWN").header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get(URL).param("status", "ACTIVE").header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(0));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"HOLD", "CONFIRMED", "CANCEL_PENDING", "CANCELLED", "EXPIRED"})
+    @DisplayName("반복 비활성화해도 기존 빈자리와 모든 상태의 예약 행을 그대로 보존한다")
+    void deactivate_existingHistory_preservesVacancyAndReservation(String reservationStatus) throws Exception {
+        long id = create(60, 50000, 9002).get("treatmentId").asLong();
+        jdbc.update("""
+                INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
+                VALUES (9001, 'CHANGE_ME', 'CHANGE_ME', '고객', '010-0000-0000',
+                    TIMESTAMP '2026-10-23 12:00:00', TIMESTAMP '2026-10-23 12:00:00')
+                """);
+        jdbc.update("""
+                INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT,
+                    APPLIED_PRICE, DEPOSIT, HOLD_EXPIRES_AT, CREATED_AT, UPDATED_AT)
+                VALUES (9001, 9001, ?, ?, TIMESTAMP '2026-10-25 12:00:00',
+                    TIMESTAMP '2026-10-25 13:00:00', 40000, 20000, TIMESTAMP '2026-10-23 12:05:00',
+                    TIMESTAMP '2026-10-23 12:00:00', TIMESTAMP '2026-10-23 12:00:00')
+                """, id, reservationStatus);
+        jdbc.update("""
+                INSERT INTO SHOP_SCHEDULE_EXCEPTION (EXCEPTION_ID, SHOP_ID, EXCEPTION_TYPE, STARTS_AT,
+                    ENDS_AT, CREATED_AT, UPDATED_AT)
+                VALUES (9001, 1, 'OPEN', TIMESTAMP '2026-10-25 14:00:00', TIMESTAMP '2026-10-25 15:00:00',
+                    TIMESTAMP '2026-10-23 12:00:00', TIMESTAMP '2026-10-23 12:00:00')
+                """);
+        var reservation = jdbc.queryForMap("SELECT * FROM RESERVATION WHERE RESERVATION_ID = 9001");
+        var vacancy = jdbc.queryForMap("SELECT * FROM SHOP_SCHEDULE_EXCEPTION WHERE EXCEPTION_ID = 9001");
+
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mvc.perform(patch(URL + "/" + id + "/status").header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                            .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"INACTIVE\"}"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("INACTIVE"));
+        }
+        assertThat(jdbc.queryForMap("SELECT * FROM RESERVATION WHERE RESERVATION_ID = 9001"))
+                .isEqualTo(reservation);
+        assertThat(jdbc.queryForMap("SELECT * FROM SHOP_SCHEDULE_EXCEPTION WHERE EXCEPTION_ID = 9001"))
+                .isEqualTo(vacancy);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM TREATMENT WHERE TREATMENT_ID = ?", Integer.class, id))
+                .isEqualTo(1);
+    }
+
     private JsonNode create(int duration, int price, long category) throws Exception {
         String response = mvc.perform(post(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
                         .contentType(MediaType.APPLICATION_JSON).content(body(duration, price, category)))

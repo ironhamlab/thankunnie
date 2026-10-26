@@ -1,4 +1,4 @@
-# 시술 메뉴 관리 (A-04 / UNNIE-32, A-06 / UNNIE-45)
+# 시술 메뉴 관리 (A-04 / UNNIE-32, A-05 / UNNIE-44, A-06 / UNNIE-45)
 
 사장님은 본인 매장의 시술을 등록·조회·수정하고 활성 상태를 변경한다.
 현재 사용자와 매장 ID는 B-01의 `GET /api/v1/auth/me`와 `@LoginUser AuthUser`를 사용한다.
@@ -11,6 +11,7 @@
 | 메서드 | 경로 | 동작 | 성공 |
 |---|---|---|---|
 | GET | 기본 경로 | 본인 매장 전체 시술 목록 (비활성 포함, ID 내림차순) | 200 |
+| GET | `?status=ACTIVE` | 신규 빈자리에서 선택 가능한 활성 시술만 조회 | 200 |
 | GET | `/categories` | 선택 가능한 CATEGORY 목록 (이름 오름차순) | 200 |
 | GET | `/{treatmentId}` | 본인 매장 시술 단건 | 200 |
 | POST | 기본 경로 | 시술 등록 | 201 |
@@ -57,6 +58,23 @@
 
 상태 변경 요청: `{"status":"INACTIVE"}` 또는 `{"status":"ACTIVE"}`.
 물리 삭제 API는 제공하지 않는다.
+
+## 시술 비활성화 (A-05)
+
+- `PATCH /{treatmentId}/status`에 `{"status":"INACTIVE"}`를 보내면 시술 행의 상태만 변경한다.
+- 기본 목록과 단건 조회는 비활성 시술도 반환한다. 관리 목록과 기존 이력에서 계속 표시할 수 있다.
+- 목록의 선택적 `status` 파라미터는 `ACTIVE` 또는 `INACTIVE`를 받는다. 생략하면 기존 전체 목록을 반환하고,
+  그 외 값은 `COMMON_400`으로 거절한다. 상태 필터에도 인증 및 본인 매장 권한 검사를 적용한다.
+- 신규 빈자리 등록 화면과 목록 내 등록 폼은 `?status=ACTIVE` 결과를 사용한다.
+  시연용 고정 메뉴는 신규 선택 후보에서 제외한다. 저장 직전에 활성 목록을 다시 조회하고
+  비활성화되거나 삭제된 후보는 저장을 거절한다. 조회 실패 시에도 저장하지 않는다.
+- 비활성화는 기존 빈자리, 예약 상태, 가격, 예약금, 시작·종료 시각을 변경하거나 삭제하지 않는다.
+  프론트엔드의 기존 빈자리와 메뉴 스냅샷도 보존한다.
+- `ACTIVE`로 재활성화하면 신규 선택 목록에 다시 나타난다. 같은 상태로 반복 변경할 수 있다.
+- 시술 선택은 서버와 연결되지만 빈자리 생성 자체는 아직 브라우저 메모리의 시연용 구현이다.
+  실제 빈자리 생성 API 연결 시 해당 쓰기 트랜잭션에서도 시술 상태를 검증해야 한다.
+  현재의 저장 직전 재조회만으로 서버 저장과 상태 변경 사이의 동시성을 보장하지는 않는다.
+- 스키마 및 공통 인증·예외·설정 파일 변경은 없다.
 
 시술 응답 필드: `treatmentId`, `shopId`, `name`, `description`, `regularPrice`, `price`, `lastMinutePrice`,
 `categoryId`, `categoryName`, `durationMinutes`, `status`, `treatmentType`, `participationFee`,
@@ -112,20 +130,18 @@ Oracle에서 실제 적용한 결과는 별도 검증이 필요하다.
 - 검증 프로세스에만 `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=C:/UCAMP/Final/thankunnie/backend/build/socket-temp` 지정.
 - 브라우저 화면 조작 및 Oracle 21c XE의 마이그레이션 적용은 미검증.
 
-## A-04 당시 검증 범위 및 기존 차단 사항
+## 검증 결과 (A-05 / UNNIE-44, 2026-10-26)
 
-- `backend/`: `.\gradlew.bat classes` 컴파일 확인.
-- `backend/`: `.\gradlew.bat test --tests 'com.ucamp.app.domain.treatment.*'` 22개 통과.
-  시술·매장 엔티티만 등록한 테스트 구성에서 공통 인증·예외 처리와 MockMvc 요청 → Service → JPA → H2 저장을 검증했다.
-  `ddl-auto=validate`와 원본 DDL을 그대로 사용한다.
+- `backend/`: `.\gradlew.bat --no-daemon classes test` 통과. 전체 286개, 실패 0개.
+  시술 테스트는 통합 30개와 엔티티 9개를 포함한다.
+- 추가 통합 테스트: 활성 목록 제외·재활성화, 관리 목록과 상세 유지, 인증·본인 매장 검사,
+  잘못된 상태 및 빈 목록, 반복 비활성화 시 빈자리와 5개 상태의 예약 행 전체 보존.
 - `frontend/`: `npm run lint`, `npm run build` 통과.
-- 브라우저: API 모의 응답으로 등록·수정·비활성화·재조회, 입력 검증, 저장 실패 시 입력 유지,
-  로그인 오류, 카테고리 없음, 데스크톱·모바일 폼 표시 확인.
-- 기존 `NOTIFICATION_SUBSCRIPTION` 엔티티는 `CATEGORY_ID`를 요구하지만 원본 DDL에는 `CATEGORY_NAME`만 있다.
-  이 불일치로 전체 앱 기동과 전체 테스트는 실패한다. 최종 `.\gradlew.bat --no-daemon test` 결과는 165개 중 140개 통과, 25개 실패다.
-  사용자 요청에 따라 알림 담당자의 수정 전까지 유지한다.
-  이번 변경은 알림 구독 스키마를 수정하지 않는다.
-- 실제 서버와 브라우저 간 전체 연동 및 Oracle 마이그레이션 적용 결과는 아직 검증하지 못했다.
+- `frontend/`: `node --test src/pages/design/useDesignStore.test.js` 2개 통과.
+  비활성 시술 저장 거절과 기존 빈자리·예약·메뉴 스냅샷 보존을 검증했다.
+- 이번 작업에서 실제 브라우저의 서버 연동 및 Oracle 실행은 검증하지 않았다.
+- 이전 A-04 검증 당시 알림 구독 스키마 불일치로 전체 테스트가 실패했으나,
+  현재 dev를 반영한 이번 검증에서는 전체 테스트가 통과했다.
 - 설치된 Windows JDK의 Unix 소켓 임시 경로 문제를 피하기 위해 검증 프로세스에만
   `JAVA_TOOL_OPTIONS`의 `-Djdk.net.unixdomain.tmpdir`에 프로젝트 내부 `backend/build/socket-temp`의 절대 경로를 지정하고
   Gradle에 `--no-daemon`을 사용했다. 저장소 실행 설정은 변경하지 않았다.
