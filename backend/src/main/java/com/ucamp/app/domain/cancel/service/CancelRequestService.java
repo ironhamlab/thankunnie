@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
+import com.ucamp.app.domain.cancel.dto.request.OwnerCancelRequest;
 import com.ucamp.app.domain.cancel.entity.CancelStatus;
 import com.ucamp.app.domain.cancel.entity.CancelType;
 import com.ucamp.app.domain.cancel.entity.ReservationCancel;
@@ -17,9 +18,12 @@ import com.ucamp.app.domain.cancel.policy.CancelPolicy;
 import com.ucamp.app.domain.cancel.policy.RefundPolicy;
 import com.ucamp.app.domain.cancel.policy.RefundQuote;
 import com.ucamp.app.domain.cancel.repository.CancelReservationRepository;
+import com.ucamp.app.domain.cancel.repository.CancelScheduleExceptionRepository;
 import com.ucamp.app.domain.cancel.repository.CancelTarget;
 import com.ucamp.app.domain.cancel.repository.ReservationCancelRepository;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
+import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
+import com.ucamp.app.domain.schedule.entity.ShopScheduleException;
 
 /**
  * 취소 접수 (E-05). 결제 취소(PG 호출) 전에 이 트랜잭션을 먼저 커밋해, 결제 취소 중에도 시간이 막혀 있게 한다 (CNL-21·22).
@@ -31,15 +35,18 @@ public class CancelRequestService {
     private final CancelQuoteService cancelQuoteService;
     private final CancelReservationRepository cancelReservationRepository;
     private final ReservationCancelRepository reservationCancelRepository;
+    private final CancelScheduleExceptionRepository cancelScheduleExceptionRepository;
     private final GraceCancelUsageService graceCancelUsageService;
 
     public CancelRequestService(CancelQuoteService cancelQuoteService,
             CancelReservationRepository cancelReservationRepository,
             ReservationCancelRepository reservationCancelRepository,
+            CancelScheduleExceptionRepository cancelScheduleExceptionRepository,
             GraceCancelUsageService graceCancelUsageService) {
         this.cancelQuoteService = cancelQuoteService;
         this.cancelReservationRepository = cancelReservationRepository;
         this.reservationCancelRepository = reservationCancelRepository;
+        this.cancelScheduleExceptionRepository = cancelScheduleExceptionRepository;
         this.graceCancelUsageService = graceCancelUsageService;
     }
 
@@ -65,7 +72,53 @@ public class CancelRequestService {
         if (quote.graceApplied()) {
             graceCancelUsageService.record(target.userId(), RefundPolicy.graceUsageDate(now), cancel.getId());
         }
-        return new AcceptedCancel(cancel.getId(), reservationId, target.depositPaymentId(), quote.refundAmount());
+        return accepted(cancel, target, quote.refundAmount(), false);
+    }
+
+    /**
+     * 사장님 취소를 접수한다. 매장 사유는 납부액 전액, 고객 요청 대리 취소는 사장님이 입력한 금액을 환불한다 (CNL-17·18).
+     * 고객 무료 취소 횟수는 차감하지 않는다 (CNL-17·19). 닫기를 고르면 취소한 시간을 바로 닫아 둔다 (REO-02).
+     * 결제 취소 중에도 예약이 시간을 막고 있으므로 먼저 닫아도 겹치지 않고, 결과가 불명이어도 선택이 남는다.
+     */
+    @Transactional
+    public AcceptedCancel acceptOwnerCancel(AuthUser requester, Long reservationId, OwnerCancelRequest request,
+            LocalDateTime now) {
+        CancelPolicy.validateCancelType(requester, request.cancelType());
+        CancelTarget target = cancelQuoteService.load(reservationId);
+        RefundQuote quote = cancelQuoteService.quote(requester, target, now);
+        int refundAmount = ownerRefundAmount(request, quote);
+
+        changeToCancelPending(reservationId, now);
+        ReservationCancel cancel = saveCancel(target, request.cancelType(), quote.policyRefundAmount(), refundAmount,
+                now);
+        boolean close = Boolean.TRUE.equals(request.closeAfterCancel());
+        if (close) {
+            cancelScheduleExceptionRepository.save(ShopScheduleException.builder()
+                    .shopId(target.shopId())
+                    .reservationId(reservationId)
+                    .exceptionType(ScheduleExceptionType.CLOSE)
+                    .startsAt(target.startsAt())
+                    .endsAt(target.endsAt())
+                    .reason(request.reason())
+                    .build());
+        }
+        return accepted(cancel, target, refundAmount, close);
+    }
+
+    private int ownerRefundAmount(OwnerCancelRequest request, RefundQuote quote) {
+        if (request.cancelType() == CancelType.SHOP_FAULT) {
+            return CancelPolicy.shopFaultRefundAmount(quote.paidAmount());
+        }
+        if (request.refundAmount() == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "고객 요청 대리 취소는 환불액을 입력해야 합니다.");
+        }
+        CancelPolicy.validateProxyRefundAmount(request.refundAmount(), quote.policyRefundAmount(), quote.paidAmount());
+        return request.refundAmount();
+    }
+
+    private AcceptedCancel accepted(ReservationCancel cancel, CancelTarget target, int refundAmount, boolean closed) {
+        return new AcceptedCancel(cancel.getId(), target.reservationId(), target.depositPaymentId(), refundAmount,
+                closed, target.customerName(), target.customerPhone());
     }
 
     // 확정 상태일 때만 바뀌므로 동시에 들어온 취소는 한 건만 통과한다

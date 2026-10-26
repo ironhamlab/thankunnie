@@ -16,8 +16,10 @@ import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.LoginUser;
 import com.ucamp.app.common.response.ApiResponse;
 import com.ucamp.app.domain.cancel.dto.request.CustomerCancelRequest;
+import com.ucamp.app.domain.cancel.dto.request.OwnerCancelRequest;
 import com.ucamp.app.domain.cancel.dto.response.CancelQuoteResponse;
 import com.ucamp.app.domain.cancel.dto.response.CancelResultResponse;
+import com.ucamp.app.domain.cancel.dto.response.OwnerCancelResponse;
 import com.ucamp.app.domain.cancel.service.CancelQuoteService;
 import com.ucamp.app.domain.cancel.service.CancelService;
 
@@ -51,5 +53,14 @@ public class CancelController {
     public ApiResponse<CancelResultResponse> cancelByCustomer(@LoginUser AuthUser user,
             @PathVariable Long reservationId, @Valid @RequestBody CustomerCancelRequest request) {
         return ApiResponse.success(cancelService.cancelByCustomer(user, reservationId, request));
+    }
+
+    @Operation(summary = "사장님 취소",
+            description = "SHOP_FAULT 는 납부액 전액 환불, CUSTOMER_REQUEST 는 refundAmount(견적의 policyRefundAmount ~ paidAmount) 환불. "
+                    + "closeAfterCancel=true 면 취소한 시간을 닫는다. 결제 취소 결과 처리는 고객 직접 취소와 같다")
+    @PostMapping("/{reservationId}/owner-cancel")
+    public ApiResponse<OwnerCancelResponse> cancelByOwner(@LoginUser AuthUser user,
+            @PathVariable Long reservationId, @Valid @RequestBody OwnerCancelRequest request) {
+        return ApiResponse.success(cancelService.cancelByOwner(user, reservationId, request));
     }
 }
