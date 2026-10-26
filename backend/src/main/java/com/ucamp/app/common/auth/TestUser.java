@@ -3,7 +3,7 @@ package com.ucamp.app.common.auth;
 import java.util.Optional;
 
 /**
- * 실제 로그인 도입 전까지 사용하는 고정 테스트 사용자. local·test 프로필에서 X-Test-User 헤더 값으로 선택한다.
+ * 실제 로그인 도입 전까지 사용하는 고정 테스트 사용자. local·test 프로필에서 X-Test-User 헤더 또는 Authorization: Bearer 값으로 선택한다.
  * ID 는 ERD 확정 후 초기 데이터(docs/erd/02_init_data_dml.sql)와 맞춘다.
  */
 public enum TestUser {

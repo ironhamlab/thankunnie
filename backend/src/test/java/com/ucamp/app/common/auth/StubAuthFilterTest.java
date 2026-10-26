@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -30,6 +31,34 @@ class StubAuthFilterTest {
                 .andExpect(jsonPath("$.data.userId").value(11))
                 .andExpect(jsonPath("$.data.role").value("OWNER"))
                 .andExpect(jsonPath("$.data.shopId").value(1));
+    }
+
+    @Test
+    @DisplayName("Authorization Bearer 값의 테스트 사용자도 로그인 사용자로 주입된다")
+    void loginUser_bearerToken_injectsTestUser() throws Exception {
+        mockMvc.perform(get("/test/auth/me").header(HttpHeaders.AUTHORIZATION, "Bearer CUSTOMER_2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(2))
+                .andExpect(jsonPath("$.data.role").value("CUSTOMER"));
+    }
+
+    @Test
+    @DisplayName("X-Test-User 와 Bearer 가 함께 오면 X-Test-User 가 우선한다")
+    void loginUser_bothHeaders_prefersTestUserHeader() throws Exception {
+        mockMvc.perform(get("/test/auth/me")
+                        .header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer CUSTOMER_2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(11));
+    }
+
+    @Test
+    @DisplayName("Bearer 가 아니거나 알 수 없는 값이면 비로그인으로 처리한다")
+    void loginUser_invalidAuthorization_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get("/test/auth/me").header(HttpHeaders.AUTHORIZATION, "Basic OWNER_1"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/test/auth/me").header(HttpHeaders.AUTHORIZATION, "Bearer eyJhbGciOi.fake.jwt"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
