@@ -108,11 +108,11 @@ class CancelQuoteServiceTest {
     @DisplayName("확정 전 예약과 시작된 예약은 견적을 내지 않는다")
     void getQuote_notCancellable() {
         givenTarget(new CancelTarget(100L, 1L, 1L, ReservationStatus.HOLD, STARTS_AT, NOW.minusMinutes(1),
-                null, null));
+                null, null, null, false));
         assertErrorCode(() -> cancelQuoteService.getQuote(CUSTOMER, 100L), ErrorCode.CANCEL_NOT_CONFIRMED);
 
         givenTarget(new CancelTarget(100L, 1L, 1L, ReservationStatus.CONFIRMED, NOW, NOW.minusDays(1),
-                20_000, NOW.minusDays(1).plusMinutes(2)));
+                1L, 20_000, NOW.minusDays(1).plusMinutes(2), false));
         assertErrorCode(() -> cancelQuoteService.getQuote(CUSTOMER, 100L), ErrorCode.CANCEL_ALREADY_STARTED);
     }
 
@@ -120,13 +120,23 @@ class CancelQuoteServiceTest {
     @DisplayName("확정 예약에 결제 완료 정보가 없으면 결제 정보 없음으로 응답한다")
     void getQuote_confirmedWithoutPayment_paymentNotFound() {
         givenTarget(new CancelTarget(100L, 1L, 1L, ReservationStatus.CONFIRMED, STARTS_AT, NOW.minusDays(2),
-                null, null));
+                null, null, null, false));
 
         assertErrorCode(() -> cancelQuoteService.getQuote(CUSTOMER, 100L), ErrorCode.PAYMENT_NOT_FOUND);
     }
 
+    @Test
+    @DisplayName("확정 예약에 결제 완료 건은 없고 환불 처리 중인 결제만 있으면 이미 취소 요청된 것으로 응답한다")
+    void getQuote_confirmedWithRefundInProgress_alreadyRequested() {
+        givenTarget(new CancelTarget(100L, 1L, 1L, ReservationStatus.CONFIRMED, STARTS_AT, NOW.minusDays(2),
+                null, null, null, true));
+
+        assertErrorCode(() -> cancelQuoteService.getQuote(CUSTOMER, 100L), ErrorCode.CANCEL_ALREADY_REQUESTED);
+    }
+
     private CancelTarget confirmed(LocalDateTime heldAt, LocalDateTime approvedAt) {
-        return new CancelTarget(100L, 1L, 1L, ReservationStatus.CONFIRMED, STARTS_AT, heldAt, 20_000, approvedAt);
+        return new CancelTarget(100L, 1L, 1L, ReservationStatus.CONFIRMED, STARTS_AT, heldAt, 1L, 20_000, approvedAt,
+                false);
     }
 
     private void givenTarget(CancelTarget target) {

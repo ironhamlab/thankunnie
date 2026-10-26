@@ -54,9 +54,11 @@ class CancelTargetRepositoryTest {
         assertThat(target.status()).isEqualTo(ReservationStatus.CONFIRMED);
         assertThat(target.startsAt()).isEqualTo(STARTS_AT);
         assertThat(target.heldAt()).isEqualTo(HELD_AT);
+        assertThat(target.depositPaymentId()).isEqualTo(1L);
         assertThat(target.paidAmount()).isEqualTo(20_000);
         assertThat(target.approvedAt()).isEqualTo(HELD_AT.plusMinutes(2));
         assertThat(target.hasPayment()).isTrue();
+        assertThat(target.refundInProgress()).isFalse();
     }
 
     @Test
@@ -68,7 +70,21 @@ class CancelTargetRepositoryTest {
 
         CancelTarget target = cancelTargetRepository.findByReservationId(100L).orElseThrow();
 
+        assertThat(target.depositPaymentId()).isEqualTo(2L);
         assertThat(target.approvedAt()).isEqualTo(HELD_AT.plusMinutes(3));
+    }
+
+    @Test
+    @DisplayName("결제가 환불 처리 중이면 결제 완료 건은 없고 환불 진행 중으로 표시된다")
+    void find_refundPendingPayment_refundInProgress() {
+        CancelFixture.insertReservation(jdbcTemplate, 100L, CancelFixture.CUSTOMER_ID, "CANCEL_PENDING", STARTS_AT,
+                HELD_AT);
+        CancelFixture.insertPayment(jdbcTemplate, 1L, 100L, "REFUND_PENDING", 20_000, HELD_AT.plusMinutes(2));
+
+        CancelTarget target = cancelTargetRepository.findByReservationId(100L).orElseThrow();
+
+        assertThat(target.hasPayment()).isFalse();
+        assertThat(target.refundInProgress()).isTrue();
     }
 
     @Test
@@ -90,9 +106,11 @@ class CancelTargetRepositoryTest {
 
         CancelTarget target = cancelTargetRepository.findByReservationId(100L).orElseThrow();
 
+        assertThat(target.depositPaymentId()).isNull();
         assertThat(target.paidAmount()).isNull();
         assertThat(target.approvedAt()).isNull();
         assertThat(target.hasPayment()).isFalse();
+        assertThat(target.refundInProgress()).isFalse();
     }
 
     @Test

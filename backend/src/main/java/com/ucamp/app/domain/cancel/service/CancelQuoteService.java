@@ -17,7 +17,7 @@ import com.ucamp.app.domain.cancel.repository.CancelTarget;
 import com.ucamp.app.domain.cancel.repository.CancelTargetRepository;
 
 /**
- * 취소 환불 견적 조회 (E-02, REQ-047). 취소 실행(E-05)도 같은 계산으로 금액을 다시 확인한다.
+ * 취소 환불 견적 조회 (E-02, REQ-047). 취소 접수(CancelRequestService)도 같은 계산으로 금액을 다시 확인한다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -36,20 +36,26 @@ public class CancelQuoteService {
 
     public CancelQuoteResponse getQuote(AuthUser requester, Long reservationId) {
         LocalDateTime now = LocalDateTime.now(clock);
-        CancelTarget target = cancelTargetRepository.findByReservationId(reservationId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.CANCEL_RESERVATION_NOT_FOUND));
+        CancelTarget target = load(reservationId);
         return CancelQuoteResponse.of(reservationId, quote(requester, target, now), now);
+    }
+
+    public CancelTarget load(Long reservationId) {
+        return cancelTargetRepository.findByReservationId(reservationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CANCEL_RESERVATION_NOT_FOUND));
     }
 
     /**
      * 요청자·취소 가능 여부를 검사하고 견적을 계산한다. 무료 취소 사용 여부는 예약한 고객 기준이다.
      */
-    RefundQuote quote(AuthUser requester, CancelTarget target, LocalDateTime now) {
+    public RefundQuote quote(AuthUser requester, CancelTarget target, LocalDateTime now) {
         CancelPolicy.validateRequester(requester, target.userId(), target.shopId());
         CancelPolicy.validateCancellable(target.status(), target.startsAt(), now);
-        // 확정 예약에 결제 완료 정보가 없으면 데이터 오류다
         if (!target.hasPayment()) {
-            throw new BusinessException(ErrorCode.PAYMENT_NOT_FOUND);
+            // 환불 처리 중·환불된 결제만 있으면 이미 취소가 진행된 것이고, 그것도 없으면 확정 예약의 결제 데이터 오류다
+            throw new BusinessException(target.refundInProgress()
+                    ? ErrorCode.CANCEL_ALREADY_REQUESTED
+                    : ErrorCode.PAYMENT_NOT_FOUND);
         }
         boolean graceUsedToday = graceCancelUsageService.isUsed(target.userId(), RefundPolicy.graceUsageDate(now));
         return RefundPolicy.quote(target.paidAmount(), target.startsAt(), target.approvedAt(), target.heldAt(),

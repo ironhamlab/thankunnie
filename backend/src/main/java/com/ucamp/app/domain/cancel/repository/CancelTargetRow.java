@@ -19,7 +19,11 @@ public interface CancelTargetRow {
 
     LocalDateTime getHeldAt();
 
+    Long getDepositPaymentId();
+
     Integer getPaidAmount();
 
     LocalDateTime getApprovedAt();
+
+    Long getRefundingPaymentCount();
 }

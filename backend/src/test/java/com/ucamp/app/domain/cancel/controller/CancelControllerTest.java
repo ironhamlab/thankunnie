@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -23,8 +25,13 @@ import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.domain.cancel.dto.response.CancelQuoteResponse;
+import com.ucamp.app.domain.cancel.dto.response.CancelResultResponse;
+import com.ucamp.app.domain.cancel.entity.CancelStatus;
+import com.ucamp.app.domain.cancel.entity.CancelType;
 import com.ucamp.app.domain.cancel.policy.GraceCancelResult;
 import com.ucamp.app.domain.cancel.service.CancelQuoteService;
+import com.ucamp.app.domain.cancel.service.CancelService;
+import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 
 @WebMvcTest(CancelController.class)
 @Import(SecurityConfig.class)
@@ -36,6 +43,9 @@ class CancelControllerTest {
 
     @MockitoBean
     private CancelQuoteService cancelQuoteService;
+
+    @MockitoBean
+    private CancelService cancelService;
 
     @Test
     @DisplayName("비로그인 견적 조회는 인증을 요구한다")
@@ -71,5 +81,41 @@ class CancelControllerTest {
         mockMvc.perform(get("/api/v1/reservations/100/cancel-quote").header("X-Test-User", "CUSTOMER_1"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("CANCEL_001"));
+    }
+
+    @Test
+    @DisplayName("비로그인 취소는 인증을 요구한다")
+    void cancel_anonymous_unauthorized() throws Exception {
+        mockMvc.perform(post("/api/v1/reservations/100/cancel")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"expectedRefundAmount\":10000}"))
+                .andExpect(status().isUnauthorized());
+        verifyNoInteractions(cancelService);
+    }
+
+    @Test
+    @DisplayName("화면 견적 환불액이 없거나 음수면 거부한다")
+    void cancel_invalidBody_badRequest() throws Exception {
+        for (String body : new String[] {"{}", "{\"expectedRefundAmount\":-1}"}) {
+            mockMvc.perform(post("/api/v1/reservations/100/cancel").header("X-Test-User", "CUSTOMER_1")
+                            .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isBadRequest());
+        }
+        verifyNoInteractions(cancelService);
+    }
+
+    @Test
+    @DisplayName("취소 결과를 공통 응답 형식으로 반환한다")
+    void cancel_returnsResult() throws Exception {
+        given(cancelService.cancelByCustomer(any(), eq(100L), any())).willReturn(new CancelResultResponse(7L, 100L,
+                CancelType.CUSTOMER, CancelStatus.COMPLETED, ReservationStatus.CANCELLED, 10_000, false,
+                OffsetDateTime.parse("2026-11-01T12:00:00+09:00"), OffsetDateTime.parse("2026-11-01T12:00:03+09:00")));
+
+        mockMvc.perform(post("/api/v1/reservations/100/cancel").header("X-Test-User", "CUSTOMER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"expectedRefundAmount\":10000}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.cancelId").value(7))
+                .andExpect(jsonPath("$.data.cancelStatus").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.reservationStatus").value("CANCELLED"))
+                .andExpect(jsonPath("$.data.refundAmount").value(10_000));
     }
 }
