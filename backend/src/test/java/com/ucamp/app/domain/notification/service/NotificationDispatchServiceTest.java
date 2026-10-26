@@ -33,11 +33,12 @@ import com.ucamp.app.domain.notification.repository.NotificationDispatchReposito
 import com.ucamp.app.domain.notification.repository.NotificationEventRepository;
 import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepository;
 import com.ucamp.app.domain.notification.repository.ShopCategoryRegionRepository;
+import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({NotificationDispatchService.class, SubscriptionMatchService.class, ShopCategoryRegionRepository.class,
-        NotificationDispatchServiceTest.FixedClock.class})
+        VacancySlotRepository.class, NotificationDispatchServiceTest.FixedClock.class})
 @ActiveProfiles("test")
 class NotificationDispatchServiceTest {
 
@@ -196,6 +197,147 @@ class NotificationDispatchServiceTest {
     @DisplayName("대기 작업이 없으면 가져갈 작업이 없다")
     void claimDispatchJob_noPendingJob_returnsEmpty() {
         assertThat(notificationDispatchService.claimDispatchJob()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("구독이 활성이고 희망 종료가 남았고 빈자리가 아직 팔리면 그대로 둔다")
+    void recheckClaimedJob_stillSendable_keepsProcessing() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        notificationSubscriptionRepository.save(store(USER_ID));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+
+        boolean canSend = notificationDispatchService.recheckClaimedJob(job);
+
+        assertThat(canSend).isTrue();
+        assertThat(job.getStatus()).isEqualTo(NotificationDispatchStatus.PROCESSING);
+    }
+
+    @Test
+    @DisplayName("구독을 해제했으면 끝으로 두고 보내지 않는다")
+    void recheckClaimedJob_inactiveSubscription_skips() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        NotificationSubscription subscription = store(USER_ID);
+        subscription.deactivate();
+        notificationSubscriptionRepository.save(subscription);
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+
+        boolean canSend = notificationDispatchService.recheckClaimedJob(job);
+
+        assertThat(canSend).isFalse();
+        assertThat(job.getStatus()).isEqualTo(NotificationDispatchStatus.SKIPPED);
+    }
+
+    @Test
+    @DisplayName("희망 종료가 지났으면 끝으로 두고 보내지 않는다")
+    void recheckClaimedJob_hopeEnded_skips() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        notificationSubscriptionRepository.save(NotificationSubscription.builder()
+                .userId(USER_ID)
+                .subscriptionType(SubscriptionType.STORE)
+                .shopId(SHOP_ID)
+                .startTime(NOW.minusHours(5))
+                .endTime(NOW.minusHours(1))
+                .build());
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+
+        boolean canSend = notificationDispatchService.recheckClaimedJob(job);
+
+        assertThat(canSend).isFalse();
+        assertThat(job.getStatus()).isEqualTo(NotificationDispatchStatus.SKIPPED);
+    }
+
+    @Test
+    @DisplayName("빈자리를 다른 예약이 잡았으면 끝으로 두고 보내지 않는다")
+    void recheckClaimedJob_slotOccupied_skips() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
+        NotificationFixture.reservation(jdbcTemplate, 500L, USER_ID, 100L, "CONFIRMED",
+                SLOT_START, SLOT_START.plusHours(1), NOW.plusMinutes(5));
+        notificationSubscriptionRepository.save(store(USER_ID));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+
+        boolean canSend = notificationDispatchService.recheckClaimedJob(job);
+
+        assertThat(canSend).isFalse();
+        assertThat(job.getStatus()).isEqualTo(NotificationDispatchStatus.SKIPPED);
+    }
+
+    @Test
+    @DisplayName("선점하지 않은 대기 작업은 다시 보지 않는다")
+    void recheckClaimedJob_pendingJob_isLeftPending() {
+        NotificationDispatch job = pendingJob(1L, USER_ID);
+
+        boolean canSend = notificationDispatchService.recheckClaimedJob(job);
+
+        assertThat(canSend).isFalse();
+        assertThat(job.getStatus()).isEqualTo(NotificationDispatchStatus.PENDING);
+    }
+
+    @Test
+    @DisplayName("취소된 예약 시간이 아직 팔리면 재공개 작업은 그대로 둔다")
+    void recheckClaimedJob_reopenedStillSellable_keepsProcessing() {
+        LocalDateTime startsAt = NOW.plusHours(11);
+        openSlot(1L, NOW.plusHours(10), NOW.plusHours(14));
+        NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
+        NotificationFixture.reservation(jdbcTemplate, 500L, USER_ID, 100L, "CANCELLED",
+                startsAt, startsAt.plusHours(1), startsAt.minusHours(1));
+        notificationSubscriptionRepository.save(storeUntil(USER_ID, NOW.plusHours(13)));
+        NotificationDispatch job = claimedReopenedJob(startsAt);
+
+        boolean canSend = notificationDispatchService.recheckClaimedJob(job);
+
+        assertThat(canSend).isTrue();
+        assertThat(job.getStatus()).isEqualTo(NotificationDispatchStatus.PROCESSING);
+    }
+
+    @Test
+    @DisplayName("취소된 예약 시간을 닫았으면 재공개 작업은 끝으로 두고 보내지 않는다")
+    void recheckClaimedJob_reopenedClosed_skips() {
+        LocalDateTime startsAt = NOW.plusHours(11);
+        openSlot(1L, NOW.plusHours(10), NOW.plusHours(14));
+        NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
+        NotificationFixture.reservation(jdbcTemplate, 500L, USER_ID, 100L, "CANCELLED",
+                startsAt, startsAt.plusHours(1), startsAt.minusHours(1));
+        NotificationFixture.exception(jdbcTemplate, 2L, SHOP_ID, 500L, "CLOSE", startsAt, startsAt.plusHours(1));
+        notificationSubscriptionRepository.save(storeUntil(USER_ID, NOW.plusHours(13)));
+        NotificationDispatch job = claimedReopenedJob(startsAt);
+
+        boolean canSend = notificationDispatchService.recheckClaimedJob(job);
+
+        assertThat(canSend).isFalse();
+        assertThat(job.getStatus()).isEqualTo(NotificationDispatchStatus.SKIPPED);
+    }
+
+    private NotificationDispatch claimedJob(long exceptionId, long userId) {
+        pendingJob(exceptionId, userId);
+        return notificationDispatchService.claimDispatchJob().orElseThrow();
+    }
+
+    private NotificationDispatch claimedReopenedJob(LocalDateTime startsAt) {
+        NotificationEvent savedEvent = notificationEventRepository.saveAndFlush(NotificationEvent.builder()
+                .eventType(NotificationEventType.REOPENED)
+                .exceptionId(1L)
+                .shopId(SHOP_ID)
+                .reservationId(500L)
+                .slotStartsAt(startsAt)
+                .slotEndsAt(startsAt.plusHours(1))
+                .build());
+        notificationDispatchRepository.saveAndFlush(dispatch(savedEvent.getId(), USER_ID));
+        return notificationDispatchService.claimDispatchJob().orElseThrow();
+    }
+
+    private void openSlot(long exceptionId, LocalDateTime startsAt, LocalDateTime endsAt) {
+        NotificationFixture.exception(jdbcTemplate, exceptionId, SHOP_ID, null, "OPEN", startsAt, endsAt);
+    }
+
+    private static NotificationSubscription storeUntil(long userId, LocalDateTime endTime) {
+        return NotificationSubscription.builder()
+                .userId(userId)
+                .subscriptionType(SubscriptionType.STORE)
+                .shopId(SHOP_ID)
+                .startTime(NOW)
+                .endTime(endTime)
+                .build();
     }
 
     private NotificationDispatch pendingJob(long exceptionId, long userId) {

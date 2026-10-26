@@ -49,7 +49,7 @@ public class NotificationDispatch extends BaseTimeEntity {
     @Column(name = "USER_ID", nullable = false)
     private Long userId;
 
-    /** 만들 때는 PENDING. 선점에 성공하면 PROCESSING. 끝으로 바꾸는 일은 다음 단계다. */
+    /** 만들 때는 PENDING. 선점에 성공하면 PROCESSING. 재검사에 걸리면 SKIPPED. */
     @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", nullable = false, length = 20)
     private NotificationDispatchStatus status;
@@ -59,5 +59,10 @@ public class NotificationDispatch extends BaseTimeEntity {
         this.eventId = eventId;
         this.userId = userId;
         this.status = NotificationDispatchStatus.PENDING;
+    }
+
+    /** 발송 직전 재검사에 걸리면 보내지 않고 끝낸다. */
+    public void markSkipped() {
+        this.status = NotificationDispatchStatus.SKIPPED;
     }
 }

@@ -9,5 +9,8 @@ public enum NotificationDispatchStatus {
     PENDING,
 
     /** 한 프로세스가 가져간 처리 중. 서버가 다시 떠도 대기로 되돌리지 않는다 */
-    PROCESSING
+    PROCESSING,
+
+    /** 발송 직전 재검사에 걸려 보내지 않고 끝낸 작업 */
+    SKIPPED
 }

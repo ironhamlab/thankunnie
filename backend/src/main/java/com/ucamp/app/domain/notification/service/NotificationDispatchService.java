@@ -14,8 +14,10 @@ import com.ucamp.app.domain.notification.entity.NotificationDispatch;
 import com.ucamp.app.domain.notification.entity.NotificationDispatchStatus;
 import com.ucamp.app.domain.notification.entity.NotificationEvent;
 import com.ucamp.app.domain.notification.entity.NotificationEventStatus;
+import com.ucamp.app.domain.notification.entity.NotificationEventType;
 import com.ucamp.app.domain.notification.repository.NotificationDispatchRepository;
 import com.ucamp.app.domain.notification.repository.NotificationEventRepository;
+import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
 
 /**
  * 알림 이벤트를 회원별 발송 대기 작업으로 저장하고, 그 작업을 하나씩 가져간다.
@@ -28,6 +30,7 @@ public class NotificationDispatchService {
     private final NotificationEventRepository notificationEventRepository;
     private final NotificationDispatchRepository notificationDispatchRepository;
     private final SubscriptionMatchService subscriptionMatchService;
+    private final VacancySlotRepository vacancySlotRepository;
     private final Clock clock;
 
     /**
@@ -95,5 +98,61 @@ public class NotificationDispatchService {
             return Optional.empty();
         }
         return notificationDispatchRepository.findById(dispatchId);
+    }
+
+    /**
+     * 선점한 작업만 다시 본다. 구독이 아직 활성이고, 희망 종료가 지나지 않았고, 빈자리가 아직 팔리면 true.
+     * 하나라도 아니면 그 작업을 끝으로 두고 false를 돌려준다. 문자는 보내지 않는다.
+     *
+     * @param job 선점한 발송 대기 작업
+     * @return 아직 보내도 되면 true. 아니거나 선점한 작업이 아니면 false
+     */
+    @Transactional
+    public boolean recheckClaimedJob(NotificationDispatch job) {
+        // 대기 중인 작업은 여기서 보지 않는다. 가져온 작업만 다시 확인한다.
+        if (job == null || job.getStatus() != NotificationDispatchStatus.PROCESSING) {
+            return false;
+        }
+
+        NotificationEvent event = notificationEventRepository.findById(job.getEventId()).orElse(null);
+        if (event == null) {
+            finishWithoutSending(job);
+            return false;
+        }
+        // 활성 구독이고, 희망 종료가 지나지 않았고, 이 빈자리와 아직 맞는 회원인지 다시 본다.
+        if (!subscriptionStillMatches(event, job.getUserId())) {
+            finishWithoutSending(job);
+            return false;
+        }
+        // 그 사이 예약이 들어왔거나 휴무로 닫히면 더 이상 팔 수 없다.
+        if (!slotStillSellable(event)) {
+            finishWithoutSending(job);
+            return false;
+        }
+        return true;
+    }
+
+    // 업장 구독과 카테고리 구독 중 하나라도 아직 맞으면 포함한다. 해제한 구독과 희망 종료가 지난 구독은 빠진다.
+    private boolean subscriptionStillMatches(NotificationEvent event, Long userId) {
+        List<Long> userIds = subscriptionMatchService.findRecipientUserIds(
+                event.getShopId(), event.getSlotStartsAt());
+        return userIds.contains(userId);
+    }
+
+    // 임박·초임박은 OPEN 빈자리, 재공개는 취소된 예약 시간이 아직 팔리는지로 본다.
+    private boolean slotStillSellable(NotificationEvent event) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        if (event.getEventType() == NotificationEventType.REOPENED) {
+            if (event.getReservationId() == null) {
+                return false;
+            }
+            return vacancySlotRepository.findReopened(event.getReservationId(), now).isPresent();
+        }
+        return vacancySlotRepository.isOpenSlotSellable(event.getExceptionId(), now);
+    }
+
+    private void finishWithoutSending(NotificationDispatch job) {
+        job.markSkipped();
+        notificationDispatchRepository.save(job);
     }
 }
