@@ -40,7 +40,8 @@ public class StubAuthFilter extends OncePerRequestFilter {
         if (testUser.isPresent()) {
             authenticate(testUser.get().toAuthUser());
         } else if (headerValue != null) {
-            log.debug("Unknown test user: {}", headerValue);
+            // Bearer 에 실제 토큰이 올 수 있으므로 값은 남기지 않는다
+            log.debug("Unknown test user, treated as anonymous");
         }
         filterChain.doFilter(request, response);
     }
