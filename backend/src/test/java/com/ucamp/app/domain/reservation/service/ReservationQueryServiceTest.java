@@ -134,6 +134,48 @@ class ReservationQueryServiceTest {
     }
 
     @Test
+    @DisplayName("고객 목록은 매장 구분 없이 본인 예약으로 조회한다")
+    void getMyReservations_customer_searchesOwnReservations() {
+        given(reservationQueryRepository.search(any(), anyLong(), anyInt())).willReturn(List.of());
+
+        reservationQueryService.getMyReservations(CUSTOMER, null, null, null, 0, 20);
+
+        ArgumentCaptor<ReservationSearch> captor = ArgumentCaptor.forClass(ReservationSearch.class);
+        verify(reservationQueryRepository).count(captor.capture());
+        assertThat(captor.getValue().userId()).isEqualTo(1L);
+        assertThat(captor.getValue().shopId()).isNull();
+    }
+
+    @Test
+    @DisplayName("고객이 아니면 내 예약 조회는 403 예외가 난다")
+    void getMyReservations_owner_throwsForbidden() {
+        assertThatThrownBy(() -> reservationQueryService.getMyReservations(OWNER, null, null, null, 0, 20))
+                .extracting("errorCode").isEqualTo(ErrorCode.FORBIDDEN);
+        verifyNoInteractions(reservationQueryRepository);
+    }
+
+    @Test
+    @DisplayName("다른 고객 예약 상세는 404 예외가 난다")
+    void getMyReservation_otherCustomer_throwsNotFound() {
+        given(reservationQueryRepository.findOne(5L, null, 1L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> reservationQueryService.getMyReservation(CUSTOMER, 5L))
+                .extracting("errorCode").isEqualTo(ErrorCode.RESOURCE_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("본인 예약 상세는 본인 범위로 조회한다")
+    void getMyReservation_own_returnsDetail() {
+        given(reservationQueryRepository.findOne(1L, null, 1L))
+                .willReturn(Optional.of(view(ReservationStatus.CONFIRMED, NOW.plusHours(2))));
+
+        ReservationDetailResponse result = reservationQueryService.getMyReservation(CUSTOMER, 1L);
+
+        assertThat(result.summary().reservationId()).isEqualTo(1L);
+        assertThat(result.summary().cancellable()).isTrue();
+    }
+
+    @Test
     @DisplayName("큰 페이지 번호도 offset 이 넘치지 않고 그대로 전달된다")
     void getOwnerReservations_largePage_passesLongOffset() {
         reservationQueryService.getOwnerReservations(OWNER, null, null, null, 30_000_000, 100);

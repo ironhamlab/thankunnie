@@ -23,7 +23,7 @@ import com.ucamp.app.domain.reservation.repository.ReservationSearch;
 import com.ucamp.app.domain.reservation.repository.ReservationView;
 
 /**
- * 역할별 예약 조회 (B-10 사장님 예약 현황). 고객 내 예약(B-09)·관리자 조회(B-11)도 같은 조회를 범위만 바꿔 쓴다.
+ * 역할별 예약 조회 (B-09 고객 내 예약, B-10 사장님 예약 현황). 관리자 조회(B-11)도 같은 조회를 범위만 바꿔 쓴다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -58,6 +58,26 @@ public class ReservationQueryService {
     public ReservationDetailResponse getOwnerReservation(AuthUser loginUser, Long reservationId) {
         loginUser.requireRole(UserRole.OWNER);
         ReservationView view = reservationQueryRepository.findOne(reservationId, loginUser.shopId(), null)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        return ReservationDetailResponse.from(view, isCancellable(view));
+    }
+
+    /**
+     * 고객 본인 예약 목록 (B-09). 여러 매장 예약을 시작 시각 순으로 모아 보여준다. 필터는 사장님 목록과 같다.
+     */
+    public PageResponse<ReservationSummaryResponse> getMyReservations(AuthUser loginUser, LocalDate from,
+            LocalDate to, List<ReservationStatus> statuses, int page, int size) {
+        loginUser.requireRole(UserRole.CUSTOMER);
+        ReservationSearch search = toSearch(null, loginUser.userId(), from, to, statuses);
+        return findPage(search, page, size);
+    }
+
+    /**
+     * 고객 본인 예약 상세 (B-09). 다른 고객 예약은 없는 것으로 본다.
+     */
+    public ReservationDetailResponse getMyReservation(AuthUser loginUser, Long reservationId) {
+        loginUser.requireRole(UserRole.CUSTOMER);
+        ReservationView view = reservationQueryRepository.findOne(reservationId, null, loginUser.userId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
         return ReservationDetailResponse.from(view, isCancellable(view));
     }
