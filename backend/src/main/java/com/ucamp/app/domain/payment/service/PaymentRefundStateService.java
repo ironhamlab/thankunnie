@@ -27,17 +27,16 @@ public class PaymentRefundStateService {
     }
 
     /**
-     * 환불을 시작한다. refundAmount 가 null 이면 남은 금액 전액.
+     * 환불을 시작한다. 검증 후 REFUND_PENDING 으로 커밋한다.
      */
     @Transactional
-    public RefundTarget start(Long depositPaymentId, Integer refundAmount) {
+    public RefundTarget start(Long depositPaymentId, int refundAmount) {
         DepositPayment payment = findForUpdate(depositPaymentId);
         DepositPaymentStatus previousStatus = payment.getStatus();
-        int amount = refundAmount == null ? payment.refundableAmount() : refundAmount;
 
-        payment.startRefund(amount);
+        payment.startRefund(refundAmount);
 
-        return new RefundTarget(depositPaymentId, payment.getPgTransactionKey(), amount, previousStatus);
+        return new RefundTarget(depositPaymentId, payment.getPgTransactionKey(), refundAmount, previousStatus);
     }
 
     @Transactional

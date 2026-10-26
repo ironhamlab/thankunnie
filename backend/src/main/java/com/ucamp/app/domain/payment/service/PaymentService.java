@@ -39,20 +39,14 @@ public class PaymentService {
     }
 
     /**
-     * 예약금결제의 남은 금액을 전액 환불한다.
-     */
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public PaymentCancelResponse cancel(Long depositPaymentId, String reason) {
-        return executeRefund(refundStateService.start(depositPaymentId, null), reason);
-    }
-
-    /**
-     * 예약금결제를 지정 금액만큼 환불한다. 예약 취소처럼 환불액을 정책으로 계산하는 다른 도메인에서 호출한다.
+     * 예약금결제를 지정 금액만큼 환불한다. 고객이 직접 호출하는 API 는 두지 않고,
+     * 예약 취소 도메인이 소유자 확인과 환불 정책 계산을 마친 뒤 호출한다.
+     * 이 메서드는 소유자나 환불 정책을 검사하지 않으므로 호출하는 쪽이 책임진다.
      *
      * <p>PG 호출을 DB 트랜잭션 밖에서 하므로 호출한 쪽의 트랜잭션은 잠시 중단되고,
      * 환불 상태 변경은 호출한 쪽의 트랜잭션과 별개로 커밋된다.
      *
-     * @param refundAmount 환불 금액 (남은 금액 이하)
+     * @param refundAmount 정책으로 계산한 환불 금액 (남은 금액 이하)
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public PaymentCancelResponse refund(Long depositPaymentId, int refundAmount, String reason) {

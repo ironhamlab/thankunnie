@@ -57,11 +57,11 @@ class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("결제 취소 시 남은 금액 전액을 포트원에 취소 요청하고 REFUNDED 로 바꾼다")
-    void cancel_paidPayment_refundsAll() {
+    @DisplayName("남은 금액 전액을 환불하면 포트원에 취소 요청하고 REFUNDED 로 바꾼다")
+    void refund_fullAmount_refunded() {
         DepositPayment payment = paidPayment();
 
-        PaymentCancelResponse response = paymentService.cancel(1L, "테스트 취소");
+        PaymentCancelResponse response = paymentService.refund(1L, 20000, "테스트 취소");
 
         verify(portOneClient).cancelPayment("imp_123", 20000, "테스트 취소");
         assertThat(response.status()).isEqualTo(DepositPaymentStatus.REFUNDED);
@@ -81,11 +81,11 @@ class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("없는 결제를 취소하면 PAYMENT_001")
-    void cancel_notFound_throwsException() {
+    @DisplayName("없는 결제를 환불하면 PAYMENT_001")
+    void refund_notFound_throwsException() {
         given(depositPaymentRepository.findByIdForUpdate(99L)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> paymentService.cancel(99L, "취소"))
+        assertThatThrownBy(() -> paymentService.refund(99L, 20000, "취소"))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.PAYMENT_NOT_FOUND);
@@ -93,7 +93,7 @@ class PaymentServiceTest {
 
     @Test
     @DisplayName("이미 환불된 결제는 포트원을 호출하지 않고 PAYMENT_003")
-    void cancel_alreadyRefunded_doesNotCallPortOne() {
+    void refund_alreadyRefunded_doesNotCallPortOne() {
         DepositPayment payment = DepositPayment.builder()
                 .pgProvider("PORTONE")
                 .pgTransactionKey("imp_123")
@@ -103,7 +103,7 @@ class PaymentServiceTest {
                 .build();
         given(depositPaymentRepository.findByIdForUpdate(1L)).willReturn(Optional.of(payment));
 
-        assertThatThrownBy(() -> paymentService.cancel(1L, "취소"))
+        assertThatThrownBy(() -> paymentService.refund(1L, 20000, "취소"))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.PAYMENT_NOT_REFUNDABLE);
@@ -112,12 +112,12 @@ class PaymentServiceTest {
 
     @Test
     @DisplayName("포트원이 취소를 거절하면 원래 상태로 되돌린다")
-    void cancel_portOneRejects_restoresStatus() {
+    void refund_portOneRejects_restoresStatus() {
         DepositPayment payment = paidPayment();
         willThrow(new BusinessException(ErrorCode.PAYMENT_PORTONE_ERROR))
                 .given(portOneClient).cancelPayment(anyString(), anyInt(), anyString());
 
-        assertThatThrownBy(() -> paymentService.cancel(1L, "취소"))
+        assertThatThrownBy(() -> paymentService.refund(1L, 20000, "취소"))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.PAYMENT_PORTONE_ERROR);
@@ -127,18 +127,18 @@ class PaymentServiceTest {
 
     @Test
     @DisplayName("포트원 응답이 불확실하면 REFUND_PENDING 을 유지해 재요청을 막는다")
-    void cancel_portOneUncertain_keepsRefundPending() {
+    void refund_portOneUncertain_keepsRefundPending() {
         DepositPayment payment = paidPayment();
         willThrow(new BusinessException(ErrorCode.PAYMENT_REFUND_UNCERTAIN))
                 .given(portOneClient).cancelPayment(anyString(), anyInt(), anyString());
 
-        assertThatThrownBy(() -> paymentService.cancel(1L, "취소"))
+        assertThatThrownBy(() -> paymentService.refund(1L, 20000, "취소"))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.PAYMENT_REFUND_UNCERTAIN);
         assertThat(payment.getStatus()).isEqualTo(DepositPaymentStatus.REFUND_PENDING);
 
-        assertThatThrownBy(() -> paymentService.cancel(1L, "재시도"))
+        assertThatThrownBy(() -> paymentService.refund(1L, 20000, "재시도"))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.PAYMENT_NOT_REFUNDABLE);
