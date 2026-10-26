@@ -48,6 +48,15 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    // HH:mm 문자열은 사전순 비교가 시각 순서와 같다
+    const invalidDay = days.find((day) => !day.closed && day.closeTime <= day.openTime);
+    if (invalidDay) {
+      setMessage({
+        type: 'error',
+        text: `${DAY_LABELS[invalidDay.dayOfWeek]}요일 영업 종료는 시작보다 뒤여야 합니다.`,
+      });
+      return;
+    }
     const payload = days.map(({ dayOfWeek, closed, openTime, closeTime }) => ({
       dayOfWeek,
       closed,

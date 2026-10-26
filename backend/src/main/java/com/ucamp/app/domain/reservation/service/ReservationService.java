@@ -1,0 +1,106 @@
+package com.ucamp.app.domain.reservation.service;
+
+import java.time.Clock;
+import java.time.LocalDateTime;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.ucamp.app.common.auth.AuthUser;
+import com.ucamp.app.common.auth.UserRole;
+import com.ucamp.app.common.exception.BusinessException;
+import com.ucamp.app.common.exception.ErrorCode;
+import com.ucamp.app.common.lock.ShopLock;
+import com.ucamp.app.common.lock.UserLock;
+import com.ucamp.app.common.util.TimeUtils;
+import com.ucamp.app.domain.reservation.dto.request.ReservationCreateRequest;
+import com.ucamp.app.domain.reservation.dto.response.ReservationCreateResponse;
+import com.ucamp.app.domain.reservation.entity.Reservation;
+import com.ucamp.app.domain.reservation.repository.ReservationRepository;
+import com.ucamp.app.domain.treatment.entity.Treatment;
+import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
+import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
+import com.ucamp.app.domain.vacancy.policy.PriceCalculator;
+import com.ucamp.app.domain.vacancy.policy.PriceQuote;
+import com.ucamp.app.domain.vacancy.policy.SalePolicy;
+import com.ucamp.app.domain.vacancy.policy.SalePrices;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService;
+
+@Service
+@Transactional(readOnly = true)
+public class ReservationService {
+
+    private final ReservationRepository reservationRepository;
+    private final TreatmentRepository treatmentRepository;
+    private final AvailabilityService availabilityService;
+    private final ShopLock shopLock;
+    private final UserLock userLock;
+    private final Clock clock;
+
+    public ReservationService(ReservationRepository reservationRepository,
+            TreatmentRepository treatmentRepository, AvailabilityService availabilityService,
+            ShopLock shopLock, UserLock userLock, Clock clock) {
+        this.reservationRepository = reservationRepository;
+        this.treatmentRepository = treatmentRepository;
+        this.availabilityService = availabilityService;
+        this.shopLock = shopLock;
+        this.userLock = userLock;
+        this.clock = clock;
+    }
+
+    /**
+     * 예약 클릭 시 점유(HOLD) 예약을 만든다. 가격 구간과 예약금은 이 시점 기준으로 고정한다.
+     */
+    @Transactional
+    public ReservationCreateResponse createReservation(AuthUser loginUser, ReservationCreateRequest request) {
+        loginUser.requireRole(UserRole.CUSTOMER);
+
+        LocalDateTime startsAt = TimeUtils.toLocal(request.startsAt());
+        // 잠금을 기다리기 전에 마감·단위·기간이 틀린 요청은 바로 돌려보낸다
+        SalePolicy.validateBookable(startsAt, LocalDateTime.now(clock));
+
+        Treatment treatment = treatmentRepository.findById(request.treatmentId())
+                .filter(found -> found.getStatus() == TreatmentStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.TREATMENT_NOT_FOUND));
+        Long shopId = treatment.getShop().getShopId();
+        LocalDateTime endsAt = startsAt.plusMinutes(treatment.getDurationMinutes());
+
+        // 같은 고객이 여러 매장에 동시에 클릭해도 본인 겹침 검사를 함께 통과하지 않도록 회원 단위로 먼저 순서를 맞춘다
+        userLock.lock(loginUser.userId());
+        // 같은 시간에 두 고객이 동시에 클릭해도 한 명만 점유하도록 매장 단위로 순서를 맞춘다
+        shopLock.lock(shopId);
+        // 잠금 대기 중 마감이 지나거나 점유가 만료될 수 있으므로 잠금 뒤 시각으로 검사·가격·만료를 정한다
+        LocalDateTime now = LocalDateTime.now(clock);
+        availabilityService.validateAvailable(shopId, startsAt, treatment.getDurationMinutes());
+        validateNoUserOverlap(loginUser.userId(), startsAt, endsAt, now);
+
+        // 가격에 대한 견적을 시술 테이블에서 가져온다.
+        PriceQuote quote = PriceCalculator.quote(treatment.getRegularPrice(),
+                new SalePrices(treatment.getPrice(), treatment.getLastMinutePrice()), startsAt, now);
+
+        Reservation reservation = Reservation.builder()
+                .userId(loginUser.userId())
+                .treatmentId(treatment.getTreatmentId())
+                .startsAt(startsAt)
+                .endsAt(endsAt)
+                .appliedPrice(quote.salePrice())
+                .deposit(quote.depositAmount())
+                .holdExpiresAt(SalePolicy.holdExpiresAt(now))
+                .customerRequest(request.customerRequest())
+                .build();
+        return ReservationCreateResponse.from(reservationRepository.save(reservation));
+    }
+
+    /**
+     * 한 사람이 같은 시간에 두 곳을 잡아 다른 고객의 빈자리를 막지 않도록, 매장과 관계없이 본인 예약과 겹치면 막는다
+     */
+    private void validateNoUserOverlap(Long userId, LocalDateTime startsAt, LocalDateTime endsAt,
+            LocalDateTime now) {
+        boolean overlapped = reservationRepository.findActiveOverlappingByUser(userId, startsAt, endsAt).stream()
+                .anyMatch(reservation -> SalePolicy.isOccupying(
+                        reservation.getStatus(), reservation.getHoldExpiresAt(), now));
+        if (overlapped) {
+            throw new BusinessException(ErrorCode.VACANCY_USER_TIME_OVERLAP);
+        }
+    }
+}

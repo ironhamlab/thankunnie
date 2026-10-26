@@ -26,6 +26,8 @@ export const useScheduleStore = create((set, get) => ({
   timesRequestId: 0,
   mutationStatus: 'idle',
   mutationError: null,
+  refreshFailed: false,
+  isRefreshing: false,
 
   loadSchedule: async () => {
     set({ status: 'loading', error: null, mutationError: null });
@@ -40,7 +42,13 @@ export const useScheduleStore = create((set, get) => ({
         scheduleApi.getBusinessHours(),
         scheduleApi.getExceptions(from, to),
       ]);
-      set({ shopId: user.shopId, businessHours, exceptions, status: 'succeeded' });
+      set({
+        shopId: user.shopId,
+        businessHours,
+        exceptions,
+        status: 'succeeded',
+        refreshFailed: false,
+      });
     } catch (error) {
       set({ status: 'failed', error: toError(error) });
     }
@@ -69,28 +77,34 @@ export const useScheduleStore = create((set, get) => ({
     });
   },
 
+  // 목록 새로고침은 변경 요청과 분리한다. 저장은 됐는데 목록 조회만 실패한 것을 저장 실패로 보이면
+  // 사용자가 다시 눌러 같은 일정이 중복 등록될 수 있다.
   saveException: async (exceptionId, payload) => {
-    return get().runMutation(async () => {
+    await get().runMutation(async () => {
       if (exceptionId) {
         await scheduleApi.updateException(exceptionId, payload);
       } else {
         await scheduleApi.createException(payload);
       }
-      await get().reloadExceptions();
     });
+    await get().reloadExceptions();
   },
 
   deleteException: async (exceptionId) => {
-    return get().runMutation(async () => {
-      await scheduleApi.deleteException(exceptionId);
-      await get().reloadExceptions();
-    });
+    await get().runMutation(() => scheduleApi.deleteException(exceptionId));
+    await get().reloadExceptions();
   },
 
+  // 실패해도 던지지 않고 refreshFailed 로 알린다. 화면은 새로고침 안내를 보여준다.
   reloadExceptions: async () => {
     const { from, to } = exceptionRange();
-    const exceptions = await scheduleApi.getExceptions(from, to);
-    set({ exceptions });
+    set({ isRefreshing: true });
+    try {
+      const exceptions = await scheduleApi.getExceptions(from, to);
+      set({ exceptions, refreshFailed: false, isRefreshing: false });
+    } catch {
+      set({ refreshFailed: true, isRefreshing: false });
+    }
   },
 
   // 변경 요청 공통 처리. 실패하면 오류 상태를 남기고 화면이 메시지를 보여줄 수 있게 다시 던진다.
