@@ -45,17 +45,20 @@ public final class CancelFixture {
     }
 
     /**
-     * 예약을 넣는다. 점유 시각(CREATED_AT)을 지정하고, 점유 만료는 +5분, 확정은 +2분으로 둔다.
+     * 예약을 넣는다. 점유 시각(CREATED_AT)을 지정하고, 점유 만료는 +5분으로 둔다.
+     * 확정 시각(+2분)은 확정을 거친 상태(CONFIRMED·CANCEL_PENDING·CANCELLED)에만 넣고, HOLD·EXPIRED 는 비운다.
      */
     public static void insertReservation(JdbcTemplate jdbcTemplate, long reservationId, long userId, String status,
             LocalDateTime startsAt, LocalDateTime heldAt) {
+        boolean confirmedOnce = !"HOLD".equals(status) && !"EXPIRED".equals(status);
+        Timestamp confirmedAt = confirmedOnce ? Timestamp.valueOf(heldAt.plusMinutes(2)) : null;
         jdbcTemplate.update("""
                 INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT,
                     APPLIED_PRICE, DEPOSIT, HOLD_EXPIRES_AT, CONFIRMED_AT, CREATED_AT, UPDATED_AT)
                 VALUES (?, ?, ?, ?, ?, ?, 22000, 20000, ?, ?, ?, ?)
                 """, reservationId, userId, TREATMENT_ID, status,
                 Timestamp.valueOf(startsAt), Timestamp.valueOf(startsAt.plusHours(1)),
-                Timestamp.valueOf(heldAt.plusMinutes(5)), Timestamp.valueOf(heldAt.plusMinutes(2)),
+                Timestamp.valueOf(heldAt.plusMinutes(5)), confirmedAt,
                 Timestamp.valueOf(heldAt), Timestamp.valueOf(heldAt));
     }
 
