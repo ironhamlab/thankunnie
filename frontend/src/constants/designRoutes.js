@@ -16,5 +16,6 @@ export const DESIGN_ROUTES = {
   MENUS: '/design/owner/menus',
   SLOTS: '/design/owner/slots',
   SLOT_NEW: '/design/owner/slots/new',
+  SCHEDULE: '/design/owner/schedule',
   OWNER_BOOKINGS: '/design/owner/bookings',
 };
