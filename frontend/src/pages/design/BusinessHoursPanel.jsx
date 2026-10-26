@@ -15,8 +15,9 @@ const DEFAULT_CLOSE = '20:00';
 
 /**
  * 요일별 영업시간·휴무 설정. 예약이 걸린 시간을 줄이면 서버가 거절한다.
+ * 저장하면 예약 가능 시간이 바뀌므로 onSaved 로 부모에게 알린다.
  */
-export default function BusinessHoursPanel({ hours }) {
+export default function BusinessHoursPanel({ hours, onSaved }) {
   const saveBusinessHours = useScheduleStore((state) => state.saveBusinessHours);
   const isSaving = useScheduleStore((state) => state.mutationStatus === 'loading');
   const [days, setDays] = useState(hours);
@@ -56,6 +57,7 @@ export default function BusinessHoursPanel({ hours }) {
     try {
       await saveBusinessHours(payload);
       setMessage({ type: 'success', text: '영업시간을 저장했습니다.' });
+      onSaved?.();
     } catch (error) {
       setMessage({ type: 'error', text: error.message });
     }

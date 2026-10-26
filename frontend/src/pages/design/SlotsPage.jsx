@@ -96,7 +96,10 @@ export default function SlotsPage() {
             </p>
           )}
           <div className="b-columns">
-            <BusinessHoursPanel hours={businessHours} />
+            <BusinessHoursPanel
+              hours={businessHours}
+              onSaved={() => setReloadKey((key) => key + 1)}
+            />
             <AvailableTimesPanel
               date={selectedDate}
               minDate={today}

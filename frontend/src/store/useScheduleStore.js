@@ -23,6 +23,7 @@ export const useScheduleStore = create((set, get) => ({
   error: null,
   availableTimes: [],
   timesStatus: 'idle',
+  timesRequestId: 0,
   mutationStatus: 'idle',
   mutationError: null,
 
@@ -46,12 +47,18 @@ export const useScheduleStore = create((set, get) => ({
   },
 
   loadAvailableTimes: async (date) => {
-    set({ timesStatus: 'loading' });
+    // 날짜를 빠르게 바꾸면 요청이 겹치므로, 늦게 도착한 이전 요청의 응답은 버린다.
+    const requestId = get().timesRequestId + 1;
+    set({ timesRequestId: requestId, timesStatus: 'loading' });
     try {
       const result = await scheduleApi.getAvailableTimes(get().shopId, date);
-      set({ availableTimes: result.startTimes, timesStatus: 'succeeded' });
+      if (get().timesRequestId === requestId) {
+        set({ availableTimes: result.startTimes, timesStatus: 'succeeded' });
+      }
     } catch {
-      set({ availableTimes: [], timesStatus: 'failed' });
+      if (get().timesRequestId === requestId) {
+        set({ availableTimes: [], timesStatus: 'failed' });
+      }
     }
   },
 
