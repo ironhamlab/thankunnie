@@ -26,6 +26,10 @@ import com.ucamp.app.domain.vacancy.policy.SalePolicy;
 import com.ucamp.app.domain.vacancy.policy.SalePrices;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
+/**
+ * 예약 상태 변경 (D). 생성(점유)·확정·점유 만료를 담당한다.
+ * 조회는 ReservationQueryService 가 맡는다.
+ */
 @Service
 @Transactional(readOnly = true)
 public class ReservationService {
@@ -49,7 +53,20 @@ public class ReservationService {
     }
 
     /**
-     * 예약 클릭 시 점유(HOLD) 예약을 만든다. 가격 구간과 예약금은 이 시점 기준으로 고정한다.
+     * 예약 클릭 시 점유(HOLD) 예약을 만든다 (D-01~D-04). 가격 구간과 예약금은 이 시점 기준으로 고정한다.
+     * 회원 → 매장 순으로 잠근 뒤 가용 시간과 본인 예약 겹침을 다시 검사하고 저장한다.
+     *
+     * @param loginUser 로그인한 고객
+     * @param request   시술 ID, 시작 일시, 요청사항
+     * @return 생성된 점유 예약
+     * @throws BusinessException 고객이 아니면 FORBIDDEN,
+     *                           30분 단위가 아니면 VACANCY_INVALID_TIME_UNIT,
+     *                           접수 마감(시작 20분 전)이 지났으면 VACANCY_BOOKING_CLOSED,
+     *                           60일 이내가 아니면 VACANCY_OUT_OF_RANGE,
+     *                           시술이 없거나 판매 중이 아니면 TREATMENT_NOT_FOUND,
+     *                           영업 외 시간이거나 닫힌 시간이면 VACANCY_NOT_OPEN_TIME,
+     *                           매장의 다른 예약과 겹치면 VACANCY_TIME_TAKEN,
+     *                           본인의 다른 예약과 겹치면 VACANCY_USER_TIME_OVERLAP
      */
     @Transactional
     public ReservationCreateResponse createReservation(AuthUser loginUser, ReservationCreateRequest request) {
@@ -96,7 +113,13 @@ public class ReservationService {
      * 예약 행을 잠근 뒤 검사하므로 중복 확정·확정과 만료가 겹쳐도 한 번만 반영된다 (D-06).
      * 시간 점유는 이미 HOLD 가 잡고 있어 매장 잠금과 가용 시간 재검사는 하지 않는다.
      *
-     * @param paidAmount 결제사에서 확인한 실제 결제 금액
+     * @param userId        결제한 고객 ID
+     * @param reservationId 확정할 예약 ID
+     * @param paidAmount    결제사에서 확인한 실제 결제 금액
+     * @return 확정된 예약 (결제 기록 저장에 사용)
+     * @throws BusinessException 없거나 다른 고객의 예약이면 RESERVATION_NOT_FOUND,
+     *                           결제 마감(시작 15분 전)이 지났으면 VACANCY_PAYMENT_CLOSED,
+     *                           그 밖의 상태·금액 오류는 Reservation.validateConfirmable 참고
      */
     @Transactional
     public Reservation confirmReservation(Long userId, Long reservationId, int paidAmount) {
@@ -117,6 +140,8 @@ public class ReservationService {
      * 만료 시각이 지난 점유를 EXPIRED 로 바꾸고 바뀐 건수를 반환한다 (D-07, D-08).
      * 빈자리는 가용 시간 계산이 만료된 점유를 빼고 보므로 따로 복원하지 않는다.
      * 주기 작업에서 반복 호출해도 안전하다.
+     *
+     * @return EXPIRED 로 바뀐 예약 건수
      */
     @Transactional
     public int expireHolds() {
@@ -124,7 +149,10 @@ public class ReservationService {
     }
 
     /**
-     * 한 사람이 같은 시간에 두 곳을 잡아 다른 고객의 빈자리를 막지 않도록, 매장과 관계없이 본인 예약과 겹치면 막는다
+     * 한 사람이 같은 시간에 두 곳을 잡아 다른 고객의 빈자리를 막지 않도록, 매장과 관계없이 본인 예약과 겹치면 막는다.
+     * 만료된 점유는 SalePolicy.isOccupying 으로 걸러 겹침으로 보지 않는다.
+     *
+     * @throws BusinessException 겹치면 VACANCY_USER_TIME_OVERLAP
      */
     private void validateNoUserOverlap(Long userId, LocalDateTime startsAt, LocalDateTime endsAt,
             LocalDateTime now) {

@@ -28,6 +28,12 @@ public record ReservationCreateResponse(
         int deposit,
         OffsetDateTime holdExpiresAt) {
 
+    /**
+     * 저장된 예약으로 응답을 만든다. 시각은 한국 시간대(+09:00)로 바꾼다.
+     *
+     * @param reservation 저장된 예약
+     * @return 예약 생성 응답
+     */
     public static ReservationCreateResponse from(Reservation reservation) {
         return new ReservationCreateResponse(
                 reservation.getId(),
