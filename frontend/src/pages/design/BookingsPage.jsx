@@ -1,11 +1,35 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
-import { SERVICES, STATUS, finish, money } from './data';
+import { PAYMENT_STATUS, SERVICES, STATUS, finish, getPayment, money } from './data';
 import { useDesignStore } from './useDesignStore';
 import Asset from './Asset';
+import CancelRefundDialog from './CancelRefundDialog';
 import Dialog from './Dialog';
 import getServiceShop from './getServiceShop';
+import PaymentStatusCard from './PaymentStatusCard';
+import RefundPolicyCard from './RefundPolicyCard';
+import './payment-cancel.css';
+
+function BookingsSummary({ bookings }) {
+  const payments = bookings.map(getPayment);
+  const stats = [
+    ['이용 예정', `${bookings.filter((b) => b.status === 'confirmed').length}건`],
+    ['결제한 예약금', money(payments.reduce((sum, p) => sum + p.amount, 0))],
+    ['환불받은 금액', money(payments.reduce((sum, p) => sum + p.refundedAmount, 0))],
+    ['환불 처리 중', `${payments.filter((p) => p.status === 'REFUND_PENDING').length}건`],
+  ];
+  return (
+    <div className="b-pay-summary">
+      {stats.map(([label, value]) => (
+        <div key={label} className="b-panel">
+          <span>{label}</span>
+          <strong>{value}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function BookingsPage() {
   const bookings = useDesignStore((s) => s.bookings);
@@ -15,14 +39,22 @@ export default function BookingsPage() {
   const [tab, setTab] = useState('upcoming');
   const [selectedId, setSelectedId] = useState('');
   const [showCancel, setShowCancel] = useState(false);
-  const list = bookings.filter(
-    (b) =>
-      b.isCustomer && (tab === 'upcoming' ? b.status === 'confirmed' : b.status !== 'confirmed'),
+  const [notice, setNotice] = useState('');
+  const customerBookings = bookings.filter((b) => b.isCustomer);
+  const list = customerBookings.filter((b) =>
+    tab === 'upcoming' ? b.status === 'confirmed' : b.status !== 'confirmed',
   );
   const selected = list.find((b) => b.id === selectedId) ?? list[0];
   const service = selected && SERVICES.find((s) => s.id === selected.serviceId);
   const selectedShop = getServiceShop(service, shop);
-  const [notice, setNotice] = useState('');
+
+  const handleCancelConfirm = (reason) => {
+    cancel(selected.id, reason);
+    setShowCancel(false);
+    setSelectedId(selected.id);
+    setTab('history');
+  };
+
   return (
     <div className="b-container b-page">
       <div className="b-notice b-demo-disclaimer">
@@ -38,11 +70,12 @@ export default function BookingsPage() {
         <h1>
           내 예약{' '}
           <span className="b-badge">
-            {bookings.filter((b) => b.isCustomer && b.status === 'confirmed').length}건 진행 중
+            {customerBookings.filter((b) => b.status === 'confirmed').length}건 진행 중
           </span>
         </h1>
-        <span className="b-badge b-neutral">시연 기준일 2025.10.24</span>
+        <span className="b-badge b-neutral">시연 기준일 2025.10.24 14:50</span>
       </div>
+      <BookingsSummary bookings={customerBookings} />
       <div className="b-options b-tabs">
         <button
           className={tab === 'upcoming' ? 'is-selected' : ''}
@@ -54,7 +87,7 @@ export default function BookingsPage() {
           className={tab === 'history' ? 'is-selected' : ''}
           onClick={() => setTab('history')}
         >
-          지난 이용 내역
+          취소·지난 이용 내역
         </button>
       </div>
       <div className="b-bookings-grid">
@@ -62,13 +95,20 @@ export default function BookingsPage() {
           {list.map((b) => {
             const bookingService = SERVICES.find((s) => s.id === b.serviceId);
             const bookingShop = getServiceShop(bookingService, shop);
+            const payment = getPayment(b);
+            const paymentStatus = PAYMENT_STATUS[payment.status] ?? PAYMENT_STATUS.PAID;
             return (
               <button
                 key={b.id}
                 className={'b-panel b-booking-card ' + (selected?.id === b.id ? 'is-active' : '')}
                 onClick={() => setSelectedId(b.id)}
               >
-                <span className="b-badge">{STATUS[b.status]}</span>
+                <div className="b-flex">
+                  <span className="b-badge">{STATUS[b.status]}</span>
+                  <span className={`b-pay-status is-${paymentStatus.tone} is-compact`}>
+                    {paymentStatus.label}
+                  </span>
+                </div>
                 <div className="b-booking-service">
                   <Asset
                     name={b.serviceId === 'nail' ? '8-8-0.png' : bookingService?.image}
@@ -85,9 +125,13 @@ export default function BookingsPage() {
                 </div>
                 <div className="b-notice b-row">
                   <span>
-                    모의 예약금: <strong className="b-pink">{money(b.deposit)}</strong>
+                    예약금: <strong className="b-pink">{money(payment.amount)}</strong>
                   </span>
-                  <span>현장 잔금: {money(b.price - b.deposit)}</span>
+                  {b.status === 'cancelled' ? (
+                    <span>환불: {money(payment.refundedAmount)}</span>
+                  ) : (
+                    <span>현장 잔금: {money(b.price - b.deposit)}</span>
+                  )}
                 </div>
                 <small className="b-muted">예약번호: {b.id}</small>
                 <span className="b-pink">예약 상세 보기 →</span>
@@ -122,37 +166,14 @@ export default function BookingsPage() {
                 주소 보기
               </button>
             </div>
-            <h3>모의 결제 및 현장 결제 잔금 내역</h3>
-            <dl className="b-details">
-              <div>
-                <dt>총 시술 금액</dt>
-                <dd>{money(selected.price)}</dd>
-              </div>
-              <div className="b-highlight">
-                <dt>모의 결제된 예약금 (20%)</dt>
-                <dd className="b-pink">{money(selected.deposit)}</dd>
-              </div>
-              <div>
-                <dt>매장 방문 시 현장 지불 잔금</dt>
-                <dd>{money(selected.price - selected.deposit)}</dd>
-              </div>
-            </dl>
-            <h3>취소 정책 및 예상 모의 환불액 계산</h3>
-            <div className="b-notice">
-              <p>방문 2시간 전까지 100%, 2시간 미만 임박 취소 시 50% 모의 환불이 적용됩니다.</p>
-              <p className="b-help">이 시연은 시술 40분 전 긴급 취소 구간입니다.</p>
-              <div className="b-row b-highlight">
-                <span>
-                  {selected.status === 'cancelled' ? '모의 환불 금액' : '예상 모의 환불 금액'}
-                </span>
-                <strong className="b-pink">
-                  {money(selected.refund ?? Math.round(selected.deposit * 0.5))}
-                </strong>
-              </div>
-              <small>모의 환불이며 실제 금융 거래가 발생하지 않습니다.</small>
-            </div>
+            <h3>예약금 결제·환불 현황</h3>
+            <PaymentStatusCard booking={selected} />
+            <h3>
+              {selected.status === 'cancelled' ? '적용된 환불 정책' : '취소 정책 및 예상 환불액'}
+            </h3>
+            <RefundPolicyCard booking={selected} />
             {selected.status === 'confirmed' && (
-              <button className="b-button b-danger" onClick={() => setShowCancel(true)}>
+              <button className="b-button b-danger b-wide" onClick={() => setShowCancel(true)}>
                 예약 취소 신청
               </button>
             )}
@@ -160,28 +181,11 @@ export default function BookingsPage() {
         )}
       </div>
       {showCancel && selected && (
-        <Dialog title="예약을 취소하시겠어요?" onClose={() => setShowCancel(false)}>
-          <p>취소할 예약: {selected.id}</p>
-          <p>
-            예상 모의 환불 금액:{' '}
-            <strong className="b-pink">{money(Math.round(selected.deposit * 0.5))}</strong>
-          </p>
-          <div className="b-flex">
-            <button className="b-button" onClick={() => setShowCancel(false)}>
-              예약 유지
-            </button>
-            <button
-              className="b-button b-primary"
-              onClick={() => {
-                cancel(selected.id);
-                setShowCancel(false);
-                setTab('history');
-              }}
-            >
-              예약 취소 확정
-            </button>
-          </div>
-        </Dialog>
+        <CancelRefundDialog
+          booking={selected}
+          onClose={() => setShowCancel(false)}
+          onConfirm={handleCancelConfirm}
+        />
       )}
       {notice && (
         <Dialog title="매장 주소" onClose={() => setNotice('')}>
