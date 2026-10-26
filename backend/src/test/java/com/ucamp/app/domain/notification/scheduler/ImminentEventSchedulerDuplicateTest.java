@@ -6,6 +6,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,10 +17,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.notification.service.NotificationEventService;
 
 @ExtendWith(MockitoExtension.class)
 class ImminentEventSchedulerDuplicateTest {
+
+    private static final Clock CLOCK = Clock.fixed(
+            LocalDateTime.of(2026, 10, 23, 9, 0).atZone(TimeUtils.KST).toInstant(), TimeUtils.KST);
 
     @Mock
     private NotificationEventService notificationEventService;
@@ -26,7 +33,7 @@ class ImminentEventSchedulerDuplicateTest {
 
     @BeforeEach
     void setUp() {
-        scheduler = new ImminentEventScheduler(notificationEventService);
+        scheduler = new ImminentEventScheduler(notificationEventService, CLOCK);
     }
 
     @Test

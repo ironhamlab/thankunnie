@@ -1,5 +1,6 @@
 package com.ucamp.app.domain.notification.scheduler;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -9,7 +10,6 @@ import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import com.ucamp.app.common.policy.BookingPolicy;
 import com.ucamp.app.domain.notification.service.NotificationEventService;
 
 /**
@@ -22,12 +22,13 @@ import com.ucamp.app.domain.notification.service.NotificationEventService;
 public class ImminentEventScheduler {
 
     private final NotificationEventService notificationEventService;
+    private final Clock clock;
 
     /** 직전 실행이 끝나고 1분 뒤 다시 실행한다. */
     @Scheduled(fixedDelay = 60_000, initialDelay = 60_000)
     public void detectImminent() {
         try {
-            int created = notificationEventService.createImminentEvents(LocalDateTime.now(BookingPolicy.ZONE));
+            int created = notificationEventService.createImminentEvents(LocalDateTime.now(clock));
             if (created > 0) {
                 log.info("임박 이벤트 생성 {}건", created);
             }
@@ -41,7 +42,7 @@ public class ImminentEventScheduler {
     @Scheduled(fixedDelay = 60_000, initialDelay = 60_000)
     public void detectLastMinute() {
         try {
-            int created = notificationEventService.createLastMinuteEvents(LocalDateTime.now(BookingPolicy.ZONE));
+            int created = notificationEventService.createLastMinuteEvents(LocalDateTime.now(clock));
             if (created > 0) {
                 log.info("초임박 이벤트 생성 {}건", created);
             }
