@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.ucamp.app.domain.shop.entity.ShopImageCleanup;
+import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
 import com.ucamp.app.domain.shop.repository.ShopImageCleanupRepository;
 import com.ucamp.app.domain.shop.repository.ShopRepository;
 
@@ -35,14 +36,28 @@ class ShopImageCleanupServiceTest {
     private ShopRepository shopRepository;
     @Mock
     private ShopImageObjectStorage objectStorage;
+    @Mock
+    private TreatmentRepository treatmentRepository;
 
     private final Clock clock = Clock.fixed(Instant.parse("2026-10-26T03:00:00Z"), ZoneId.of("Asia/Seoul"));
     private final LocalDateTime now = LocalDateTime.now(clock);
     private ShopImageCleanupService service;
 
+    @Test
+    @DisplayName("시술에서 사용 중인 이미지는 재시도로 삭제하지 않는다")
+    void retry_currentTreatmentImage_cancelsCleanup() {
+        ShopImageCleanup task = new ShopImageCleanup(SCOPE, FILE_NAME, now.minusMinutes(2));
+        when(repository.findByIdForUpdate(1L)).thenReturn(Optional.of(task));
+        when(objectStorage.scope()).thenReturn(SCOPE);
+        when(treatmentRepository.existsByImageUrlEndingWith("/images/" + FILE_NAME)).thenReturn(true);
+        service.retry(1L);
+        verify(objectStorage, never()).delete(FILE_NAME);
+        verify(repository).delete(task);
+    }
+
     @BeforeEach
     void setUp() {
-        service = new ShopImageCleanupService(repository, shopRepository, objectStorage, clock);
+        service = new ShopImageCleanupService(repository, shopRepository, objectStorage, clock, treatmentRepository);
     }
 
     @Test

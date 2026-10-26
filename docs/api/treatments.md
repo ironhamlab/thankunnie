@@ -141,3 +141,21 @@ Oracle에서 실제 적용한 결과는 별도 검증이 필요하다.
 - 설치된 Windows JDK의 Unix 소켓 임시 경로 문제를 피하기 위해 검증 프로세스에만
   `JAVA_TOOL_OPTIONS`의 `-Djdk.net.unixdomain.tmpdir`에 프로젝트 내부 `backend/build/socket-temp`의 절대 경로를 지정하고
   Gradle에 `--no-daemon`을 사용했다. 저장소 실행 설정은 변경하지 않았다.
+
+
+## 대표 이미지 API-116·API-117 (UNNIE-46)
+
+| 메서드·경로 | 용도 | 성공 응답 |
+| --- | --- | --- |
+| `PUT /api/v1/shops/me/treatments/{treatmentId}/image` | 본인 매장 시술 대표 이미지 업로드·교체 | 200, `ApiResponse<TreatmentImageResponse>` |
+| `DELETE /api/v1/shops/me/treatments/{treatmentId}/image` | 본인 매장 시술 대표 이미지 삭제 | 204, 본문 없음 |
+| `GET /api/v1/shops/{shopId}/treatments/{treatmentId}/images/{fileName}` | 현재 대표 이미지 공개 조회 | 200, JPEG·PNG 바이너리 |
+
+- `me`는 B-01 인증 주체의 shopId를 사용한다. 비로그인은 401, 고객·관리자는 403이며 다른 매장의 시술 또는 존재하지 않는 시술은 404다.
+- PUT은 `multipart/form-data`의 `file` 필드로 JPEG·PNG 1개를 전송한다. 최대 5MiB·1,600만 화소이며 실제 내용까지 검사한다. 누락·빈 파일·중복 파일·잘못된 형식은 400이다.
+- 업로드 응답 data는 `{"treatmentId":9701,"imageUrl":"/api/v1/shops/1/treatments/9701/images/{서버 파일명}.png"}`이다.
+- 시술 목록·상세 응답의 `imageUrl`에도 현재 대표 이미지 경로를 반환한다.
+- 현재 이미지만 공개 조회하고 교체·삭제된 URL은 404를 반환한다. 이미지가 없어도 DELETE는 204다.
+- 매장 이미지와 같은 S3/로컬 저장소·검증·삭제 실패 재시도를 사용한다. DB 커밋 후 이전 파일을 정리하고 롤백 시 새 파일을 정리한다. 파일 저장 실패 시 기존 이미지는 유지한다.
+- 같은 매장의 이미지 변경은 SHOP 행 잠금으로 직렬화한다. 시술 메뉴 변경은 변경된 컬럼만 UPDATE하여 이미지 URL을 덮어쓰지 않는다.
+- 기존 TREATMENT.IMAGE_URL 컬럼을 사용하므로 추가 스키마 변경은 없다. 저장소 설정은 [매장 이미지 명세](shops.md)를 따른다.

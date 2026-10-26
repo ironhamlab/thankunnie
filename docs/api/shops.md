@@ -30,15 +30,16 @@
 
 | 메서드·경로 | 용도 | 성공 응답 |
 | --- | --- | --- |
-| `PUT /api/v1/shops/{shopId}/image` | 본인 매장 대표 이미지 업로드·교체 | 200, `ApiResponse<ShopImageResponse>` |
-| `DELETE /api/v1/shops/{shopId}/image` | 본인 매장 대표 이미지 삭제 | 204, 본문 없음 |
+| `PUT /api/v1/shops/me/image` | 본인 매장 대표 이미지 업로드·교체 | 200, `ApiResponse<ShopImageResponse>` |
+| `DELETE /api/v1/shops/me/image` | 본인 매장 대표 이미지 삭제 | 204, 본문 없음 |
 | `GET /api/v1/shops/{shopId}/images/{fileName}` | 현재 대표 이미지 공개 조회 | 200, `image/jpeg` 또는 `image/png` 바이너리 |
 
+- API-114(PUT)·API-115(DELETE)의 매장은 인증 주체의 shopId로 결정한다.
 - PUT은 `multipart/form-data`의 `file` 필드로 파일 1개를 보낸다. 여러 파일을 같은 필드로 전송하거나 multipart boundary가 없는 손상 요청은 400으로 거부한다. JSON URL 요청은 받지 않는다.
 - JPEG(`.jpg`, `.jpeg`, `image/jpeg`)·PNG(`.png`, `image/png`)만 허용한다. 확장자 대소문자는 구분하지 않는다.
 - 최대 파일 크기는 **5MiB(5 × 1024 × 1024바이트), 경계값 포함**, 최대 해상도는 **1,600만 화소**다. 전체 multipart 요청 한도는 6MiB다.
 - 누락·빈 파일·크기 초과·형식 불일치·실제 이미지 디코딩 실패는 `400 / COMMON_400`이다. 파일 이름과 MIME 타입뿐 아니라 실제 이미지 형식과 내용을 확인한다.
-- PUT·DELETE는 비로그인 401, 고객·관리자·다른 매장 사장님 403, 존재하지 않는 본인 매장 404다. 이미지가 없는 매장에 DELETE를 반복해도 204다.
+- PUT·DELETE는 비로그인 401, 고객·관리자 403, 존재하지 않는 본인 매장 404다. 이미지가 없는 매장에 DELETE를 반복해도 204다.
 - 업로드 성공 예시: `data: {"shopId": 1, "imageUrl": "/api/v1/shops/1/images/{서버에서 생성한 파일명}.png"}`. 프론트는 API 서버 기준 상대 경로를 사용한다. GET 매장 정보의 imageUrl도 같은 경로를 반환한다.
 - 조회 API는 현재 DB에 연결된 이미지만 제공한다. 교체·삭제된 URL이나 잘못된 파일명은 404다. 응답에 `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`를 설정한다.
 

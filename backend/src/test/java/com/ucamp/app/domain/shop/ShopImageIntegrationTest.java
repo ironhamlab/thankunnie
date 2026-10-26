@@ -126,11 +126,105 @@ class ShopImageIntegrationTest {
                 """, time, time);
     }
 
+    private void createTreatment() {
+        jdbc.update("""
+                INSERT INTO TREATMENT (TREATMENT_ID, SHOP_ID, CATEGORY_ID, NAME, REGULAR_PRICE, PRICE,
+                    LAST_MINUTE_PRICE, DURATION_MINUTES, TREATMENT_TYPE, STATUS, CREATED_AT, UPDATED_AT)
+                VALUES (9701, 1, 9701, '이미지 테스트', 30000, 20000, 10000, 30, 'NORMAL', 'ACTIVE', ?, ?)
+                """, LocalDateTime.now(clock), LocalDateTime.now(clock));
+    }
+
+    @Test
+    @DisplayName("시술 이미지 업로드·교체·삭제 후 과거 URL과 객체를 정리한다")
+    void treatmentImage_fullLifecycle_cleansPreviousObjects() throws Exception {
+        createTreatment();
+        String path = "/api/v1/shops/me/treatments/9701/image";
+        String previousUrl = null;
+        for (String format : new String[] {"png", "jpg"}) {
+            MockMultipartFile file = ShopImageFixture.image(format);
+            String response = mvc.perform(multipart(HttpMethod.PUT, path).file(file)
+                            .header("X-Test-User", "OWNER_1"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.data.treatmentId").value(9701))
+                    .andReturn().getResponse().getContentAsString();
+            String url = objectMapper.readTree(response).path("data").path("imageUrl").asText();
+            mvc.perform(get(url)).andExpect(status().isOk()).andExpect(content().bytes(file.getBytes()));
+            assertThat(jdbc.queryForObject("SELECT IMAGE_URL FROM TREATMENT WHERE TREATMENT_ID=9701",
+                    String.class)).isEqualTo(url);
+            if (previousUrl != null) {
+                mvc.perform(get(previousUrl)).andExpect(status().isNotFound());
+            }
+            assertThat(objects).hasSize(1);
+            previousUrl = url;
+        }
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mvc.perform(delete(path).header("X-Test-User", "OWNER_1"))
+                    .andExpect(status().isNoContent()).andExpect(content().string(""));
+        }
+        mvc.perform(get(previousUrl)).andExpect(status().isNotFound());
+        assertThat(objects).isEmpty();
+    }
+
+    @Test
+    @DisplayName("시술 이미지의 비로그인·역할·소유권·없는 시술·잘못된 파일을 거부한다")
+    void treatmentImage_invalidRequests_doNotStoreFiles() throws Exception {
+        createTreatment();
+        String path = "/api/v1/shops/me/treatments/9701/image";
+        mvc.perform(multipart(HttpMethod.PUT, path).file(ShopImageFixture.image("png")))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(delete(path)).andExpect(status().isUnauthorized());
+        for (String actor : new String[] {"CUSTOMER_1", "ADMIN"}) {
+            mvc.perform(multipart(HttpMethod.PUT, path).file(ShopImageFixture.image("png"))
+                    .header("X-Test-User", actor)).andExpect(status().isForbidden());
+            mvc.perform(delete(path).header("X-Test-User", actor)).andExpect(status().isForbidden());
+        }
+        jdbc.update("""
+                INSERT INTO SHOP (SHOP_ID, CATEGORY_ID, LOGIN_ID, PASSWORD_HASH, NAME, REGION_CODE,
+                    ADDRESS, LATITUDE, LONGITUDE, PHONE, STATUS, CREATED_AT, UPDATED_AT)
+                SELECT 2, CATEGORY_ID, 'CHANGE_ME_2', 'CHANGE_ME', NAME, REGION_CODE,
+                    ADDRESS, LATITUDE, LONGITUDE, PHONE, STATUS, CREATED_AT, UPDATED_AT
+                FROM SHOP WHERE SHOP_ID = 1
+                """);
+        // 매장 2가 있어도 OWNER_2는 매장 1의 시술을 찾거나 변경할 수 없다.
+        mvc.perform(multipart(HttpMethod.PUT, path).file(ShopImageFixture.image("png"))
+                .header("X-Test-User", "OWNER_2")).andExpect(status().isNotFound());
+        mvc.perform(delete(path).header("X-Test-User", "OWNER_2")).andExpect(status().isNotFound());
+        mvc.perform(delete("/api/v1/shops/me/treatments/999999/image")
+                .header("X-Test-User", "OWNER_1")).andExpect(status().isNotFound());
+        mvc.perform(multipart(HttpMethod.PUT, path).header("X-Test-User", "OWNER_1"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(multipart(HttpMethod.PUT, path).file(ShopImageFixture.image("png"))
+                        .file(ShopImageFixture.image("png")).header("X-Test-User", "OWNER_1"))
+                .andExpect(status().isBadRequest());
+        assertThat(objects).isEmpty();
+    }
+
+    @Test
+    @DisplayName("시술 이미지 DB 커밋 실패 시 기존 URL과 파일을 유지하고 새 파일을 정리한다")
+    void treatmentImage_commitFailure_keepsPreviousImage() throws Exception {
+        createTreatment();
+        String path = "/api/v1/shops/me/treatments/9701/image";
+        String response = mvc.perform(multipart(HttpMethod.PUT, path).file(ShopImageFixture.image("png"))
+                        .header("X-Test-User", "OWNER_1"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String url = objectMapper.readTree(response).path("data").path("imageUrl").asText();
+        jdbc.execute("ALTER TABLE TREATMENT ADD CONSTRAINT CK_TEST_TREATMENT_IMAGE CHECK "
+                + "(TREATMENT_ID <> 9701 OR IMAGE_URL = '" + url + "')");
+        mvc.perform(multipart(HttpMethod.PUT, path).file(ShopImageFixture.image("jpg"))
+                        .header("X-Test-User", "OWNER_1"))
+                .andExpect(status().is5xxServerError());
+        assertThat(jdbc.queryForObject("SELECT IMAGE_URL FROM TREATMENT WHERE TREATMENT_ID=9701",
+                String.class)).isEqualTo(url);
+        assertThat(objects).hasSize(1);
+        mvc.perform(get(url)).andExpect(status().isOk());
+    }
+
     @AfterEach
     void cleanUp() {
         jdbc.execute("ALTER TABLE SHOP DROP CONSTRAINT IF EXISTS CK_TEST_SHOP_IMAGE");
+        jdbc.execute("ALTER TABLE TREATMENT DROP CONSTRAINT IF EXISTS CK_TEST_TREATMENT_IMAGE");
         jdbc.update("DELETE FROM SHOP_IMAGE_CLEANUP");
-        jdbc.update("DELETE FROM SHOP WHERE SHOP_ID = 1");
+        jdbc.update("DELETE FROM TREATMENT WHERE TREATMENT_ID = 9701");
+        jdbc.update("DELETE FROM SHOP WHERE SHOP_ID IN (1, 2)");
         jdbc.update("DELETE FROM CATEGORY WHERE CATEGORY_ID = 9701");
         objects.clear();
     }
@@ -149,7 +243,7 @@ class ShopImageIntegrationTest {
         mvc.perform(get(originalUrl)).andExpect(status().isNotFound());
         mvc.perform(get(replacedUrl)).andExpect(status().isOk()).andExpect(content().bytes(jpg.getBytes()));
 
-        mvc.perform(delete("/api/v1/shops/1/image").header("X-Test-User", "OWNER_1"))
+        mvc.perform(delete("/api/v1/shops/me/image").header("X-Test-User", "OWNER_1"))
                 .andExpect(status().isNoContent()).andExpect(content().string(""));
         mvc.perform(get(replacedUrl)).andExpect(status().isNotFound());
         assertThat(imageUrl()).isNull();
@@ -170,7 +264,7 @@ class ShopImageIntegrationTest {
             throw SdkClientException.create("Simulated response loss");
         }).when(s3).putObject(any(PutObjectRequest.class), any(RequestBody.class));
 
-        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/1/image").file(ShopImageFixture.image("jpg"))
+        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/me/image").file(ShopImageFixture.image("jpg"))
                 .header("X-Test-User", "OWNER_1")).andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.error.code").value("COMMON_500"));
         assertThat(imageUrl()).isEqualTo(url);
@@ -260,27 +354,27 @@ class ShopImageIntegrationTest {
                 new MockMultipartFile("file", "big.png", "image/png", new byte[ShopImageStorage.MAX_BYTES + 1])
         };
         for (MockMultipartFile file : invalidFiles) {
-            mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/1/image").file(file)
+            mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/me/image").file(file)
                     .header("X-Test-User", "OWNER_1")).andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.error.code").value("COMMON_400"));
         }
-        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/1/image").header("X-Test-User", "OWNER_1"))
+        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/me/image").header("X-Test-User", "OWNER_1"))
                 .andExpect(status().isBadRequest());
         assertThat(imageUrl()).isEqualTo(url);
         mvc.perform(get(url)).andExpect(status().isOk()).andExpect(content().bytes(png.getBytes()));
     }
 
     @Test
-    @DisplayName("비로그인은 401, 타 매장 사장님·고객·관리자는 403이며 이미지가 유지된다")
+    @DisplayName("비로그인은 401, 고객·관리자는 403이며 이미지가 유지된다")
     void mutate_unauthorized_keepsImage() throws Exception {
         String url = upload(ShopImageFixture.image("png"));
-        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/1/image").file(ShopImageFixture.image("png")))
+        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/me/image").file(ShopImageFixture.image("png")))
                 .andExpect(status().isUnauthorized());
-        mvc.perform(delete("/api/v1/shops/1/image")).andExpect(status().isUnauthorized());
-        for (String user : new String[] {"OWNER_2", "CUSTOMER_1", "ADMIN"}) {
-            mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/1/image").file(ShopImageFixture.image("png"))
+        mvc.perform(delete("/api/v1/shops/me/image")).andExpect(status().isUnauthorized());
+        for (String user : new String[] {"CUSTOMER_1", "ADMIN"}) {
+            mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/me/image").file(ShopImageFixture.image("png"))
                     .header("X-Test-User", user)).andExpect(status().isForbidden());
-            mvc.perform(delete("/api/v1/shops/1/image").header("X-Test-User", user))
+            mvc.perform(delete("/api/v1/shops/me/image").header("X-Test-User", user))
                     .andExpect(status().isForbidden());
         }
         assertThat(imageUrl()).isEqualTo(url);
@@ -300,7 +394,7 @@ class ShopImageIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         headers.set("X-Test-User", "OWNER_1");
-        var response = http.exchange("/api/v1/shops/1/image", HttpMethod.PUT,
+        var response = http.exchange("/api/v1/shops/me/image", HttpMethod.PUT,
                 new HttpEntity<>(body, headers), JsonNode.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().path("error").path("code").asText()).isEqualTo("COMMON_400");
@@ -311,13 +405,13 @@ class ShopImageIntegrationTest {
     @DisplayName("한 요청의 파일 중복과 boundary가 없는 손상 multipart 요청은 400이며 기존 이미지를 유지한다")
     void upload_multipleOrMalformedMultipart_returnsBadRequest() throws Exception {
         String url = upload(ShopImageFixture.image("png"));
-        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/1/image").file(ShopImageFixture.image("png"))
+        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/me/image").file(ShopImageFixture.image("png"))
                 .file(ShopImageFixture.image("jpg")).header("X-Test-User", "OWNER_1"))
                 .andExpect(status().isBadRequest());
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         headers.set("X-Test-User", "OWNER_1");
-        var response = http.exchange("/api/v1/shops/1/image", HttpMethod.PUT,
+        var response = http.exchange("/api/v1/shops/me/image", HttpMethod.PUT,
                 new HttpEntity<>("invalid multipart", headers), JsonNode.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().path("error").path("code").asText()).isEqualTo("COMMON_400");
@@ -326,7 +420,7 @@ class ShopImageIntegrationTest {
     }
 
     private String upload(MockMultipartFile file) throws Exception {
-        String response = mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/1/image").file(file)
+        String response = mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/me/image").file(file)
                 .header("X-Test-User", "OWNER_1")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true)).andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(response).path("data").path("imageUrl").asText();
@@ -345,7 +439,7 @@ class ShopImageIntegrationTest {
     }
 
     private void uploadJpgExpectDatabaseFailure() throws Exception {
-        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/1/image").file(ShopImageFixture.image("jpg"))
+        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/me/image").file(ShopImageFixture.image("jpg"))
                 .header("X-Test-User", "OWNER_1")).andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.error.code").value("COMMON_500"));
     }
