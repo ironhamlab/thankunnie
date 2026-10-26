@@ -24,6 +24,7 @@ export default function SchedulePage() {
   const businessHours = useScheduleStore((state) => state.businessHours);
   const exceptions = useScheduleStore((state) => state.exceptions);
   const deleteException = useScheduleStore((state) => state.deleteException);
+  const refreshFailed = useScheduleStore((state) => state.refreshFailed);
   const [params, setParams] = useSearchParams();
   const today = todayKst();
   const lastDate = addDays(today, BOOKING_MAX_DAYS - 1);
@@ -87,6 +88,11 @@ export default function SchedulePage() {
       )}
       {status === 'succeeded' && (
         <>
+          {refreshFailed && (
+            <p className="b-error" role="alert">
+              변경은 완료됐지만 목록을 새로 불러오지 못했습니다. 페이지를 새로고침해 주세요.
+            </p>
+          )}
           {notice && (
             <p
               className={notice.type === 'success' ? 'b-success' : 'b-error'}
