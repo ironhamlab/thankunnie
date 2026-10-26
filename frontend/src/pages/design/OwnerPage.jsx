@@ -1,4 +1,4 @@
-import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
 import { useDesignStore } from './useDesignStore';
 import OwnerDashboard from './OwnerDashboard';
@@ -7,12 +7,11 @@ import MenusPage from './MenusPage';
 import SlotsPage from './SlotsPage';
 import OwnerBookingsPage from './OwnerBookingsPage';
 import Asset from './Asset';
-import NewSlotPage from './NewSlotPage';
 
 const navigation = [
   [R.SHOP, '매장 정보', '12-1798-6.svg'],
   [R.MENUS, '시술 관리', '12-1798-7.svg'],
-  [R.SLOTS, '빈자리 관리', '12-1798-8.svg'],
+  [R.SLOTS, '영업시간·일정', '12-1798-8.svg'],
   [R.OWNER_BOOKINGS, '예약 관리', '12-1798-9.svg'],
 ];
 export default function OwnerPage() {
@@ -32,8 +31,8 @@ export default function OwnerPage() {
             <small className="b-green-text">● 영업 중</small>
           </div>
         </div>
-        <Link className="b-button b-primary b-wide" to={R.SLOT_NEW}>
-          ⊕ 빈자리 즉시 등록
+        <Link className="b-button b-primary b-wide" to={`${R.SLOTS}?new=1`}>
+          ⊕ 시간대 열기·닫기
         </Link>
         <nav aria-label="사장님 메뉴">
           {navigation.map(([to, label, icon]) => (
@@ -70,7 +69,8 @@ export default function OwnerPage() {
             <Route path="shop" element={<ShopPage />} />
             <Route path="menus" element={<MenusPage />} />
             <Route path="slots" element={<SlotsPage />} />
-            <Route path="slots/new" element={<NewSlotPage />} />
+            {/* 시술별 빈자리 등록은 영업시간·열기·닫기로 바뀌어 등록 다이얼로그로 보낸다 */}
+            <Route path="slots/new" element={<Navigate to={`${R.SLOTS}?new=1`} replace />} />
             <Route path="bookings" element={<OwnerBookingsPage />} />
             <Route path="*" element={<div className="b-empty">화면을 찾을 수 없습니다.</div>} />
           </Routes>
