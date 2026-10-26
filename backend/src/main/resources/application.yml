@@ -31,6 +31,12 @@ server:
     max-swallow-size: 6MB
 
 app:
+  shop-image:
+    storage: ${SHOP_IMAGE_STORAGE:s3}
+    s3:
+      bucket: ${SHOP_IMAGE_S3_BUCKET:}
+      region: ${AWS_REGION:ap-northeast-2}
+      prefix: ${SHOP_IMAGE_S3_PREFIX:shop-images/}
   cors:
     # 쉼표로 여러 Origin 지정 가능
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}

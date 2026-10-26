@@ -19,7 +19,15 @@ spring:
 # 공통 multipart 한도: 파일 5MB, 전체 요청 6MB (application.yml)
 app:
   shop-image:
-    # 저장소 외부의 영속 경로. 운영에서는 백업되는 공유 볼륨을 지정한다.
+    # 기본 S3. AWS 연결 없이 로컬 파일로 개발하려면 SHOP_IMAGE_STORAGE=local을 지정한다.
+    storage: ${SHOP_IMAGE_STORAGE:s3}
+    s3:
+      bucket: ${SHOP_IMAGE_S3_BUCKET:}
+      region: ${AWS_REGION:ap-northeast-2}
+      prefix: ${SHOP_IMAGE_S3_PREFIX:shop-images/}
+    # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY (임시 키는 AWS_SESSION_TOKEN도 필요)는
+    # 실행 환경에 사람이 직접 설정한다. EC2/ECS 배포 시에는 IAM 역할을 사용할 수 있다.
+    # 아래 directory는 storage=local일 때만 사용한다.
     directory: ${user.home}/.thankunnie/shop-images
   cors:
     allowed-origins: http://localhost:5173

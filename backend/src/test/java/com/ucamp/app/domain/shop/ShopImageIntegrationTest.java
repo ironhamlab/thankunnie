@@ -1,13 +1,13 @@
 package com.ucamp.app.domain.shop;
 
-import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,6 +23,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -30,9 +31,24 @@ import org.springframework.util.MultiValueMap;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+import software.amazon.awssdk.services.s3.model.S3Exception;
+
 import com.ucamp.app.domain.shop.service.ShopImageStorage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -45,13 +61,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class ShopImageIntegrationTest {
 
-    @TempDir
-    static Path directory;
-
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("app.shop-image.directory", () -> directory.toString());
+        registry.add("app.shop-image.storage", () -> "s3");
+        registry.add("app.shop-image.s3.bucket", () -> "test-shop-images");
     }
+
+    @MockitoBean
+    private S3Client s3;
+
+    private final Map<String, byte[]> objects = new ConcurrentHashMap<>();
 
     @Autowired
     private MockMvc mvc;
@@ -64,6 +83,28 @@ class ShopImageIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        // AWS 연결 없이 실제 S3 저장소 어댑터·서비스·DB·HTTP 계층을 함께 검증한다.
+        when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class))).thenAnswer(invocation -> {
+            PutObjectRequest request = invocation.getArgument(0);
+            RequestBody body = invocation.getArgument(1);
+            try (var input = body.contentStreamProvider().newStream()) {
+                objects.put(request.key(), input.readAllBytes());
+            }
+            return PutObjectResponse.builder().build();
+        });
+        when(s3.getObjectAsBytes(any(GetObjectRequest.class))).thenAnswer(invocation -> {
+            GetObjectRequest request = invocation.getArgument(0);
+            byte[] bytes = objects.get(request.key());
+            if (bytes == null) {
+                throw S3Exception.builder().statusCode(404).build();
+            }
+            return ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), bytes);
+        });
+        when(s3.deleteObject(any(DeleteObjectRequest.class))).thenAnswer(invocation -> {
+            DeleteObjectRequest request = invocation.getArgument(0);
+            objects.remove(request.key());
+            return DeleteObjectResponse.builder().build();
+        });
         jdbc.update("INSERT INTO CATEGORY (CATEGORY_ID, NAME) VALUES (9701, '이미지 테스트')");
         LocalDateTime time = LocalDateTime.of(2026, 10, 26, 12, 0);
         // OWNER_1은 인증 공통 stub의 shopId=1을 사용한다. 계정 값은 테스트 전용 더미다.
@@ -79,6 +120,7 @@ class ShopImageIntegrationTest {
     void cleanUp() {
         jdbc.update("DELETE FROM SHOP WHERE SHOP_ID = 1");
         jdbc.update("DELETE FROM CATEGORY WHERE CATEGORY_ID = 9701");
+        objects.clear();
     }
 
     @Test
@@ -99,6 +141,29 @@ class ShopImageIntegrationTest {
                 .andExpect(status().isNoContent()).andExpect(content().string(""));
         mvc.perform(get(replacedUrl)).andExpect(status().isNotFound());
         assertThat(imageUrl()).isNull();
+        assertThat(objects).isEmpty();
+    }
+
+    @Test
+    @DisplayName("S3 저장 후 응답이 유실되어도 새 객체를 정리하고 기존 이미지·DB를 유지한다")
+    void upload_s3ResponseLost_keepsPreviousAndRemovesNewObject() throws Exception {
+        MockMultipartFile png = ShopImageFixture.image("png");
+        String url = upload(png);
+        doAnswer(invocation -> {
+            PutObjectRequest request = invocation.getArgument(0);
+            RequestBody body = invocation.getArgument(1);
+            try (var input = body.contentStreamProvider().newStream()) {
+                objects.put(request.key(), input.readAllBytes());
+            }
+            throw SdkClientException.create("Simulated response loss");
+        }).when(s3).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+
+        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/shops/1/image").file(ShopImageFixture.image("jpg"))
+                .header("X-Test-User", "OWNER_1")).andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error.code").value("COMMON_500"));
+        assertThat(imageUrl()).isEqualTo(url);
+        assertThat(objects).hasSize(1);
+        mvc.perform(get(url)).andExpect(status().isOk()).andExpect(content().bytes(png.getBytes()));
     }
 
     @Test

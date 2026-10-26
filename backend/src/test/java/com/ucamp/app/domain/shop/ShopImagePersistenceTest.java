@@ -24,12 +24,13 @@ import com.ucamp.app.common.auth.UserRole;
 import com.ucamp.app.config.TimeConfig;
 import com.ucamp.app.domain.shop.service.ShopImageService;
 import com.ucamp.app.domain.shop.service.ShopImageStorage;
+import com.ucamp.app.domain.shop.service.LocalShopImageObjectStorage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({ShopImageService.class, ShopImageStorage.class, TimeConfig.class})
+@Import({ShopImageService.class, ShopImageStorage.class, LocalShopImageObjectStorage.class, TimeConfig.class})
 @ActiveProfiles("test")
 class ShopImagePersistenceTest {
 

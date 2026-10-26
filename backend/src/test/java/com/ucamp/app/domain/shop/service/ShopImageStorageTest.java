@@ -30,7 +30,7 @@ class ShopImageStorageTest {
 
     @BeforeEach
     void setUp() {
-        storage = new ShopImageStorage(directory.toString());
+        storage = new ShopImageStorage(new LocalShopImageObjectStorage(directory.toString()));
     }
 
     @ParameterizedTest
@@ -102,7 +102,8 @@ class ShopImageStorageTest {
     @DisplayName("저장 디렉터리를 만들 수 없으면 시스템 오류를 반환한다")
     void save_storageFailure_throwsInternalError() throws IOException {
         Path blockedDirectory = Files.writeString(directory.resolve("blocked"), "file");
-        ShopImageStorage blockedStorage = new ShopImageStorage(blockedDirectory.toString());
+        ShopImageStorage blockedStorage = new ShopImageStorage(
+                new LocalShopImageObjectStorage(blockedDirectory.toString()));
         MockMultipartFile file = ShopImageFixture.image("png");
         assertThatThrownBy(() -> blockedStorage.save(file)).isInstanceOfSatisfying(BusinessException.class,
                 e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INTERNAL_SERVER_ERROR));

@@ -4,9 +4,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.UUID;
@@ -16,7 +13,6 @@ import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,7 +22,7 @@ import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.domain.shop.dto.response.ShopImageContentResponse;
 
-/** JPEG·PNG 검증 및 로컬 영속 디렉터리 저장. 원본 파일명은 저장 경로에 사용하지 않는다. */
+/** JPEG·PNG 검증 및 저장소 위임. 원본 파일명은 저장 경로에 사용하지 않는다. */
 @Slf4j
 @Component
 public class ShopImageStorage {
@@ -35,10 +31,10 @@ public class ShopImageStorage {
     private static final long MAX_PIXELS = 16_000_000;
     private static final String FILE_NAME_PATTERN = "[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}\\.(jpg|png)";
 
-    private final Path directory;
+    private final ShopImageObjectStorage objectStorage;
 
-    public ShopImageStorage(@Value("${app.shop-image.directory:${user.home}/.thankunnie/shop-images}") String directory) {
-        this.directory = Path.of(directory).toAbsolutePath().normalize();
+    public ShopImageStorage(ShopImageObjectStorage objectStorage) {
+        this.objectStorage = objectStorage;
     }
 
     /** 파일을 완전히 검증한 뒤 새 파일로 저장하고 서버가 생성한 파일명을 반환한다. */
@@ -56,14 +52,13 @@ public class ShopImageStorage {
         validateContent(bytes, format);
 
         String fileName = UUID.randomUUID() + "." + format;
-        Path target = directory.resolve(fileName);
         try {
-            Files.createDirectories(directory);
-            Files.write(target, bytes, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+            objectStorage.put(fileName, bytes, format.equals("png") ? "image/png" : "image/jpeg");
             return fileName;
-        } catch (IOException e) {
+        } catch (RuntimeException e) {
+            // S3가 저장을 마친 뒤 응답만 유실된 경우에도 새 객체가 남지 않도록 정리를 시도한다.
             deleteQuietly(fileName);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "이미지를 저장하지 못했습니다.");
+            throw e;
         }
     }
 
@@ -72,14 +67,8 @@ public class ShopImageStorage {
         if (!isStoredFileName(fileName)) {
             throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
         }
-        try {
-            return new ShopImageContentResponse(Files.readAllBytes(directory.resolve(fileName)),
-                    fileName.endsWith(".png") ? "image/png" : "image/jpeg");
-        } catch (java.nio.file.NoSuchFileException e) {
-            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
-        } catch (IOException e) {
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "이미지를 읽지 못했습니다.");
-        }
+        return new ShopImageContentResponse(objectStorage.read(fileName),
+                fileName.endsWith(".png") ? "image/png" : "image/jpeg");
     }
 
     /** 커밋 후 구파일, 롤백 후 새 파일을 정리한다. 정리 실패로 이미 끝난 DB 결과를 뒤집지 않는다. */
@@ -88,8 +77,8 @@ public class ShopImageStorage {
             return;
         }
         try {
-            Files.deleteIfExists(directory.resolve(fileName));
-        } catch (IOException e) {
+            objectStorage.delete(fileName);
+        } catch (RuntimeException e) {
             log.warn("사용하지 않는 매장 이미지 파일 정리 실패: {}", fileName, e);
         }
     }
