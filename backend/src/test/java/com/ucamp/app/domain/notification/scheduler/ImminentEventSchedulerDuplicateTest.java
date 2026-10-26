@@ -6,9 +6,11 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -76,5 +78,42 @@ class ImminentEventSchedulerDuplicateTest {
         given(notificationEventService.createLastMinuteEvents(any())).willThrow(error);
 
         assertThatThrownBy(() -> scheduler.detectLastMinute()).isSameAs(error);
+    }
+
+    @Test
+    @DisplayName("JPA가 초임박 중복을 DataIntegrityViolationException으로 주면 넘어간다")
+    void detectLastMinute_jpaDuplicateConstraint_doesNotThrow() {
+        given(notificationEventService.createLastMinuteEvents(any()))
+                .willThrow(duplicateSlotViolation());
+
+        scheduler.detectLastMinute();
+    }
+
+    @Test
+    @DisplayName("JPA가 임박 중복을 DataIntegrityViolationException으로 주면 넘어간다")
+    void detectImminent_jpaDuplicateConstraint_doesNotThrow() {
+        given(notificationEventService.createImminentEvents(any()))
+                .willThrow(duplicateSlotViolation());
+
+        scheduler.detectImminent();
+    }
+
+    @Test
+    @DisplayName("다른 제약 이름으로 온 오류는 그대로 던진다")
+    void detectLastMinute_otherConstraintName_throws() {
+        SQLException sql = new SQLException("fk", "23503");
+        ConstraintViolationException hibernate = new ConstraintViolationException(
+                "없는 매장", sql, "FK_NOTIFICATION_EVENT_SHOP");
+        DataIntegrityViolationException error = new DataIntegrityViolationException("없는 매장", hibernate);
+        given(notificationEventService.createLastMinuteEvents(any())).willThrow(error);
+
+        assertThatThrownBy(() -> scheduler.detectLastMinute()).isSameAs(error);
+    }
+
+    private static DataIntegrityViolationException duplicateSlotViolation() {
+        SQLException sql = new SQLException("unique", "23505");
+        ConstraintViolationException hibernate = new ConstraintViolationException(
+                "중복", sql, "UK_NOTIFICATION_EVENT_SLOT");
+        return new DataIntegrityViolationException("중복", hibernate);
     }
 }

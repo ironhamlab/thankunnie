@@ -3,6 +3,8 @@ package com.ucamp.app.domain.notification.scheduler;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -32,8 +34,11 @@ public class ImminentEventScheduler {
             if (created > 0) {
                 log.info("임박 이벤트 생성 {}건", created);
             }
-        } catch (DuplicateKeyException e) {
+        } catch (DataIntegrityViolationException e) {
             // 같은 빈자리 이벤트가 겹치면 이번 묶음은 롤백되고 다음 실행에서 다시 찾는다
+            if (!isDuplicateSlot(e)) {
+                throw e;
+            }
             log.warn("임박 이벤트 생성 중복으로 다음 실행에서 재시도", e);
         }
     }
@@ -46,9 +51,28 @@ public class ImminentEventScheduler {
             if (created > 0) {
                 log.info("초임박 이벤트 생성 {}건", created);
             }
-        } catch (DuplicateKeyException e) {
+        } catch (DataIntegrityViolationException e) {
             // 같은 빈자리 이벤트가 겹치면 이번 묶음은 롤백되고 다음 실행에서 다시 찾는다
+            if (!isDuplicateSlot(e)) {
+                throw e;
+            }
             log.warn("초임박 이벤트 생성 중복으로 다음 실행에서 재시도", e);
         }
+    }
+
+    // 중복 키면 true. 그 외 제약 오류는 false.
+    private static boolean isDuplicateSlot(DataIntegrityViolationException exception) {
+        if (exception instanceof DuplicateKeyException) {
+            return true;
+        }
+        Throwable cause = exception.getCause();
+        while (cause != null) {
+            if (cause instanceof ConstraintViolationException constraint
+                    && "UK_NOTIFICATION_EVENT_SLOT".equalsIgnoreCase(constraint.getConstraintName())) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 }
