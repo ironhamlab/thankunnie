@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.cancel.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDateTime;
 
@@ -67,6 +68,17 @@ class CancelTargetRepositoryTest {
         CancelTarget target = cancelTargetRepository.findByReservationId(100L).orElseThrow();
 
         assertThat(target.approvedAt()).isEqualTo(HELD_AT.plusMinutes(3));
+    }
+
+    @Test
+    @DisplayName("한 예약에 결제 완료가 여러 건이면 하나를 고르지 않고 예외로 막는다")
+    void find_multiplePaidPayments_throws() {
+        CancelFixture.insertReservation(jdbcTemplate, 100L, CancelFixture.CUSTOMER_ID, "CONFIRMED", STARTS_AT, HELD_AT);
+        CancelFixture.insertPayment(jdbcTemplate, 1L, 100L, "PAID", 20_000, HELD_AT.plusMinutes(2));
+        CancelFixture.insertPayment(jdbcTemplate, 2L, 100L, "PAID", 20_000, HELD_AT.plusMinutes(3));
+
+        assertThatThrownBy(() -> cancelTargetRepository.findByReservationId(100L))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test

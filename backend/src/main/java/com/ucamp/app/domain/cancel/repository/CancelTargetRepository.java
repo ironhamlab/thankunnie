@@ -15,6 +15,7 @@ import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 /**
  * 취소 대상 조회. 예약(D)·결제(C) 엔티티에 의존하지 않도록 예약 → 시술(매장), 결제를 SQL 로 한 번에 읽는다.
  * 결제는 결제 완료(PAID) 건만 본다. 결제 취소 실패로 확정 상태로 되돌린 예약은 결제도 PAID 로 돌아와 있어야 한다.
+ * 한 예약에 결제 완료가 여러 건이면 이중 결제 사고다. 하나를 골라 견적을 내면 환불 누락을 숨기게 되므로 예외로 막는다.
  */
 @Repository
 public class CancelTargetRepository {
@@ -36,6 +37,9 @@ public class CancelTargetRepository {
 
     public Optional<CancelTarget> findByReservationId(Long reservationId) {
         List<CancelTarget> rows = jdbcTemplate.query(FIND_SQL, this::mapRow, reservationId);
+        if (rows.size() > 1) {
+            throw new IllegalStateException("예약 " + reservationId + " 에 결제 완료(PAID) 건이 " + rows.size() + "건 있습니다");
+        }
         return rows.stream().findFirst();
     }
 
