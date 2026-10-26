@@ -80,6 +80,10 @@ public class Shop extends BaseTimeEntity {
         this.phone = request.phone();
         this.description = request.description();
         this.notice = request.notice();
-        this.imageUrl = request.imageUrl();
+    }
+
+    /** 검증된 대표 이미지로 교체하거나 null로 삭제한다. */
+    public void changeImage(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

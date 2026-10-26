@@ -16,7 +16,11 @@ spring:
     console:
       enabled: true
 
+# 공통 multipart 한도: 파일 5MB, 전체 요청 6MB (application.yml)
 app:
+  shop-image:
+    # 저장소 외부의 영속 경로. 운영에서는 백업되는 공유 볼륨을 지정한다.
+    directory: ${user.home}/.thankunnie/shop-images
   cors:
     allowed-origins: http://localhost:5173
   scheduling:

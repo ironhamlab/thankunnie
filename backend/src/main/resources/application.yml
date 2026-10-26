@@ -6,6 +6,10 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:local}
   jackson:
     time-zone: Asia/Seoul
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
   jpa:
     open-in-view: false
     hibernate:
@@ -20,6 +24,11 @@ spring:
       # Oracle(prod)에는 실행하지 않는다
       mode: embedded
       schema-locations: classpath:schema.sql
+
+server:
+  tomcat:
+    # 용량 초과 응답을 보내기 전에 남은 요청 본문 때문에 연결이 끊기지 않도록 요청 한도와 맞춘다.
+    max-swallow-size: 6MB
 
 app:
   cors:
