@@ -84,4 +84,9 @@ public class NotificationEvent extends BaseTimeEntity {
         this.slotEndsAt = slotEndsAt;
         this.status = NotificationEventStatus.PENDING;
     }
+
+    /** 이 이벤트의 발송 대기 작업을 만든 뒤 호출한다. */
+    public void markProcessed() {
+        this.status = NotificationEventStatus.PROCESSED;
+    }
 }
