@@ -91,7 +91,7 @@ class NotificationEventServiceTest {
     @Test
     @DisplayName("같은 빈자리는 여러 번 검사해도 임박 이벤트가 한 번만 생긴다")
     void createImminentEvents_runTwice_createsOnce() {
-        openSlot(1L, NOW.plusHours(2), NOW.plusHours(4));
+        openSlot(1L, NOW.plusHours(5), NOW.plusHours(7));
 
         notificationEventService.createImminentEvents(NOW);
         int secondRun = notificationEventService.createImminentEvents(NOW.plusMinutes(1));
@@ -135,6 +135,87 @@ class NotificationEventServiceTest {
         assertThat(notificationEventRepository.findAll())
                 .extracting(NotificationEvent::getExceptionId)
                 .containsExactly(4L);
+    }
+
+    @Test
+    @DisplayName("시작 3시간 전 안으로 들어온 OPEN 빈자리에 초임박 이벤트를 만든다")
+    void createLastMinuteEvents_openWithinThreeHours_createsEvent() {
+        openSlot(1L, NOW.plusHours(2), NOW.plusHours(4));
+
+        int created = notificationEventService.createLastMinuteEvents(NOW);
+
+        assertThat(created).isEqualTo(1);
+        NotificationEvent event = notificationEventRepository.findAll().get(0);
+        assertThat(event.getEventType()).isEqualTo(NotificationEventType.LAST_MINUTE);
+        assertThat(event.getExceptionId()).isEqualTo(1L);
+        assertThat(event.getReservationId()).isNull();
+        assertThat(event.getSlotStartsAt()).isEqualTo(NOW.plusHours(2));
+        assertThat(event.getSlotEndsAt()).isEqualTo(NOW.plusHours(4));
+        assertThat(event.getStatus()).isEqualTo(NotificationEventStatus.PENDING);
+    }
+
+    @Test
+    @DisplayName("같은 빈자리는 여러 번 검사해도 초임박 이벤트가 한 번만 생긴다")
+    void createLastMinuteEvents_runTwice_createsOnce() {
+        openSlot(1L, NOW.plusHours(2), NOW.plusHours(4));
+
+        notificationEventService.createLastMinuteEvents(NOW);
+        int secondRun = notificationEventService.createLastMinuteEvents(NOW.plusMinutes(1));
+
+        assertThat(secondRun).isZero();
+        assertThat(notificationEventRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("정확히 3시간 전은 초임박 이벤트를 만들고, 3시간보다 많이 남으면 만들지 않는다")
+    void createLastMinuteEvents_boundary_createsOnlyWithinThreeHours() {
+        openSlot(1L, NOW.plusHours(3), NOW.plusHours(5));
+        openSlot(2L, NOW.plusHours(5), NOW.plusHours(7));
+
+        int created = notificationEventService.createLastMinuteEvents(NOW);
+
+        assertThat(created).isEqualTo(1);
+        assertThat(notificationEventRepository.findAll())
+                .extracting(NotificationEvent::getExceptionId)
+                .containsExactly(1L);
+    }
+
+    @Test
+    @DisplayName("임박 이벤트가 이미 있어도 3시간이 되면 초임박 이벤트를 따로 만든다")
+    void createLastMinuteEvents_afterImminent_createsLastMinuteToo() {
+        LocalDateTime startsAt = NOW.plusHours(5);
+        openSlot(1L, startsAt, startsAt.plusHours(2));
+
+        notificationEventService.createImminentEvents(NOW);
+        int created = notificationEventService.createLastMinuteEvents(NOW.plusHours(2));
+
+        assertThat(created).isEqualTo(1);
+        assertThat(notificationEventRepository.findAll())
+                .extracting(NotificationEvent::getEventType)
+                .containsExactlyInAnyOrder(NotificationEventType.IMMINENT, NotificationEventType.LAST_MINUTE);
+    }
+
+    @Test
+    @DisplayName("3시간보다 많이 남은 빈자리, CLOSE 로 덮인 빈자리, 접수 마감된 빈자리, 비활성 매장은 초임박 이벤트 대상이 아니다")
+    void createLastMinuteEvents_notSellable_createsNothing() {
+        openSlot(1L, NOW.plusHours(4), NOW.plusHours(6));
+        openSlot(2L, NOW.plusHours(1), NOW.plusHours(3));
+        NotificationFixture.exception(jdbcTemplate, 3L, SHOP_ID, null, "CLOSE", NOW.plusHours(1), NOW.plusHours(3));
+        openSlot(4L, NOW.minusHours(1), NOW.plusMinutes(50));
+        NotificationFixture.category(jdbcTemplate, 20L, "HAIR");
+        NotificationFixture.shop(jdbcTemplate, 2L, 20L, "SEOUL_MAPO", "INACTIVE");
+        NotificationFixture.exception(jdbcTemplate, 5L, 2L, null, "OPEN", NOW.plusHours(1), NOW.plusHours(2));
+
+        assertThat(notificationEventService.createLastMinuteEvents(NOW)).isZero();
+    }
+
+    @Test
+    @DisplayName("확정 점유와 겹치는 OPEN 은 초임박 이벤트를 만들지 않는다")
+    void createLastMinuteEvents_occupied_createsNothing() {
+        openSlot(1L, NOW.plusHours(1), NOW.plusHours(2));
+        reservation(600L, NORMAL_TREATMENT, "CONFIRMED", NOW.plusHours(1), NOW.plusHours(2));
+
+        assertThat(notificationEventService.createLastMinuteEvents(NOW)).isZero();
     }
 
     @Test

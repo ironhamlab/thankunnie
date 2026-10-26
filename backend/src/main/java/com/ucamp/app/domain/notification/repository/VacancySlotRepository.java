@@ -51,7 +51,14 @@ public class VacancySlotRepository {
                 WHERE e.EXCEPTION_ID = o.EXCEPTION_ID
                 AND e.EVENT_TYPE = 'IMMINENT')""";
 
-    // 영업 중인 매장의 OPEN. 시작이 8시간 이내이고, 아직 클릭할 수 있는 것만
+    // 이 빈자리의 초임박 이벤트는 아직 없어야 한다
+    private static final String NOT_ALREADY_LAST_MINUTE = """
+        NOT EXISTS (
+                SELECT 1 FROM NOTIFICATION_EVENT e
+                WHERE e.EXCEPTION_ID = o.EXCEPTION_ID
+                AND e.EVENT_TYPE = 'LAST_MINUTE')""";
+
+    // 영업 중인 매장의 OPEN. 시작이 8시간 이내이고 3시간보다 많이 남았으며, 아직 클릭할 수 있는 것만
     private static final String FIND_IMMINENT_SQL = """
         SELECT o.EXCEPTION_ID, o.SHOP_ID, o.STARTS_AT, o.ENDS_AT
         FROM SHOP_SCHEDULE_EXCEPTION o
@@ -59,6 +66,7 @@ public class VacancySlotRepository {
         WHERE o.EXCEPTION_TYPE = 'OPEN'
         AND s.STATUS = 'ACTIVE'
         AND o.STARTS_AT <= :imminentUntil
+        AND o.STARTS_AT > :lastMinuteUntil
         AND o.ENDS_AT > :bookableEndsAfter
         AND
         """
@@ -71,6 +79,30 @@ public class VacancySlotRepository {
         AND
         """
         + NOT_ALREADY_IMMINENT
+        + """
+        ORDER BY o.STARTS_AT, o.EXCEPTION_ID
+        """;
+
+    // 영업 중인 매장의 OPEN. 시작이 3시간 이내이고, 아직 클릭할 수 있는 것만
+    private static final String FIND_LAST_MINUTE_SQL = """
+        SELECT o.EXCEPTION_ID, o.SHOP_ID, o.STARTS_AT, o.ENDS_AT
+        FROM SHOP_SCHEDULE_EXCEPTION o
+        JOIN SHOP s ON s.SHOP_ID = o.SHOP_ID
+        WHERE o.EXCEPTION_TYPE = 'OPEN'
+        AND s.STATUS = 'ACTIVE'
+        AND o.STARTS_AT <= :lastMinuteUntil
+        AND o.ENDS_AT > :bookableEndsAfter
+        AND
+        """
+        + NOT_FULLY_CLOSED
+        + """
+        AND
+        """
+        + NOT_OCCUPIED
+        + """
+        AND
+        """
+        + NOT_ALREADY_LAST_MINUTE
         + """
         ORDER BY o.STARTS_AT, o.EXCEPTION_ID
         """;
@@ -127,7 +159,8 @@ public class VacancySlotRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     /**
-     * 임박 구간(시작 8시간 전)에 들어왔고, 아직 임박 이벤트가 없는 빈자리를 조회한다.
+     * 임박 구간(시작 8시간 전부터 3시간 초과 전까지)에 들어왔고, 아직 임박 이벤트가 없는 빈자리를 조회한다.
+     * 시작까지 3시간 이내면 초임박 조회가 담당하므로 여기서는 빼 둔다.
      * OPEN 전체를 덮는 CLOSE가 있거나, 겹치는 예약이 시간을 잡고 있으면 제외한다.
      * 잡고 있는 예약은 확정, 취소 처리 중, 만료 전이거나 만료 시각이 없는 점유다.
      * 겹침은 종료 시각을 포함하지 않는다. 12:00~13:00과 13:00~14:00은 겹치지 않는다.
@@ -138,13 +171,35 @@ public class VacancySlotRepository {
      */
     public List<VacancySlot> findImminentWithoutEvent(LocalDateTime now) {
         LocalDateTime imminentUntil = now.plus(BookingPolicy.IMMINENT_FROM);
+        LocalDateTime lastMinuteUntil = now.plus(BookingPolicy.LAST_MINUTE_FROM);
         LocalDateTime bookableEndsAfter = now.plus(BookingPolicy.BOOKING_DEADLINE)
                 .plusMinutes(BookingPolicy.TIME_UNIT_MINUTES);
         Map<String, Object> params = Map.of(
                 "imminentUntil", imminentUntil,
+                "lastMinuteUntil", lastMinuteUntil,
                 "bookableEndsAfter", bookableEndsAfter,
                 "now", now);
-        return jdbcTemplate.query(FIND_IMMINENT_SQL, params, VacancySlotRepository::toImminentSlot);
+        return jdbcTemplate.query(FIND_IMMINENT_SQL, params, VacancySlotRepository::toOpenSlot);
+    }
+
+    /**
+     * 초임박 구간(시작 3시간 전)에 들어왔고, 아직 초임박 이벤트가 없는 빈자리를 조회한다.
+     * 정확히 3시간 전도 초임박이다. 임박 이벤트가 이미 있어도 초임박 조회에서는 빼지 않는다.
+     * OPEN 전체를 덮는 CLOSE가 있거나, 겹치는 예약이 시간을 잡고 있으면 제외한다.
+     * 잡고 있는 예약과 겹침, 클릭 마감 기준은 임박 조회와 같다.
+     *
+     * @param now 현재 시각 (서울)
+     * @return 초임박 이벤트를 만들 빈자리 목록
+     */
+    public List<VacancySlot> findLastMinuteWithoutEvent(LocalDateTime now) {
+        LocalDateTime lastMinuteUntil = now.plus(BookingPolicy.LAST_MINUTE_FROM);
+        LocalDateTime bookableEndsAfter = now.plus(BookingPolicy.BOOKING_DEADLINE)
+                .plusMinutes(BookingPolicy.TIME_UNIT_MINUTES);
+        Map<String, Object> params = Map.of(
+                "lastMinuteUntil", lastMinuteUntil,
+                "bookableEndsAfter", bookableEndsAfter,
+                "now", now);
+        return jdbcTemplate.query(FIND_LAST_MINUTE_SQL, params, VacancySlotRepository::toOpenSlot);
     }
 
     /**
@@ -171,8 +226,8 @@ public class VacancySlotRepository {
     }
 
     // query가 (결과 행, 행 번호)를 넘긴다. 행 번호는 쓰지 않는다.
-    // 임박은 예약이 없다. 시각은 OPEN의 시작·종료다.
-    private static VacancySlot toImminentSlot(ResultSet rs, int rowNum) throws SQLException {
+    // 임박·초임박은 예약이 없다. 시각은 OPEN의 시작·종료다.
+    private static VacancySlot toOpenSlot(ResultSet rs, int rowNum) throws SQLException {
         return new VacancySlot(
                 rs.getLong("EXCEPTION_ID"),
                 rs.getLong("SHOP_ID"),
