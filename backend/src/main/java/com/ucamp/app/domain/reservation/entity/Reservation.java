@@ -18,6 +18,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import com.ucamp.app.common.entity.BaseTimeEntity;
+import com.ucamp.app.common.exception.BusinessException;
+import com.ucamp.app.common.exception.ErrorCode;
 
 /**
  * 예약. 고객이 예약 클릭(점유)할 때 HOLD 로 생성되고, 적용 가격·예약금은 클릭 시점 값으로 고정된다.
@@ -83,5 +85,47 @@ public class Reservation extends BaseTimeEntity {
         this.deposit = deposit;
         this.holdExpiresAt = holdExpiresAt;
         this.customerRequest = customerRequest;
+    }
+
+    /**
+     * 결제 확인 뒤 점유를 예약 완료로 바꾼다. 점유 중(HOLD, 만료 전)이고 결제 금액이 예약금과 같을 때만 확정한다.
+     * 동시에 확정·만료되지 않도록 예약 행을 잠근 뒤 호출한다.
+     *
+     * @param paidAmount 결제사에서 확인한 실제 결제 금액
+     * @param now        확정 시각 (예약 행 잠금 뒤 읽은 현재 시각)
+     * @throws BusinessException validateConfirmable 과 같은 조건에서 발생하며, 이때 상태는 바뀌지 않는다
+     */
+    public void confirm(int paidAmount, LocalDateTime now) {
+        validateConfirmable(paidAmount, now);
+        this.status = ReservationStatus.CONFIRMED;
+        this.confirmedAt = now;
+    }
+
+    /**
+     * 확정할 수 있는지 상태를 바꾸지 않고 검사한다.
+     * 다른 검사(결제 마감 등)를 함께 마친 뒤 confirm 을 부르려는 쪽에서 먼저 호출한다.
+     *
+     * @param paidAmount 결제사에서 확인한 실제 결제 금액
+     * @param now        판단 기준 시각
+     * @throws BusinessException 이미 확정이면 RESERVATION_ALREADY_CONFIRMED,
+     *                           EXPIRED 이거나 HOLD 라도 점유 만료 시각이 지났으면 RESERVATION_HOLD_EXPIRED,
+     *                           취소 처리 중·취소 완료면 RESERVATION_NOT_HOLD,
+     *                           결제 금액이 예약금과 다르면 RESERVATION_DEPOSIT_MISMATCH
+     */
+    public void validateConfirmable(int paidAmount, LocalDateTime now) {
+        if (status == ReservationStatus.CONFIRMED) {
+            throw new BusinessException(ErrorCode.RESERVATION_ALREADY_CONFIRMED);
+        }
+        // 만료 처리가 아직 돌지 않아 HOLD 로 남아 있어도 만료 시각이 지났으면 만료로 본다
+        if (status == ReservationStatus.EXPIRED
+                || status == ReservationStatus.HOLD && !now.isBefore(holdExpiresAt)) {
+            throw new BusinessException(ErrorCode.RESERVATION_HOLD_EXPIRED);
+        }
+        if (status != ReservationStatus.HOLD) {
+            throw new BusinessException(ErrorCode.RESERVATION_NOT_HOLD);
+        }
+        if (paidAmount != deposit) {
+            throw new BusinessException(ErrorCode.RESERVATION_DEPOSIT_MISMATCH);
+        }
     }
 }
