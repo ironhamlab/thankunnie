@@ -3,7 +3,7 @@ package com.ucamp.app.domain.notification.scheduler;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -32,9 +32,9 @@ public class ImminentEventScheduler {
             if (created > 0) {
                 log.info("임박 이벤트 생성 {}건", created);
             }
-        } catch (DataIntegrityViolationException e) {
-            // 다른 실행과 겹쳐 UNIQUE 제약에 걸리면 이번 묶음은 롤백되고 다음 실행에서 다시 찾는다
-            log.warn("임박 이벤트 생성 중복으로 다음 실행에서 재시도");
+        } catch (DuplicateKeyException e) {
+            // 같은 빈자리 이벤트가 겹치면 이번 묶음은 롤백되고 다음 실행에서 다시 찾는다
+            log.warn("임박 이벤트 생성 중복으로 다음 실행에서 재시도", e);
         }
     }
 
@@ -46,9 +46,9 @@ public class ImminentEventScheduler {
             if (created > 0) {
                 log.info("초임박 이벤트 생성 {}건", created);
             }
-        } catch (DataIntegrityViolationException e) {
-            // 다른 실행과 겹쳐 UNIQUE 제약에 걸리면 이번 묶음은 롤백되고 다음 실행에서 다시 찾는다
-            log.warn("초임박 이벤트 생성 중복으로 다음 실행에서 재시도");
+        } catch (DuplicateKeyException e) {
+            // 같은 빈자리 이벤트가 겹치면 이번 묶음은 롤백되고 다음 실행에서 다시 찾는다
+            log.warn("초임박 이벤트 생성 중복으로 다음 실행에서 재시도", e);
         }
     }
 }

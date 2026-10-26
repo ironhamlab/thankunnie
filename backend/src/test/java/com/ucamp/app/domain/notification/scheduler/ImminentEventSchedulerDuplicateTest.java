@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 
 import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.notification.service.NotificationEventService;
@@ -40,7 +41,7 @@ class ImminentEventSchedulerDuplicateTest {
     @DisplayName("초임박 저장이 중복이면 예외를 삼키고 임박 저장은 호출하지 않는다")
     void detectLastMinute_duplicate_doesNotCallImminent() {
         given(notificationEventService.createLastMinuteEvents(any()))
-                .willThrow(new DataIntegrityViolationException("중복"));
+                .willThrow(new DuplicateKeyException("중복"));
 
         scheduler.detectLastMinute();
 
@@ -51,7 +52,7 @@ class ImminentEventSchedulerDuplicateTest {
     @DisplayName("임박 저장이 중복이면 예외를 삼키고 초임박 저장은 호출하지 않는다")
     void detectImminent_duplicate_doesNotCallLastMinute() {
         given(notificationEventService.createImminentEvents(any()))
-                .willThrow(new DataIntegrityViolationException("중복"));
+                .willThrow(new DuplicateKeyException("중복"));
 
         scheduler.detectImminent();
 
@@ -66,5 +67,14 @@ class ImminentEventSchedulerDuplicateTest {
 
         assertThatThrownBy(() -> scheduler.detectLastMinute())
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("초임박 저장의 중복이 아닌 제약 오류는 그대로 던진다")
+    void detectLastMinute_otherConstraint_throws() {
+        DataIntegrityViolationException error = new DataIntegrityViolationException("없는 매장");
+        given(notificationEventService.createLastMinuteEvents(any())).willThrow(error);
+
+        assertThatThrownBy(() -> scheduler.detectLastMinute()).isSameAs(error);
     }
 }
