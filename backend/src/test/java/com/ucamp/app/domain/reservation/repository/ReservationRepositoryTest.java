@@ -98,6 +98,38 @@ class ReservationRepositoryTest {
     }
 
     @Test
+    @DisplayName("만료 시각이 지났거나 같은 HOLD 만 EXPIRED 로 바꾸고, 다시 실행하면 바꿀 예약이 없다")
+    void expireHolds_expiresOnlyDueHolds_andIsRepeatable() {
+        long due = insertReservation(TREATMENT_ID, "HOLD", NOON, NOON.plusHours(1));
+        long dueExactly = insertReservation(TREATMENT_ID, "HOLD", NOON.plusHours(1), NOON.plusHours(2));
+        long notDue = insertReservation(TREATMENT_ID, "HOLD", NOON.plusHours(2), NOON.plusHours(3));
+        long confirmed = insertReservation(TREATMENT_ID, "CONFIRMED", NOON.plusHours(3), NOON.plusHours(4));
+        LocalDateTime now = NOON.minusHours(1);
+        setHoldExpiresAt(due, now.minusMinutes(1));
+        setHoldExpiresAt(dueExactly, now);
+        setHoldExpiresAt(notDue, now.plusMinutes(1));
+        setHoldExpiresAt(confirmed, now.minusMinutes(1));
+
+        assertThat(reservationRepository.expireHolds(now)).isEqualTo(2);
+        assertThat(reservationRepository.expireHolds(now)).isZero();
+
+        assertThat(statusOf(due)).isEqualTo("EXPIRED");
+        assertThat(statusOf(dueExactly)).isEqualTo("EXPIRED");
+        assertThat(statusOf(notDue)).isEqualTo("HOLD");
+        assertThat(statusOf(confirmed)).isEqualTo("CONFIRMED");
+    }
+
+    @Test
+    @DisplayName("잠금 조회는 있는 예약을 반환하고 없는 예약은 비어 있다")
+    void findByIdForUpdate_returnsReservation() {
+        long hold = insertReservation(TREATMENT_ID, "HOLD", NOON, NOON.plusHours(1));
+
+        assertThat(reservationRepository.findByIdForUpdate(hold)).get()
+                .extracting(Reservation::getId).isEqualTo(hold);
+        assertThat(reservationRepository.findByIdForUpdate(999L)).isEmpty();
+    }
+
+    @Test
     @DisplayName("빌더로 만든 예약은 HOLD 상태로 시퀀스 ID 를 받아 저장된다")
     void save_newReservation_isHold() {
         Reservation saved = reservationRepository.saveAndFlush(Reservation.builder()
@@ -147,6 +179,16 @@ class ReservationRepositoryTest {
 
     private long insertReservation(long treatmentId, String status, LocalDateTime startsAt, LocalDateTime endsAt) {
         return insertReservation(1L, treatmentId, status, startsAt, endsAt);
+    }
+
+    private void setHoldExpiresAt(long reservationId, LocalDateTime holdExpiresAt) {
+        jdbcTemplate.update("UPDATE RESERVATION SET HOLD_EXPIRES_AT = ? WHERE RESERVATION_ID = ?",
+                Timestamp.valueOf(holdExpiresAt), reservationId);
+    }
+
+    private String statusOf(long reservationId) {
+        return jdbcTemplate.queryForObject("SELECT STATUS FROM RESERVATION WHERE RESERVATION_ID = ?",
+                String.class, reservationId);
     }
 
     private long insertReservation(long userId, long treatmentId, String status, LocalDateTime startsAt,
