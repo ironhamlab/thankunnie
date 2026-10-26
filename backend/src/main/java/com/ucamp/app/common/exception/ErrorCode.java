@@ -53,7 +53,10 @@ public enum ErrorCode {
     // PAYMENT
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT_001", "결제 정보를 찾을 수 없습니다."),
     PAYMENT_PORTONE_ERROR(HttpStatus.BAD_GATEWAY, "PAYMENT_002", "결제 대행사 연동 중 오류가 발생했습니다."),
-
+    PAYMENT_NOT_REFUNDABLE(HttpStatus.CONFLICT, "PAYMENT_003", "환불할 수 없는 결제 상태입니다."),
+    PAYMENT_INVALID_REFUND_AMOUNT(HttpStatus.BAD_REQUEST, "PAYMENT_004", "환불 금액이 올바르지 않습니다."),
+    PAYMENT_REFUND_UNCERTAIN(HttpStatus.GATEWAY_TIMEOUT, "PAYMENT_005",
+            "환불 결과를 확인하고 있습니다. 잠시 후 결제 상태를 확인해 주세요."),
     // TREATMENT
     TREATMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "TREATMENT_001", "시술을 찾을 수 없습니다."),
 
