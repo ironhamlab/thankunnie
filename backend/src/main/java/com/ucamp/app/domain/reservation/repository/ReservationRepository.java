@@ -2,14 +2,40 @@ package com.ucamp.app.domain.reservation.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+
+import jakarta.persistence.LockModeType;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ucamp.app.domain.reservation.entity.Reservation;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
+
+    /**
+     * 예약 행을 잠가 조회한다 (SELECT FOR UPDATE). 확정끼리, 확정과 만료가 동시에 같은 예약을 바꾸지 않도록 줄 세운다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM Reservation r WHERE r.id = :id")
+    Optional<Reservation> findByIdForUpdate(@Param("id") Long id);
+
+    /**
+     * 만료 시각이 지난 점유(HOLD)를 한 번에 EXPIRED 로 바꾸고 바뀐 건수를 반환한다.
+     * 상태 조건으로 갱신하므로 반복 실행해도 같은 예약을 두 번 바꾸지 않고, 확정 중인 행은 잠금이 풀린 뒤 조건을 다시 본다.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE Reservation r
+            SET r.status = com.ucamp.app.domain.reservation.entity.ReservationStatus.EXPIRED,
+                r.updatedAt = :now
+            WHERE r.status = com.ucamp.app.domain.reservation.entity.ReservationStatus.HOLD
+              AND r.holdExpiresAt <= :now
+            """)
+    int expireHolds(@Param("now") LocalDateTime now);
 
     /**
      * 매장의 [startsAt, endsAt) 구간과 겹치고 취소·만료가 아닌 예약을 조회한다.

@@ -52,6 +52,7 @@ class ReservationServiceTest {
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 11, 1, 9, 0);
     private static final Long TREATMENT_ID = 1L;
     private static final Long SHOP_ID = 1L;
+    private static final Long RESERVATION_ID = 100L;
     private static final AuthUser CUSTOMER = TestUser.CUSTOMER_1.toAuthUser();
 
     @Mock
@@ -252,6 +253,59 @@ class ReservationServiceTest {
     void createReservation_owner_throwsForbidden() {
         assertErrorCode(() -> reservationService.createReservation(
                 TestUser.OWNER_1.toAuthUser(), request(NOW.plusHours(11), null)), ErrorCode.FORBIDDEN);
+    }
+
+    @Test
+    @DisplayName("본인 점유를 예약금만큼 결제하면 예약 행을 잠가 조회한 뒤 CONFIRMED 로 확정한다")
+    void confirmReservation_validHold_confirms() {
+        Reservation hold = userReservation(NOW.plusMinutes(5));
+        given(reservationRepository.findByIdForUpdate(RESERVATION_ID)).willReturn(Optional.of(hold));
+
+        Reservation confirmed = reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000);
+
+        assertThat(confirmed.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
+        assertThat(confirmed.getConfirmedAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    @DisplayName("없는 예약이나 다른 고객의 예약을 확정하면 RESERVATION_NOT_FOUND 예외가 발생한다")
+    void confirmReservation_missingOrOthers_throwsNotFound() {
+        given(reservationRepository.findByIdForUpdate(RESERVATION_ID))
+                .willReturn(Optional.empty())
+                .willReturn(Optional.of(userReservation(NOW.plusMinutes(5))));
+
+        assertErrorCode(() -> reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000),
+                ErrorCode.RESERVATION_NOT_FOUND);
+        assertErrorCode(() -> reservationService.confirmReservation(999L, RESERVATION_ID, 20_000),
+                ErrorCode.RESERVATION_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("결제 마감(시작 15분 전)이 지났으면 VACANCY_PAYMENT_CLOSED 예외가 발생하고 확정하지 않는다")
+    void confirmReservation_afterPaymentDeadline_throwsWithoutConfirm() {
+        // 점유 만료는 남았지만 시작 15분 전 이후인 비정상 데이터
+        Reservation hold = Reservation.builder()
+                .userId(CUSTOMER.userId())
+                .treatmentId(TREATMENT_ID)
+                .startsAt(NOW.plusMinutes(10))
+                .endsAt(NOW.plusMinutes(70))
+                .appliedPrice(20_000)
+                .deposit(20_000)
+                .holdExpiresAt(NOW.plusMinutes(5))
+                .build();
+        given(reservationRepository.findByIdForUpdate(RESERVATION_ID)).willReturn(Optional.of(hold));
+
+        assertErrorCode(() -> reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000),
+                ErrorCode.VACANCY_PAYMENT_CLOSED);
+        assertThat(hold.getStatus()).isEqualTo(ReservationStatus.HOLD);
+    }
+
+    @Test
+    @DisplayName("점유 만료 정리는 현재 시각으로 만료된 HOLD 를 일괄 갱신하고 건수를 반환한다")
+    void expireHolds_expiresWithNow() {
+        given(reservationRepository.expireHolds(NOW)).willReturn(3);
+
+        assertThat(reservationService.expireHolds()).isEqualTo(3);
     }
 
     private void givenTreatment(TreatmentStatus status) {

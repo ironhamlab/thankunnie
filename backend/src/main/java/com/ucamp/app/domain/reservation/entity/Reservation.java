@@ -18,6 +18,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import com.ucamp.app.common.entity.BaseTimeEntity;
+import com.ucamp.app.common.exception.BusinessException;
+import com.ucamp.app.common.exception.ErrorCode;
 
 /**
  * 예약. 고객이 예약 클릭(점유)할 때 HOLD 로 생성되고, 적용 가격·예약금은 클릭 시점 값으로 고정된다.
@@ -83,5 +85,35 @@ public class Reservation extends BaseTimeEntity {
         this.deposit = deposit;
         this.holdExpiresAt = holdExpiresAt;
         this.customerRequest = customerRequest;
+    }
+
+    /**
+     * 결제 확인 뒤 점유를 예약 완료로 바꾼다. 점유 중(HOLD, 만료 전)이고 결제 금액이 예약금과 같을 때만 확정한다.
+     * 동시에 확정·만료되지 않도록 예약 행을 잠근 뒤 호출한다.
+     */
+    public void confirm(int paidAmount, LocalDateTime now) {
+        validateConfirmable(paidAmount, now);
+        this.status = ReservationStatus.CONFIRMED;
+        this.confirmedAt = now;
+    }
+
+    /**
+     * 확정할 수 있는지 상태를 바꾸지 않고 검사한다.
+     */
+    public void validateConfirmable(int paidAmount, LocalDateTime now) {
+        if (status == ReservationStatus.CONFIRMED) {
+            throw new BusinessException(ErrorCode.RESERVATION_ALREADY_CONFIRMED);
+        }
+        // 만료 처리가 아직 돌지 않아 HOLD 로 남아 있어도 만료 시각이 지났으면 만료로 본다
+        if (status == ReservationStatus.EXPIRED
+                || status == ReservationStatus.HOLD && !now.isBefore(holdExpiresAt)) {
+            throw new BusinessException(ErrorCode.RESERVATION_HOLD_EXPIRED);
+        }
+        if (status != ReservationStatus.HOLD) {
+            throw new BusinessException(ErrorCode.RESERVATION_NOT_HOLD);
+        }
+        if (paidAmount != deposit) {
+            throw new BusinessException(ErrorCode.RESERVATION_DEPOSIT_MISMATCH);
+        }
     }
 }
