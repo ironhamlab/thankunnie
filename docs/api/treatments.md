@@ -1,4 +1,4 @@
-# 시술 메뉴 관리 (A-04 / UNNIE-32, A-06 / UNNIE-44)
+# 시술 메뉴 관리 (A-04 / UNNIE-32, A-06 / UNNIE-45)
 
 사장님은 본인 매장의 시술을 등록·조회·수정하고 활성 상태를 변경한다.
 현재 사용자와 매장 ID는 B-01의 `GET /api/v1/auth/me`와 `@LoginUser AuthUser`를 사용한다.
@@ -86,7 +86,7 @@
 
 ## 기존 DB 변경
 
-A-06 적용 전 `docs/erd/migrations/UNNIE-44-treatment-model-conditions.sql`을 기존 DB에 1회 적용한다.
+A-06 적용 전 `docs/erd/migrations/UNNIE-45-treatment-model-conditions.sql`을 기존 DB에 1회 적용한다.
 TREATMENT에 nullable NUMBER(10) PARTICIPATION_FEE 컬럼을 추가한다.
 기존 모델의 참가비는 임의로 채우지 않으므로 모델 조건을 다음에 저장할 때 사장님이 입력한다.
 Oracle 21c XE에서 마이그레이션 및 validate 기동 검증이 별도로 필요하다.
