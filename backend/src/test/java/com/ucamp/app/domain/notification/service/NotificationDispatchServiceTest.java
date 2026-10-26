@@ -78,9 +78,9 @@ class NotificationDispatchServiceTest {
         notificationSubscriptionRepository.save(store(USER_ID));
         notificationSubscriptionRepository.save(store(OTHER_USER_ID));
 
-        int created = notificationDispatchService.createDispatchJobs();
+        Optional<Integer> created = notificationDispatchService.createDispatchJobs();
 
-        assertThat(created).isEqualTo(2);
+        assertThat(created).contains(2);
         assertThat(event.getStatus()).isEqualTo(NotificationEventStatus.PROCESSED);
         assertThat(notificationDispatchRepository.findAll())
                 .extracting(NotificationDispatch::getUserId)
@@ -101,9 +101,9 @@ class NotificationDispatchServiceTest {
         notificationSubscriptionRepository.save(store(USER_ID));
         notificationSubscriptionRepository.save(store(OTHER_USER_ID));
 
-        int created = notificationDispatchService.createDispatchJobs();
+        Optional<Integer> created = notificationDispatchService.createDispatchJobs();
 
-        assertThat(created).isEqualTo(1);
+        assertThat(created).contains(1);
         assertThat(event.getStatus()).isEqualTo(NotificationEventStatus.PROCESSED);
         assertThat(notificationDispatchRepository.findAll())
                 .extracting(NotificationDispatch::getUserId)
@@ -117,9 +117,9 @@ class NotificationDispatchServiceTest {
         NotificationEvent second = notificationEventRepository.saveAndFlush(event(2L));
         notificationSubscriptionRepository.save(store(USER_ID));
 
-        int created = notificationDispatchService.createDispatchJobs();
+        Optional<Integer> created = notificationDispatchService.createDispatchJobs();
 
-        assertThat(created).isEqualTo(1);
+        assertThat(created).contains(1);
         assertThat(first.getStatus()).isEqualTo(NotificationEventStatus.PROCESSED);
         assertThat(second.getStatus()).isEqualTo(NotificationEventStatus.PENDING);
         assertThat(notificationDispatchRepository.findAll())
@@ -132,9 +132,9 @@ class NotificationDispatchServiceTest {
     void createDispatchJobs_noRecipient_marksProcessed() {
         NotificationEvent event = notificationEventRepository.saveAndFlush(event(1L));
 
-        int created = notificationDispatchService.createDispatchJobs();
+        Optional<Integer> created = notificationDispatchService.createDispatchJobs();
 
-        assertThat(created).isZero();
+        assertThat(created).contains(0);
         assertThat(event.getStatus()).isEqualTo(NotificationEventStatus.PROCESSED);
         assertThat(notificationDispatchRepository.count()).isZero();
     }
@@ -146,9 +146,9 @@ class NotificationDispatchServiceTest {
         event.markProcessed();
         notificationEventRepository.saveAndFlush(event);
 
-        int created = notificationDispatchService.createDispatchJobs();
+        Optional<Integer> created = notificationDispatchService.createDispatchJobs();
 
-        assertThat(created).isZero();
+        assertThat(created).isEmpty();
         assertThat(notificationDispatchRepository.count()).isZero();
     }
 

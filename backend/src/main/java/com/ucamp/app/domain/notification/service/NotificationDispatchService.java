@@ -37,15 +37,16 @@ public class NotificationDispatchService {
      * PENDING 이벤트 하나를 고른다. 맞는 회원마다 대기 작업을 넣고 그 이벤트를 PROCESSED로 바꾼다.
      * 같은 이벤트·회원이 이미 있으면 그 회원은 건너뛴다. 한 번 호출에 이벤트 하나만 처리한다.
      *
-     * @return 이번에 새로 만든 대기 작업 수. PENDING 이벤트가 없거나 새로 넣을 회원이 없으면 0
+     * @return 이벤트를 처리했으면 이번에 만든 대기 작업 수. 맞는 회원이 없어도 0이다.
+     *         대기 이벤트가 없으면 empty다. 0과 empty는 다르다.
      */
     @Transactional
-    public int createDispatchJobs() {
+    public Optional<Integer> createDispatchJobs() {
         // 대기 중인 이벤트 중 가장 먼저 생긴 것 하나만 고른다. ID가 작을수록 먼저 생긴 이벤트다.
         Optional<NotificationEvent> found = notificationEventRepository
                 .findFirstByStatusOrderByIdAsc(NotificationEventStatus.PENDING);
         if (found.isEmpty()) {
-            return 0;
+            return Optional.empty();
         }
 
         NotificationEvent event = found.get();
@@ -68,7 +69,7 @@ public class NotificationDispatchService {
 
         // 받을 회원이 없어도 이 이벤트 매칭은 끝이다. PENDING으로 두면 다음에 또 집는다.
         event.markProcessed();
-        return created;
+        return Optional.of(created);
     }
 
     /**

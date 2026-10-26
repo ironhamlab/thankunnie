@@ -22,30 +22,37 @@ public class NotificationDispatchScheduler {
 
     private final NotificationDispatchService notificationDispatchService;
 
-    /** 직전 실행이 끝나고 1분 뒤 다시 실행한다. 한 번에 PENDING 이벤트 하나만 작업으로 저장한다. */
+    /**
+     * 직전 실행이 끝나고 1분 뒤 다시 실행한다.
+     * PENDING 이벤트가 없을 때까지 하나씩 대기 작업으로 저장한다.
+     * 맞는 회원이 없어 만든 수가 0이어도 그 이벤트는 끝난 것이므로 다음 이벤트를 본다.
+     */
     @Scheduled(fixedDelay = 60_000, initialDelay = 60_000)
     public void saveDispatchJobs() {
-        int created = notificationDispatchService.createDispatchJobs();
-        if (created > 0) {
-            log.info("발송 대기 작업 생성 {}건", created);
+        Optional<Integer> created = notificationDispatchService.createDispatchJobs();
+        while (created.isPresent()) {
+            if (created.get() > 0) {
+                log.info("발송 대기 작업 생성 {}건", created.get());
+            }
+            created = notificationDispatchService.createDispatchJobs();
         }
     }
 
     /**
-     * 대기 작업 하나를 가져온 뒤 바로 다시 확인한다.
+     * 대기 작업이 없을 때까지 한 장씩 가져온 뒤 바로 다시 확인한다.
+     * 한 명이 재검사에 걸려도 다음 대기 작업은 계속 확인한다.
      * 재검사를 통과해도 문자는 보내지 않는다. 문자 발송은 7단계다.
      */
     @Scheduled(fixedDelay = 60_000, initialDelay = 60_000)
     public void claimAndRecheck() {
         Optional<NotificationDispatch> claimed = notificationDispatchService.claimDispatchJob();
-        if (claimed.isEmpty()) {
-            return;
-        }
-
-        NotificationDispatch job = claimed.get();
-        boolean canSend = notificationDispatchService.recheckClaimedJob(job);
-        if (canSend) {
-            log.info("발송 직전 재검사 통과 dispatchId={}. 문자 발송은 7단계", job.getId());
+        while (claimed.isPresent()) {
+            NotificationDispatch job = claimed.get();
+            boolean canSend = notificationDispatchService.recheckClaimedJob(job);
+            if (canSend) {
+                log.info("발송 직전 재검사 통과 dispatchId={}. 문자 발송은 7단계", job.getId());
+            }
+            claimed = notificationDispatchService.claimDispatchJob();
         }
     }
 }
