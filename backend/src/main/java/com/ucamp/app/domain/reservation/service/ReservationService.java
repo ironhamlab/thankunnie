@@ -11,6 +11,7 @@ import com.ucamp.app.common.auth.UserRole;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.lock.ShopLock;
+import com.ucamp.app.common.lock.UserLock;
 import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.reservation.dto.request.ReservationCreateRequest;
 import com.ucamp.app.domain.reservation.dto.response.ReservationCreateResponse;
@@ -33,15 +34,17 @@ public class ReservationService {
     private final TreatmentRepository treatmentRepository;
     private final AvailabilityService availabilityService;
     private final ShopLock shopLock;
+    private final UserLock userLock;
     private final Clock clock;
 
     public ReservationService(ReservationRepository reservationRepository,
             TreatmentRepository treatmentRepository, AvailabilityService availabilityService,
-            ShopLock shopLock, Clock clock) {
+            ShopLock shopLock, UserLock userLock, Clock clock) {
         this.reservationRepository = reservationRepository;
         this.treatmentRepository = treatmentRepository;
         this.availabilityService = availabilityService;
         this.shopLock = shopLock;
+        this.userLock = userLock;
         this.clock = clock;
     }
 
@@ -62,6 +65,8 @@ public class ReservationService {
         Long shopId = treatment.getShop().getShopId();
         LocalDateTime endsAt = startsAt.plusMinutes(treatment.getDurationMinutes());
 
+        // 같은 고객이 여러 매장에 동시에 클릭해도 본인 겹침 검사를 함께 통과하지 않도록 회원 단위로 먼저 순서를 맞춘다
+        userLock.lock(loginUser.userId());
         // 같은 시간에 두 고객이 동시에 클릭해도 한 명만 점유하도록 매장 단위로 순서를 맞춘다
         shopLock.lock(shopId);
         // 잠금 대기 중 마감이 지나거나 점유가 만료될 수 있으므로 잠금 뒤 시각으로 검사·가격·만료를 정한다
@@ -69,6 +74,7 @@ public class ReservationService {
         availabilityService.validateAvailable(shopId, startsAt, treatment.getDurationMinutes());
         validateNoUserOverlap(loginUser.userId(), startsAt, endsAt, now);
 
+        // 가격에 대한 견적을 시술 테이블에서 가져온다.
         PriceQuote quote = PriceCalculator.quote(treatment.getRegularPrice(),
                 new SalePrices(treatment.getPrice(), treatment.getLastMinutePrice()), startsAt, now);
 
@@ -85,7 +91,9 @@ public class ReservationService {
         return ReservationCreateResponse.from(reservationRepository.save(reservation));
     }
 
-    // 한 사람이 같은 시간에 두 곳을 잡아 다른 고객의 빈자리를 막지 않도록, 매장과 관계없이 본인 예약과 겹치면 막는다
+    /**
+     * 한 사람이 같은 시간에 두 곳을 잡아 다른 고객의 빈자리를 막지 않도록, 매장과 관계없이 본인 예약과 겹치면 막는다
+     */
     private void validateNoUserOverlap(Long userId, LocalDateTime startsAt, LocalDateTime endsAt,
             LocalDateTime now) {
         boolean overlapped = reservationRepository.findActiveOverlappingByUser(userId, startsAt, endsAt).stream()

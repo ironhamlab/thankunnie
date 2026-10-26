@@ -32,6 +32,7 @@ import com.ucamp.app.common.auth.TestUser;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.lock.ShopLock;
+import com.ucamp.app.common.lock.UserLock;
 import com.ucamp.app.common.policy.BookingPolicy;
 import com.ucamp.app.domain.reservation.dto.request.ReservationCreateRequest;
 import com.ucamp.app.domain.reservation.dto.response.ReservationCreateResponse;
@@ -65,13 +66,16 @@ class ReservationServiceTest {
     @Mock
     private ShopLock shopLock;
 
+    @Mock
+    private UserLock userLock;
+
     private ReservationService reservationService;
 
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(NOW.atZone(BookingPolicy.ZONE).toInstant(), BookingPolicy.ZONE);
         reservationService = new ReservationService(
-                reservationRepository, treatmentRepository, availabilityService, shopLock, clock);
+                reservationRepository, treatmentRepository, availabilityService, shopLock, userLock, clock);
     }
 
     @Test
@@ -125,16 +129,19 @@ class ReservationServiceTest {
     }
 
     @Test
-    @DisplayName("매장을 잠근 뒤 영업시간·열기·닫기·예약 겹침을 시술 소요 시간으로 검사한다")
+    @DisplayName("회원·매장 순으로 잠근 뒤 영업시간·열기·닫기·예약 겹침과 본인 예약 겹침을 검사한다")
     void createReservation_validatesAvailabilityAfterLock() {
         givenTreatment(TreatmentStatus.ACTIVE);
         given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
 
         reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11), null));
 
-        InOrder inOrder = inOrder(shopLock, availabilityService, reservationRepository);
+        InOrder inOrder = inOrder(userLock, shopLock, availabilityService, reservationRepository);
+        inOrder.verify(userLock).lock(CUSTOMER.userId());
         inOrder.verify(shopLock).lock(SHOP_ID);
         inOrder.verify(availabilityService).validateAvailable(SHOP_ID, NOW.plusHours(11), 60);
+        inOrder.verify(reservationRepository).findActiveOverlappingByUser(
+                CUSTOMER.userId(), NOW.plusHours(11), NOW.plusHours(12));
         inOrder.verify(reservationRepository).save(any(Reservation.class));
     }
 
@@ -200,7 +207,7 @@ class ReservationServiceTest {
         given(clock.instant()).willReturn(
                 NOW.atZone(BookingPolicy.ZONE).toInstant(), afterLock.atZone(BookingPolicy.ZONE).toInstant());
         ReservationService service = new ReservationService(
-                reservationRepository, treatmentRepository, availabilityService, shopLock, clock);
+                reservationRepository, treatmentRepository, availabilityService, shopLock, userLock, clock);
         givenTreatment(TreatmentStatus.ACTIVE);
         given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
 
@@ -234,7 +241,7 @@ class ReservationServiceTest {
         // 09:10 에 09:30 시작을 클릭하면 시작까지 20분이라 마감이다
         LocalDateTime now = NOW.plusMinutes(10);
         ReservationService service = new ReservationService(reservationRepository, treatmentRepository,
-                availabilityService, shopLock, Clock.fixed(now.atZone(BookingPolicy.ZONE).toInstant(), BookingPolicy.ZONE));
+                availabilityService, shopLock, userLock, Clock.fixed(now.atZone(BookingPolicy.ZONE).toInstant(), BookingPolicy.ZONE));
 
         assertErrorCode(() -> service.createReservation(CUSTOMER, request(NOW.plusMinutes(30), null)),
                 ErrorCode.VACANCY_BOOKING_CLOSED);

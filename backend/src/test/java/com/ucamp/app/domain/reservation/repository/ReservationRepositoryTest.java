@@ -21,13 +21,14 @@ import org.springframework.test.context.ActiveProfiles;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.lock.ShopLock;
+import com.ucamp.app.common.lock.UserLock;
 import com.ucamp.app.config.TimeConfig;
 import com.ucamp.app.domain.reservation.entity.Reservation;
 
 // 스키마는 docs/erd/01_schema_ddl.sql 로 만든 test 프로필 H2(MODE=Oracle)를 그대로 쓴다
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({TimeConfig.class, ShopLock.class})
+@Import({TimeConfig.class, ShopLock.class, UserLock.class})
 @ActiveProfiles("test")
 class ReservationRepositoryTest {
 
@@ -42,6 +43,9 @@ class ReservationRepositoryTest {
 
     @Autowired
     private ShopLock shopLock;
+
+    @Autowired
+    private UserLock userLock;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -115,6 +119,15 @@ class ReservationRepositoryTest {
     void shopLock_locksExistingShopOnly() {
         assertThatCode(() -> shopLock.lock(SHOP_ID)).doesNotThrowAnyException();
         assertThatThrownBy(() -> shopLock.lock(999L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.RESOURCE_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("회원 잠금은 있는 회원이면 통과하고 없는 회원이면 NOT_FOUND 예외가 발생한다")
+    void userLock_locksExistingUserOnly() {
+        assertThatCode(() -> userLock.lock(1L)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> userLock.lock(999L))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.RESOURCE_NOT_FOUND);
     }
