@@ -55,6 +55,10 @@ class ReservationRepositoryTest {
                 INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
                 VALUES (1, 'customer1', 'hash', '고객', '010', TIMESTAMP '2026-10-22 09:00:00', TIMESTAMP '2026-10-22 09:00:00')
                 """);
+        jdbcTemplate.update("""
+                INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
+                VALUES (2, 'customer2', 'hash', '고객2', '011', TIMESTAMP '2026-10-22 09:00:00', TIMESTAMP '2026-10-22 09:00:00')
+                """);
         insertShopWithTreatment(SHOP_ID, TREATMENT_ID);
         insertShopWithTreatment(OTHER_SHOP_ID, OTHER_TREATMENT_ID);
     }
@@ -73,6 +77,20 @@ class ReservationRepositoryTest {
         List<Reservation> result = reservationRepository.findActiveOverlapping(SHOP_ID, NOON, NOON.plusHours(2));
 
         assertThat(result).extracting(Reservation::getId).containsExactly(confirmed, hold, cancelPending);
+    }
+
+    @Test
+    @DisplayName("사용자의 구간과 겹치고 취소·만료가 아닌 예약을 매장과 관계없이 조회하며 다른 사용자 예약은 제외한다")
+    void findActiveOverlappingByUser_returnsUsersActiveOverlappingAcrossShops() {
+        long hold = insertReservation(1L, TREATMENT_ID, "HOLD", NOON, NOON.plusHours(1));
+        long otherShop = insertReservation(1L, OTHER_TREATMENT_ID, "CONFIRMED", NOON.plusMinutes(30), NOON.plusMinutes(90));
+        insertReservation(1L, TREATMENT_ID, "EXPIRED", NOON, NOON.plusHours(1));
+        insertReservation(1L, TREATMENT_ID, "CONFIRMED", NOON.plusHours(2), NOON.plusHours(3));
+        insertReservation(2L, TREATMENT_ID, "CONFIRMED", NOON, NOON.plusHours(1));
+
+        List<Reservation> result = reservationRepository.findActiveOverlappingByUser(1L, NOON, NOON.plusHours(2));
+
+        assertThat(result).extracting(Reservation::getId).containsExactlyInAnyOrder(hold, otherShop);
     }
 
     @Test
@@ -115,12 +133,17 @@ class ReservationRepositoryTest {
     }
 
     private long insertReservation(long treatmentId, String status, LocalDateTime startsAt, LocalDateTime endsAt) {
+        return insertReservation(1L, treatmentId, status, startsAt, endsAt);
+    }
+
+    private long insertReservation(long userId, long treatmentId, String status, LocalDateTime startsAt,
+            LocalDateTime endsAt) {
         long id = nextReservationId++;
         jdbcTemplate.update("""
                 INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT,
                     APPLIED_PRICE, DEPOSIT, HOLD_EXPIRES_AT, CREATED_AT, UPDATED_AT)
-                VALUES (?, 1, ?, ?, ?, ?, 22000, 20000, ?, TIMESTAMP '2026-10-22 09:00:00', TIMESTAMP '2026-10-22 09:00:00')
-                """, id, treatmentId, status, Timestamp.valueOf(startsAt), Timestamp.valueOf(endsAt),
+                VALUES (?, ?, ?, ?, ?, ?, 22000, 20000, ?, TIMESTAMP '2026-10-22 09:00:00', TIMESTAMP '2026-10-22 09:00:00')
+                """, id, userId, treatmentId, status, Timestamp.valueOf(startsAt), Timestamp.valueOf(endsAt),
                 Timestamp.valueOf(startsAt.minusHours(3)));
         return id;
     }

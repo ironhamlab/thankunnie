@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -162,6 +163,34 @@ class ReservationServiceTest {
     }
 
     @Test
+    @DisplayName("본인이 같은 시간에 잡고 있는 예약이 있으면 매장이 달라도 VACANCY_USER_TIME_OVERLAP 예외가 발생한다")
+    void createReservation_userOverlap_throwsUserTimeOverlap() {
+        givenTreatment(TreatmentStatus.ACTIVE);
+        given(reservationRepository.findActiveOverlappingByUser(
+                CUSTOMER.userId(), NOW.plusHours(11), NOW.plusHours(12)))
+                .willReturn(List.of(userReservation(NOW.plusMinutes(5))));
+
+        assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11), null)),
+                ErrorCode.VACANCY_USER_TIME_OVERLAP);
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("본인의 겹치는 점유가 이미 만료됐으면 예약할 수 있다")
+    void createReservation_userOverlapExpiredHold_saves() {
+        givenTreatment(TreatmentStatus.ACTIVE);
+        given(reservationRepository.findActiveOverlappingByUser(
+                CUSTOMER.userId(), NOW.plusHours(11), NOW.plusHours(12)))
+                .willReturn(List.of(userReservation(NOW)));
+        given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        ReservationCreateResponse response = reservationService.createReservation(
+                CUSTOMER, request(NOW.plusHours(11), null));
+
+        assertThat(response.status()).isEqualTo(ReservationStatus.HOLD);
+    }
+
+    @Test
     @DisplayName("점유 만료 시각은 매장 잠금을 얻은 뒤의 시각으로 계산한다")
     void createReservation_holdExpiresFromTimeAfterLock() {
         // 잠금 전 09:00, 잠금을 기다린 뒤 09:02 로 시계를 읽게 한다
@@ -230,6 +259,19 @@ class ReservationServiceTest {
         ReflectionTestUtils.setField(treatment, "treatmentId", TREATMENT_ID);
         treatment.changeStatus(status);
         return treatment;
+    }
+
+    // 다른 매장 시술의 본인 HOLD 예약. 만료 시각이 지금 이후면 아직 시간을 잡고 있다
+    private static Reservation userReservation(LocalDateTime holdExpiresAt) {
+        return Reservation.builder()
+                .userId(CUSTOMER.userId())
+                .treatmentId(99L)
+                .startsAt(NOW.plusHours(11).plusMinutes(30))
+                .endsAt(NOW.plusHours(12).plusMinutes(30))
+                .appliedPrice(30_000)
+                .deposit(20_000)
+                .holdExpiresAt(holdExpiresAt)
+                .build();
     }
 
     private static ReservationCreateRequest request(LocalDateTime startsAt, String customerRequest) {

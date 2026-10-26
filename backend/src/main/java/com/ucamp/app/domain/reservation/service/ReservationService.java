@@ -67,6 +67,7 @@ public class ReservationService {
         // 잠금 대기 중 마감이 지나거나 점유가 만료될 수 있으므로 잠금 뒤 시각으로 검사·가격·만료를 정한다
         LocalDateTime now = LocalDateTime.now(clock);
         availabilityService.validateAvailable(shopId, startsAt, treatment.getDurationMinutes());
+        validateNoUserOverlap(loginUser.userId(), startsAt, endsAt, now);
 
         PriceQuote quote = PriceCalculator.quote(treatment.getRegularPrice(),
                 new SalePrices(treatment.getPrice(), treatment.getLastMinutePrice()), startsAt, now);
@@ -82,5 +83,16 @@ public class ReservationService {
                 .customerRequest(request.customerRequest())
                 .build();
         return ReservationCreateResponse.from(reservationRepository.save(reservation));
+    }
+
+    // 한 사람이 같은 시간에 두 곳을 잡아 다른 고객의 빈자리를 막지 않도록, 매장과 관계없이 본인 예약과 겹치면 막는다
+    private void validateNoUserOverlap(Long userId, LocalDateTime startsAt, LocalDateTime endsAt,
+            LocalDateTime now) {
+        boolean overlapped = reservationRepository.findActiveOverlappingByUser(userId, startsAt, endsAt).stream()
+                .anyMatch(reservation -> SalePolicy.isOccupying(
+                        reservation.getStatus(), reservation.getHoldExpiresAt(), now));
+        if (overlapped) {
+            throw new BusinessException(ErrorCode.VACANCY_USER_TIME_OVERLAP);
+        }
     }
 }
