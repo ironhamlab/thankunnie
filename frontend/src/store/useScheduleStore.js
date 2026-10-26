@@ -27,6 +27,7 @@ export const useScheduleStore = create((set, get) => ({
   mutationStatus: 'idle',
   mutationError: null,
   refreshFailed: false,
+  isRefreshing: false,
 
   loadSchedule: async () => {
     set({ status: 'loading', error: null, mutationError: null });
@@ -97,11 +98,12 @@ export const useScheduleStore = create((set, get) => ({
   // 실패해도 던지지 않고 refreshFailed 로 알린다. 화면은 새로고침 안내를 보여준다.
   reloadExceptions: async () => {
     const { from, to } = exceptionRange();
+    set({ isRefreshing: true });
     try {
       const exceptions = await scheduleApi.getExceptions(from, to);
-      set({ exceptions, refreshFailed: false });
+      set({ exceptions, refreshFailed: false, isRefreshing: false });
     } catch {
-      set({ refreshFailed: true });
+      set({ refreshFailed: true, isRefreshing: false });
     }
   },
 

@@ -25,6 +25,10 @@ export default function SchedulePage() {
   const exceptions = useScheduleStore((state) => state.exceptions);
   const deleteException = useScheduleStore((state) => state.deleteException);
   const refreshFailed = useScheduleStore((state) => state.refreshFailed);
+  // 변경 요청이 겹치면 늦게 끝난 목록 조회가 최신 목록을 덮을 수 있어, 변경·목록 새로고침 중에는 변경 버튼을 막는다
+  const isBusy = useScheduleStore(
+    (state) => state.mutationStatus === 'loading' || state.isRefreshing,
+  );
   const [params, setParams] = useSearchParams();
   const today = todayKst();
   const lastDate = addDays(today, BOOKING_MAX_DAYS - 1);
@@ -71,7 +75,11 @@ export default function SchedulePage() {
             안에서 시술 소요 시간만큼 비어 있는 시각을 예약합니다.
           </p>
         </div>
-        <button className="b-button b-primary" onClick={() => setParams({ new: '1' })}>
+        <button
+          className="b-button b-primary"
+          disabled={isBusy}
+          onClick={() => setParams({ new: '1' })}
+        >
           + 시간대 열기·닫기
         </button>
       </div>
@@ -155,12 +163,14 @@ export default function SchedulePage() {
                           <div className="b-flex">
                             <button
                               className="b-button b-small"
+                              disabled={isBusy}
                               onClick={() => setEditing(exception)}
                             >
                               수정
                             </button>
                             <button
                               className="b-button b-small"
+                              disabled={isBusy}
                               onClick={() => handleDelete(exception)}
                             >
                               삭제
