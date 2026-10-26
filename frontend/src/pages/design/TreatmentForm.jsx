@@ -12,7 +12,6 @@ export default function TreatmentForm({ treatment, categories, isSaving, error, 
       durationMinutes: 60,
       categoryId: '',
       treatmentType: 'NORMAL',
-      participationFee: '',
       modelCondition: '',
       photoNotice: '',
       ...treatment,
@@ -45,12 +44,8 @@ export default function TreatmentForm({ treatment, categories, isSaving, error, 
       return;
     }
     const isModel = form.treatmentType === 'MODEL';
-    const participationFee = Number(form.participationFee);
-    if (isModel && (String(form.participationFee ?? '').trim() === ''
-      || !Number.isInteger(participationFee) || participationFee < 0
-      || participationFee > 2147483600 || participationFee % 100 !== 0
-      || !form.modelCondition?.trim() || !form.photoNotice?.trim())) {
-      setValidationError('모델 모집은 참가비(0원 이상, 100원 단위), 참여 조건과 촬영 안내가 필수입니다.');
+    if (isModel && (!form.modelCondition?.trim() || !form.photoNotice?.trim())) {
+      setValidationError('모델 모집은 참여 조건과 촬영 안내가 필수입니다.');
       return;
     }
     onSave(form.treatmentId, {
@@ -63,7 +58,6 @@ export default function TreatmentForm({ treatment, categories, isSaving, error, 
       durationMinutes: Number(form.durationMinutes),
       conditions: {
         treatmentType: form.treatmentType,
-        participationFee: isModel ? participationFee : null,
         modelCondition: isModel ? form.modelCondition.trim() : null,
         photoNotice: isModel ? form.photoNotice.trim() : null,
       },
@@ -83,12 +77,6 @@ export default function TreatmentForm({ treatment, categories, isSaving, error, 
           </label>
           {form.treatmentType === 'MODEL' && (
             <>
-              <label className="b-span-two">
-                참가비 (원) *
-                <input type="number" name="participationFee" required min="0" max="2147483600"
-                  step="100" value={form.participationFee ?? ''} onChange={change} />
-                <small>무료는 0원. 시술 판매가와 별도로 저장하는 모집 안내 금액입니다.</small>
-              </label>
               <label className="b-span-two">
                 참여 조건 *
                 <textarea name="modelCondition" required maxLength={2000} rows="3"

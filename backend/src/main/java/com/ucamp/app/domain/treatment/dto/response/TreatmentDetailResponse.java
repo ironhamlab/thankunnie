@@ -11,7 +11,7 @@ public record TreatmentDetailResponse(
         Long treatmentId, Long shopId, String name, String description,
         Integer regularPrice, Integer price, Integer lastMinutePrice, Long categoryId, String categoryName,
         Integer durationMinutes, TreatmentStatus status,
-        TreatmentType treatmentType, Integer participationFee, String modelCondition, String photoNotice,
+        TreatmentType treatmentType, String modelCondition, String photoNotice,
         OffsetDateTime createdAt, OffsetDateTime updatedAt) {
 
     public static TreatmentDetailResponse from(Treatment treatment) {
@@ -21,7 +21,7 @@ public record TreatmentDetailResponse(
                 treatment.getPrice(), treatment.getLastMinutePrice(),
                 treatment.getCategory().getCategoryId(), treatment.getCategory().getName(),
                 treatment.getDurationMinutes(), treatment.getStatus(),
-                treatment.getTreatmentType(), treatment.getParticipationFee(),
+                treatment.getTreatmentType(),
                 treatment.getModelCondition(), treatment.getPhotoNotice(),
                 TimeUtils.toOffset(treatment.getCreatedAt()), TimeUtils.toOffset(treatment.getUpdatedAt()));
     }

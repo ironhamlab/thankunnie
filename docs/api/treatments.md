@@ -31,7 +31,6 @@
   "durationMinutes": 60,
   "conditions": {
     "treatmentType": "MODEL",
-    "participationFee": 0,
     "modelCondition": "탈색 이력이 없는 분",
     "photoNotice": "전후 사진 촬영 및 포트폴리오 사용 안내"
   }
@@ -48,11 +47,11 @@
 - 화면의 판매가·초임박가 기본값은 정상가이며, 수정 화면은 서버에 저장된 가격을 표시한다.
 - `conditions`를 생략하거나 null로 보내면 신규 등록은 NORMAL, 수정은 기존 목적·모델 조건을 보존한다.
 - `conditions`를 제공하면 목적·모델 조건 전체를 함께 저장한다. `treatmentType`은 NORMAL 또는 MODEL 필수다.
-- MODEL: 참가비 필수, 0~2,147,483,600원, 100원 단위(무료 0원 허용).
-  참여 조건(최대 2,000자)과 촬영 안내(최대 1,000자)는 공백만 입력할 수 없고 앞뒤 공백을 제거해 저장한다.
-- NORMAL: 참가비는 null, 참여 조건·촬영 안내는 null 또는 공백이어야 하며 기존 모델 정보를 비운다.
-- 참가비는 모집 안내 금액이며 기존 판매가·예약금·결제 계산에는 사용하지 않는다.
-  일반·모델 모두 기존 시술 판매가 검증은 유지한다.
+- MODEL: 참여 조건(최대 2,000자)과 촬영 안내(최대 1,000자)는 필수이며 공백만 입력할 수 없고 앞뒤 공백을 제거해 저장한다.
+- NORMAL: 참여 조건·촬영 안내는 null 또는 공백이어야 하며 기존 모델 정보를 비운다.
+- 별도 참가비 입력·저장은 하지 않는다. 일반·모델 모두 기존 시술 판매가 검증과 예약금 정책을 사용한다.
+  예약 시 서버가 일반·초임박 구간에 해당하는 실제 적용 판매가와 20,000원 중 낮은 금액을 계산해
+  `RESERVATION.DEPOSIT`에 저장한다. 예: 판매가 15,000원 → 예약금 15,000원, 판매가 30,000원 → 예약금 20,000원.
 - 기본 정보 수정은 직원, 준비 안내, 이미지, 활성 상태를 변경하지 않는다.
 - 기존 예약의 적용 가격·예약금·시작/종료 시각은 변경하지 않는다.
 
@@ -77,7 +76,7 @@
 - 스키마 및 공통 인증·예외·설정 파일 변경은 없다.
 
 시술 응답 필드: `treatmentId`, `shopId`, `name`, `description`, `regularPrice`, `price`, `lastMinutePrice`,
-`categoryId`, `categoryName`, `durationMinutes`, `status`, `treatmentType`, `participationFee`,
+`categoryId`, `categoryName`, `durationMinutes`, `status`, `treatmentType`,
 `modelCondition`, `photoNotice`, `createdAt`, `updatedAt`.
 시각은 `+09:00` 오프셋이다.
 카테고리 응답 항목: `categoryId`, `name`.
@@ -104,10 +103,7 @@
 
 ## 기존 DB 변경
 
-A-06 적용 전 `docs/erd/migrations/UNNIE-45-treatment-model-conditions.sql`을 기존 DB에 1회 적용한다.
-TREATMENT에 nullable NUMBER(10) PARTICIPATION_FEE 컬럼을 추가한다.
-기존 모델의 참가비는 임의로 채우지 않으므로 모델 조건을 다음에 저장할 때 사장님이 입력한다.
-Oracle 21c XE에서 마이그레이션 및 validate 기동 검증이 별도로 필요하다.
+A-06은 기존 목적·참여 조건·촬영 안내 컬럼을 사용하므로 추가 스키마 변경과 마이그레이션은 없다.
 
 새 DB는 `docs/erd/01_schema_ddl.sql`을 사용한다.
 기존 Oracle 21c XE에는 아래 SQL 파일을 적용해야 한다.
@@ -118,7 +114,7 @@ SQL은 CATEGORY_ID를 추가하고 기존 시술을 소속 매장의 카테고�
 카테고리 마스터는 기존 CATEGORY를 공유하고 선택값은 시술별로 저장한다.
 Oracle에서 실제 적용한 결과는 별도 검증이 필요하다.
 
-## A-06 검증 결과
+## A-06 초기 구현 당시 검증 결과
 
 - `backend/`: `.\gradlew.bat --no-daemon classes test` 성공, 전체 282개 테스트 통과.
 - 모델 조건 수정 및 최대 길이 경계값 검증 보강 후
@@ -126,7 +122,7 @@ Oracle에서 실제 적용한 결과는 별도 검증이 필요하다.
 - `frontend/`: `npm run lint`, `npm run build` 성공.
 - `.\gradlew.bat --no-daemon bootRun`에 local 프로필, 임시 H2 Oracle 모드 URL,
   포트 18080 및 scheduling 비활성 옵션을 전달해 `validate` 기동 성공.
-  실제 HTTP 등록·재조회로 모델 목적, 무료 참가비, 참여 조건, 촬영 안내 저장 확인.
+  실제 HTTP 등록·재조회로 모델 목적, 참여 조건, 촬영 안내 저장 확인.
 - 검증 프로세스에만 `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=C:/UCAMP/Final/thankunnie/backend/build/socket-temp` 지정.
 - 브라우저 화면 조작 및 Oracle 21c XE의 마이그레이션 적용은 미검증.
 

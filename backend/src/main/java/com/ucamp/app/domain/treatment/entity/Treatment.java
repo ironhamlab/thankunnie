@@ -82,10 +82,6 @@ public class Treatment extends BaseTimeEntity {
     @Column(name = "TREATMENT_TYPE", nullable = false, length = 20)
     private TreatmentType treatmentType;
 
-    @JdbcTypeCode(SqlTypes.NUMERIC)
-    @Column(name = "PARTICIPATION_FEE")
-    private Integer participationFee;
-
     @Column(name = "MODEL_CONDITION", length = 2000)
     private String modelCondition;
 
@@ -135,7 +131,6 @@ public class Treatment extends BaseTimeEntity {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "목적과 모델 모집 조건을 확인해 주세요.");
         }
         this.treatmentType = conditions.treatmentType();
-        this.participationFee = conditions.participationFee();
         this.modelCondition = conditions.treatmentType() == TreatmentType.MODEL
                 ? conditions.modelCondition().strip() : null;
         this.photoNotice = conditions.treatmentType() == TreatmentType.MODEL

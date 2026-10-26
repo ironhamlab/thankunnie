@@ -272,15 +272,14 @@ class TreatmentIntegrationTest {
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value(code));
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = {0, 100, 2147483600})
-    @DisplayName("무료·유료 모델의 목적과 조건을 저장하고 재조회하며 일반 시술로 전환한다")
-    void save_modelConditions_persistsAndClears(int fee) throws Exception {
+    @Test
+    @DisplayName("모델의 목적과 조건을 저장하고 재조회하며 일반 시술로 전환한다")
+    void save_modelConditions_persistsAndClears() throws Exception {
         var payload = mapper.readTree(body(60, 50000, 9002));
         ((com.fasterxml.jackson.databind.node.ObjectNode) payload).set("conditions", mapper.readTree("""
-                {"treatmentType":"MODEL","participationFee":%d,
+                {"treatmentType":"MODEL",
                  "modelCondition":"  탈색 이력 없음  ","photoNotice":"  전후 사진 촬영  "}
-                """.formatted(fee)));
+                """));
         String response = mvc.perform(post(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
                         .contentType(MediaType.APPLICATION_JSON).content(payload.toString()))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
@@ -288,22 +287,19 @@ class TreatmentIntegrationTest {
         entityManager.clear();
         mvc.perform(get(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
                 .andExpect(jsonPath("$.data.treatmentType").value("MODEL"))
-                .andExpect(jsonPath("$.data.participationFee").value(fee))
                 .andExpect(jsonPath("$.data.modelCondition").value("탈색 이력 없음"))
                 .andExpect(jsonPath("$.data.photoNotice").value("전후 사진 촬영"));
         // 기존 기본정보 요청은 모델 조건을 그대로 보존한다.
         mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
                         .contentType(MediaType.APPLICATION_JSON).content(body(90, 60000, 9001)))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.data.participationFee").value(fee));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.modelCondition").value("탈색 이력 없음"));
         var updatedConditions = (com.fasterxml.jackson.databind.node.ObjectNode) payload.path("conditions");
-        updatedConditions.put("participationFee", 1000)
-                .put("modelCondition", "가".repeat(2000)).put("photoNotice", "나".repeat(1000));
+        updatedConditions.put("modelCondition", "가".repeat(2000)).put("photoNotice", "나".repeat(1000));
         mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
                         .contentType(MediaType.APPLICATION_JSON).content(payload.toString()))
                 .andExpect(status().isOk());
         entityManager.clear();
         mvc.perform(get(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
-                .andExpect(jsonPath("$.data.participationFee").value(1000))
                 .andExpect(jsonPath("$.data.modelCondition").value("가".repeat(2000)))
                 .andExpect(jsonPath("$.data.photoNotice").value("나".repeat(1000)));
         ((com.fasterxml.jackson.databind.node.ObjectNode) payload).set("conditions",
@@ -313,7 +309,6 @@ class TreatmentIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.treatmentType").value("NORMAL"));
         entityManager.flush();
         var stored = jdbc.queryForMap("SELECT * FROM TREATMENT WHERE TREATMENT_ID = ?", id);
-        assertThat(stored.get("PARTICIPATION_FEE")).isNull();
         assertThat(stored.get("MODEL_CONDITION")).isNull();
         assertThat(stored.get("PHOTO_NOTICE")).isNull();
     }
@@ -321,14 +316,13 @@ class TreatmentIntegrationTest {
     @ParameterizedTest
     @ValueSource(strings = {
             "{}", "{\"treatmentType\":\"UNKNOWN\"}",
-            "{\"treatmentType\":\"MODEL\",\"participationFee\":0}",
-            "{\"treatmentType\":\"NORMAL\",\"participationFee\":0}",
-            "{\"treatmentType\":\"MODEL\",\"participationFee\":-100,\"modelCondition\":\"조건\",\"photoNotice\":\"촬영\"}",
-            "{\"treatmentType\":\"MODEL\",\"participationFee\":101,\"modelCondition\":\"조건\",\"photoNotice\":\"촬영\"}",
-            "{\"treatmentType\":\"MODEL\",\"participationFee\":0,\"modelCondition\":\"  \",\"photoNotice\":\"촬영\"}",
-            "{\"treatmentType\":\"MODEL\",\"participationFee\":0,\"modelCondition\":\"조건\",\"photoNotice\":\"  \"}"
+            "{\"treatmentType\":\"MODEL\"}",
+            "{\"treatmentType\":\"NORMAL\",\"modelCondition\":\"조건\"}",
+            "{\"treatmentType\":\"NORMAL\",\"photoNotice\":\"촬영\"}",
+            "{\"treatmentType\":\"MODEL\",\"modelCondition\":\"  \",\"photoNotice\":\"촬영\"}",
+            "{\"treatmentType\":\"MODEL\",\"modelCondition\":\"조건\",\"photoNotice\":\"  \"}"
     })
-    @DisplayName("잘못된 목적·참가비·빈 조건은 등록과 수정에서 거절하고 기존 데이터를 보존한다")
+    @DisplayName("잘못된 목적·빈 조건은 등록과 수정에서 거절하고 기존 데이터를 보존한다")
     void save_invalidConditions_returnsBadRequest(String conditions) throws Exception {
         var payload = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(body(60, 50000, 9002));
         payload.set("conditions", mapper.readTree(conditions));
@@ -350,7 +344,7 @@ class TreatmentIntegrationTest {
         for (String field : new String[]{"modelCondition", "photoNotice"}) {
             var payload = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(body(60, 50000, 9002));
             var conditions = payload.putObject("conditions");
-            conditions.put("treatmentType", "MODEL").put("participationFee", 0)
+            conditions.put("treatmentType", "MODEL")
                     .put("modelCondition", "조건").put("photoNotice", "촬영");
             conditions.put(field, "가".repeat(field.equals("modelCondition") ? 2001 : 1001));
             mvc.perform(post(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
