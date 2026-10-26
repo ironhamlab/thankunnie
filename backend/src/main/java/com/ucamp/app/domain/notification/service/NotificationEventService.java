@@ -18,7 +18,7 @@ import com.ucamp.app.domain.notification.repository.VacancySlot;
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
 
 /**
- * 빈자리 알림 이벤트 생성. 임박 진입은 스케줄러가 주기적으로, 초임박은 조회 결과를 저장하고, 취소 재공개는 재공개 완료 시 만든다.
+ * 빈자리 알림 이벤트 생성. 임박·초임박 진입은 스케줄러가 각각 주기적으로, 취소 재공개는 재공개 완료 시 만든다.
  */
 @Slf4j
 @Service
