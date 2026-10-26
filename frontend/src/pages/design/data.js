@@ -256,7 +256,7 @@ export function validateSlot(slot, menus, slots, bookings) {
         slot.time,
         menu.duration,
         item.time,
-        menus.find((m) => m.id === item.serviceId)?.duration ?? 60,
+        item.duration,
       ),
   );
   const booked = bookings.some(

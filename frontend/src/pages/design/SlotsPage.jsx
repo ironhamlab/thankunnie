@@ -156,8 +156,8 @@ export default function SlotsPage() {
                     </td>
                     <td>{slot.date}</td>
                     <td>
-                      {slot.time} ~ {finish(slot.time, m?.duration || 60)}
-                      <small>{m?.duration}분 소요</small>
+                      {slot.time} ~ {finish(slot.time, slot.duration)}
+                      <small>{slot.duration}분 소요</small>
                     </td>
                     <td>
                       <del>{money(m?.original || 0)}</del>
