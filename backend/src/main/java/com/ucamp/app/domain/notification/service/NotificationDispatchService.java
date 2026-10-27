@@ -7,9 +7,14 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+import com.ucamp.app.domain.notification.client.SmsSendResult;
+import com.ucamp.app.domain.notification.client.SmsSendStatus;
+import com.ucamp.app.domain.notification.client.SolapiSmsClient;
 import com.ucamp.app.domain.notification.entity.NotificationDispatch;
 import com.ucamp.app.domain.notification.entity.NotificationDispatchStatus;
 import com.ucamp.app.domain.notification.entity.NotificationEvent;
@@ -17,20 +22,27 @@ import com.ucamp.app.domain.notification.entity.NotificationEventStatus;
 import com.ucamp.app.domain.notification.entity.NotificationEventType;
 import com.ucamp.app.domain.notification.repository.NotificationDispatchRepository;
 import com.ucamp.app.domain.notification.repository.NotificationEventRepository;
+import com.ucamp.app.domain.notification.repository.RecipientContactRepository;
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
 
 /**
  * 알림 이벤트를 회원별 발송 대기 작업으로 저장하고, 그 작업을 하나씩 가져간다.
+ * 재검사를 통과한 작업은 문자를 보내고 결과를 같은 줄에 남긴다.
  */
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class NotificationDispatchService {
 
+    private static final int FAIL_REASON_MAX_LENGTH = 500;
+
     private final NotificationEventRepository notificationEventRepository;
     private final NotificationDispatchRepository notificationDispatchRepository;
     private final SubscriptionMatchService subscriptionMatchService;
     private final VacancySlotRepository vacancySlotRepository;
+    private final RecipientContactRepository recipientContactRepository;
+    private final SolapiSmsClient solapiSmsClient;
     private final Clock clock;
 
     /**
@@ -133,6 +145,97 @@ public class NotificationDispatchService {
         return true;
     }
 
+    /**
+     * 재검사를 통과한 작업에 문자를 보내고 결과를 저장한다.
+     * 성공은 SENT, 실패는 FAILED, 응답이 애매하면 UNKNOWN 이다. 실패·불명을 성공으로 바꾸지 않는다.
+     *
+     * @param job 선점했고 재검사를 통과한 발송 대기 작업
+     */
+    @Transactional
+    public void sendClaimedJob(NotificationDispatch job) {
+        if (job == null || job.getStatus() != NotificationDispatchStatus.PROCESSING) {
+            return;
+        }
+
+        NotificationEvent event = notificationEventRepository.findById(job.getEventId()).orElse(null);
+        if (event == null) {
+            String reason = "알림 이벤트를 찾을 수 없습니다.";
+            job.markFailed(reason);
+            notificationDispatchRepository.save(job);
+            log.warn("문자 발송 실패 dispatchId={}, userId={}, reason={}",
+                    job.getId(), job.getUserId(), reason);
+            return;
+        }
+
+        Optional<String> phone = recipientContactRepository.findPhoneByUserId(job.getUserId());
+        if (phone.isEmpty() || !StringUtils.hasText(phone.get())) {
+            String reason = "회원 전화번호가 없습니다.";
+            job.markFailed(reason);
+            notificationDispatchRepository.save(job);
+            log.warn("문자 발송 실패 dispatchId={}, userId={}, reason={}",
+                    job.getId(), job.getUserId(), reason);
+            return;
+        }
+
+        String messageBody = buildMessage(event);
+        log.info("문자 발송 시작 dispatchId={}, userId={}, eventId={}, to={}",
+                job.getId(), job.getUserId(), event.getId(), maskPhone(phone.get()));
+        SmsSendResult result = solapiSmsClient.send(phone.get(), messageBody);
+        applySendResult(job, result);
+        notificationDispatchRepository.save(job);
+        logSendResult(job, result);
+    }
+
+    private String buildMessage(NotificationEvent event) {
+        String shopName = recipientContactRepository.findShopNameById(event.getShopId()).orElse("매장");
+        return shopName + "에 " + event.getSlotStartsAt() + " 시작 빈자리가 생겼습니다.";
+    }
+
+    private void applySendResult(NotificationDispatch job, SmsSendResult result) {
+        if (result.status() == SmsSendStatus.SUCCESS) {
+            job.markSent();
+            return;
+        }
+        if (result.status() == SmsSendStatus.UNKNOWN) {
+            job.markUnknown(trimFailReason(result.failReason()));
+            return;
+        }
+        job.markFailed(trimFailReason(result.failReason()));
+    }
+
+    private void logSendResult(NotificationDispatch job, SmsSendResult result) {
+        if (result.status() == SmsSendStatus.SUCCESS) {
+            log.info("문자 발송 성공 dispatchId={}, userId={}, providerMessageId={}",
+                    job.getId(), job.getUserId(), result.providerMessageId());
+            return;
+        }
+        if (result.status() == SmsSendStatus.UNKNOWN) {
+            log.warn("문자 발송 결과 불명 dispatchId={}, userId={}, reason={}",
+                    job.getId(), job.getUserId(), result.failReason());
+            return;
+        }
+        log.warn("문자 발송 실패 dispatchId={}, userId={}, reason={}",
+                job.getId(), job.getUserId(), result.failReason());
+    }
+
+    private static String maskPhone(String phone) {
+        String digits = phone.replaceAll("[^0-9]", "");
+        if (digits.length() < 4) {
+            return "****";
+        }
+        return "****" + digits.substring(digits.length() - 4);
+    }
+
+    private static String trimFailReason(String failReason) {
+        if (!StringUtils.hasText(failReason)) {
+            return failReason;
+        }
+        if (failReason.length() <= FAIL_REASON_MAX_LENGTH) {
+            return failReason;
+        }
+        return failReason.substring(0, FAIL_REASON_MAX_LENGTH);
+    }
+
     // 업장 구독과 카테고리 구독 중 하나라도 아직 맞으면 포함한다. 해제한 구독과 희망 종료가 지난 구독은 빠진다.
     private boolean subscriptionStillMatches(NotificationEvent event, Long userId) {
         List<Long> userIds = subscriptionMatchService.findRecipientUserIds(
@@ -156,5 +259,7 @@ public class NotificationDispatchService {
     private void finishWithoutSending(NotificationDispatch job) {
         job.markSkipped();
         notificationDispatchRepository.save(job);
+        log.info("문자 발송 생략(SKIPPED) dispatchId={}, userId={}, eventId={}",
+                job.getId(), job.getUserId(), job.getEventId());
     }
 }
