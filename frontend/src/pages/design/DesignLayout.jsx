@@ -4,6 +4,7 @@ import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
 import { useDesignStore } from './useDesignStore';
 import Asset from './Asset';
 import Dialog from './Dialog';
+import HomeHeader from './HomeHeader';
 
 export default function DesignLayout() {
   const location = useLocation();
@@ -14,48 +15,57 @@ export default function DesignLayout() {
     (s) => s.bookings.filter((b) => b.isCustomer && b.status === 'confirmed').length,
   );
   const [notice, setNotice] = useState('');
+  const isHome =
+    (location.pathname === R.HOME ||
+      location.pathname === R.ROOT ||
+      location.pathname === R.ROOT + '/') &&
+    !location.search;
   const owner = location.pathname.startsWith(R.OWNER);
   if (owner) return <Outlet />;
   const handleSearch = (event) => {
     event.preventDefault();
     setSearch(search.trim());
-    navigate(R.HOME);
+    navigate(`${R.HOME}?search=1`);
   };
   return (
     <div className="b-layout">
-      <header className="b-header">
-        <div className="b-container b-nav">
-          <Link to={R.HOME} className="b-brand">
-            땡잡은 언니 <span>뷰티 타임세일</span>
-          </Link>
-          <form className="b-search" onSubmit={handleSearch}>
-            <input
-              aria-label="지역, 시술 종류, 매장 검색"
-              placeholder="지역, 시술 종류, 매장 검색"
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
-              }}
-            />
-            <button aria-label="검색">
-              <Asset name="8-3-15.svg" />
-            </button>
-          </form>
-          <nav aria-label="고객 메뉴">
-            <NavLink to={R.HOME} end>
-              빈자리 찾기
-            </NavLink>
-            <NavLink to={R.PROFILE}>마이페이지</NavLink>
-            <NavLink to={R.BOOKINGS} className="b-reservation-link">
-              <Asset name="8-3-16.svg" />내 예약 <b>{count}</b>
-            </NavLink>
-          </nav>
-          <Link className="b-account" to={R.OWNER}>
-            <i />
-            [테스트] 고객 계정 <Asset name="8-3-17.svg" />
-          </Link>
-        </div>
-      </header>
+      {isHome ? (
+        <HomeHeader />
+      ) : (
+        <header className="b-header">
+          <div className="b-container b-nav">
+            <Link to={R.HOME} className="b-brand">
+              땡잡은 언니 <span>뷰티 타임세일</span>
+            </Link>
+            <form className="b-search" onSubmit={handleSearch}>
+              <input
+                aria-label="지역, 시술 종류, 매장 검색"
+                placeholder="지역, 시술 종류, 매장 검색"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                }}
+              />
+              <button aria-label="검색">
+                <Asset name="8-3-15.svg" />
+              </button>
+            </form>
+            <nav aria-label="고객 메뉴">
+              <NavLink to={R.HOME} end>
+                빈자리 찾기
+              </NavLink>
+              <NavLink to={R.PROFILE}>마이페이지</NavLink>
+              <NavLink to={R.BOOKINGS} className="b-reservation-link">
+                <Asset name="8-3-16.svg" />내 예약 <b>{count}</b>
+              </NavLink>
+            </nav>
+            <Link className="b-account" to={R.OWNER}>
+              <i />
+              [테스트] 고객 계정 <Asset name="8-3-17.svg" />
+            </Link>
+          </div>
+        </header>
+      )}
       <main>
         <Outlet />
       </main>
