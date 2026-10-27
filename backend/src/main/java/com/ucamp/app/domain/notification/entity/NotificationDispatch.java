@@ -21,7 +21,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 발송 대기 작업. 알림 이벤트 하나와 회원 하나를 한 줄로 저장한다.
+ * 알림 대기 줄 한 장.
+ * 빈자리 소식 하나와 받을 회원 한 명을 한 줄로 적는다.
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

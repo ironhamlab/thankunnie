@@ -29,8 +29,8 @@ public interface NotificationDispatchRepository extends JpaRepository<Notificati
      * 해당 상태의 작업 중 ID가 가장 작은 하나를 조회한다.
      * ID가 작을수록 먼저 생긴 작업이다.
      *
-     * @param status 작업 상태
-     * @return 있으면 그 작업. 없으면 empty
+     * @param status 대기인지, 확인 중인지, 끝인지
+     * @return 있으면 그 줄. 없으면 빈 값
      */
     Optional<NotificationDispatch> findFirstByStatusOrderByIdAsc(NotificationDispatchStatus status);
 
