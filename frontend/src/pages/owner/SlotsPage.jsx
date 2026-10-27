@@ -9,7 +9,12 @@ import useSlotTreatments from '@/hooks/useSlotTreatments';
 export default function SlotsPage() {
   const slots = useDesignStore((s) => s.slots);
   const menus = useDesignStore((s) => s.menus);
-  const { menus: selectableMenus, status: selectionStatus, error: loadError, refreshMenus } = useSlotTreatments();
+  const {
+    menus: selectableMenus,
+    status: selectionStatus,
+    error: loadError,
+    refreshMenus,
+  } = useSlotTreatments();
   const save = useDesignStore((s) => s.saveSlot);
   const toggle = useDesignStore((s) => s.toggleSlot);
   const [params, setParams] = useSearchParams();
@@ -19,9 +24,7 @@ export default function SlotsPage() {
   const [serviceId, setServiceId] = useState('');
   const [date, setDate] = useState('');
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState(
-    location.state?.slotCreated ? '빈자리를 저장했습니다.' : '',
-  );
+  const [notice, setNotice] = useState(location.state?.slotCreated ? '빈자리를 저장했습니다.' : '');
   const blank = {
     id: 'slot-' + Date.now(),
     serviceId: selectableMenus.find((m) => m.active)?.id || '',
@@ -39,10 +42,12 @@ export default function SlotsPage() {
   const update = (key, value) => setEdit({ ...draft, [key]: value });
   const existingSlot = slots.find((slot) => slot.id === draft?.id);
   const existingMenu = resolveSlotMenu(existingSlot, selectableMenus, menus);
-  const keepTreatment = existingSlot && (draft.serviceId === existingSlot.serviceId
-    || draft.serviceId === existingMenu?.id);
-  const menu = selectableMenus.find((m) => m.id === draft?.serviceId)
-    ?? menus.find((m) => m.id === draft?.serviceId);
+  const keepTreatment =
+    existingSlot &&
+    (draft.serviceId === existingSlot.serviceId || draft.serviceId === existingMenu?.id);
+  const menu =
+    selectableMenus.find((m) => m.id === draft?.serviceId) ??
+    menus.find((m) => m.id === draft?.serviceId);
   const duration = keepTreatment ? existingSlot.duration : menu?.duration;
   const submit = async (e) => {
     e.preventDefault();
@@ -219,7 +224,11 @@ export default function SlotsPage() {
             {loadError && (
               <div role="alert">
                 <p>{loadError.message}</p>
-                <button type="button" className="b-button" onClick={() => refreshMenus().catch(() => {})}>
+                <button
+                  type="button"
+                  className="b-button"
+                  onClick={() => refreshMenus().catch(() => {})}
+                >
                   다시 불러오기
                 </button>
               </div>
@@ -238,8 +247,10 @@ export default function SlotsPage() {
                 <option value="">선택해 주세요</option>
                 {existingSlot && (
                   <option value={existingSlot.serviceId}>
-                    {existingMenu?.name ?? menus.find((m) => m.id === existingSlot.serviceId)?.name ?? '기존 시술'}
-                    {' '}({existingSlot.duration}분, 기존 시술 유지)
+                    {existingMenu?.name ??
+                      menus.find((m) => m.id === existingSlot.serviceId)?.name ??
+                      '기존 시술'}{' '}
+                    ({existingSlot.duration}분, 기존 시술 유지)
                   </option>
                 )}
                 {selectableMenus
@@ -299,8 +310,10 @@ export default function SlotsPage() {
             )}
             <button
               className="b-button b-primary b-span-two"
-              disabled={selectionStatus !== 'succeeded'
-                || (!existingSlot && !selectableMenus.some((m) => m.active))}
+              disabled={
+                selectionStatus !== 'succeeded' ||
+                (!existingSlot && !selectableMenus.some((m) => m.active))
+              }
             >
               빈자리 저장하기
             </button>

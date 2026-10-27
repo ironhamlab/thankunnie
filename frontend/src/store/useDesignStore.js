@@ -53,11 +53,16 @@ export const useDesignStore = create((set, get) => ({
   saveSlot: (slot, selectableMenus = []) => {
     const existingSlot = get().slots.find((item) => item.id === slot.id);
     const existingMenu = resolveSlotMenu(existingSlot, selectableMenus, get().menus);
-    const keepTreatment = existingSlot && (slot.serviceId === existingSlot.serviceId
-      || slot.serviceId === existingMenu?.id);
+    const keepTreatment =
+      existingSlot &&
+      (slot.serviceId === existingSlot.serviceId || slot.serviceId === existingMenu?.id);
     const selectedMenu = keepTreatment
-      ? { ...get().menus.find((menu) => menu.id === existingSlot.serviceId),
-        id: existingSlot.serviceId, duration: existingSlot.duration, active: true }
+      ? {
+          ...get().menus.find((menu) => menu.id === existingSlot.serviceId),
+          id: existingSlot.serviceId,
+          duration: existingSlot.duration,
+          active: true,
+        }
       : selectableMenus.find((menu) => menu.id === slot.serviceId && menu.active);
     if (!selectedMenu) throw new Error('활성 시술을 선택해 주세요.');
     // 동일 시술의 수정은 기존 스냅샷을 보존한다. 신규·시술 교체에만 최신 활성 메뉴를 적용한다.

@@ -2,31 +2,34 @@ import { useState } from 'react';
 import Dialog from '@/components/common/Dialog';
 
 export default function TreatmentForm({ treatment, categories, isSaving, error, onSave, onClose }) {
-  const [form, setForm] = useState(
-    {
-      name: '',
-      description: '',
-      regularPrice: 50000,
-      price: 50000,
-      lastMinutePrice: 50000,
-      durationMinutes: 60,
-      categoryId: '',
-      treatmentType: 'NORMAL',
-      modelCondition: '',
-      photoNotice: '',
-      ...treatment,
-    },
-  );
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    regularPrice: 50000,
+    price: 50000,
+    lastMinutePrice: 50000,
+    durationMinutes: 60,
+    categoryId: '',
+    treatmentType: 'NORMAL',
+    modelCondition: '',
+    photoNotice: '',
+    ...treatment,
+  });
   const [validationError, setValidationError] = useState('');
   const change = (event) => {
     const { name, value } = event.target;
     setForm((previous) => ({
       ...previous,
-      ...(name === 'regularPrice' ? {
-        price: String(previous.price) === String(previous.regularPrice) ? value : previous.price,
-        lastMinutePrice: String(previous.lastMinutePrice) === String(previous.regularPrice)
-          ? value : previous.lastMinutePrice,
-      } : {}),
+      ...(name === 'regularPrice'
+        ? {
+            price:
+              String(previous.price) === String(previous.regularPrice) ? value : previous.price,
+            lastMinutePrice:
+              String(previous.lastMinutePrice) === String(previous.regularPrice)
+                ? value
+                : previous.lastMinutePrice,
+          }
+        : {}),
       [name]: value,
     }));
   };
@@ -38,8 +41,11 @@ export default function TreatmentForm({ treatment, categories, isSaving, error, 
       return;
     }
     const prices = [form.regularPrice, form.price, form.lastMinutePrice].map(Number);
-    if (prices.some((price) => !Number.isInteger(price) || price <= 0 || price % 100 !== 0)
-      || prices[2] > prices[1] || prices[1] > prices[0]) {
+    if (
+      prices.some((price) => !Number.isInteger(price) || price <= 0 || price % 100 !== 0) ||
+      prices[2] > prices[1] ||
+      prices[1] > prices[0]
+    ) {
       setValidationError('가격은 100원 단위로 초임박가 ≤ 판매가 ≤ 정상가 순서로 입력해 주세요.');
       return;
     }
@@ -79,13 +85,25 @@ export default function TreatmentForm({ treatment, categories, isSaving, error, 
             <>
               <label className="b-span-two">
                 참여 조건 *
-                <textarea name="modelCondition" required maxLength={2000} rows="3"
-                  value={form.modelCondition ?? ''} onChange={change} />
+                <textarea
+                  name="modelCondition"
+                  required
+                  maxLength={2000}
+                  rows="3"
+                  value={form.modelCondition ?? ''}
+                  onChange={change}
+                />
               </label>
               <label className="b-span-two">
                 촬영 안내 *
-                <textarea name="photoNotice" required maxLength={1000} rows="3"
-                  value={form.photoNotice ?? ''} onChange={change} />
+                <textarea
+                  name="photoNotice"
+                  required
+                  maxLength={1000}
+                  rows="3"
+                  value={form.photoNotice ?? ''}
+                  onChange={change}
+                />
               </label>
             </>
           )}
@@ -140,13 +158,29 @@ export default function TreatmentForm({ treatment, categories, isSaving, error, 
           </label>
           <label>
             판매가 (원) *
-            <input type="number" min="100" max={form.regularPrice} step="100" required
-              name="price" value={form.price} onChange={change} />
+            <input
+              type="number"
+              min="100"
+              max={form.regularPrice}
+              step="100"
+              required
+              name="price"
+              value={form.price}
+              onChange={change}
+            />
           </label>
           <label>
             초임박가 (원) *
-            <input type="number" min="100" max={form.price} step="100" required
-              name="lastMinutePrice" value={form.lastMinutePrice} onChange={change} />
+            <input
+              type="number"
+              min="100"
+              max={form.price}
+              step="100"
+              required
+              name="lastMinutePrice"
+              value={form.lastMinutePrice}
+              onChange={change}
+            />
             <small>초임박가 ≤ 판매가 ≤ 정상가 · 같은 가격이면 할인 없음</small>
           </label>
           <label className="b-span-two">

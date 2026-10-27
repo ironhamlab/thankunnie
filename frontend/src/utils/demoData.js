@@ -366,8 +366,10 @@ export const serviceDate = (service) => {
 export function resolveSlotMenu(slot, menus, historyMenus) {
   const historyMenu = historyMenus.find((menu) => menu.id === slot?.serviceId);
   const treatmentId = slot?.treatmentId ?? historyMenu?.treatmentId;
-  return menus.find((menu) => menu.id === slot?.serviceId)
-    ?? menus.find((menu) => treatmentId != null && menu.id === `treatment-${treatmentId}`);
+  return (
+    menus.find((menu) => menu.id === slot?.serviceId) ??
+    menus.find((menu) => treatmentId != null && menu.id === `treatment-${treatmentId}`)
+  );
 }
 
 export function validateSlot(slot, menus, slots, bookings) {
@@ -393,12 +395,7 @@ export function validateSlot(slot, menus, slots, bookings) {
       item.id !== slot.id &&
       item.date === slot.date &&
       item.status !== 'stopped' &&
-      overlaps(
-        slot.time,
-        duration,
-        item.time,
-        item.duration,
-      ),
+      overlaps(slot.time, duration, item.time, item.duration),
   );
   const booked = bookings.some(
     (item) =>

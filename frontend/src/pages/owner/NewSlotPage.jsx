@@ -120,13 +120,19 @@ export default function NewSlotPage() {
             {loadError && (
               <div role="alert">
                 <p>{loadError.message}</p>
-                <button type="button" className="b-button" onClick={() => refreshMenus().catch(() => {})}>
+                <button
+                  type="button"
+                  className="b-button"
+                  onClick={() => refreshMenus().catch(() => {})}
+                >
                   다시 불러오기
                 </button>
               </div>
             )}
             {status === 'succeeded' && !menus.length && (
-              <p role="status">선택 가능한 활성 시술이 없습니다. 시술 메뉴에서 등록하거나 활성화해 주세요.</p>
+              <p role="status">
+                선택 가능한 활성 시술이 없습니다. 시술 메뉴에서 등록하거나 활성화해 주세요.
+              </p>
             )}
             <div className="b-notice b-help">
               비활성 시술은 선택할 수 없습니다. 시술 관리 메뉴에서 활성화한 뒤 등록해 주세요.

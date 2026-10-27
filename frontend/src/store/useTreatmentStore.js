@@ -86,9 +86,13 @@ export const useTreatmentStore = create((set, get) => ({
     try {
       const treatment = await treatmentApi.updateStatus(get().shopId, treatmentId, status);
       set((state) => ({
-        activeTreatments: treatment.status === 'ACTIVE'
-          ? [treatment, ...state.activeTreatments.filter((item) => item.treatmentId !== treatmentId)]
-          : state.activeTreatments.filter((item) => item.treatmentId !== treatmentId),
+        activeTreatments:
+          treatment.status === 'ACTIVE'
+            ? [
+                treatment,
+                ...state.activeTreatments.filter((item) => item.treatmentId !== treatmentId),
+              ]
+            : state.activeTreatments.filter((item) => item.treatmentId !== treatmentId),
         treatments: state.treatments.map((item) =>
           item.treatmentId === treatmentId ? treatment : item,
         ),
