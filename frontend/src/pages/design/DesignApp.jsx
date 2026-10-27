@@ -9,6 +9,7 @@ const DesignHomePage = lazy(() => import('./DesignHomePage'));
 const ReservationPage = lazy(() => import('./ReservationPage'));
 const CheckoutPage = lazy(() => import('./CheckoutPage'));
 const BookingsPage = lazy(() => import('./BookingsPage'));
+const MyReservationsPage = lazy(() => import('./MyReservationsPage'));
 const OwnerPage = lazy(() => import('./OwnerPage'));
 const ServiceDetailPage = lazy(() => import('./ServiceDetailPage'));
 const BookingResultPage = lazy(() => import('./BookingResultPage'));
@@ -38,6 +39,7 @@ export default function DesignApp() {
             <Route path="result" element={<BookingResultPage />} />
             <Route path="profile" element={<CustomerProfilePage />} />
             <Route path="bookings" element={<BookingsPage />} />
+            <Route path="my-reservations" element={<MyReservationsPage />} />
             <Route path="owner/*" element={<OwnerPage />} />
             <Route
               path="*"
