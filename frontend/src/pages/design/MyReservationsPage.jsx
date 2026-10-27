@@ -79,13 +79,12 @@ export default function MyReservationsPage() {
           내 예약 <span className="b-badge">{pageInfo.totalElements}건</span>
         </h1>
       </div>
-      <div className="b-options b-tabs" role="tablist" aria-label="예약 구분">
+      <div className="b-options b-tabs" role="group" aria-label="예약 구분">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             type="button"
-            role="tab"
-            aria-selected={tabKey === tab.key}
+            aria-pressed={tabKey === tab.key}
             className={tabKey === tab.key ? 'is-selected' : ''}
             onClick={() => handleTabChange(tab.key)}
           >
