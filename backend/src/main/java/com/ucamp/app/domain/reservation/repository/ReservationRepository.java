@@ -13,6 +13,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ucamp.app.domain.reservation.entity.Reservation;
+import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
@@ -44,6 +45,23 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
               AND r.holdExpiresAt <= :now
             """)
     int expireHolds(@Param("now") LocalDateTime now);
+
+    /**
+     * 현재 상태가 from 일 때만 to 로 바꾸고 바뀐 건수를 반환한다. 취소(E)의 CONFIRMED·CANCEL_PENDING·CANCELLED 전이에 쓴다.
+     * 상태 조건으로 갱신하므로 같은 예약에 동시에 들어온 요청은 한 건만 성공한다(나머지는 0).
+     * 일괄 갱신이라 UPDATED_AT 을 함께 넣는다. 같은 트랜잭션에서 먼저 조회한 다른 엔티티(취소 등)의 변경이
+     * 사라지지 않도록 실행 후 영속성 컨텍스트는 비우지 않는다.
+     *
+     * @return 바뀐 행 수. 0 이면 예약이 없거나 이미 다른 상태다
+     */
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            UPDATE Reservation r
+            SET r.status = :to, r.updatedAt = :now
+            WHERE r.id = :reservationId AND r.status = :from
+            """)
+    int changeStatus(@Param("reservationId") Long reservationId, @Param("from") ReservationStatus from,
+            @Param("to") ReservationStatus to, @Param("now") LocalDateTime now);
 
     /**
      * 매장의 [startsAt, endsAt) 구간과 겹치고 취소·만료가 아닌 예약을 조회한다.

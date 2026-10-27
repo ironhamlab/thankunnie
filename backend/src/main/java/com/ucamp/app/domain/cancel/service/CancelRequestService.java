@@ -17,13 +17,13 @@ import com.ucamp.app.domain.cancel.entity.ReservationCancel;
 import com.ucamp.app.domain.cancel.policy.CancelPolicy;
 import com.ucamp.app.domain.cancel.policy.RefundPolicy;
 import com.ucamp.app.domain.cancel.policy.RefundQuote;
-import com.ucamp.app.domain.cancel.repository.CancelReservationRepository;
-import com.ucamp.app.domain.cancel.repository.CancelScheduleExceptionRepository;
 import com.ucamp.app.domain.cancel.repository.CancelTarget;
 import com.ucamp.app.domain.cancel.repository.ReservationCancelRepository;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
+import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
 import com.ucamp.app.domain.schedule.entity.ShopScheduleException;
+import com.ucamp.app.domain.schedule.repository.ShopScheduleExceptionRepository;
 
 /**
  * 취소 접수 (E-05). 결제 취소(PG 호출) 전에 이 트랜잭션을 먼저 커밋해, 결제 취소 중에도 시간이 막혀 있게 한다 (CNL-21·22).
@@ -33,20 +33,20 @@ import com.ucamp.app.domain.schedule.entity.ShopScheduleException;
 public class CancelRequestService {
 
     private final CancelQuoteService cancelQuoteService;
-    private final CancelReservationRepository cancelReservationRepository;
+    private final ReservationRepository reservationRepository;
     private final ReservationCancelRepository reservationCancelRepository;
-    private final CancelScheduleExceptionRepository cancelScheduleExceptionRepository;
+    private final ShopScheduleExceptionRepository shopScheduleExceptionRepository;
     private final GraceCancelUsageService graceCancelUsageService;
 
     public CancelRequestService(CancelQuoteService cancelQuoteService,
-            CancelReservationRepository cancelReservationRepository,
+            ReservationRepository reservationRepository,
             ReservationCancelRepository reservationCancelRepository,
-            CancelScheduleExceptionRepository cancelScheduleExceptionRepository,
+            ShopScheduleExceptionRepository shopScheduleExceptionRepository,
             GraceCancelUsageService graceCancelUsageService) {
         this.cancelQuoteService = cancelQuoteService;
-        this.cancelReservationRepository = cancelReservationRepository;
+        this.reservationRepository = reservationRepository;
         this.reservationCancelRepository = reservationCancelRepository;
-        this.cancelScheduleExceptionRepository = cancelScheduleExceptionRepository;
+        this.shopScheduleExceptionRepository = shopScheduleExceptionRepository;
         this.graceCancelUsageService = graceCancelUsageService;
     }
 
@@ -93,7 +93,7 @@ public class CancelRequestService {
                 now);
         boolean close = Boolean.TRUE.equals(request.closeAfterCancel());
         if (close) {
-            cancelScheduleExceptionRepository.save(ShopScheduleException.builder()
+            shopScheduleExceptionRepository.save(ShopScheduleException.builder()
                     .shopId(target.shopId())
                     .reservationId(reservationId)
                     .exceptionType(ScheduleExceptionType.CLOSE)
@@ -123,7 +123,7 @@ public class CancelRequestService {
 
     // 확정 상태일 때만 바뀌므로 동시에 들어온 취소는 한 건만 통과한다
     private void changeToCancelPending(Long reservationId, LocalDateTime now) {
-        int changed = cancelReservationRepository.changeStatus(reservationId, ReservationStatus.CONFIRMED,
+        int changed = reservationRepository.changeStatus(reservationId, ReservationStatus.CONFIRMED,
                 ReservationStatus.CANCEL_PENDING, now);
         if (changed == 0) {
             throw new BusinessException(ErrorCode.CANCEL_ALREADY_REQUESTED);
