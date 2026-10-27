@@ -29,7 +29,7 @@ import com.ucamp.app.domain.shop.service.ShopImageService;
 /** 매장 대표 이미지 업로드·교체·삭제 및 이미지 조회 API. */
 @Tag(name = "Shop", description = "매장 관리")
 @RestController
-@RequestMapping("/api/v1/shops/{shopId}")
+@RequestMapping("/api/v1/shops")
 public class ShopImageController {
 
     private final ShopImageService service;
@@ -39,24 +39,24 @@ public class ShopImageController {
     }
 
     @Operation(summary = "본인 매장 대표 이미지 업로드·교체", description = "file: JPEG·PNG, 최대 5MB·1,600만 화소")
-    @PutMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResponse<ShopImageResponse> uploadImage(@LoginUser AuthUser user, @PathVariable Long shopId,
+    @PutMapping(value = "/me/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<ShopImageResponse> uploadImage(@LoginUser AuthUser user,
             @RequestParam(value = "file", required = false) List<MultipartFile> files) {
         if (files != null && files.size() != 1) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "대표 이미지는 한 번에 한 개만 업로드해 주세요.");
         }
-        return ApiResponse.success(service.uploadImage(user, shopId, files == null ? null : files.getFirst()));
+        return ApiResponse.success(service.uploadImage(user, user.shopId(), files == null ? null : files.getFirst()));
     }
 
     @Operation(summary = "본인 매장 대표 이미지 삭제")
-    @DeleteMapping("/image")
-    public ResponseEntity<Void> deleteImage(@LoginUser AuthUser user, @PathVariable Long shopId) {
-        service.deleteImage(user, shopId);
+    @DeleteMapping("/me/image")
+    public ResponseEntity<Void> deleteImage(@LoginUser AuthUser user) {
+        service.deleteImage(user, user.shopId());
         return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "현재 매장 대표 이미지 공개 조회")
-    @GetMapping("/images/{fileName}")
+    @GetMapping("/{shopId}/images/{fileName}")
     public ResponseEntity<byte[]> getImage(@PathVariable Long shopId, @PathVariable String fileName) {
         ShopImageContentResponse image = service.getImage(shopId, fileName);
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(image.contentType()))

@@ -13,6 +13,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -32,6 +33,7 @@ import com.ucamp.app.domain.vacancy.policy.SalePrices;
 
 /** 사장님 매장의 시술 메뉴. 기존 예약의 가격·시각 스냅샷은 변경하지 않는다. */
 @Entity
+@DynamicUpdate
 @Table(name = "TREATMENT")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -135,6 +137,11 @@ public class Treatment extends BaseTimeEntity {
                 ? conditions.modelCondition().strip() : null;
         this.photoNotice = conditions.treatmentType() == TreatmentType.MODEL
                 ? conditions.photoNotice().strip() : null;
+    }
+
+    /** 검증된 대표 이미지로 교체하거나 null로 삭제한다. */
+    public void changeImage(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public void changeStatus(TreatmentStatus status) {

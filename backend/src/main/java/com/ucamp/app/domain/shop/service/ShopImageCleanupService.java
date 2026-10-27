@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 import com.ucamp.app.domain.shop.entity.ShopImageCleanup;
+import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
 import com.ucamp.app.domain.shop.repository.ShopImageCleanupRepository;
 import com.ucamp.app.domain.shop.repository.ShopRepository;
 
@@ -27,13 +28,15 @@ public class ShopImageCleanupService {
     private final ShopRepository shopRepository;
     private final ShopImageObjectStorage objectStorage;
     private final Clock clock;
+    private final TreatmentRepository treatmentRepository;
 
     public ShopImageCleanupService(ShopImageCleanupRepository repository, ShopRepository shopRepository,
-            ShopImageObjectStorage objectStorage, Clock clock) {
+            ShopImageObjectStorage objectStorage, Clock clock, TreatmentRepository treatmentRepository) {
         this.repository = repository;
         this.shopRepository = shopRepository;
         this.objectStorage = objectStorage;
         this.clock = clock;
+        this.treatmentRepository = treatmentRepository;
     }
 
     /** 원래 이미지 변경이 롤백되어도 삭제 실패 기록은 별도 트랜잭션으로 남긴다. */
@@ -61,7 +64,8 @@ public class ShopImageCleanupService {
             return;
         }
         // API는 UUID 파일명을 재사용하지 않는다. DB에서 참조하는 파일은 방어적으로 삭제하지 않는다.
-        if (shopRepository.existsByImageUrlEndingWith("/images/" + task.getFileName())) {
+        if (shopRepository.existsByImageUrlEndingWith("/images/" + task.getFileName())
+                || treatmentRepository.existsByImageUrlEndingWith("/images/" + task.getFileName())) {
             repository.delete(task);
             log.warn("현재 대표 이미지이므로 정리 작업 취소: {}", task.getFileName());
             return;
