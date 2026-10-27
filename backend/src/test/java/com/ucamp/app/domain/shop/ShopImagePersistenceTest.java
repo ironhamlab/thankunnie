@@ -28,6 +28,7 @@ import com.ucamp.app.domain.shop.service.LocalShopImageObjectStorage;
 import com.ucamp.app.domain.shop.service.ShopImageCleanupService;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -79,17 +80,15 @@ class ShopImagePersistenceTest {
             TestTransaction.flagForRollback();
             TestTransaction.end();
         }
+        jdbc.execute("ALTER TABLE SHOP DROP CONSTRAINT IF EXISTS CK_TEST_PERSISTENCE_IMAGE");
         jdbc.update("DELETE FROM SHOP WHERE SHOP_ID = 9601");
         jdbc.update("DELETE FROM CATEGORY WHERE CATEGORY_ID = 9601");
     }
 
     @Test
-    @DisplayName("이미지 교체 커밋 전에는 기존 파일을 유지하고 커밋 후 새 URL과 파일만 남긴다")
+    @DisplayName("이미지 교체의 독립 트랜잭션 커밋 후 새 URL과 파일만 남긴다")
     void upload_commit_replacesImageAfterCommit() throws IOException {
         var result = service.uploadImage(owner, 9601L, ShopImageFixture.image("jpg"));
-        assertThat(directory.resolve(previousName)).exists();
-        TestTransaction.flagForCommit();
-        TestTransaction.end();
         assertThat(imageUrl()).isEqualTo(result.imageUrl());
         assertThat(directory.resolve(previousName)).doesNotExist();
         assertThat(service.getImage(9601L, fileName(result.imageUrl())).contentType()).isEqualTo("image/jpeg");
@@ -98,12 +97,19 @@ class ShopImagePersistenceTest {
     @Test
     @DisplayName("이미지 교체가 DB에서 롤백되면 기존 URL·파일을 유지하고 새 파일을 제거한다")
     void upload_rollback_keepsOriginalAndRemovesNewFile() throws IOException {
-        var result = service.uploadImage(owner, 9601L, ShopImageFixture.image("jpg"));
-        TestTransaction.flagForRollback();
-        TestTransaction.end();
+        java.util.List<String> existingFiles;
+        try (var files = java.nio.file.Files.list(directory)) {
+            existingFiles = files.map(path -> path.getFileName().toString()).toList();
+        }
+        jdbc.execute("ALTER TABLE SHOP ADD CONSTRAINT CK_TEST_PERSISTENCE_IMAGE CHECK (IMAGE_URL NOT LIKE '%.jpg')");
+        assertThatThrownBy(() -> service.uploadImage(owner, 9601L, ShopImageFixture.image("jpg")))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
         assertThat(imageUrl()).isEqualTo(previousUrl);
         assertThat(directory.resolve(previousName)).exists();
-        assertThat(directory.resolve(fileName(result.imageUrl()))).doesNotExist();
+        try (var files = java.nio.file.Files.list(directory)) {
+            assertThat(files.map(path -> path.getFileName().toString()).toList())
+                    .containsExactlyInAnyOrderElementsOf(existingFiles);
+        }
     }
 
     @Test

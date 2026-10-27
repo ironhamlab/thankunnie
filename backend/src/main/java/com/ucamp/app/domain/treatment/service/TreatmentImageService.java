@@ -1,9 +1,14 @@
 package com.ucamp.app.domain.treatment.service;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ucamp.app.common.auth.AuthUser;
@@ -23,27 +28,43 @@ public class TreatmentImageService {
 
     private final ShopRepository shopRepository;
     private final ShopImageStorage storage;
+    private final PlatformTransactionManager transactionManager;
     private final TreatmentRepository treatmentRepository;
 
     public TreatmentImageService(ShopRepository shopRepository, ShopImageStorage storage,
-            TreatmentRepository treatmentRepository) {
+            TreatmentRepository treatmentRepository, PlatformTransactionManager transactionManager) {
         this.shopRepository = shopRepository;
         this.storage = storage;
+        this.transactionManager = transactionManager;
         this.treatmentRepository = treatmentRepository;
     }
 
     /** 새 파일 저장이 성공한 경우에만 URL을 바꾸고 기존 파일은 DB 커밋 후 삭제한다. */
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public TreatmentImageResponse uploadImage(AuthUser user, Long shopId, Long treatmentId, MultipartFile file) {
         user.requireShopOwner(shopId);
-        lockShop(shopId);
-        Treatment treatment = findTreatment(shopId, treatmentId);
-        String previousUrl = treatment.getImageUrl();
+        findTreatment(shopId, treatmentId);
         String fileName = storage.save(file);
-        synchronizeFiles(shopId, treatmentId, previousUrl, fileName);
-        String imageUrl = imagePrefix(shopId, treatmentId) + fileName;
-        treatment.changeImage(imageUrl);
-        return new TreatmentImageResponse(treatmentId, imageUrl);
+        AtomicBoolean cleanupRegistered = new AtomicBoolean();
+        try {
+            return new TransactionTemplate(transactionManager).execute(status -> {
+                // 잠금 획득이나 재조회 실패도 새 파일 정리 대상에 포함한다.
+                synchronizeFiles(shopId, treatmentId, null, fileName);
+                cleanupRegistered.set(true);
+                lockShop(shopId);
+                Treatment treatment = findTreatment(shopId, treatmentId);
+                synchronizeFiles(shopId, treatmentId, treatment.getImageUrl(), null);
+                String imageUrl = imagePrefix(shopId, treatmentId) + fileName;
+                treatment.changeImage(imageUrl);
+                return new TreatmentImageResponse(treatmentId, imageUrl);
+            });
+        } catch (RuntimeException exception) {
+            // 트랜잭션 시작 자체가 실패하면 롤백 콜백이 등록되지 않는다.
+            if (!cleanupRegistered.get()) {
+                storage.deleteQuietly(fileName);
+            }
+            throw exception;
+        }
     }
 
     /** DB 삭제가 확정된 경우에만 파일을 정리한다. 이미지가 없으면 그대로 성공한다. */

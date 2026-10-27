@@ -1,9 +1,14 @@
 package com.ucamp.app.domain.shop.service;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ucamp.app.common.auth.AuthUser;
@@ -21,23 +26,42 @@ public class ShopImageService {
 
     private final ShopRepository shopRepository;
     private final ShopImageStorage storage;
+    private final PlatformTransactionManager transactionManager;
 
-    public ShopImageService(ShopRepository shopRepository, ShopImageStorage storage) {
+    public ShopImageService(ShopRepository shopRepository, ShopImageStorage storage,
+            PlatformTransactionManager transactionManager) {
         this.shopRepository = shopRepository;
         this.storage = storage;
+        this.transactionManager = transactionManager;
     }
 
     /** 새 파일 저장이 성공한 경우에만 URL을 바꾸고 기존 파일은 DB 커밋 후 삭제한다. */
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public ShopImageResponse uploadImage(AuthUser user, Long shopId, MultipartFile file) {
         user.requireShopOwner(shopId);
-        Shop shop = findForUpdate(shopId);
-        String previousUrl = shop.getImageUrl();
+        if (!shopRepository.existsById(shopId)) {
+            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+        }
         String fileName = storage.save(file);
-        synchronizeFiles(shopId, previousUrl, fileName);
-        String imageUrl = imagePrefix(shopId) + fileName;
-        shop.changeImage(imageUrl);
-        return new ShopImageResponse(shopId, imageUrl);
+        AtomicBoolean cleanupRegistered = new AtomicBoolean();
+        try {
+            return new TransactionTemplate(transactionManager).execute(status -> {
+                // 잠금 획득이나 재조회 실패도 새 파일 정리 대상에 포함한다.
+                synchronizeFiles(shopId, null, fileName);
+                cleanupRegistered.set(true);
+                Shop shop = findForUpdate(shopId);
+                synchronizeFiles(shopId, shop.getImageUrl(), null);
+                String imageUrl = imagePrefix(shopId) + fileName;
+                shop.changeImage(imageUrl);
+                return new ShopImageResponse(shopId, imageUrl);
+            });
+        } catch (RuntimeException exception) {
+            // 트랜잭션 시작 자체가 실패하면 롤백 콜백이 등록되지 않는다.
+            if (!cleanupRegistered.get()) {
+                storage.deleteQuietly(fileName);
+            }
+            throw exception;
+        }
     }
 
     /** DB 삭제가 확정된 경우에만 파일을 정리한다. 이미지가 없으면 그대로 성공한다. */

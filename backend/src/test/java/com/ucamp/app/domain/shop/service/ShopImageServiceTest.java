@@ -35,6 +35,8 @@ class ShopImageServiceTest {
     private ShopRepository repository;
     @Mock
     private ShopImageStorage storage;
+    @Mock
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
     @InjectMocks
     private ShopImageService service;
 
@@ -69,15 +71,13 @@ class ShopImageServiceTest {
     @Test
     @DisplayName("검증 실패와 저장 실패 시 기존 이미지 URL을 변경하지 않는다")
     void upload_storageFailure_keepsPreviousImage() {
-        Shop shop = mock(Shop.class);
-        when(repository.findByIdForUpdate(1L)).thenReturn(Optional.of(shop));
-        when(shop.getImageUrl()).thenReturn("/previous.png");
+        when(repository.existsById(1L)).thenReturn(true);
         when(storage.save(file)).thenThrow(new BusinessException(ErrorCode.INVALID_INPUT),
                 new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR));
         for (ErrorCode error : new ErrorCode[] {ErrorCode.INVALID_INPUT, ErrorCode.INTERNAL_SERVER_ERROR}) {
             assertError(() -> service.uploadImage(owner, 1L, file), error);
         }
-        verify(shop, never()).changeImage(org.mockito.ArgumentMatchers.any());
+        verify(repository, never()).findByIdForUpdate(1L);
         verify(storage, never()).deleteQuietly(org.mockito.ArgumentMatchers.any());
     }
 
@@ -90,6 +90,18 @@ class ShopImageServiceTest {
         when(shop.getImageUrl()).thenReturn("/api/v1/shops/1/images/new.png");
         assertError(() -> service.getImage(1L, "old.png"), ErrorCode.RESOURCE_NOT_FOUND);
         verify(storage, never()).read("old.png");
+    }
+
+    @Test
+    @DisplayName("트랜잭션 시작 실패 시 업로드한 파일을 정리한다")
+    void upload_transactionBeginFailure_removesNewFile() {
+        when(repository.existsById(1L)).thenReturn(true);
+        when(storage.save(file)).thenReturn("new.png");
+        var failure = new org.springframework.transaction.CannotCreateTransactionException("test");
+        when(transactionManager.getTransaction(org.mockito.ArgumentMatchers.any())).thenThrow(failure);
+        assertThatThrownBy(() -> service.uploadImage(owner, 1L, file)).isSameAs(failure);
+        verify(storage).deleteQuietly("new.png");
+        verify(repository, never()).findByIdForUpdate(1L);
     }
 
     private void assertError(Runnable action, ErrorCode code) {

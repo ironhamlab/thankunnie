@@ -3,6 +3,17 @@ package com.ucamp.app.domain.shop;
 import java.time.LocalDateTime;
 import java.time.Clock;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import com.ucamp.app.common.lock.ShopLock;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.AfterEach;
@@ -90,6 +101,10 @@ class ShopImageIntegrationTest {
     private ShopImageObjectStorage objectStorage;
     @Autowired
     private Clock clock;
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+    @Autowired
+    private ShopLock shopLock;
 
     @BeforeEach
     void setUp() {
@@ -124,6 +139,73 @@ class ShopImageIntegrationTest {
                 VALUES (1, 9701, 'CHANGE_ME', 'CHANGE_ME', '이미지 테스트', '11680',
                     '서울', 37.5, 127.0, '02-000-0000', 'ACTIVE', ?, ?)
                 """, time, time);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"shop", "treatment"})
+    @DisplayName("S3 업로드 중 트랜잭션과 예약용 매장 잠금을 유지하지 않는다")
+    void upload_slowStorage_allowsReservationLock(String target) throws Exception {
+        if (target.equals("treatment")) {
+            createTreatment();
+        }
+        CountDownLatch entered = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        AtomicBoolean transactionActive = new AtomicBoolean(true);
+        when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class))).thenAnswer(invocation -> {
+            transactionActive.set(TransactionSynchronizationManager.isActualTransactionActive());
+            entered.countDown();
+            if (!release.await(15, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("테스트 업로드 대기 시간 초과");
+            }
+            PutObjectRequest request = invocation.getArgument(0);
+            RequestBody body = invocation.getArgument(1);
+            try (var input = body.contentStreamProvider().newStream()) {
+                objects.put(request.key(), input.readAllBytes());
+            }
+            return PutObjectResponse.builder().build();
+        });
+        String path = target.equals("shop") ? "/api/v1/shops/me/image"
+                : "/api/v1/shops/me/treatments/9701/image";
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var upload = executor.submit(() -> mvc.perform(multipart(HttpMethod.PUT, path)
+                    .file(ShopImageFixture.image("png")).header("X-Test-User", "OWNER_1")).andReturn());
+            try {
+                assertThat(entered.await(10, TimeUnit.SECONDS)).isTrue();
+                assertThat(transactionActive.get()).isFalse();
+                var reservation = executor.submit(() -> new TransactionTemplate(transactionManager).execute(status -> {
+                    shopLock.lock(1L);
+                    return true;
+                }));
+                assertThat(reservation.get(5, TimeUnit.SECONDS)).isTrue();
+            } finally {
+                release.countDown();
+            }
+            assertThat(upload.get(15, TimeUnit.SECONDS).getResponse().getStatus()).isEqualTo(200);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"shop", "treatment"})
+    @DisplayName("업로드 중 대상이 삭제되어도 새 S3 파일을 정리한다")
+    void upload_targetDisappears_removesNewFile(String target) throws Exception {
+        if (target.equals("treatment")) {
+            createTreatment();
+        }
+        when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class))).thenAnswer(invocation -> {
+            PutObjectRequest request = invocation.getArgument(0);
+            RequestBody body = invocation.getArgument(1);
+            try (var input = body.contentStreamProvider().newStream()) {
+                objects.put(request.key(), input.readAllBytes());
+            }
+            jdbc.update(target.equals("shop") ? "DELETE FROM SHOP WHERE SHOP_ID = 1"
+                    : "DELETE FROM TREATMENT WHERE TREATMENT_ID = 9701");
+            return PutObjectResponse.builder().build();
+        });
+        String path = target.equals("shop") ? "/api/v1/shops/me/image"
+                : "/api/v1/shops/me/treatments/9701/image";
+        mvc.perform(multipart(HttpMethod.PUT, path).file(ShopImageFixture.image("png"))
+                .header("X-Test-User", "OWNER_1")).andExpect(status().isNotFound());
+        assertThat(objects).isEmpty();
     }
 
     private void createTreatment() {
