@@ -39,8 +39,9 @@ public class NotificationDispatchScheduler {
     }
 
     /**
-     * 대기 작업이 없을 때까지 한 장씩 가져온 뒤 다시 확인하고, 통과하면 문자를 보낸다.
+     * 대기 작업이 없을 때까지 한 장씩 가져온 뒤 바로 다시 확인한다.
      * 한 명이 재검사에 걸려도 다음 대기 작업은 계속 확인한다.
+     * 재검사를 통과해도 문자는 보내지 않는다. 문자 발송은 이후 단계에서 붙인다.
      */
     @Scheduled(fixedDelay = 60_000, initialDelay = 60_000)
     public void claimAndRecheck() {
@@ -49,7 +50,7 @@ public class NotificationDispatchScheduler {
             NotificationDispatch job = claimed.get();
             boolean canSend = notificationDispatchService.recheckClaimedJob(job);
             if (canSend) {
-                notificationDispatchService.sendClaimedJob(job);
+                log.info("발송 직전 재검사 통과 dispatchId={}. 문자 발송은 이후 단계", job.getId());
             }
             claimed = notificationDispatchService.claimDispatchJob();
         }

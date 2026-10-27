@@ -37,10 +37,3 @@ iamport:
   imp-secret: CHANGE_ME
   # 테스트 채널 결제 조회용. 로컬에서만 true
   include-sandbox: true
-
-# Twilio 콘솔에서 확인한 값을 사람이 직접 넣는다. 실제 키를 Git 에 올리지 않는다
-twilio:
-  account-sid: CHANGE_ME
-  auth-token: CHANGE_ME
-  # 체험·구매한 Twilio 발신 번호. E.164 형식 (예: +821012345678)
-  from-number: CHANGE_ME

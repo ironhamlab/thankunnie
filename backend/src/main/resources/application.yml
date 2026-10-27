@@ -34,13 +34,6 @@ iamport:
   # 테스트 채널 결제까지 조회할지 여부. 운영에서는 반드시 false
   include-sandbox: ${IAMPORT_INCLUDE_SANDBOX:false}
 
-# 문자 발송(Twilio). 실제 키는 application-local.yml 또는 환경변수로 주입한다
-twilio:
-  account-sid: ${TWILIO_ACCOUNT_SID:}
-  auth-token: ${TWILIO_AUTH_TOKEN:}
-  # 문자 발신 번호. E.164 형식 (예: +821012345678)
-  from-number: ${TWILIO_FROM_NUMBER:}
-
 ---
 # local 프로필 H2 에만 초기 데이터(docs/erd/02_init_data_dml.sql)를 넣는다. test 는 각 테스트가 데이터를 넣는다
 spring:

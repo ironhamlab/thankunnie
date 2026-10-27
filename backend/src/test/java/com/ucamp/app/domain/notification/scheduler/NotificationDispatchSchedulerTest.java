@@ -23,7 +23,6 @@ import org.springframework.test.context.ActiveProfiles;
 
 import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.notification.NotificationFixture;
-import com.ucamp.app.domain.notification.client.FakeTwilioSmsClientConfig;
 import com.ucamp.app.domain.notification.entity.NotificationDispatch;
 import com.ucamp.app.domain.notification.entity.NotificationDispatchStatus;
 import com.ucamp.app.domain.notification.entity.NotificationEvent;
@@ -34,7 +33,6 @@ import com.ucamp.app.domain.notification.entity.SubscriptionType;
 import com.ucamp.app.domain.notification.repository.NotificationDispatchRepository;
 import com.ucamp.app.domain.notification.repository.NotificationEventRepository;
 import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepository;
-import com.ucamp.app.domain.notification.repository.RecipientContactRepository;
 import com.ucamp.app.domain.notification.repository.ShopCategoryRegionRepository;
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
 import com.ucamp.app.domain.notification.service.NotificationDispatchService;
@@ -43,8 +41,8 @@ import com.ucamp.app.domain.notification.service.SubscriptionMatchService;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({NotificationDispatchScheduler.class, NotificationDispatchService.class, SubscriptionMatchService.class,
-        ShopCategoryRegionRepository.class, VacancySlotRepository.class, RecipientContactRepository.class,
-        FakeTwilioSmsClientConfig.class, NotificationDispatchSchedulerTest.FixedClock.class})
+        ShopCategoryRegionRepository.class, VacancySlotRepository.class,
+        NotificationDispatchSchedulerTest.FixedClock.class})
 @ActiveProfiles("test")
 class NotificationDispatchSchedulerTest {
 
@@ -126,8 +124,8 @@ class NotificationDispatchSchedulerTest {
     }
 
     @Test
-    @DisplayName("선점 스케줄은 재검사를 통과한 작업에 문자를 보내고 SENT 로 남긴다")
-    void claimAndRecheck_stillSendable_marksSent() {
+    @DisplayName("선점 스케줄은 재검사를 통과한 작업을 처리 중으로 둔다. 문자는 보내지 않는다")
+    void claimAndRecheck_stillSendable_keepsProcessing() {
         NotificationFixture.exception(jdbcTemplate, 1L, SHOP_ID, null, "OPEN", SLOT_START, SLOT_START.plusHours(1));
         notificationSubscriptionRepository.save(store(USER_ID));
         saveEvent();
@@ -137,12 +135,12 @@ class NotificationDispatchSchedulerTest {
 
         assertThat(notificationDispatchRepository.findAll())
                 .extracting(NotificationDispatch::getStatus)
-                .containsExactly(NotificationDispatchStatus.SENT);
+                .containsExactly(NotificationDispatchStatus.PROCESSING);
     }
 
     @Test
-    @DisplayName("선점 스케줄은 대기 작업을 한 번에 모두 집고 문자를 보낸다")
-    void claimAndRecheck_twoPendingJobs_sendsBoth() {
+    @DisplayName("선점 스케줄은 대기 작업을 한 번에 모두 집는다")
+    void claimAndRecheck_twoPendingJobs_claimsBoth() {
         NotificationFixture.user(jdbcTemplate, 2L);
         NotificationFixture.exception(jdbcTemplate, 1L, SHOP_ID, null, "OPEN", SLOT_START, SLOT_START.plusHours(1));
         notificationSubscriptionRepository.save(store(USER_ID));
@@ -155,13 +153,13 @@ class NotificationDispatchSchedulerTest {
         assertThat(notificationDispatchRepository.findAll())
                 .extracting(NotificationDispatch::getUserId, NotificationDispatch::getStatus)
                 .containsExactlyInAnyOrder(
-                        tuple(USER_ID, NotificationDispatchStatus.SENT),
-                        tuple(2L, NotificationDispatchStatus.SENT));
+                        tuple(USER_ID, NotificationDispatchStatus.PROCESSING),
+                        tuple(2L, NotificationDispatchStatus.PROCESSING));
     }
 
     @Test
-    @DisplayName("이미 처리 중인 쪽지는 다시 집지 않고 대기 중인 쪽지만 보내 SENT 로 남긴다")
-    void claimAndRecheck_processingJob_leavesItAndSendsPending() {
+    @DisplayName("이미 처리 중인 쪽지는 다시 집지 않고 대기 중인 쪽지만 집는다")
+    void claimAndRecheck_processingJob_leavesItAndClaimsPending() {
         NotificationFixture.user(jdbcTemplate, 2L);
         NotificationFixture.exception(jdbcTemplate, 1L, SHOP_ID, null, "OPEN", SLOT_START, SLOT_START.plusHours(1));
         NotificationSubscription minji = notificationSubscriptionRepository.save(store(USER_ID));
@@ -171,27 +169,25 @@ class NotificationDispatchSchedulerTest {
 
         NotificationDispatch alreadyProcessing = notificationDispatchService.claimDispatchJob().orElseThrow();
         // 이미 집은 사람의 구독을 해제한다. 그 쪽지를 다시 보면 SKIPPED가 된다.
-        // 다시 보지 않으면 PROCESSING으로 남고, 아직 대기인 사람만 집어서 보낸다.
+        // 다시 보지 않으면 PROCESSING으로 남고, 아직 대기인 사람만 집는다.
         if (alreadyProcessing.getUserId().equals(USER_ID)) {
             minji.deactivate();
         } else {
             sua.deactivate();
         }
-        Long alreadyUserId = alreadyProcessing.getUserId();
-        Long otherUserId = alreadyUserId.equals(USER_ID) ? 2L : USER_ID;
 
         scheduler.claimAndRecheck();
 
         assertThat(notificationDispatchRepository.findAll())
                 .extracting(NotificationDispatch::getUserId, NotificationDispatch::getStatus)
                 .containsExactlyInAnyOrder(
-                        tuple(alreadyUserId, NotificationDispatchStatus.PROCESSING),
-                        tuple(otherUserId, NotificationDispatchStatus.SENT));
+                        tuple(USER_ID, NotificationDispatchStatus.PROCESSING),
+                        tuple(2L, NotificationDispatchStatus.PROCESSING));
     }
 
     @Test
-    @DisplayName("한 명이 재검사에 걸려도 다른 대기 작업은 계속 보내 SENT 로 남긴다")
-    void claimAndRecheck_oneInactive_sendsTheOther() {
+    @DisplayName("한 명이 재검사에 걸려도 다른 대기 작업은 계속 집는다")
+    void claimAndRecheck_oneInactive_claimsTheOther() {
         NotificationFixture.user(jdbcTemplate, 2L);
         NotificationFixture.exception(jdbcTemplate, 1L, SHOP_ID, null, "OPEN", SLOT_START, SLOT_START.plusHours(1));
         NotificationSubscription inactive = notificationSubscriptionRepository.save(store(USER_ID));
@@ -206,7 +202,7 @@ class NotificationDispatchSchedulerTest {
                 .extracting(NotificationDispatch::getUserId, NotificationDispatch::getStatus)
                 .containsExactlyInAnyOrder(
                         tuple(USER_ID, NotificationDispatchStatus.SKIPPED),
-                        tuple(2L, NotificationDispatchStatus.SENT));
+                        tuple(2L, NotificationDispatchStatus.PROCESSING));
     }
 
     @Test
