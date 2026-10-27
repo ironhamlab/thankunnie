@@ -183,6 +183,8 @@
   margin-bottom: 18px;
 }
 .home-category-icon {
+  overflow: hidden;
+  white-space: nowrap;
   display: grid;
   place-items: center;
   width: 40px;

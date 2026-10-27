@@ -15,11 +15,14 @@ export default function DesignLayout() {
     (s) => s.bookings.filter((b) => b.isCustomer && b.status === 'confirmed').length,
   );
   const [notice, setNotice] = useState('');
+  const params = new URLSearchParams(location.search);
   const isHome =
     (location.pathname === R.HOME ||
       location.pathname === R.ROOT ||
       location.pathname === R.ROOT + '/') &&
-    !location.search;
+    !params.has('view') &&
+    !params.has('sale') &&
+    !params.has('search');
   const owner = location.pathname.startsWith(R.OWNER);
   if (owner) return <Outlet />;
   const handleSearch = (event) => {

@@ -40,7 +40,10 @@ export default function VacancySearchPage() {
       (previous) => {
         const next = new URLSearchParams(previous);
         if (value) next.set(key, value);
-        else next.delete(key);
+        else {
+          next.delete(key);
+          if (next.size === 0) next.set('view', 'list');
+        }
         return next;
       },
       { replace: true },
