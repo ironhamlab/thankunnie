@@ -12,8 +12,8 @@ import com.ucamp.app.domain.notification.entity.NotificationDispatch;
 import com.ucamp.app.domain.notification.service.NotificationDispatchService;
 
 /**
- * 발송 대기 작업 저장과 선점. 임박 감지, 예약 점유 만료와 메서드를 나눈다.
- * 이 작업이 늦어도 만료 스케줄이 같은 메서드 안에서 기다리지 않는다.
+ * 1분마다 알림 대기 줄을 만들고, 보내기 전에 다시 확인하는 곳.
+ * 빈자리를 찾는 일과 예약 임시 점유를 푸는 일과 메서드를 나눠 두었다.
  */
 @Slf4j
 @Component

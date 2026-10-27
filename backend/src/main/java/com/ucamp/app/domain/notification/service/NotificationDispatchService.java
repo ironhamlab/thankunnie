@@ -140,7 +140,7 @@ public class NotificationDispatchService {
         return userIds.contains(userId);
     }
 
-    // 임박·초임박은 OPEN 빈자리, 재공개는 취소된 예약 시간이 아직 팔리는지로 본다.
+    // 임박·초임박은 매장이 연 시간이 아직 팔리는지, 다시 열린 자리는 취소된 예약 시간이 아직 팔리는지 본다.
     private boolean slotStillSellable(NotificationEvent event) {
         LocalDateTime now = LocalDateTime.now(clock);
         if (event.getEventType() == NotificationEventType.REOPENED) {
@@ -152,6 +152,7 @@ public class NotificationDispatchService {
         return vacancySlotRepository.isOpenSlotSellable(event.getExceptionId(), now);
     }
 
+    // 확인에 걸린 줄은 보내지 않고 끝 상태로 둔다.
     private void finishWithoutSending(NotificationDispatch job) {
         job.markSkipped();
         notificationDispatchRepository.save(job);
