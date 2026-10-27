@@ -1,247 +1,234 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { SERVICES } from './data';
-import { useDesignStore } from './useDesignStore';
+import { generatePath, Link, useSearchParams } from 'react-router-dom';
+import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
+import { SERVICES, money } from './data';
 import Asset from './Asset';
-import ServiceCard from './ServiceCard';
-import VacancyMap from './VacancyMap';
-import './vacancy-search.css';
+import Dialog from './Dialog';
+import VacancySearchPage from './VacancySearchPage';
+import HomeBeautyMap from './HomeBeautyMap';
+import './home-redesign.css';
 
-const categories = ['전체', '네일', '헤어', '속눈썹', '피부관리', '왁싱'];
-const regions = ['강남/서초', '홍대/연남', '성수/건대', '잠실/송파', '판교/분당'];
-const times = ['전체', '오전 (09~12시)', '오후 (12~18시)', '저녁 (18시 이후)'];
-const sorts = ['임박 빈자리 우선순', '할인율순', '빠른 시작순'];
-const URGENCY_RANK = { '초임박 특가': 0, '임박 특가': 1, '일반 빈자리': 2 };
-function Filter({ label, options, value, onChange, segmented = false }) {
-  return (
-    <div className={'b-filter-group ' + (segmented ? 'b-segmented' : '')}>
-      <span className="b-filter-label">{label}</span>
-      <div className="b-options">
-        {options.map((option) => (
-          <button
-            key={option}
-            aria-pressed={value === option}
-            className={value === option ? 'is-selected' : ''}
-            onClick={() => onChange(value === option && label === '주요 지역' ? '' : option)}
-          >
-            {option}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
+const CATEGORIES = [
+  { title: '오늘 임박', text: '당일 마감 특가 할인', icon: 'bolt', badge: '최대 40%', sale: true },
+  {
+    title: '시술 모델 모집',
+    text: '무료 & 재료비 실습 모델',
+    icon: 'auto_awesome',
+    badge: '재료비 지원',
+    model: true,
+  },
+  { title: '네일', text: '젤원컬러, 이달의아트, 패디', icon: 'brush', badge: '18개 샵 오픈' },
+  { title: '헤어', text: '커트, 두피스케일링, 염색', icon: 'content_cut', badge: '12개 샵 오픈' },
+  { title: '속눈썹', text: '속눈썹 펌, 블랙틴팅, 연장', icon: 'visibility', badge: '9개 샵 오픈' },
+  { title: '피부관리', text: '수분 진정 퀵 페이셜, 윤곽', icon: 'spa', badge: '15개 샵 오픈' },
+];
+const SLIDES = [
+  {
+    tag: '실시간 타임세일',
+    eyebrow: 'REAL-TIME BEAUTY FLASH SALE',
+    lead: '지금 예약 가능한 ',
+    accent: '뷰티 빈자리',
+    end: '를 찾아보세요',
+    description:
+      '원하는 날짜와 지역의 빈자리를 찾고, 오늘의 할인 자리는 타임세일로 최대 40% 모아보세요.',
+    badge: '오늘의 빈자리 32개 오픈',
+  },
+  {
+    tag: '신규 혜택',
+    eyebrow: 'NEW MODEL MATCHING',
+    lead: '부담 없는 ',
+    accent: '무료 & 재료비 실습 모델',
+    end: ' 모집!',
+    description: '헤어 드라이, 젤네일, 속눈썹 펌 등 뷰티샵의 포트폴리오 모델을 만나보세요.',
+    badge: '재료비 지원 혜택 모아보기',
+  },
+  {
+    tag: '긴급 캔슬석',
+    eyebrow: 'FLASH CANCEL CATCH',
+    lead: '놓치기 아까운 ',
+    accent: '당일 취소석 즉시 알림',
+    end: '',
+    description: '자주 가는 강남·성수·홍대 샵의 갑작스러운 취소 빈자리를 빠르게 찾아보세요!',
+    badge: '취소 빈자리 모아보기',
+  },
+];
+const RECOMMENDATIONS = ['nail', 'facial', 'hair'].map((id) => SERVICES.find((s) => s.id === id));
+const DEMO_REMAINING = { nail: '00:39:42', facial: '01:09:18', hair: '02:08:45' };
+
 export default function DesignHomePage() {
-  const [params, setParams] = useSearchParams();
-  const saleOnly = params.get('sale') === '1';
-  const mapView = params.get('view') === 'map';
-  const updateOption = (key, value) => {
-    setParams(
-      (previous) => {
-        const next = new URLSearchParams(previous);
-        if (value) next.set(key, value);
-        else next.delete(key);
-        return next;
-      },
-      { replace: true },
-    );
-  };
-  const search = useDesignStore((s) => s.search);
-  const resetSearch = useDesignStore((s) => s.setSearch);
+  const [params] = useSearchParams();
+  const [slideIndex, setSlideIndex] = useState(0);
+  const [modelOpen, setModelOpen] = useState(false);
   const [category, setCategory] = useState('전체');
-  const [region, setRegion] = useState('');
-  const [day, setDay] = useState(null);
-  const [time, setTime] = useState('전체');
-  const [sort, setSort] = useState(sorts[0]);
-  const [mode, setMode] = useState('정상 결과 (6건)');
-  let results = SERVICES.filter(
-    (s) =>
-      (!saleOnly || (s.discount > 0 && s.day === 0)) &&
-      (category === '전체' || s.category === category) &&
-      (!region || s.region === region) &&
-      (day === null || s.day === day) &&
-      (!search || (s.name + s.shop + s.location + s.category).includes(search)) &&
-      (time === '전체' ||
-        (time.startsWith('오전') && Number(s.time.slice(0, 2)) < 12) ||
-        (time.startsWith('오후') &&
-          Number(s.time.slice(0, 2)) >= 12 &&
-          Number(s.time.slice(0, 2)) < 18) ||
-        (time.startsWith('저녁') && Number(s.time.slice(0, 2)) >= 18)),
-  );
-  if (sort === sorts[0])
-    results = [...results].sort(
-      (a, b) =>
-        (URGENCY_RANK[a.urgency] ?? 3) - (URGENCY_RANK[b.urgency] ?? 3) ||
-        a.day - b.day ||
-        a.time.localeCompare(b.time),
-    );
-  if (sort === '할인율순') results = [...results].sort((a, b) => b.discount - a.discount);
-  if (sort === '빠른 시작순')
-    results = [...results].sort((a, b) => a.day - b.day || a.time.localeCompare(b.time));
-  if (mode === '검색 결과 없음') results = [];
-  const reset = () => {
-    setCategory('전체');
-    setRegion('');
-    setDay(null);
-    setTime('전체');
-    setSort(sorts[0]);
-    updateOption('sale', '');
-    setMode('정상 결과 (6건)');
-    resetSearch('');
+  const slide = SLIDES[slideIndex];
+  if (params.has('view') || params.has('sale') || params.has('search'))
+    return <VacancySearchPage />;
+  const results =
+    category === '전체' || category === '오늘 임박'
+      ? RECOMMENDATIONS
+      : SERVICES.filter((s) => s.category === category);
+  const chooseCategory = (item) => {
+    if (item.model) {
+      setModelOpen(true);
+      return;
+    }
+    setCategory(item.title);
+    document.getElementById('home-deals').scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   return (
-    <div className="b-container b-home">
-      <section className="b-hero">
-        <div>
-          <div className="b-eyebrow">
-            <Asset name="8-3-6.svg" />
-            REAL-TIME BEAUTY FLASH SALE
-          </div>
-          <h1>
-            지금 예약 가능한 <em>뷰티 빈자리</em>를 찾아보세요
-          </h1>
-          <p>원하는 날짜와 지역의 빈자리를 찾고, 오늘의 할인 자리는 타임세일로 모아보세요.</p>
-        </div>
-        <span className="b-demo-note">
-          <Asset name="8-3-7.svg" />※ 본 화면의 할인율, 예약금, 잔여 시간은{' '}
-          <strong>MVP 모의 정책</strong> 예시 데이터입니다
-        </span>
-      </section>
-      <section className="b-filters b-panel" aria-label="빈자리 검색 필터">
-        <Filter
-          label="예약 종류"
-          options={['전체', '타임세일']}
-          value={saleOnly ? '타임세일' : '전체'}
-          onChange={(value) => updateOption('sale', value === '타임세일' ? '1' : '')}
-        />
-        <p className="b-vacancy-description">
-          {saleOnly
-            ? '오늘 시작하는 할인 빈자리만 보여드려요.'
-            : '정상가와 할인가를 포함한 모든 날짜의 빈자리를 보여드려요.'}
-        </p>
-        <div className="b-filter-group b-date-filter">
-          <span className="b-filter-label">날짜</span>
-          <div className="b-options">
+    <div className="b-container home-redesign">
+      <section className="home-banner" aria-label="메인 혜택 배너" aria-roledescription="캐러셀">
+        <div className="home-banner-content" aria-live="polite">
+          <div>
+            <div className="home-eyebrow">
+              <span>ϟ {slide.tag}</span>
+              <small>{slide.eyebrow}</small>
+            </div>
+            <h1>
+              {slide.lead}
+              <em>{slide.accent}</em>
+              {slide.end}
+            </h1>
+            <p>{slide.description}</p>
             <button
-              aria-pressed={day === null}
-              className={day === null ? 'is-selected' : ''}
-              onClick={() => setDay(null)}
+              className="home-live-badge"
+              onClick={() =>
+                slideIndex === 1 ? setModelOpen(true) : chooseCategory(CATEGORIES[0])
+              }
             >
-              전체 날짜
+              ● {slide.badge}
             </button>
-            {[
-              '오늘 10.24 (금)',
-              '내일 10.25 (토)',
-              '10.26 (일)',
-              '10.27 (월)',
-              '10.28 (화)',
-              '10.29 (수)',
-              '10.30 (목)',
-            ].map((label, index) => (
+          </div>
+          <aside className="home-demo">
+            <b>ⓘ</b>
+            <p>
+              <strong>※ MVP 모의 데모:</strong> 본 화면의 데이터는 실시간 결제 없는
+              시뮬레이션입니다.
+            </p>
+          </aside>
+        </div>
+        <div className="home-slider-controls">
+          <div className="home-slider-dots">
+            {SLIDES.map((item, index) => (
               <button
-                key={label}
-                aria-pressed={day === index}
-                className={day === index ? 'is-selected' : ''}
-                onClick={() => setDay(day === index ? null : index)}
+                key={item.tag}
+                aria-label={`슬라이드 ${index + 1}`}
+                aria-pressed={index === slideIndex}
+                onClick={() => setSlideIndex(index)}
+              />
+            ))}
+          </div>
+          <div>
+            <span>
+              <b>{slideIndex + 1}</b> / 3
+            </span>
+            <button aria-label="이전 슬라이드" onClick={() => setSlideIndex((slideIndex + 2) % 3)}>
+              ‹
+            </button>
+            <button aria-label="다음 슬라이드" onClick={() => setSlideIndex((slideIndex + 1) % 3)}>
+              ›
+            </button>
+          </div>
+        </div>
+      </section>
+      <section className="home-discover" aria-label="시술 분야와 주변 빈자리">
+        <div className="home-categories">
+          <h2>어떤 시술을 찾고 계신가요?</h2>
+          <div className="home-category-grid">
+            {CATEGORIES.map((item) => (
+              <button
+                key={item.title}
+                className="home-category"
+                aria-pressed={item.model ? undefined : category === item.title}
+                onClick={() => chooseCategory(item)}
               >
-                {label}
-                {index === 0 && ' ●'}
+                <span className="home-category-top">
+                  <span
+                    className={`home-category-icon home-symbol ${item.sale || item.model ? 'is-filled' : ''}`}
+                    aria-hidden="true"
+                  >
+                    {item.icon}
+                  </span>
+                  <small>{item.badge}</small>
+                </span>
+                <strong>{item.title}</strong>
+                <span className="home-category-description">{item.text}</span>
               </button>
             ))}
-            <label className="b-more-date">
-              + 31일 보기
-              <input
-                type="date"
-                aria-label="추가 날짜 선택"
-                min="2025-10-24"
-                max="2025-11-23"
-                onChange={(event) => {
-                  if (event.target.value)
-                    setDay(
-                      Math.round(
-                        (new Date(event.target.value) - new Date('2025-10-24')) / 86400000,
-                      ),
-                    );
-                }}
-              />
-            </label>
           </div>
         </div>
-        <div className="b-row b-filter-line">
-          <Filter label="시술 분야" options={categories} value={category} onChange={setCategory} />
-          <Filter label="주요 지역" options={regions} value={region} onChange={setRegion} />
+        <HomeBeautyMap services={RECOMMENDATIONS} />
+      </section>
+      <section id="home-deals" className="home-deals">
+        <div className="home-section-heading">
+          <div>
+            <h2>
+              {category === '전체' || category === '오늘 임박'
+                ? '오늘의 실시간 타임세일 & 빈자리'
+                : `${category} 예약 가능한 빈자리`}{' '}
+              <em>◷</em>
+            </h2>
+            <p>예약 취소 및 공실 자리를 실시간 특가로 잡으세요. (결제 시 5분 예약금 임시 확보)</p>
+          </div>
+          <Link to={`${R.HOME}?view=list`}>전체보기 ›</Link>
         </div>
-        <div className="b-row b-filter-line">
-          <Filter label="시작 시간" options={times} value={time} onChange={setTime} segmented />
-          <Filter label="정렬" options={sorts} value={sort} onChange={setSort} segmented />
+        <div className="home-deal-grid">
+          {results.map((service) => (
+            <article className="home-deal-card" key={service.id}>
+              <div className="home-deal-photo">
+                <Asset name={service.image} alt={`${service.shop} ${service.category} 시술`} />
+                <span
+                  className={`home-urgency ${service.urgency !== '초임박 특가' ? 'is-soon' : ''}`}
+                >
+                  ● {service.urgency}
+                </span>
+                {DEMO_REMAINING[service.id] && (
+                  <span className="home-countdown">
+                    <span>◷ 마감 임박</span>
+                    <b>{DEMO_REMAINING[service.id]}</b>
+                  </span>
+                )}
+              </div>
+              <div className="home-deal-body">
+                <div className="home-deal-meta">
+                  <strong>{service.shop}</strong>
+                  <span>⌖ {service.location}</span>
+                </div>
+                <h3>{service.name}</h3>
+                <p className="home-deal-time">
+                  ⌛ {service.duration}분 소요 <span>·</span>{' '}
+                  <strong>
+                    {['오늘', '내일', '모레'][service.day]} {service.time}
+                  </strong>
+                </p>
+                <div className="home-deal-price">
+                  <div>
+                    {service.discount > 0 && <del>{money(service.original)}</del>}
+                    <div>
+                      {service.discount > 0 && <em>{service.discount}%</em>}{' '}
+                      <b>{money(service.price)}</b>
+                    </div>
+                  </div>
+                  <Link
+                    className="b-button b-primary"
+                    to={generatePath(R.DETAIL, { id: service.id })}
+                  >
+                    빈자리 확인
+                  </Link>
+                </div>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
-      <div className="b-row b-results-heading">
-        <h2>
-          예약 가능한 빈자리 <span className="b-badge">{results.length}건</span>
-        </h2>
-        <Filter
-          label="보기 방식"
-          options={['목록', '지도']}
-          value={mapView ? '지도' : '목록'}
-          onChange={(value) => updateOption('view', value === '지도' ? 'map' : '')}
-          segmented
-        />
-      </div>
-      {mode === '로딩 상태' ? (
-        <div className="b-card-grid" aria-busy="true" aria-label="빈자리 불러오는 중">
-          {[1, 2, 3].map((id) => (
-            <div key={id} className="b-skeleton" />
-          ))}
-        </div>
-      ) : mode === '조회 오류' ? (
-        <div className="b-empty b-panel" role="alert">
-          <h2>빈자리를 불러오지 못했어요</h2>
-          <p>잠시 후 다시 시도해 주세요.</p>
-          <button className="b-button b-primary" onClick={() => setMode('정상 결과 (6건)')}>
-            다시 시도
+      {modelOpen && (
+        <Dialog title="시술 모델 모집" onClose={() => setModelOpen(false)}>
+          <p>시술 모델 모집 화면은 준비 중입니다. 현재는 메인페이지 UI 시연 환경입니다.</p>
+          <button className="b-button b-primary" onClick={() => setModelOpen(false)}>
+            확인
           </button>
-        </div>
-      ) : results.length ? (
-        <div className={mapView ? 'b-vacancy-map-layout' : ''}>
-          <div className="b-card-grid">
-            {results.map((s) => (
-              <ServiceCard key={s.id} service={s} />
-            ))}
-          </div>
-          {mapView && <VacancyMap services={results} />}
-        </div>
-      ) : (
-        <div className="b-empty b-panel">
-          <h2>조건에 맞는 빈자리가 없어요</h2>
-          <p>다른 날짜나 지역을 선택해 보세요.</p>
-          <button className="b-button b-primary" onClick={reset}>
-            필터 초기화
-          </button>
-        </div>
+        </Dialog>
       )}
-      <div className="b-preview b-row">
-        <div className="b-flex">
-          <Asset name="8-3-12.svg" />
-          <strong>상태별 UI 미리보기 모드:</strong>
-          <span className="b-muted">개발 및 검증을 위한 화면 상태 토글</span>
-        </div>
-        <div className="b-options">
-          {['정상 결과 (6건)', '검색 결과 없음', '로딩 상태', '조회 오류'].map((item) => (
-            <button
-              key={item}
-              aria-pressed={mode === item}
-              className={mode === item ? 'is-selected' : ''}
-              onClick={() => setMode(item)}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="b-row b-help">
-        <small>시연 기준일: 2025.10.24 · 목록과 지도는 같은 검색 결과를 표시합니다.</small>
-      </div>
     </div>
   );
 }

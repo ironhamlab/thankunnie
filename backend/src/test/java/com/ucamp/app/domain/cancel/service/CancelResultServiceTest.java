@@ -14,6 +14,8 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 
 import com.ucamp.app.config.TimeConfig;
 import com.ucamp.app.domain.cancel.CancelFixture;
@@ -21,13 +23,18 @@ import com.ucamp.app.domain.cancel.dto.response.CancelResultResponse;
 import com.ucamp.app.domain.cancel.entity.CancelStatus;
 import com.ucamp.app.domain.cancel.entity.CancelType;
 import com.ucamp.app.domain.cancel.entity.ReservationCancel;
+import com.ucamp.app.domain.cancel.repository.CancelScheduleExceptionRepository;
 import com.ucamp.app.domain.cancel.repository.ReservationCancelRepository;
+import com.ucamp.app.domain.notification.event.SlotReopenedEvent;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
+import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
+import com.ucamp.app.domain.schedule.entity.ShopScheduleException;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({TimeConfig.class, CancelResultService.class, GraceCancelUsageService.class})
 @ActiveProfiles("test")
+@RecordApplicationEvents
 class CancelResultServiceTest {
 
     private static final LocalDateTime STARTS_AT = LocalDateTime.of(2026, 11, 2, 10, 0);
@@ -43,7 +50,13 @@ class CancelResultServiceTest {
     private ReservationCancelRepository reservationCancelRepository;
 
     @Autowired
+    private CancelScheduleExceptionRepository cancelScheduleExceptionRepository;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private ApplicationEvents applicationEvents;
 
     private ReservationCancel cancel;
 
@@ -77,6 +90,30 @@ class CancelResultServiceTest {
         assertThat(reservationStatus()).isEqualTo("CANCELLED");
         assertThat(cancel.getCompletedAt()).isEqualTo(NOW.plusSeconds(3));
         assertThat(graceCancelUsageService.isUsed(CancelFixture.CUSTOMER_ID, NOW.toLocalDate())).isTrue();
+        assertThat(applicationEvents.stream(SlotReopenedEvent.class))
+                .containsExactly(new SlotReopenedEvent(100L));
+    }
+
+    @Test
+    @DisplayName("사장님이 취소하며 닫은 시간은 취소 완료돼도 재공개 이벤트를 발행하지 않는다")
+    void complete_closed_noReopenEvent() {
+        saveClose();
+
+        cancelResultService.complete(cancel.getId(), NOW.plusSeconds(3));
+
+        assertThat(reservationStatus()).isEqualTo("CANCELLED");
+        assertThat(applicationEvents.stream(SlotReopenedEvent.class)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("결제 취소 실패를 반영하면 취소하며 등록한 닫기도 지운다")
+    void fail_deletesCloseSchedule() {
+        saveClose();
+
+        cancelResultService.fail(cancel.getId(), NOW.plusSeconds(3));
+
+        assertThat(cancelScheduleExceptionRepository.existsByReservationId(100L)).isFalse();
+        assertThat(applicationEvents.stream(SlotReopenedEvent.class)).isEmpty();
     }
 
     @Test
@@ -108,6 +145,17 @@ class CancelResultServiceTest {
 
         assertThatThrownBy(() -> cancelResultService.complete(cancel.getId(), NOW))
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    private void saveClose() {
+        cancelScheduleExceptionRepository.save(ShopScheduleException.builder()
+                .shopId(CancelFixture.SHOP_ID)
+                .reservationId(100L)
+                .exceptionType(ScheduleExceptionType.CLOSE)
+                .startsAt(STARTS_AT)
+                .endsAt(STARTS_AT.plusHours(1))
+                .reason("원장님 부상")
+                .build());
     }
 
     private String reservationStatus() {
