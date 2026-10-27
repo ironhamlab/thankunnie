@@ -1,4 +1,4 @@
-package com.ucamp.app.domain.cancel.repository;
+package com.ucamp.app.domain.reservation.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,13 +23,13 @@ import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(TimeConfig.class)
 @ActiveProfiles("test")
-class CancelReservationRepositoryTest {
+class ReservationRepositoryChangeStatusTest {
 
     private static final LocalDateTime STARTS_AT = LocalDateTime.of(2026, 11, 2, 10, 0);
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 11, 1, 12, 0);
 
     @Autowired
-    private CancelReservationRepository cancelReservationRepository;
+    private ReservationRepository reservationRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -43,7 +43,7 @@ class CancelReservationRepositoryTest {
     @Test
     @DisplayName("현재 상태가 맞으면 상태와 수정 시각을 바꾸고 1을 반환한다")
     void changeStatus_matchingStatus_updates() {
-        int changed = cancelReservationRepository.changeStatus(100L, ReservationStatus.CONFIRMED,
+        int changed = reservationRepository.changeStatus(100L, ReservationStatus.CONFIRMED,
                 ReservationStatus.CANCEL_PENDING, NOW);
 
         assertThat(changed).isEqualTo(1);
@@ -56,14 +56,14 @@ class CancelReservationRepositoryTest {
     @Test
     @DisplayName("현재 상태가 다르면 바꾸지 않고 0을 반환한다 (동시 취소는 한 건만 성공)")
     void changeStatus_otherStatus_noUpdate() {
-        cancelReservationRepository.changeStatus(100L, ReservationStatus.CONFIRMED,
+        reservationRepository.changeStatus(100L, ReservationStatus.CONFIRMED,
                 ReservationStatus.CANCEL_PENDING, NOW);
 
-        int changed = cancelReservationRepository.changeStatus(100L, ReservationStatus.CONFIRMED,
+        int changed = reservationRepository.changeStatus(100L, ReservationStatus.CONFIRMED,
                 ReservationStatus.CANCEL_PENDING, NOW);
 
         assertThat(changed).isZero();
-        assertThat(cancelReservationRepository.changeStatus(999L, ReservationStatus.CONFIRMED,
+        assertThat(reservationRepository.changeStatus(999L, ReservationStatus.CONFIRMED,
                 ReservationStatus.CANCEL_PENDING, NOW)).isZero();
     }
 }

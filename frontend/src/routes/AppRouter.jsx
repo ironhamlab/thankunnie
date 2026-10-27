@@ -13,6 +13,7 @@ const ReservationPage = lazy(() => import('@/pages/reservation/ReservationPage')
 const CheckoutPage = lazy(() => import('@/pages/reservation/CheckoutPage'));
 const BookingResultPage = lazy(() => import('@/pages/reservation/BookingResultPage'));
 const BookingsPage = lazy(() => import('@/pages/my/BookingsPage'));
+const MyReservationsPage = lazy(() => import('@/pages/my/MyReservationsPage'));
 const CustomerProfilePage = lazy(() => import('@/pages/my/CustomerProfilePage'));
 const OwnerDashboardPage = lazy(() => import('@/pages/owner/OwnerDashboardPage'));
 const ShopPage = lazy(() => import('@/pages/owner/ShopPage'));
@@ -47,6 +48,7 @@ export default function AppRouter() {
           <Route path={ROUTES.BOOKING_RESULT} element={<BookingResultPage />} />
           <Route path={ROUTES.PROFILE} element={<CustomerProfilePage />} />
           <Route path={ROUTES.BOOKINGS} element={<BookingsPage />} />
+          <Route path={ROUTES.MY_RESERVATIONS} element={<MyReservationsPage />} />
           <Route path={ROUTES.NOT_FOUND} element={<NotFoundPage />} />
         </Route>
         <Route path={ROUTES.OWNER} element={<OwnerLayout />}>

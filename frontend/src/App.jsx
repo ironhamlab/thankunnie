@@ -1,4 +1,5 @@
 import { BrowserRouter } from 'react-router-dom';
+import DevTestUserSwitch from '@/components/common/DevTestUserSwitch';
 import AppRouter from '@/routes/AppRouter';
 
 /**
@@ -8,6 +9,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppRouter />
+      <DevTestUserSwitch />
     </BrowserRouter>
   );
 }

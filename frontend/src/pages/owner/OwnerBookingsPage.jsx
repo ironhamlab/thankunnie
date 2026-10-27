@@ -1,156 +1,198 @@
-import { useState } from 'react';
-import { SERVICES, STATUS, finish, money } from '@/utils/demoData';
-import { useDesignStore } from '@/store/useDesignStore';
+import { useEffect, useState } from 'react';
+import { generatePath } from 'react-router-dom';
+import { ROUTES } from '@/constants/routes';
+import { PAYMENT_STATUS, reservationStatusOf } from '@/constants/reservationStatus';
+import { useReservationStore } from '@/store/useReservationStore';
+import { formatReservationTime } from '@/utils/reservationFormat';
+import { todayKst } from '@/utils/scheduleDate';
+import ReservationDetailPanel from '@/components/reservation/ReservationDetailPanel';
+import ReservationPagination from '@/components/reservation/ReservationPagination';
 
+// 상태를 고르지 않으면 서버가 점유 만료(EXPIRED)를 뺀 전체를 준다
+const STATUS_FILTERS = [
+  { key: 'ALL', label: '전체', statuses: [] },
+  { key: 'HOLD', label: '결제 대기', statuses: ['HOLD'] },
+  { key: 'CONFIRMED', label: '예약 확정', statuses: ['CONFIRMED'] },
+  { key: 'CANCEL', label: '취소', statuses: ['CANCEL_PENDING', 'CANCELLED'] },
+];
+const PAGE_SIZE = 10;
+
+const cancelPath = (reservationId) => generatePath(ROUTES.OWNER_RESERVATION_CANCEL, { reservationId });
+
+/**
+ * 사장님 예약 현황 (B-F6). 본인 매장 예약을 날짜·상태로 거르고, 고른 예약의 예약자·결제·취소 상태를 본다.
+ */
 export default function OwnerBookingsPage() {
-  const bookings = useDesignStore((s) => s.bookings);
-  const [selectedId, setSelectedId] = useState(bookings[0]?.id);
-  const [status, setStatus] = useState('');
-  const list = bookings.filter((b) => !status || b.status === status);
-  const selected = list.find((b) => b.id === selectedId) || list[0];
+  const loadReservations = useReservationStore((state) => state.loadReservations);
+  const loadReservation = useReservationStore((state) => state.loadReservation);
+  const clearDetail = useReservationStore((state) => state.clearDetail);
+  const reservations = useReservationStore((state) => state.reservations);
+  const pageInfo = useReservationStore((state) => state.pageInfo);
+  const listStatus = useReservationStore((state) => state.listStatus);
+  const listError = useReservationStore((state) => state.listError);
+  const [from, setFrom] = useState(todayKst());
+  const [to, setTo] = useState('');
+  const [filterKey, setFilterKey] = useState('ALL');
+  const [page, setPage] = useState(0);
+  const [selectedId, setSelectedId] = useState(null);
+
+  useEffect(() => {
+    const { statuses } = STATUS_FILTERS.find((filter) => filter.key === filterKey);
+    loadReservations('owner', { from, to, statuses, page, size: PAGE_SIZE });
+  }, [loadReservations, from, to, filterKey, page]);
+
+  // 고른 예약이 현재 목록에 없으면 첫 예약을 보여준다
+  const activeId = reservations.some((item) => item.reservationId === selectedId)
+    ? selectedId
+    : reservations[0]?.reservationId;
+
+  // 새 목록이 오기 전에는 상세를 부르지 않는다. 이전 목록의 상세가 새 조건의 결과처럼 보이지 않게 한다
+  useEffect(() => {
+    if (listStatus !== 'succeeded') {
+      return;
+    }
+    if (activeId) {
+      loadReservation('owner', activeId);
+    } else {
+      clearDetail();
+    }
+  }, [loadReservation, clearDetail, activeId, listStatus]);
+
+  // 필터를 바꾸면 첫 페이지부터 다시 본다
+  const changeFilter = (update) => {
+    update();
+    setPage(0);
+  };
+
+  // 시작일을 종료일보다 늦게 바꾸면 종료일을 비운다 (YYYY-MM-DD 는 문자열 비교가 날짜 순서와 같다)
+  const handleFromChange = (value) =>
+    changeFilter(() => {
+      setFrom(value);
+      if (to && value && to < value) {
+        setTo('');
+      }
+    });
+
   return (
     <div className="b-stack">
       <div className="b-row b-title-row">
         <div>
-          <h1>
-            예약 관리 <span className="b-badge">실시간 동기화</span>
-          </h1>
-          <p className="b-muted">
-            고객의 빈자리 모의 예약 및 결제 내역을 조회합니다. (내 매장 전용)
-          </p>
+          <h1>예약 현황</h1>
+          <p className="b-muted">내 매장 예약의 예약자·결제·취소 상태를 확인합니다.</p>
         </div>
-        <span className="b-demo-note">MVP 모의 결제 환경 · 실제 결제 없음</span>
       </div>
-      <div className="b-panel b-pad b-row">
-        <strong>예약 상태</strong>
-        <div className="b-options">
-          {[
-            ['', '전체'],
-            ['confirmed', '예약 확정'],
-            ['completed', '방문 완료'],
-            ['cancelled', '고객 취소'],
-          ].map(([value, label]) => (
+
+      <div className="b-panel b-pad b-stack">
+        <div className="b-flex">
+          <label>
+            시작일부터{' '}
+            <input
+              type="date"
+              value={from}
+              onChange={(event) => handleFromChange(event.target.value)}
+            />
+          </label>
+          <label>
+            시작일까지{' '}
+            <input
+              type="date"
+              value={to}
+              min={from || undefined}
+              onChange={(event) => changeFilter(() => setTo(event.target.value))}
+            />
+          </label>
+          <button
+            type="button"
+            className="b-button b-small"
+            onClick={() =>
+              changeFilter(() => {
+                setFrom(todayKst());
+                setTo('');
+                setFilterKey('ALL');
+              })
+            }
+          >
+            필터 초기화
+          </button>
+        </div>
+        <div className="b-options" role="group" aria-label="예약 상태">
+          {STATUS_FILTERS.map((filter) => (
             <button
-              key={value}
-              className={status === value ? 'is-selected' : ''}
-              onClick={() => setStatus(value)}
+              key={filter.key}
+              type="button"
+              className={filterKey === filter.key ? 'is-selected' : ''}
+              onClick={() => changeFilter(() => setFilterKey(filter.key))}
             >
-              {label} ({bookings.filter((b) => !value || b.status === value).length})
+              {filter.label}
             </button>
           ))}
         </div>
       </div>
+
       <div className="b-owner-bookings-grid">
         <section className="b-panel b-table-panel">
           <div className="b-row b-pad">
             <h2>예약 목록</h2>
-            <small>실시간 {list.length}건 검색됨</small>
+            <small>{pageInfo.totalElements}건</small>
           </div>
-          <div className="b-table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  {[
-                    '예약번호',
-                    '예약자명',
-                    '시술 메뉴',
-                    '예약 일시',
-                    '결제 상태',
-                    '예약 상태',
-                    '상세',
-                  ].map((h) => (
-                    <th key={h}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {list.map((b) => (
-                  <tr key={b.id} className={selected?.id === b.id ? 'is-active' : ''}>
-                    <td>{b.id}</td>
-                    <td>
-                      <strong>{b.name}</strong>
-                      <small>{b.phone}</small>
-                    </td>
-                    <td>{SERVICES.find((s) => s.id === b.serviceId)?.name}</td>
-                    <td>
-                      {b.date}
-                      <small>
-                        {b.time}~{finish(b.time, b.duration)}
-                      </small>
-                    </td>
-                    <td>
-                      <span className="b-badge b-green">
-                        {b.status === 'cancelled' ? '모의 부분환불 완료' : '모의 결제 완료'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="b-badge">{STATUS[b.status]}</span>
-                    </td>
-                    <td>
-                      <button className="b-button b-small" onClick={() => setSelectedId(b.id)}>
-                        상세 보기
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {!list.length && <p className="b-empty">해당 상태의 예약이 없습니다.</p>}
-          <p className="b-table-foot">상세 보기 버튼을 누르면 우측 상세 내역 패널이 전환됩니다.</p>
+          {listStatus === 'loading' && <p role="status">예약을 불러오는 중입니다.</p>}
+          {listStatus === 'failed' && <p role="alert">{listError.message}</p>}
+          {listStatus === 'succeeded' && (
+            <>
+              <div className="b-table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      {['예약번호', '예약자', '시술', '예약 일시', '결제', '상태', '상세'].map(
+                        (header) => (
+                          <th key={header}>{header}</th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reservations.map((item) => {
+                      const status = reservationStatusOf(item.status);
+                      return (
+                        <tr
+                          key={item.reservationId}
+                          className={activeId === item.reservationId ? 'is-active' : ''}
+                        >
+                          <td>{item.reservationId}</td>
+                          <td>
+                            <strong>{item.customerName}</strong>
+                          </td>
+                          <td>{item.treatmentName}</td>
+                          <td>{formatReservationTime(item.startsAt, item.endsAt)}</td>
+                          <td>{PAYMENT_STATUS[item.paymentStatus] ?? '결제 전'}</td>
+                          <td>
+                            <span className={`b-badge ${status.tone}`}>{status.label}</span>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="b-button b-small"
+                              onClick={() => setSelectedId(item.reservationId)}
+                            >
+                              상세 보기
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {!reservations.length && <p className="b-empty">조건에 맞는 예약이 없습니다.</p>}
+              <ReservationPagination page={page} pageInfo={pageInfo} onPageChange={setPage} />
+            </>
+          )}
         </section>
-        {selected && (
-          <aside className="b-stack">
-            <section className="b-panel b-pad">
-              <div className="b-row b-panel-heading">
-                <h2>예약 상세</h2>
-                <span className="b-badge">{STATUS[selected.status]}</span>
-              </div>
-              <p className="b-help">{selected.id}</p>
-              <div className="b-notice">
-                <h3>고객 정보</h3>
-                <div className="b-row">
-                  <strong>{selected.name}</strong>
-                  <span>{selected.phone}</span>
-                </div>
-                <p>고객 요청사항</p>
-                <div className="b-panel b-pad">{selected.request || '요청사항 없음'}</div>
-              </div>
-              <div className="b-notice">
-                <h3>시술 정보</h3>
-                <strong>{SERVICES.find((s) => s.id === selected.serviceId)?.name}</strong>
-                <p className="b-pink">
-                  {selected.date} {selected.time}~{finish(selected.time, selected.duration)}
-                </p>
-                <small>소요 시간 {selected.duration}분</small>
-              </div>
-              <h3>정산 및 모의 결제 내역</h3>
-              <dl className="b-details">
-                <div>
-                  <dt>최종 시술 금액</dt>
-                  <dd className="b-pink">{money(selected.price)}</dd>
-                </div>
-                <div>
-                  <dt>모의 예약금 (20%)</dt>
-                  <dd>{money(selected.deposit)}</dd>
-                </div>
-                <div>
-                  <dt>현장 결제 잔금</dt>
-                  <dd>{money(selected.price - selected.deposit)}</dd>
-                </div>
-                {selected.status === 'cancelled' && (
-                  <div>
-                    <dt>모의 환불 금액</dt>
-                    <dd>{money(selected.refund || 0)}</dd>
-                  </div>
-                )}
-              </dl>
-              <div className="b-notice">
-                모의 환경 안내: 실제 카드 조회, 수동 결제, 강제 환불은 제공되지 않습니다.
-              </div>
-            </section>
-          </aside>
-        )}
+        <aside className="b-stack">
+          {listStatus === 'succeeded' && (
+            <ReservationDetailPanel viewer="owner" cancelPath={cancelPath} />
+          )}
+        </aside>
       </div>
     </div>
   );
