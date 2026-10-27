@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import DevTestUserSwitch from '@/components/common/DevTestUserSwitch';
 import AppRouter from '@/routes/AppRouter';
 import { DESIGN_ROUTES } from '@/constants/designRoutes';
 import { ROUTES } from '@/constants/routes';
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="*" element={<AppRouter />} />
         </Routes>
       </Suspense>
+      <DevTestUserSwitch />
     </BrowserRouter>
   );
 }
