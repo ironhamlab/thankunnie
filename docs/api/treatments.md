@@ -77,7 +77,7 @@
 
 시술 응답 필드: `treatmentId`, `shopId`, `name`, `description`, `regularPrice`, `price`, `lastMinutePrice`,
 `categoryId`, `categoryName`, `durationMinutes`, `status`, `treatmentType`,
-`modelCondition`, `photoNotice`, `createdAt`, `updatedAt`.
+`modelCondition`, `photoNotice`, `imageUrl`, `createdAt`, `updatedAt`.
 시각은 `+09:00` 오프셋이다.
 카테고리 응답 항목: `categoryId`, `name`.
 
