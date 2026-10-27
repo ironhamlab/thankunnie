@@ -1,8 +1,8 @@
 package com.ucamp.app.domain.shop.service;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -91,9 +91,10 @@ class ShopImageStorageTest {
     @Test
     @DisplayName("압축 파일이 작아도 과도한 이미지 해상도는 디코딩 전에 거부한다")
     void save_largeDimensions_rejectsBeforeDecode() throws IOException {
-        byte[] png = ShopImageFixture.image("png").getBytes();
-        ByteBuffer.wrap(png).putInt(16, 100_000).putInt(20, 100_000);
-        assertInvalid(() -> storage.save(new MockMultipartFile("file", "image.png", "image/png", png)));
+        MockMultipartFile file = ShopImageFixture.image("png",
+                new BufferedImage(4001, 4000, BufferedImage.TYPE_BYTE_GRAY));
+        assertThat(file.getSize()).isLessThanOrEqualTo(ShopImageStorage.MAX_BYTES);
+        assertInvalid(() -> storage.save(file));
         assertThat(directory).isEmptyDirectory();
     }
 

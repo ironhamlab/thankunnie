@@ -15,8 +15,12 @@ public final class ShopImageFixture {
     }
 
     public static MockMultipartFile image(String format) throws IOException {
+        return image(format, new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB));
+    }
+
+    public static MockMultipartFile image(String format, BufferedImage image) throws IOException {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ImageIO.write(new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB), format, output);
+        ImageIO.write(image, format, output);
         return new MockMultipartFile("file", "image." + format,
                 format.equals("png") ? "image/png" : "image/jpeg", output.toByteArray());
     }
