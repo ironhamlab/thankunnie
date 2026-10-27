@@ -5,6 +5,8 @@ import { configureAuth } from '@/api/axiosInstance';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getDevTestUser } from '@/utils/devTestUser';
 import '@/assets/styles/global.css';
+import '@/assets/styles/design.css';
+import '@/assets/styles/remaining-screens.css';
 
 // axiosInstance 가 store 를 직접 참조하지 않도록 인증 연동 함수를 주입한다.
 configureAuth({

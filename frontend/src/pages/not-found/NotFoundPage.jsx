@@ -6,7 +6,7 @@ import { ROUTES } from '@/constants/routes';
  */
 export default function NotFoundPage() {
   return (
-    <section>
+    <section className="b-empty">
       <h1>페이지를 찾을 수 없습니다.</h1>
       <Link to={ROUTES.HOME}>홈으로 돌아가기</Link>
     </section>

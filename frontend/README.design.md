@@ -8,29 +8,42 @@ npm ci
 npm run dev
 ```
 
-`http://localhost:5173/design`에서 시작합니다. 다른 프론트엔드 작업과 충돌하지 않도록 기존 `/`의 API 기반 메인 화면과 공통 인증 코드는 보존했습니다. 디자인 전용 라우트는 `src/constants/designRoutes.js`, 진입점은 `src/pages/design/DesignApp.jsx`입니다. 공통 라우터를 바꾸지 않고 `App.jsx`에서 `/design/*`만 연결합니다.
+`http://localhost:5173/`에서 시작합니다. 라우트 경로는 `src/constants/routes.js`, 라우트 정의는 `src/routes/AppRouter.jsx`에 있습니다. 고객 화면은 `MainLayout`, 사장님 화면은 `OwnerLayout`(`src/components/layout/`)을 사용합니다. 이전 `/design/...` 주소는 `/design`을 뺀 같은 화면 주소로 이동합니다.
+
+| 위치                                                     | 내용                                                    |
+| -------------------------------------------------------- | ------------------------------------------------------- |
+| `src/pages/home/`                                        | 메인 홈·빈자리 탐색 (`components/`: 카드·지도·검색)     |
+| `src/pages/service/`                                     | 매장·시술 상세                                          |
+| `src/pages/reservation/`                                 | 일반 예약·결제·결과                                     |
+| `src/pages/my/`                                          | 내 예약·프로필                                          |
+| `src/pages/owner/`                                       | 사장님 센터 화면 (`components/`: 시술 폼·영업시간 패널) |
+| `src/components/common/`                                 | `Dialog`, `Asset`(Figma 에셋)                           |
+| `src/store/useDesignStore.js`                            | 시연 상태                                               |
+| `src/utils/demoData.js`, `src/utils/demoRefundPolicy.js` | 시연 데이터·환불 시연 계산                              |
+| `src/assets/styles/`                                     | `design.css` 등 디자인 테마                             |
 
 ## 구현 화면
 
 원본 파일: https://www.figma.com/design/7Rw7Q9yqkeN1gQ1Qde9EN7/
 
-| 경로                      | 화면                                    | 원본 노드            |
-| ------------------------- | --------------------------------------- | -------------------- |
-| `/design`                 | 날짜·시술·지역·시간 필터 및 빈자리 카드 | `8:3`                |
-| `/design?view=map`        | 동일한 검색 결과의 지도·목록 보기       | `18:3548` 기반       |
-| `/design?sale=1`          | 오늘 시작하는 할인 빈자리만 표시        | 통합 탐색 필터       |
-| `/design/reserve/nail`    | 일반 예약 날짜·시간 선택                | `32:2`               |
-| `/design/checkout`        | 임시 확보·약관 동의·모의 결제           | `8:4`                |
-| `/design/bookings`        | 내 예약·상세·취소 및 모의 환불          | `8:8`                |
-| `/design/owner`           | 사장님 마이페이지                       | `32:767`             |
-| `/design/owner/shop`      | 매장 정보 및 고객 노출 미리보기         | `12:2061`            |
-| `/design/owner/menus`     | 시술 메뉴 등록·수정·활성화              | `12:1798`            |
-| `/design/owner/slots`     | 빈자리 등록·수정·판매 상태 및 겹침 검사 | `12:2755`            |
-| `/design/owner/bookings`  | 예약 목록 및 고객·결제 상세             | `12:2362`            |
-| `/design/services/nail`   | 매장·시술 상세 및 할인 예약 요약        | `8:2` (제공 PNG)     |
-| `/design/result`          | 모의 결제 결과·정산·실패/만료 미리보기  | `8:7` (제공 PNG)     |
-| `/design/owner/slots/new` | 별도 빈자리 즉시 등록 페이지            | `18:3220` (제공 PNG) |
-| `/design/profile`         | 고객 프로필·예약·찜·알림 설정           | `32:467` (제공 PNG)  |
+| 경로               | 화면                                    | 원본 노드            |
+| ------------------ | --------------------------------------- | -------------------- |
+| `/`                | 날짜·시술·지역·시간 필터 및 빈자리 카드 | `8:3`                |
+| `/?view=map`       | 동일한 검색 결과의 지도·목록 보기       | `18:3548` 기반       |
+| `/?sale=1`         | 오늘 시작하는 할인 빈자리만 표시        | 통합 탐색 필터       |
+| `/reserve/nail`    | 일반 예약 날짜·시간 선택                | `32:2`               |
+| `/checkout`        | 임시 확보·약관 동의·모의 결제           | `8:4`                |
+| `/bookings`        | (데모) 내 예약·상세·취소 및 모의 환불   | `8:8`                |
+| `/my-reservations` | (실제 API) 내 예약 목록·상세            | `8:8` 기반           |
+| `/owner`           | 사장님 마이페이지                       | `32:767`             |
+| `/owner/shop`      | 매장 정보 및 고객 노출 미리보기         | `12:2061`            |
+| `/owner/menus`     | 시술 메뉴 등록·수정·활성화              | `12:1798`            |
+| `/owner/slots`     | 빈자리 등록·수정·판매 상태 및 겹침 검사 | `12:2755`            |
+| `/owner/bookings`  | 예약 목록 및 고객·결제 상세             | `12:2362`            |
+| `/services/nail`   | 매장·시술 상세 및 할인 예약 요약        | `8:2` (제공 PNG)     |
+| `/result`          | 모의 결제 결과·정산·실패/만료 미리보기  | `8:7` (제공 PNG)     |
+| `/owner/slots/new` | 별도 빈자리 즉시 등록 페이지            | `18:3220` (제공 PNG) |
+| `/profile`         | 고객 프로필·예약·찜·알림 설정           | `32:467` (제공 PNG)  |
 
 데스크톱의 3열 카드 및 사이드바 레이아웃은 작은 화면에서 재배치됩니다. Figma 원본 이미지와 SVG는 `src/assets/figma`에 저장했으며 임시 다운로드 URL을 실행 코드에서 사용하지 않습니다. SVG의 원본 크기는 유지하고 지도 도로 레이어는 원본 좌표에 맞춰 조합했습니다. 웹폰트 파일이 제공되지 않아 로컬 `Noto Sans KR`, `Malgun Gothic`, 시스템 폰트 순으로 표시합니다.
 
@@ -53,7 +66,7 @@ Figma MCP 호출 한도로 조회하지 못했던 네 화면은 사용자가 202
 
 기존 예시 예약(네일, 2025-10-24 15:30)은 중복 예약이 차단됩니다. 할인 예약 흐름을 새로 시연하려면 헤어 카드의 17:00 빈자리를 사용하거나 일반 예약에서 다른 날짜를 선택합니다.
 
-기존 메인/API 화면을 기본 디자인으로 전환하는 작업과 실제 API 통합은 포함하지 않았습니다. `App.jsx`의 진입 경로 연결은 파트장 리뷰 대상입니다.
+시안 화면이 기본 화면이며, 사용하지 않던 기존 메인/API 화면은 삭제했습니다. 실제 API는 시술 메뉴·영업시간·빈자리 등록의 시술 목록·예약 현황·내 예약 화면에만 연결되어 있고, 나머지 화면은 데모 데이터(`src/store/useDesignStore.js`, `src/utils/demoData.js`)를 사용합니다. 라우트 정의(`src/routes/AppRouter.jsx`)와 경로 상수(`src/constants/routes.js`)는 파트장 리뷰 대상입니다.
 
 ## 검증
 
