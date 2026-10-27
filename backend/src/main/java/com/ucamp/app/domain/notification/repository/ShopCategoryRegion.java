@@ -1,7 +1,8 @@
 package com.ucamp.app.domain.notification.repository;
 
 /**
- * 카테고리·지역 구독과 비교할 매장 값. 엔티티가 아니라 조회 결과다.
+ * 매장에서 읽어 온 카테고리와 지역.
+ * 테이블에 저장하는 줄이 아니라, 비교하려고 담아 둔 값이다.
  *
  * @param categoryId 매장 카테고리 ID
  * @param regionCode 매장 지역코드

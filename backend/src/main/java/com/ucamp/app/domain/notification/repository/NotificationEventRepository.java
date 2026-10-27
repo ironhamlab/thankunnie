@@ -1,10 +1,12 @@
 package com.ucamp.app.domain.notification.repository;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.ucamp.app.domain.notification.entity.NotificationEvent;
+import com.ucamp.app.domain.notification.entity.NotificationEventStatus;
 import com.ucamp.app.domain.notification.entity.NotificationEventType;
 
 /**
@@ -22,4 +24,12 @@ public interface NotificationEventRepository extends JpaRepository<NotificationE
      */
     boolean existsByExceptionIdAndEventTypeAndSlotStartsAt(Long exceptionId, NotificationEventType eventType,
             LocalDateTime slotStartsAt);
+
+    /**
+     * 해당 상태의 이벤트 중 ID가 가장 작은 하나를 조회한다.
+     *
+     * @param status 이벤트 상태
+     * @return 있으면 그 이벤트. 없으면 empty
+     */
+    Optional<NotificationEvent> findFirstByStatusOrderByIdAsc(NotificationEventStatus status);
 }

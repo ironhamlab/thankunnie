@@ -101,6 +101,26 @@ class VacancySlotRepositoryTest {
     }
 
     @Test
+    @DisplayName("알림 이벤트가 이미 있어도 아직 팔 수 있는 OPEN 은 판매 가능하다")
+    void isOpenSlotSellable_existingEvent_isStillSellable() {
+        openSlot(1L, NOW.plusHours(1), NOW.plusHours(2));
+        notificationEvent(10L, "IMMINENT", 1L, NOW.plusHours(1), NOW.plusHours(2));
+
+        assertThat(repository.isOpenSlotSellable(1L, NOW)).isTrue();
+    }
+
+    @Test
+    @DisplayName("휴무로 덮이거나 클릭 마감이 지난 OPEN 은 판매 가능하지 않다")
+    void isOpenSlotSellable_closedOrTooLate_isNotSellable() {
+        openSlot(1L, NOW.plusHours(1), NOW.plusHours(3));
+        NotificationFixture.exception(jdbcTemplate, 2L, SHOP_ID, null, "CLOSE", NOW.plusHours(1), NOW.plusHours(3));
+        openSlot(3L, NOW.minusHours(1), NOW.plusMinutes(50));
+
+        assertThat(repository.isOpenSlotSellable(1L, NOW)).isFalse();
+        assertThat(repository.isOpenSlotSellable(3L, NOW)).isFalse();
+    }
+
+    @Test
     @DisplayName("초임박 이벤트가 이미 있으면 다시 조회하지 않고, 임박 이벤트만 있는 자리는 조회한다")
     void findLastMinuteWithoutEvent_existingEvent_skipsOnlyLastMinute() {
         openSlot(1L, NOW.plusHours(1), NOW.plusHours(2));
