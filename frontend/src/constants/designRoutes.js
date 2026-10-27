@@ -18,4 +18,6 @@ export const DESIGN_ROUTES = {
   SLOT_NEW: '/design/owner/slots/new',
   SCHEDULE: '/design/owner/schedule',
   OWNER_BOOKINGS: '/design/owner/bookings',
+  // 사장님 예약 취소 화면 (E 담당). 예약 현황의 "취소하기"가 이 경로로 이동한다
+  OWNER_RESERVATION_CANCEL: '/design/owner/bookings/:reservationId/cancel',
 };
