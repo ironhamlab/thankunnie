@@ -12,8 +12,8 @@ import org.springframework.stereotype.Repository;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 매칭에 쓸 매장 카테고리와 지역코드를 읽는다.
- * 매장 테이블은 다른 도메인 소유라 엔티티 없이 SQL로 한 행만 조회한다.
+ * 매장의 카테고리와 지역을 읽어 오는 곳.
+ * 카테고리·지역 신청과 비교하려고 매장 한 줄만 읽는다. 매장 정보는 여기서 고치지 않는다.
  */
 @Repository
 @RequiredArgsConstructor

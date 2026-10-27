@@ -37,15 +37,16 @@ public class NotificationDispatchService {
      * PENDING 이벤트 하나를 고른다. 맞는 회원마다 대기 작업을 넣고 그 이벤트를 PROCESSED로 바꾼다.
      * 같은 이벤트·회원이 이미 있으면 그 회원은 건너뛴다. 한 번 호출에 이벤트 하나만 처리한다.
      *
-     * @return 이번에 새로 만든 대기 작업 수. PENDING 이벤트가 없거나 새로 넣을 회원이 없으면 0
+     * @return 이벤트를 처리했으면 이번에 만든 대기 작업 수. 맞는 회원이 없어도 0이다.
+     *         대기 이벤트가 없으면 empty다. 0과 empty는 다르다.
      */
     @Transactional
-    public int createDispatchJobs() {
+    public Optional<Integer> createDispatchJobs() {
         // 대기 중인 이벤트 중 가장 먼저 생긴 것 하나만 고른다. ID가 작을수록 먼저 생긴 이벤트다.
         Optional<NotificationEvent> found = notificationEventRepository
                 .findFirstByStatusOrderByIdAsc(NotificationEventStatus.PENDING);
         if (found.isEmpty()) {
-            return 0;
+            return Optional.empty();
         }
 
         NotificationEvent event = found.get();
@@ -68,7 +69,7 @@ public class NotificationDispatchService {
 
         // 받을 회원이 없어도 이 이벤트 매칭은 끝이다. PENDING으로 두면 다음에 또 집는다.
         event.markProcessed();
-        return created;
+        return Optional.of(created);
     }
 
     /**
@@ -139,7 +140,7 @@ public class NotificationDispatchService {
         return userIds.contains(userId);
     }
 
-    // 임박·초임박은 OPEN 빈자리, 재공개는 취소된 예약 시간이 아직 팔리는지로 본다.
+    // 임박·초임박은 매장이 연 시간이 아직 팔리는지, 다시 열린 자리는 취소된 예약 시간이 아직 팔리는지 본다.
     private boolean slotStillSellable(NotificationEvent event) {
         LocalDateTime now = LocalDateTime.now(clock);
         if (event.getEventType() == NotificationEventType.REOPENED) {
@@ -151,6 +152,7 @@ public class NotificationDispatchService {
         return vacancySlotRepository.isOpenSlotSellable(event.getExceptionId(), now);
     }
 
+    // 확인에 걸린 줄은 보내지 않고 끝 상태로 둔다.
     private void finishWithoutSending(NotificationDispatch job) {
         job.markSkipped();
         notificationDispatchRepository.save(job);

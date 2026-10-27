@@ -26,7 +26,7 @@ public class ImminentEventScheduler {
     private final NotificationEventService notificationEventService;
     private final Clock clock;
 
-    /** 직전 실행이 끝나고 1분 뒤 다시 실행한다. */
+    /** 직전 실행이 끝나고 1분 뒤 다시 실행한다. (1분 말고 30분 단위로 수정 예정)*/
     @Scheduled(fixedDelay = 60_000, initialDelay = 60_000)
     public void detectImminent() {
         try {
