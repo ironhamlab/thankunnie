@@ -6,6 +6,7 @@ import { useReservationStore } from '@/store/useReservationStore';
 import { formatMoney, formatReservationTime } from '@/utils/reservationFormat';
 import { addDays, todayKst } from '@/utils/scheduleDate';
 import ReservationDetailPanel from './ReservationDetailPanel';
+import ReservationPagination from './ReservationPagination';
 
 // 탭별 조회 조건. 날짜는 시술 시작일 기준이다
 const TABS = [
@@ -54,13 +55,17 @@ export default function MyReservationsPage() {
     ? selectedId
     : reservations[0]?.reservationId;
 
+  // 새 목록이 오기 전에는 상세를 부르지 않는다. 이전 탭의 상세가 새 탭의 결과처럼 보이지 않게 한다
   useEffect(() => {
+    if (listStatus !== 'succeeded') {
+      return;
+    }
     if (activeId) {
       loadReservation('my', activeId);
     } else {
       clearDetail();
     }
-  }, [loadReservation, clearDetail, activeId]);
+  }, [loadReservation, clearDetail, activeId, listStatus]);
 
   const handleTabChange = (key) => {
     setTabKey(key);
@@ -129,29 +134,7 @@ export default function MyReservationsPage() {
                 </button>
               );
             })}
-            {pageInfo.totalPages > 1 && (
-              <div className="b-flex">
-                <button
-                  type="button"
-                  className="b-button b-small"
-                  disabled={page === 0}
-                  onClick={() => setPage((current) => current - 1)}
-                >
-                  이전
-                </button>
-                <span>
-                  {page + 1} / {pageInfo.totalPages}
-                </span>
-                <button
-                  type="button"
-                  className="b-button b-small"
-                  disabled={!pageInfo.hasNext}
-                  onClick={() => setPage((current) => current + 1)}
-                >
-                  다음
-                </button>
-              </div>
-            )}
+            <ReservationPagination page={page} pageInfo={pageInfo} onPageChange={setPage} />
           </div>
           <ReservationDetailPanel viewer="customer" cancelPath={cancelPath} />
         </div>
