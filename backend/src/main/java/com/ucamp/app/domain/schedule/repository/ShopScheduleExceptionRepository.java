@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,4 +24,17 @@ public interface ShopScheduleExceptionRepository extends JpaRepository<ShopSched
             """)
     List<ShopScheduleException> findOverlapping(@Param("shopId") Long shopId,
             @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /**
+     * 사장님이 예약을 취소하며 그 시간을 닫았는지(예약 ID 가 있는 일정이 있는지). 취소 완료 시 재공개 이벤트 발행 여부를 정한다.
+     */
+    boolean existsByReservationId(Long reservationId);
+
+    /**
+     * 예약을 취소하며 등록한 닫기를 지운다. 결제 취소가 실패해 예약을 확정으로 되돌릴 때 쓴다.
+     * 같은 트랜잭션에서 먼저 조회한 다른 엔티티가 분리되지 않도록 영속성 컨텍스트는 비우지 않는다.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query("DELETE FROM ShopScheduleException e WHERE e.reservationId = :reservationId")
+    int deleteByReservationId(@Param("reservationId") Long reservationId);
 }
