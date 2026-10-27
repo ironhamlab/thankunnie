@@ -46,7 +46,7 @@ public class ShopImageStorage {
         try (InputStream input = file.getInputStream()) {
             bytes = input.readNBytes(MAX_BYTES + 1);
         } catch (IOException e) {
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "이미지를 읽지 못했습니다.");
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "이미지를 읽지 못했습니다.", e);
         }
         if (bytes.length == 0 || bytes.length > MAX_BYTES) {
             throw invalidImage();
@@ -143,7 +143,9 @@ public class ShopImageStorage {
             } finally {
                 reader.dispose();
             }
-        } catch (IOException | IllegalArgumentException e) {
+        } catch (BusinessException e) {
+            throw e;
+        } catch (IOException | RuntimeException e) {
             throw invalidImage();
         }
     }

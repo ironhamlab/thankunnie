@@ -56,7 +56,7 @@ public class S3ShopImageObjectStorage implements ShopImageObjectStorage {
                     .contentType(contentType).contentLength((long) content.length).build(),
                     RequestBody.fromBytes(content));
         } catch (SdkException e) {
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "S3에 이미지를 저장하지 못했습니다.");
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "S3에 이미지를 저장하지 못했습니다.", e);
         }
     }
 
@@ -68,11 +68,11 @@ public class S3ShopImageObjectStorage implements ShopImageObjectStorage {
                     .asByteArray();
         } catch (S3Exception e) {
             if (e.statusCode() == 404) {
-                throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+                throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, ErrorCode.RESOURCE_NOT_FOUND.getMessage(), e);
             }
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "S3 이미지를 읽지 못했습니다.");
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "S3 이미지를 읽지 못했습니다.", e);
         } catch (SdkException e) {
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "S3 이미지를 읽지 못했습니다.");
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "S3 이미지를 읽지 못했습니다.", e);
         }
     }
 
@@ -82,7 +82,7 @@ public class S3ShopImageObjectStorage implements ShopImageObjectStorage {
         try {
             client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(prefix + fileName).build());
         } catch (SdkException e) {
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "S3 이미지를 정리하지 못했습니다.");
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "S3 이미지를 정리하지 못했습니다.", e);
         }
     }
 

@@ -114,6 +114,18 @@ class S3ShopImageObjectStorageTest {
         verifyNoInteractions(client);
     }
 
+    @Test
+    @DisplayName("S3 업로드 오류를 변환해도 원인 SDK 예외는 보존한다")
+    void put_sdkFailure_preservesCause() {
+        SdkClientException cause = SdkClientException.create("Internal S3 connection failure");
+        when(client.putObject(any(PutObjectRequest.class), any(RequestBody.class))).thenThrow(cause);
+        assertThatThrownBy(() -> storage().put("image.png", new byte[] {1}, "image/png"))
+                .isInstanceOfSatisfying(BusinessException.class, e -> {
+                    assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INTERNAL_SERVER_ERROR);
+                    assertThat(e.getCause()).isSameAs(cause);
+                });
+    }
+
     private void assertError(Runnable action, ErrorCode code) {
         assertThatThrownBy(action::run).isInstanceOfSatisfying(BusinessException.class,
                 e -> assertThat(e.getErrorCode()).isEqualTo(code));

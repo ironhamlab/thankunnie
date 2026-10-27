@@ -39,7 +39,7 @@ public class LocalShopImageObjectStorage implements ShopImageObjectStorage {
             Files.createDirectories(directory);
             Files.write(directory.resolve(fileName), content, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
         } catch (IOException e) {
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "이미지를 저장하지 못했습니다.");
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "이미지를 저장하지 못했습니다.", e);
         }
     }
 
@@ -48,9 +48,9 @@ public class LocalShopImageObjectStorage implements ShopImageObjectStorage {
         try {
             return Files.readAllBytes(directory.resolve(fileName));
         } catch (NoSuchFileException e) {
-            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, ErrorCode.RESOURCE_NOT_FOUND.getMessage(), e);
         } catch (IOException e) {
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "이미지를 읽지 못했습니다.");
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "이미지를 읽지 못했습니다.", e);
         }
     }
 
@@ -59,7 +59,7 @@ public class LocalShopImageObjectStorage implements ShopImageObjectStorage {
         try {
             Files.deleteIfExists(directory.resolve(fileName));
         } catch (IOException e) {
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "이미지 파일을 정리하지 못했습니다.");
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "이미지 파일을 정리하지 못했습니다.", e);
         }
     }
 }

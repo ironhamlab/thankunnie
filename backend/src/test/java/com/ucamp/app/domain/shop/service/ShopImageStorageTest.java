@@ -1,10 +1,16 @@
 package com.ucamp.app.domain.shop.service;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
+
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,6 +31,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.ArgumentMatchers.any;
 
 class ShopImageStorageTest {
 
@@ -112,8 +120,65 @@ class ShopImageStorageTest {
                 new LocalShopImageObjectStorage(blockedDirectory.toString()), mock(ShopImageCleanupService.class));
         MockMultipartFile file = ShopImageFixture.image("png");
         assertThatThrownBy(() -> blockedStorage.save(file)).isInstanceOfSatisfying(BusinessException.class,
-                e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INTERNAL_SERVER_ERROR));
+                e -> {
+                    assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INTERNAL_SERVER_ERROR);
+                    assertThat(e.getCause()).isInstanceOf(IOException.class);
+                });
         assertThat(blockedDirectory).hasContent("file");
+    }
+
+    @Test
+    @DisplayName("디코더의 IOException과 RuntimeException은 400이며 BusinessException은 그대로 전달한다")
+    void save_decoderFailures_mapsInvalidImageButPreservesBusinessException() throws IOException {
+        BusinessException business = new BusinessException(ErrorCode.INVALID_INPUT, "이미지 검증 실패");
+        for (Exception failure : new Exception[] {new IOException("Decode failed"),
+                new IndexOutOfBoundsException("Invalid image index"), new NullPointerException("Invalid image"),
+                business}) {
+            MockMultipartFile file = ShopImageFixture.image("png");
+            ImageReader reader = mock(ImageReader.class);
+            when(reader.getFormatName()).thenReturn("PNG");
+            when(reader.getWidth(0)).thenReturn(2);
+            when(reader.getHeight(0)).thenReturn(2);
+            when(reader.read(0)).thenThrow(failure);
+            try (var imageIo = mockStatic(ImageIO.class)) {
+                imageIo.when(() -> ImageIO.getImageReaders(any(ImageInputStream.class)))
+                        .thenReturn(List.of(reader).iterator());
+                if (failure == business) {
+                    assertThatThrownBy(() -> storage.save(file)).isSameAs(business);
+                } else {
+                    assertInvalid(() -> storage.save(file));
+                }
+            }
+            verify(reader).dispose();
+        }
+        assertThat(directory).isEmptyDirectory();
+    }
+
+    @Test
+    @DisplayName("업로드 스트림 읽기 실패는 원인 IOException을 보존한 500 업무 예외로 전달한다")
+    void save_inputFailure_preservesCause() {
+        IOException cause = new IOException("Internal input failure");
+        MockMultipartFile file = new MockMultipartFile("file", "image.png", "image/png", new byte[] {1}) {
+            @Override
+            public InputStream getInputStream() throws IOException {
+                throw cause;
+            }
+        };
+        assertThatThrownBy(() -> storage.save(file)).isInstanceOfSatisfying(BusinessException.class, e -> {
+            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INTERNAL_SERVER_ERROR);
+            assertThat(e.getCause()).isSameAs(cause);
+        });
+    }
+
+    @Test
+    @DisplayName("로컬 파일 조회 실패도 원인 IOException을 보존한다")
+    void read_ioFailure_preservesCause() throws IOException {
+        String fileName = "12345678-1234-1234-1234-123456789012.png";
+        Files.createDirectory(directory.resolve(fileName));
+        assertThatThrownBy(() -> storage.read(fileName)).isInstanceOfSatisfying(BusinessException.class, e -> {
+            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INTERNAL_SERVER_ERROR);
+            assertThat(e.getCause()).isInstanceOf(IOException.class);
+        });
     }
 
     @Test
