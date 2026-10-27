@@ -6,6 +6,7 @@ import { useReservationStore } from '@/store/useReservationStore';
 import { formatReservationTime } from '@/utils/reservationFormat';
 import { todayKst } from '@/utils/scheduleDate';
 import ReservationDetailPanel from './ReservationDetailPanel';
+import ReservationPagination from './ReservationPagination';
 
 // 상태를 고르지 않으면 서버가 점유 만료(EXPIRED)를 뺀 전체를 준다
 const STATUS_FILTERS = [
@@ -45,19 +46,32 @@ export default function OwnerBookingsPage() {
     ? selectedId
     : reservations[0]?.reservationId;
 
+  // 새 목록이 오기 전에는 상세를 부르지 않는다. 이전 목록의 상세가 새 조건의 결과처럼 보이지 않게 한다
   useEffect(() => {
+    if (listStatus !== 'succeeded') {
+      return;
+    }
     if (activeId) {
       loadReservation('owner', activeId);
     } else {
       clearDetail();
     }
-  }, [loadReservation, clearDetail, activeId]);
+  }, [loadReservation, clearDetail, activeId, listStatus]);
 
   // 필터를 바꾸면 첫 페이지부터 다시 본다
   const changeFilter = (update) => {
     update();
     setPage(0);
   };
+
+  // 시작일을 종료일보다 늦게 바꾸면 종료일을 비운다 (YYYY-MM-DD 는 문자열 비교가 날짜 순서와 같다)
+  const handleFromChange = (value) =>
+    changeFilter(() => {
+      setFrom(value);
+      if (to && value && to < value) {
+        setTo('');
+      }
+    });
 
   return (
     <div className="b-stack">
@@ -75,7 +89,7 @@ export default function OwnerBookingsPage() {
             <input
               type="date"
               value={from}
-              onChange={(event) => changeFilter(() => setFrom(event.target.value))}
+              onChange={(event) => handleFromChange(event.target.value)}
             />
           </label>
           <label>
@@ -170,34 +184,14 @@ export default function OwnerBookingsPage() {
                 </table>
               </div>
               {!reservations.length && <p className="b-empty">조건에 맞는 예약이 없습니다.</p>}
-              {pageInfo.totalPages > 1 && (
-                <div className="b-flex b-pad">
-                  <button
-                    type="button"
-                    className="b-button b-small"
-                    disabled={page === 0}
-                    onClick={() => setPage((current) => current - 1)}
-                  >
-                    이전
-                  </button>
-                  <span>
-                    {page + 1} / {pageInfo.totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    className="b-button b-small"
-                    disabled={!pageInfo.hasNext}
-                    onClick={() => setPage((current) => current + 1)}
-                  >
-                    다음
-                  </button>
-                </div>
-              )}
+              <ReservationPagination page={page} pageInfo={pageInfo} onPageChange={setPage} />
             </>
           )}
         </section>
         <aside className="b-stack">
-          <ReservationDetailPanel viewer="owner" cancelPath={cancelPath} />
+          {listStatus === 'succeeded' && (
+            <ReservationDetailPanel viewer="owner" cancelPath={cancelPath} />
+          )}
         </aside>
       </div>
     </div>
