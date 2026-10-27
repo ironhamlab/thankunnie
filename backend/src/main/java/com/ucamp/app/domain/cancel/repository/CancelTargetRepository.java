@@ -25,8 +25,12 @@ public interface CancelTargetRepository extends Repository<ReservationCancel, Lo
                    r.STATUS AS "status",
                    r.STARTS_AT AS "startsAt",
                    r.CREATED_AT AS "heldAt",
+                   p.DEPOSIT_PAYMENT_ID AS "depositPaymentId",
                    p.AMOUNT AS "paidAmount",
-                   p.APPROVED_AT AS "approvedAt"
+                   p.APPROVED_AT AS "approvedAt",
+                   (SELECT COUNT(*) FROM DEPOSIT_PAYMENT x
+                     WHERE x.RESERVATION_ID = r.RESERVATION_ID
+                       AND x.STATUS IN ('REFUND_PENDING', 'PART_REFUNDED', 'REFUNDED')) AS "refundingPaymentCount"
             FROM RESERVATION r
             JOIN TREATMENT t ON t.TREATMENT_ID = r.TREATMENT_ID
             LEFT JOIN DEPOSIT_PAYMENT p ON p.RESERVATION_ID = r.RESERVATION_ID AND p.STATUS = 'PAID'
@@ -44,6 +48,7 @@ public interface CancelTargetRepository extends Repository<ReservationCancel, Lo
     }
 
     private static CancelTarget toTarget(CancelTargetRow row) {
+        Long refundingPaymentCount = row.getRefundingPaymentCount();
         return new CancelTarget(
                 row.getReservationId(),
                 row.getUserId(),
@@ -51,7 +56,9 @@ public interface CancelTargetRepository extends Repository<ReservationCancel, Lo
                 ReservationStatus.valueOf(row.getStatus()),
                 row.getStartsAt(),
                 row.getHeldAt(),
+                row.getDepositPaymentId(),
                 row.getPaidAmount(),
-                row.getApprovedAt());
+                row.getApprovedAt(),
+                refundingPaymentCount != null && refundingPaymentCount > 0);
     }
 }

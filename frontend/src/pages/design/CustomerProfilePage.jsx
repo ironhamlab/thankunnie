@@ -379,7 +379,10 @@ export default function CustomerProfilePage() {
       )}
       {cancelId && (
         <Dialog title="예약 취소 확인" onClose={() => setCancelId('')}>
-          <p>임박 취소 시 예약금의 50%가 모의 환불됩니다. 취소하시겠어요?</p>
+          <p>
+            이용 2일 전까지 20,000원, 1일 전 10,000원, 당일 0원이 예약금 한도 내에서 모의
+            환불됩니다. 취소하시겠어요?
+          </p>
           <button
             className="b-button b-primary"
             onClick={() => {

@@ -1,5 +1,22 @@
 import { create } from 'zustand';
-import { BOOKINGS, MENUS, SERVICES, SHOP, SLOTS, overlaps, resolveSlotMenu, validateSlot } from './data.js';
+import {
+  BOOKINGS,
+  DEMO_DATE,
+  DEMO_NOW,
+  MENUS,
+  SERVICES,
+  SHOP,
+  SLOTS,
+  getPayment,
+  overlaps,
+  resolveSlotMenu,
+  validateSlot,
+} from './data.js';
+import { quoteRefund } from './refundPolicy.js';
+
+// 모의 PG 환불 처리 시간. 환불 처리 중(REFUND_PENDING) 상태를 화면에서 확인할 수 있게 둔다.
+const REFUND_DEMO_DELAY_MS = 1500;
+const DEMO_REFUNDED_AT = `${DEMO_DATE}T14:51:00+09:00`;
 
 export const useDesignStore = create((set, get) => ({
   shop: SHOP,
@@ -119,12 +136,47 @@ export const useDesignStore = create((set, get) => ({
     }));
     return booking.id;
   },
-  cancelBooking: (id) =>
+  // 환불 정책으로 환불액을 계산해 취소를 접수하고, 환불할 금액이 있으면 모의 PG 환불을 진행한다.
+  cancelBooking: (id, reason = '개인 일정 변경') => {
+    const booking = get().bookings.find((item) => item.id === id && item.status === 'confirmed');
+    if (!booking) return;
+    const quote = quoteRefund(booking);
+    const payment = getPayment(booking);
+    const hasRefund = quote.refundAmount > 0;
     set((state) => ({
       bookings: state.bookings.map((item) =>
-        item.id === id && item.status === 'confirmed'
-          ? { ...item, status: 'cancelled', refund: Math.round(item.deposit * 0.5) }
+        item.id === id
+          ? {
+              ...item,
+              status: 'cancelled',
+              refund: quote.refundAmount,
+              cancellation: {
+                reason,
+                requestedAt: DEMO_NOW,
+                tierKey: quote.tier.key,
+                policyRefundAmount: quote.refundAmount,
+              },
+              payment: { ...payment, status: hasRefund ? 'REFUND_PENDING' : payment.status },
+            }
           : item,
       ),
+    }));
+    if (hasRefund) setTimeout(() => get().completeRefund(id), REFUND_DEMO_DELAY_MS);
+  },
+  completeRefund: (id) =>
+    set((state) => ({
+      bookings: state.bookings.map((item) => {
+        if (item.id !== id || item.payment?.status !== 'REFUND_PENDING') return item;
+        const refundedAmount = item.payment.refundedAmount + item.refund;
+        return {
+          ...item,
+          payment: {
+            ...item.payment,
+            refundedAmount,
+            refundedAt: DEMO_REFUNDED_AT,
+            status: refundedAmount >= item.payment.amount ? 'REFUNDED' : 'PART_REFUNDED',
+          },
+        };
+      }),
     })),
 }));

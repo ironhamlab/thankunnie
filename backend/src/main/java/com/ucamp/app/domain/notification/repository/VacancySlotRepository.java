@@ -156,6 +156,23 @@ public class VacancySlotRepository {
         FETCH FIRST 1 ROWS ONLY
         """;
 
+    // 이미 이벤트가 있는 빈자리도 다시 본다. 영업 중이고, 아직 클릭할 수 있고, 휴무·점유가 없을 것
+    private static final String IS_OPEN_SLOT_SELLABLE_SQL = """
+        SELECT o.EXCEPTION_ID
+        FROM SHOP_SCHEDULE_EXCEPTION o
+        JOIN SHOP s ON s.SHOP_ID = o.SHOP_ID
+        WHERE o.EXCEPTION_ID = :exceptionId
+        AND o.EXCEPTION_TYPE = 'OPEN'
+        AND s.STATUS = 'ACTIVE'
+        AND o.ENDS_AT > :bookableEndsAfter
+        AND
+        """
+        + NOT_FULLY_CLOSED
+        + """
+        AND
+        """
+        + NOT_OCCUPIED;
+
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     /**
@@ -200,6 +217,30 @@ public class VacancySlotRepository {
                 "bookableEndsAfter", bookableEndsAfter,
                 "now", now);
         return jdbcTemplate.query(FIND_LAST_MINUTE_SQL, params, VacancySlotRepository::toOpenSlot);
+    }
+
+    /**
+     * 이 OPEN 빈자리가 아직 판매 가능한지 확인한다.
+     * 매장이 영업 중이고, 클릭 마감이 지나지 않았으며, OPEN 전체를 덮는 CLOSE와 겹치는 점유가 없어야 한다.
+     * 알림 이벤트가 이미 있어도 여기서는 빼지 않는다. 발송 직전에 빈자리만 다시 보는 조회다.
+     *
+     * @param exceptionId OPEN 예외 일정 ID
+     * @param now         현재 시각 (서울)
+     * @return 아직 팔 수 있으면 true
+     */
+    public boolean isOpenSlotSellable(Long exceptionId, LocalDateTime now) {
+        if (exceptionId == null || now == null) {
+            return false;
+        }
+        LocalDateTime bookableEndsAfter = now.plus(BookingPolicy.BOOKING_DEADLINE)
+                .plusMinutes(BookingPolicy.TIME_UNIT_MINUTES);
+        Map<String, Object> params = Map.of(
+                "exceptionId", exceptionId,
+                "bookableEndsAfter", bookableEndsAfter,
+                "now", now);
+        List<Long> found = jdbcTemplate.query(
+                IS_OPEN_SLOT_SELLABLE_SQL, params, (rs, rowNum) -> rs.getLong("EXCEPTION_ID"));
+        return !found.isEmpty();
     }
 
     /**
