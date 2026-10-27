@@ -62,7 +62,49 @@ class NotificationDispatchRepositoryTest {
         assertThat(saved.getEventId()).isEqualTo(eventId);
         assertThat(saved.getUserId()).isEqualTo(USER_ID);
         assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.PENDING);
+        assertThat(saved.getFailReason()).isNull();
         assertThat(saved.getCreatedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("발송 완료로 바꾸면 SENT 이고 실패 사유는 비운다")
+    void markSent_clearsFailReason() {
+        NotificationDispatch saved = notificationDispatchRepository.saveAndFlush(dispatch(saveEvent(1L).getId(), USER_ID));
+        saved.markFailed("잠깐 실패");
+        notificationDispatchRepository.saveAndFlush(saved);
+
+        saved.markSent();
+        notificationDispatchRepository.saveAndFlush(saved);
+
+        NotificationDispatch found = notificationDispatchRepository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getStatus()).isEqualTo(NotificationDispatchStatus.SENT);
+        assertThat(found.getFailReason()).isNull();
+    }
+
+    @Test
+    @DisplayName("발송 실패로 바꾸면 FAILED 와 오류 사유를 남긴다")
+    void markFailed_savesFailReason() {
+        NotificationDispatch saved = notificationDispatchRepository.saveAndFlush(dispatch(saveEvent(1L).getId(), USER_ID));
+
+        saved.markFailed("수신번호 형식 오류");
+        notificationDispatchRepository.saveAndFlush(saved);
+
+        NotificationDispatch found = notificationDispatchRepository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getStatus()).isEqualTo(NotificationDispatchStatus.FAILED);
+        assertThat(found.getFailReason()).isEqualTo("수신번호 형식 오류");
+    }
+
+    @Test
+    @DisplayName("결과 불명으로 바꾸면 UNKNOWN 과 확인이 필요한 사유를 남긴다")
+    void markUnknown_savesFailReason() {
+        NotificationDispatch saved = notificationDispatchRepository.saveAndFlush(dispatch(saveEvent(1L).getId(), USER_ID));
+
+        saved.markUnknown("문자 API 응답 시간 초과");
+        notificationDispatchRepository.saveAndFlush(saved);
+
+        NotificationDispatch found = notificationDispatchRepository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getStatus()).isEqualTo(NotificationDispatchStatus.UNKNOWN);
+        assertThat(found.getFailReason()).isEqualTo("문자 API 응답 시간 초과");
     }
 
     @Test
