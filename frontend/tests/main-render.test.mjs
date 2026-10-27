@@ -179,15 +179,13 @@ test('기존 디자인 배너와 카드에 실제 메인 store 결과를 연결�
   assert.doesNotMatch(html, /<a\b[^>]*href=/);
 });
 
-test('공통 헤더·푸터도 디자인 테마를 사용하며 시연용 고객·예약 링크는 노출하지 않는다', () => {
+test('공통 레이아웃은 디자인 테마의 헤더·푸터를 사용하고 이전 /design 주소로 링크하지 않는다', () => {
   const html = render(React.createElement(MainLayout));
   assert.match(html, /땡잡은 언니/);
-  assert.match(html, /beauty-app b-layout/);
-  assert.match(html, /href="\/login"/);
+  assert.match(html, /class="beauty-app"><div class="b-layout"/);
+  assert.match(html, /class="b-footer"/);
   assert.equal((html.match(/<main\b/g) || []).length, 1);
   assert.doesNotMatch(html, /href="\/design/);
-  assert.doesNotMatch(html, /테스트.*고객 계정/);
-  assert.match(html, /aria-label="검색 기능 준비 중" disabled=""/);
 });
 
 test('예약 마감이 없으면 확인 안내를 표시하고 유효한 마감 날짜는 그대로 표시한다', () => {

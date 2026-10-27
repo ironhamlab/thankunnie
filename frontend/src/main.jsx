@@ -4,6 +4,8 @@ import App from '@/App';
 import { configureAuth } from '@/api/axiosInstance';
 import { useAuthStore } from '@/store/useAuthStore';
 import '@/assets/styles/global.css';
+import '@/assets/styles/design.css';
+import '@/assets/styles/remaining-screens.css';
 
 // 실제 로그인 전까지 개발 서버에서만 테스트 사용자(OWNER_1 등)를 Bearer 토큰으로 보낸다.
 // 백엔드 local·test 프로필의 테스트 사용자 인증이 받으며, 운영 빌드에서는 쓰지 않는다.

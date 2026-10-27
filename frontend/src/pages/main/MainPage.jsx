@@ -6,7 +6,7 @@ import { getExploreHref } from '../../utils/mainNavigation.js';
 import sparkleIcon from '../../assets/figma/8-3-6.svg';
 import MainSection from './components/MainSection.jsx';
 import MainSearchForm from './components/MainSearchForm.jsx';
-import '../design/design.css';
+import '@/assets/styles/design.css';
 import './MainPage.css';
 
 export default function MainPage({ useMainStore, navigationReady = MAIN_ROUTE_AVAILABILITY }) {
