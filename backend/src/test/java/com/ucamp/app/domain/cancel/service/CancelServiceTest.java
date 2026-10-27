@@ -25,8 +25,11 @@ import com.ucamp.app.common.auth.UserRole;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.domain.cancel.dto.request.CustomerCancelRequest;
+import com.ucamp.app.domain.cancel.dto.request.OwnerCancelRequest;
 import com.ucamp.app.domain.cancel.dto.response.CancelResultResponse;
+import com.ucamp.app.domain.cancel.dto.response.OwnerCancelResponse;
 import com.ucamp.app.domain.cancel.entity.CancelStatus;
+import com.ucamp.app.domain.cancel.entity.CancelType;
 import com.ucamp.app.domain.payment.service.PaymentService;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 
@@ -34,6 +37,7 @@ class CancelServiceTest {
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-11-01T03:00:00Z"), ZoneId.of("Asia/Seoul"));
     private static final AuthUser CUSTOMER = new AuthUser(1L, UserRole.CUSTOMER, null);
+    private static final AuthUser OWNER = new AuthUser(11L, UserRole.OWNER, 1L);
     private static final CancelResultResponse COMPLETED = result(CancelStatus.COMPLETED, ReservationStatus.CANCELLED);
     private static final CancelResultResponse UNKNOWN = result(CancelStatus.UNKNOWN, ReservationStatus.CANCEL_PENDING);
 
@@ -116,9 +120,37 @@ class CancelServiceTest {
         verify(cancelResultService, never()).fail(anyLong(), any());
     }
 
+    @Test
+    @DisplayName("사장님 취소는 유형별 사유로 환불을 호출하고 닫기 여부·고객 연락처를 함께 응답한다")
+    void cancelByOwner_refundsWithReasonAndReturnsContact() {
+        given(cancelRequestService.acceptOwnerCancel(any(), eq(100L), any(), any()))
+                .willReturn(new AcceptedCancel(7L, 100L, 5L, 20_000, true, "고객", "010-1234-5678"));
+
+        OwnerCancelResponse response = cancelService.cancelByOwner(OWNER, 100L,
+                new OwnerCancelRequest(CancelType.SHOP_FAULT, null, true, "원장님 부상"));
+
+        verify(paymentService).refund(5L, 20_000, "매장 사유 취소: 원장님 부상");
+        assertThat(response.cancelStatus()).isEqualTo(CancelStatus.COMPLETED);
+        assertThat(response.closed()).isTrue();
+        assertThat(response.customerName()).isEqualTo("고객");
+        assertThat(response.customerPhone()).isEqualTo("010-1234-5678");
+    }
+
+    @Test
+    @DisplayName("사장님이 사유를 비우면 유형별 고정 문구만 환불 사유로 보낸다")
+    void cancelByOwner_blankReason_usesTypeOnly() {
+        given(cancelRequestService.acceptOwnerCancel(any(), eq(100L), any(), any()))
+                .willReturn(new AcceptedCancel(7L, 100L, 5L, 10_000, false, "고객", "010"));
+
+        cancelService.cancelByOwner(OWNER, 100L, new OwnerCancelRequest(CancelType.CUSTOMER_REQUEST, 10_000, false,
+                " "));
+
+        verify(paymentService).refund(5L, 10_000, "고객 요청 대리 취소");
+    }
+
     private void givenAccepted(int refundAmount) {
         given(cancelRequestService.acceptCustomerCancel(any(), eq(100L), anyInt(), any()))
-                .willReturn(new AcceptedCancel(7L, 100L, 5L, refundAmount));
+                .willReturn(new AcceptedCancel(7L, 100L, 5L, refundAmount, false, "고객", "010"));
     }
 
     private static CancelResultResponse result(CancelStatus cancelStatus, ReservationStatus reservationStatus) {

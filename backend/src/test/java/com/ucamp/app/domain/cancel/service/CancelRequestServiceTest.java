@@ -22,9 +22,11 @@ import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.config.TimeConfig;
 import com.ucamp.app.domain.cancel.CancelFixture;
+import com.ucamp.app.domain.cancel.dto.request.OwnerCancelRequest;
 import com.ucamp.app.domain.cancel.entity.CancelStatus;
 import com.ucamp.app.domain.cancel.entity.CancelType;
 import com.ucamp.app.domain.cancel.entity.ReservationCancel;
+import com.ucamp.app.domain.cancel.repository.CancelScheduleExceptionRepository;
 import com.ucamp.app.domain.cancel.repository.ReservationCancelRepository;
 
 @DataJpaTest
@@ -38,6 +40,7 @@ class CancelRequestServiceTest {
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 11, 1, 12, 0);
     private static final AuthUser CUSTOMER = new AuthUser(CancelFixture.CUSTOMER_ID, UserRole.CUSTOMER, null);
     private static final AuthUser OWNER = new AuthUser(11L, UserRole.OWNER, CancelFixture.SHOP_ID);
+    private static final AuthUser OTHER_OWNER = new AuthUser(12L, UserRole.OWNER, 2L);
 
     @Autowired
     private CancelRequestService cancelRequestService;
@@ -47,6 +50,9 @@ class CancelRequestServiceTest {
 
     @Autowired
     private ReservationCancelRepository reservationCancelRepository;
+
+    @Autowired
+    private CancelScheduleExceptionRepository cancelScheduleExceptionRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -135,6 +141,83 @@ class CancelRequestServiceTest {
         givenPaidReservation(LocalDateTime.of(2026, 10, 30, 12, 0));
 
         assertErrorCode(() -> cancelRequestService.acceptCustomerCancel(OWNER, 100L, 10_000, NOW),
+                ErrorCode.FORBIDDEN);
+    }
+
+    @Test
+    @DisplayName("매장 사유 취소는 납부액 전액을 환불하고 무료 취소 횟수를 차감하지 않으며, 닫기를 고르면 그 시간을 닫는다")
+    void acceptOwner_shopFaultWithClose_fullRefundAndClosed() {
+        givenPaidReservation(NOW.minusMinutes(5));
+
+        AcceptedCancel accepted = cancelRequestService.acceptOwnerCancel(OWNER, 100L,
+                new OwnerCancelRequest(CancelType.SHOP_FAULT, null, true, "원장님 부상"), NOW);
+
+        assertThat(accepted.refundAmount()).isEqualTo(20_000);
+        assertThat(accepted.closed()).isTrue();
+        assertThat(accepted.customerName()).isEqualTo("고객");
+        assertThat(reservationStatus()).isEqualTo("CANCEL_PENDING");
+        ReservationCancel cancel = reservationCancelRepository.findById(accepted.cancelId()).orElseThrow();
+        assertThat(cancel.getCancelType()).isEqualTo(CancelType.SHOP_FAULT);
+        assertThat(cancel.getUserId()).isEqualTo(CancelFixture.CUSTOMER_ID);
+        assertThat(graceCancelUsageService.isUsed(CancelFixture.CUSTOMER_ID, NOW.toLocalDate())).isFalse();
+        assertThat(cancelScheduleExceptionRepository.existsByReservationId(100L)).isTrue();
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM SHOP_SCHEDULE_EXCEPTION
+                WHERE RESERVATION_ID = 100 AND SHOP_ID = 1 AND EXCEPTION_TYPE = 'CLOSE'
+                  AND STARTS_AT = TIMESTAMP '2026-11-02 10:00:00' AND ENDS_AT = TIMESTAMP '2026-11-02 11:00:00'
+                """, Integer.class)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("열기를 고르면 닫기 일정을 만들지 않는다")
+    void acceptOwner_open_noCloseSchedule() {
+        givenPaidReservation(LocalDateTime.of(2026, 10, 30, 12, 0));
+
+        AcceptedCancel accepted = cancelRequestService.acceptOwnerCancel(OWNER, 100L,
+                new OwnerCancelRequest(CancelType.SHOP_FAULT, null, false, null), NOW);
+
+        assertThat(accepted.closed()).isFalse();
+        assertThat(cancelScheduleExceptionRepository.existsByReservationId(100L)).isFalse();
+    }
+
+    @Test
+    @DisplayName("고객 요청 대리 취소는 정책 환불액~납부액 범위의 입력 금액을 환불한다")
+    void acceptOwner_customerRequest_inRange() {
+        givenPaidReservation(LocalDateTime.of(2026, 10, 30, 12, 0));
+
+        AcceptedCancel accepted = cancelRequestService.acceptOwnerCancel(OWNER, 100L,
+                new OwnerCancelRequest(CancelType.CUSTOMER_REQUEST, 15_000, false, "고객 전화 요청"), NOW);
+
+        assertThat(accepted.refundAmount()).isEqualTo(15_000);
+        ReservationCancel cancel = reservationCancelRepository.findById(accepted.cancelId()).orElseThrow();
+        assertThat(cancel.getPolicyRefundAmount()).isEqualTo(10_000);
+        assertThat(cancel.getRefundAmount()).isEqualTo(15_000);
+    }
+
+    @Test
+    @DisplayName("대리 취소 환불액이 범위를 벗어나거나 없으면 거부하고 예약은 그대로 둔다")
+    void acceptOwner_customerRequest_invalidAmount() {
+        givenPaidReservation(LocalDateTime.of(2026, 10, 30, 12, 0));
+
+        assertErrorCode(() -> cancelRequestService.acceptOwnerCancel(OWNER, 100L,
+                new OwnerCancelRequest(CancelType.CUSTOMER_REQUEST, 9_900, false, null), NOW),
+                ErrorCode.CANCEL_INVALID_REFUND_AMOUNT);
+        assertErrorCode(() -> cancelRequestService.acceptOwnerCancel(OWNER, 100L,
+                new OwnerCancelRequest(CancelType.CUSTOMER_REQUEST, null, false, null), NOW),
+                ErrorCode.INVALID_INPUT);
+        assertThat(reservationStatus()).isEqualTo("CONFIRMED");
+    }
+
+    @Test
+    @DisplayName("다른 매장 사장님과 고객은 사장님 취소를 할 수 없다")
+    void acceptOwner_otherOwnerOrCustomer_rejected() {
+        givenPaidReservation(LocalDateTime.of(2026, 10, 30, 12, 0));
+
+        assertErrorCode(() -> cancelRequestService.acceptOwnerCancel(OTHER_OWNER, 100L,
+                new OwnerCancelRequest(CancelType.SHOP_FAULT, null, false, null), NOW),
+                ErrorCode.CANCEL_RESERVATION_NOT_FOUND);
+        assertErrorCode(() -> cancelRequestService.acceptOwnerCancel(CUSTOMER, 100L,
+                new OwnerCancelRequest(CancelType.SHOP_FAULT, null, false, null), NOW),
                 ErrorCode.FORBIDDEN);
     }
 

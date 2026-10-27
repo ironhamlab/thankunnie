@@ -11,7 +11,10 @@ import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.domain.cancel.dto.request.CustomerCancelRequest;
+import com.ucamp.app.domain.cancel.dto.request.OwnerCancelRequest;
 import com.ucamp.app.domain.cancel.dto.response.CancelResultResponse;
+import com.ucamp.app.domain.cancel.dto.response.OwnerCancelResponse;
+import com.ucamp.app.domain.cancel.entity.CancelType;
 import com.ucamp.app.domain.payment.service.PaymentService;
 
 /**
@@ -24,6 +27,8 @@ import com.ucamp.app.domain.payment.service.PaymentService;
 public class CancelService {
 
     private static final String CUSTOMER_CANCEL_REASON = "고객 직접 취소";
+    private static final String SHOP_FAULT_REASON = "매장 사유 취소";
+    private static final String CUSTOMER_REQUEST_REASON = "고객 요청 대리 취소";
 
     private final CancelRequestService cancelRequestService;
     private final CancelResultService cancelResultService;
@@ -43,6 +48,18 @@ public class CancelService {
         AcceptedCancel accepted = cancelRequestService.acceptCustomerCancel(requester, reservationId,
                 request.expectedRefundAmount(), LocalDateTime.now(clock));
         return settle(accepted, CUSTOMER_CANCEL_REASON);
+    }
+
+    public OwnerCancelResponse cancelByOwner(AuthUser requester, Long reservationId, OwnerCancelRequest request) {
+        AcceptedCancel accepted = cancelRequestService.acceptOwnerCancel(requester, reservationId, request,
+                LocalDateTime.now(clock));
+        return OwnerCancelResponse.of(settle(accepted, ownerReason(request)), accepted);
+    }
+
+    // PG 취소 사유는 유형별 고정 문구에 사장님이 입력한 사유를 덧붙인다
+    private String ownerReason(OwnerCancelRequest request) {
+        String prefix = request.cancelType() == CancelType.SHOP_FAULT ? SHOP_FAULT_REASON : CUSTOMER_REQUEST_REASON;
+        return request.reason() == null || request.reason().isBlank() ? prefix : prefix + ": " + request.reason();
     }
 
     /**

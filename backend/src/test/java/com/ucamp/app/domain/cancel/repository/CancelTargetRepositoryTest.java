@@ -53,6 +53,9 @@ class CancelTargetRepositoryTest {
         assertThat(target.shopId()).isEqualTo(CancelFixture.SHOP_ID);
         assertThat(target.status()).isEqualTo(ReservationStatus.CONFIRMED);
         assertThat(target.startsAt()).isEqualTo(STARTS_AT);
+        assertThat(target.endsAt()).isEqualTo(STARTS_AT.plusHours(1));
+        assertThat(target.customerName()).isEqualTo("고객");
+        assertThat(target.customerPhone()).isEqualTo("010");
         assertThat(target.heldAt()).isEqualTo(HELD_AT);
         assertThat(target.depositPaymentId()).isEqualTo(1L);
         assertThat(target.paidAmount()).isEqualTo(20_000);
