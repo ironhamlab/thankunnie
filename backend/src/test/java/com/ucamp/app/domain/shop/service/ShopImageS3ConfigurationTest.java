@@ -1,5 +1,7 @@
 package com.ucamp.app.domain.shop.service;
 
+import java.net.URI;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -31,6 +33,26 @@ class ShopImageS3ConfigurationTest {
         contextRunner.withPropertyValues("app.shop-image.storage=local").run(context -> {
             assertThat(context).hasNotFailed().doesNotHaveBean(S3Client.class);
             assertThat(context.getBean(ShopImageObjectStorage.class)).isInstanceOf(LocalShopImageObjectStorage.class);
+        });
+    }
+
+    @Test
+    @DisplayName("시스템 속성의 HTTP S3 엔드포인트 재정의는 기동 시 거부한다")
+    void start_httpEndpoint_rejectsOverride() {
+        contextRunner.withSystemProperties("aws.endpointUrl=http://localhost:9000").run(context -> {
+            assertThat(context).hasFailed();
+            assertThat(context.getStartupFailure()).hasRootCauseInstanceOf(IllegalArgumentException.class)
+                    .hasStackTraceContaining("S3 엔드포인트 재정의는 HTTPS만 허용합니다.");
+        });
+    }
+
+    @Test
+    @DisplayName("HTTPS S3 엔드포인트 재정의는 원래 URI를 유지한다")
+    void start_httpsEndpoint_keepsOverride() {
+        contextRunner.withSystemProperties("aws.endpointUrl=https://s3.example.test").run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context.getBean(S3Client.class).serviceClientConfiguration().endpointOverride())
+                    .contains(URI.create("https://s3.example.test"));
         });
     }
 }

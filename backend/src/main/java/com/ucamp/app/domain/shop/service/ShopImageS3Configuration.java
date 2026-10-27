@@ -18,12 +18,23 @@ public class ShopImageS3Configuration {
 
     @Bean(destroyMethod = "close")
     public S3Client shopImageS3Client(@Value("${app.shop-image.s3.region:ap-northeast-2}") String region) {
-        return S3Client.builder()
+        S3Client client = S3Client.builder()
                 .region(Region.of(region))
                 .httpClientBuilder(UrlConnectionHttpClient.builder()
                         .connectionTimeout(Duration.ofSeconds(5)).socketTimeout(Duration.ofSeconds(15)))
                 .overrideConfiguration(config -> config.apiCallTimeout(Duration.ofSeconds(30))
                         .apiCallAttemptTimeout(Duration.ofSeconds(20)))
                 .build();
+        try {
+            client.serviceClientConfiguration().endpointOverride().ifPresent(endpoint -> {
+                if (!"https".equalsIgnoreCase(endpoint.getScheme())) {
+                    throw new IllegalArgumentException("S3 엔드포인트 재정의는 HTTPS만 허용합니다.");
+                }
+            });
+            return client;
+        } catch (RuntimeException e) {
+            client.close();
+            throw e;
+        }
     }
 }
