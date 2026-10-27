@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTreatmentStore } from '@/store/useTreatmentStore';
 import { money } from '@/utils/demoData';
 import TreatmentForm from '@/pages/owner/components/TreatmentForm';
-import './treatment.css';
+import './MenusPage.css';
 
 export default function MenusPage() {
   const treatments = useTreatmentStore((state) => state.treatments);
@@ -72,8 +72,8 @@ export default function MenusPage() {
       <div className="b-notice">
         <strong>시술 정보 변경 유의사항</strong>
         <p>
-          비활성 시술은 신규 빈자리 선택에서 제외됩니다. 기존 빈자리와 예약 이력은 유지됩니다.
-          소요 시간은 30분 배수로 입력해 주세요.
+          비활성 시술은 신규 빈자리 선택에서 제외됩니다. 기존 빈자리와 예약 이력은 유지됩니다. 소요
+          시간은 30분 배수로 입력해 주세요.
         </p>
       </div>
       {(status === 'idle' || status === 'loading') && (
@@ -125,7 +125,9 @@ export default function MenusPage() {
                       <tr key={item.treatmentId}>
                         <td>
                           <strong>{item.name}</strong>
-                          <small>{item.treatmentType === 'MODEL' ? '모델 모집' : '일반 시술'}</small>
+                          <small>
+                            {item.treatmentType === 'MODEL' ? '모델 모집' : '일반 시술'}
+                          </small>
                         </td>
                         <td>{item.categoryName}</td>
                         <td>{item.description || '상세 설명 없음'}</td>

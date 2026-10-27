@@ -4,6 +4,13 @@ import { ROUTES } from '@/constants/routes';
 import { DEMO_DATE, SERVICES, finish, minutes, money, overlaps } from '@/utils/demoData';
 import { useDesignStore } from '@/store/useDesignStore';
 
+const dayLabel = (isClosed, isDemoDate) => {
+  if (isClosed) {
+    return '휴무';
+  }
+  return isDemoDate ? '시연일' : '•';
+};
+
 export default function ReservationPage() {
   const { id } = useParams();
   const service = SERVICES.find((item) => item.id === id);
@@ -119,9 +126,6 @@ export default function ReservationPage() {
               {['일', '월', '화', '수', '목', '금', '토'].map((d) => (
                 <small key={d}>{d}</small>
               ))}
-              {Array.from({ length: first }, (_, i) => (
-                <span key={'blank-' + i} />
-              ))}
               {Array.from({ length: days }, (_, i) => {
                 const day = i + 1;
                 const value =
@@ -138,6 +142,8 @@ export default function ReservationPage() {
                     aria-pressed={date === value}
                     disabled={closed || past}
                     className={date === value ? 'is-selected' : ''}
+                    // 1일을 요일 칸에 맞춰 시작해 빈 칸 요소 없이 달력을 정렬한다
+                    style={day === 1 ? { gridColumnStart: first + 1 } : undefined}
                     onClick={() => {
                       setDate(value);
                       setTime('');
@@ -145,7 +151,7 @@ export default function ReservationPage() {
                     }}
                   >
                     {day}
-                    <small>{closed ? '휴무' : value === DEMO_DATE ? '시연일' : '•'}</small>
+                    <small>{dayLabel(closed, value === DEMO_DATE)}</small>
                   </button>
                 );
               })}

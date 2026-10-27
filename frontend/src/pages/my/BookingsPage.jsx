@@ -9,7 +9,7 @@ import Dialog from '@/components/common/Dialog';
 import getServiceShop from '@/utils/getServiceShop';
 import PaymentStatusCard from '@/pages/my/components/PaymentStatusCard';
 import RefundPolicyCard from '@/pages/my/components/RefundPolicyCard';
-import './payment-cancel.css';
+import './BookingsPage.css';
 
 function BookingsSummary({ bookings }) {
   const payments = bookings.map(getPayment);

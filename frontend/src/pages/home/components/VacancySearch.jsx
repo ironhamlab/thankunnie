@@ -5,7 +5,7 @@ import { useDesignStore } from '@/store/useDesignStore';
 import Asset from '@/components/common/Asset';
 import ServiceCard from '@/pages/home/components/ServiceCard';
 import VacancyMap from '@/pages/home/components/VacancyMap';
-import './vacancy-search.css';
+import './VacancySearch.css';
 
 const categories = ['전체', '네일', '헤어', '속눈썹', '피부관리', '왁싱'];
 const regions = ['강남/서초', '홍대/연남', '성수/건대', '잠실/송파', '판교/분당'];

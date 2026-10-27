@@ -33,6 +33,7 @@ export default function BookingResultPage() {
     failure: '모의 결제를 완료하지 못했습니다',
     expired: '빈자리 임시 확보 시간이 만료되었습니다',
   }[scenario];
+  const bookingStatusLabel = booking.status === 'cancelled' ? '고객 취소' : '예약 확정';
   return (
     <div className="b-container b-page b-result-page">
       <div className="b-notice b-demo-disclaimer">
@@ -64,9 +65,7 @@ export default function BookingResultPage() {
           </p>
           <div className="b-flex b-result-badges">
             <span className="b-badge">
-              {success
-                ? '예약 상태: ' + (booking.status === 'cancelled' ? '고객 취소' : '예약 확정')
-                : '시연 오류 미리보기'}
+              {success ? '예약 상태: ' + bookingStatusLabel : '시연 오류 미리보기'}
             </span>
             <span className="b-badge b-neutral">
               {success ? '결제 상태: 모의 결제 완료' : '새로운 예약은 생성되지 않습니다'}

@@ -73,6 +73,7 @@ export default function HomeHeader() {
             <Link to={`${ROUTES.HOME}?sale=1`}>타임세일</Link>
             <button onClick={() => setModelOpen(true)}>시술 모델 모집</button>
             <Link to={ROUTES.BOOKINGS}>▦ 내 예약</Link>
+            <Link to={ROUTES.MY_RESERVATIONS}>예약 내역</Link>
           </nav>
           <div className="home-header-actions">
             <Link to={ROUTES.OWNER} className="home-account">

@@ -44,6 +44,7 @@ export default function Header() {
             빈자리 찾기
           </NavLink>
           <NavLink to={ROUTES.PROFILE}>마이페이지</NavLink>
+          <NavLink to={ROUTES.MY_RESERVATIONS}>예약 내역</NavLink>
           <NavLink to={ROUTES.BOOKINGS} className="b-reservation-link">
             <Asset name="8-3-16.svg" />내 예약 <b>{count}</b>
           </NavLink>
