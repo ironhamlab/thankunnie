@@ -7,6 +7,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
@@ -22,5 +23,5 @@ public record ShopUpdateRequest(
         @NotBlank @Size(max = 20) String phone,
         @Size(max = 2000) String description,
         @Size(max = 2000) String notice,
-        @Size(max = 1000) String imageUrl) {
+        @Null(message = "대표 이미지는 이미지 업로드·삭제 API를 사용해 주세요.") String imageUrl) {
 }

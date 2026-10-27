@@ -35,7 +35,9 @@ public class ShopService {
     @Transactional
     public ShopDetailResponse updateShop(AuthUser user, Long shopId, ShopUpdateRequest request) {
         user.requireShopOwner(shopId);
-        Shop shop = findShop(shopId);
+        // 대표 이미지 교체와 동시에 수정해도 이전 이미지 URL로 덮어쓰지 않도록 같은 행 잠금을 사용한다.
+        Shop shop = shopRepository.findByIdForUpdate(shopId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
         if (!categoryRepository.existsById(request.categoryId())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "존재하지 않는 매장 카테고리입니다.");
         }

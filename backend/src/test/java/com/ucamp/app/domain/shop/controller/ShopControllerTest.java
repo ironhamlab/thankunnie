@@ -62,4 +62,14 @@ class ShopControllerTest {
         }
         verifyNoInteractions(service);
     }
+
+    @Test
+    @DisplayName("일반 프로필 API로 이미지 URL을 직접 지정할 수 없다")
+    void update_imageUrl_returnsBadRequest() throws Exception {
+        String body = BODY.replace("\"phone\":\"02-000-0000\"",
+                "\"phone\":\"02-000-0000\",\"imageUrl\":\"https://example.com/unverified.png\"");
+        mockMvc.perform(put("/api/v1/shops/1").header("X-Test-User", "OWNER_1")
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest());
+        verifyNoInteractions(service);
+    }
 }

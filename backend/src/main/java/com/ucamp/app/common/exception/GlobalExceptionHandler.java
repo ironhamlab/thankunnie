@@ -25,7 +25,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e) {
         ErrorCode errorCode = e.getErrorCode();
-        log.warn("BusinessException: {} - {}", errorCode.getCode(), e.getMessage());
+        if (errorCode.getStatus().is5xxServerError()) {
+            log.error("BusinessException: {} - {}", errorCode.getCode(), e.getMessage(), e);
+        } else {
+            log.warn("BusinessException: {} - {}", errorCode.getCode(), e.getMessage());
+        }
         return toResponse(errorCode, e.getMessage());
     }
 
