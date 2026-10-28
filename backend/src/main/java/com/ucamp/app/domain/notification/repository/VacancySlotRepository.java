@@ -44,19 +44,21 @@ public class VacancySlotRepository {
                 OR (x.STATUS = 'HOLD'
                 AND (x.HOLD_EXPIRES_AT IS NULL OR x.HOLD_EXPIRES_AT > :now))))""";
 
-    // 이 빈자리의 임박 이벤트는 아직 없어야 한다
+    // 같은 매장·시작 시각의 임박 이벤트는 아직 없어야 한다 (UK_NOTIFICATION_EVENT_SLOT 과 동일)
     private static final String NOT_ALREADY_IMMINENT = """
         NOT EXISTS (
                 SELECT 1 FROM NOTIFICATION_EVENT e
-                WHERE e.EXCEPTION_ID = o.EXCEPTION_ID
-                AND e.EVENT_TYPE = 'IMMINENT')""";
+                WHERE e.SHOP_ID = o.SHOP_ID
+                AND e.EVENT_TYPE = 'IMMINENT'
+                AND e.SLOT_STARTS_AT = o.STARTS_AT)""";
 
-    // 이 빈자리의 초임박 이벤트는 아직 없어야 한다
+    // 같은 매장·시작 시각의 초임박 이벤트는 아직 없어야 한다 (UK_NOTIFICATION_EVENT_SLOT 과 동일)
     private static final String NOT_ALREADY_LAST_MINUTE = """
         NOT EXISTS (
                 SELECT 1 FROM NOTIFICATION_EVENT e
-                WHERE e.EXCEPTION_ID = o.EXCEPTION_ID
-                AND e.EVENT_TYPE = 'LAST_MINUTE')""";
+                WHERE e.SHOP_ID = o.SHOP_ID
+                AND e.EVENT_TYPE = 'LAST_MINUTE'
+                AND e.SLOT_STARTS_AT = o.STARTS_AT)""";
 
     // 영업 중인 매장의 OPEN. 시작이 8시간 이내이고 3시간보다 많이 남았으며, 아직 클릭할 수 있는 것만
     private static final String FIND_IMMINENT_SQL = """

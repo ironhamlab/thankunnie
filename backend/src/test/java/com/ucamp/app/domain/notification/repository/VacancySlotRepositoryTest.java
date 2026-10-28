@@ -133,6 +133,21 @@ class VacancySlotRepositoryTest {
                 .containsExactly(2L);
     }
 
+    @Test
+    @DisplayName("OPEN 행이 바뀌어도 같은 매장·시작 시각의 임박·초임박 이벤트는 다시 조회하지 않는다")
+    void findWithoutEvent_sameShopAndStartsAt_skipsEvenIfExceptionIdDiffers() {
+        LocalDateTime imminentStartsAt = NOW.plusHours(4);
+        LocalDateTime lastMinuteStartsAt = NOW.plusHours(1);
+        openSlot(2L, imminentStartsAt, imminentStartsAt.plusHours(1));
+        openSlot(3L, lastMinuteStartsAt, lastMinuteStartsAt.plusHours(1));
+        // 삭제된 OPEN 을 가리키는 예전 EXCEPTION_ID 로 이벤트가 남아 있는 경우
+        notificationEvent(10L, "IMMINENT", 1L, imminentStartsAt, imminentStartsAt.plusHours(1));
+        notificationEvent(11L, "LAST_MINUTE", 1L, lastMinuteStartsAt, lastMinuteStartsAt.plusHours(1));
+
+        assertThat(repository.findImminentWithoutEvent(NOW)).isEmpty();
+        assertThat(repository.findLastMinuteWithoutEvent(NOW)).isEmpty();
+    }
+
     private void openSlot(long exceptionId, LocalDateTime startsAt, LocalDateTime endsAt) {
         NotificationFixture.exception(jdbcTemplate, exceptionId, SHOP_ID, null, "OPEN", startsAt, endsAt);
     }
