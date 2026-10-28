@@ -79,7 +79,7 @@ TODAY의 날짜는 호출할 때 `Asia/Seoul`로 계산한다. UTC 기준 `toISO
 
 ### 성공 응답 예시
 
-아래 카드 필드는 최소 제안이다. 이미지·장소·가격 등 실제 화면 필드는 화면 설계와 도메인 확정 후 추가한다.
+UNNIE-121: 목록 항목은 아래 8개 필드를 반환하는 계약으로 확장한다. C 탐색 API의 실제 경로·시각 매핑·판매가 계산은 C 담당자와 확정해야 한다.
 
 ```json
 {
@@ -90,7 +90,11 @@ TODAY의 날짜는 호출할 때 `Asia/Seoul`로 계산한다. UTC 기준 `toISO
         "id": 101,
         "title": "예시 항목",
         "startsAt": "2026-10-22T18:00:00+09:00",
-        "applicationClosesAt": "2026-10-22T17:00:00+09:00"
+        "applicationClosesAt": "2026-10-22T17:00:00+09:00",
+        "shopName": "예시 뷰티샵",
+        "price": 32500,
+        "latitude": 37.4982,
+        "longitude": 127.0276
       }
     ],
     "page": 0,
@@ -104,7 +108,18 @@ TODAY의 날짜는 호출할 때 `Asia/Seoul`로 계산한다. UTC 기준 `toISO
 }
 ```
 
-`id`는 양의 정수, `title`과 `startsAt`은 필수다. `applicationClosesAt`은 일반 탐색에서는 null을 허용하지만 위 두 메인 프리셋에서는 필터 조건에 따라 항상 존재한다. 날짜·시각은 오프셋을 포함한 ISO-8601로 반환한다.
+8개 키를 모두 포함한다. `id`는 양의 안전한 정수, `title`과 `shopName`은 공백이 아닌 문자열이다. `startsAt`은 필수이며 날짜·시각은 오프셋을 포함한 ISO-8601로 반환한다. `applicationClosesAt`은 일반 탐색에서는 null을 허용하지만 위 두 메인 프리셋에서는 필터 조건에 따라 항상 존재한다.
+
+| 필드 | 타입 | 의미 |
+| --- | --- | --- |
+| shopName | string | 매장명 |
+| price | number | 서버가 계산한 원화 판매가. 0 이상의 안전한 정수이며 0원도 허용 |
+| latitude | number 또는 null | 위도, -90~90 |
+| longitude | number 또는 null | 경도, -180~180 |
+
+좌표는 유효한 숫자 쌍 또는 두 필드 모두 null로 반환한다. 미등록 좌표의 항목은 카드에는 표시하고 지도 마커에서는 제외한다. 문자열 숫자, 한쪽만 있는 좌표, 범위 밖 좌표는 응답 형식 오류로 처리한다. 프런트에서 가격이나 좌표를 임의 계산하거나 샘플 값으로 보완하지 않는다.
+
+UNNIE-121에서 A-01 API 모듈·store·카드·지도를 복원했다. 현재 시안 홈의 라우트는 유지하며 실제 서버 연결은 아직 하지 않는다. 연결 방법과 검증 범위는 `frontend/MAIN-INTEGRATION.md`를 참조한다.
 
 `totalElements`는 필터에 맞는 전체 개수, `totalPages`는 전체 페이지 수다. 결과가 없으면 `content: []`, `totalElements: 0`, `totalPages: 0`, `hasNext: false`로 200을 반환한다. 범위를 벗어난 페이지도 빈 목록을 반환하되 실제 전체 개수와 전체 페이지 수는 유지한다.
 

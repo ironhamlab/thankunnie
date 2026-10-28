@@ -41,6 +41,8 @@
 
 ## 카드 표시 계약
 
+> UNNIE-121: 아래 표는 A-02 당시의 임시 계약 기록이다. 현재 A-01의 목록 항목은 `id`, `title`, `startsAt`, `applicationClosesAt`, `shopName`, `price`, `latitude`, `longitude` 8개 키로 정의한다. 타입·null 정책은 `A-01-main-exposure.md`를 따른다. imageUrl·originalPrice·status는 이번 확장에 포함하지 않는다.
+
 기존 A-01의 id, title, startsAt, applicationClosesAt 외에 아래 필드를 C와 협의해야 한다.
 
 | 필드 | 임시 타입 | 표시 |
