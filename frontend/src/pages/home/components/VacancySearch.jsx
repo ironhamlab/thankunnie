@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SERVICES } from '@/utils/demoData';
 import { useDesignStore } from '@/store/useDesignStore';
-import Asset from '@/components/common/Asset';
+import FireIcon from '@/components/icons/FireIcon';
+import InfoIcon from '@/components/icons/InfoIcon';
+import FilterIcon from '@/components/icons/FilterIcon';
 import ServiceCard from '@/pages/home/components/ServiceCard';
 import VacancyMap from '@/pages/home/components/VacancyMap';
 import Badge from '@/components/common/Badge';
@@ -101,7 +103,7 @@ export default function VacancySearch() {
       <section className="b-hero">
         <div>
           <div className="b-eyebrow">
-            <Asset name="8-3-6.svg" />
+            <FireIcon size={16} />
             REAL-TIME BEAUTY FLASH SALE
           </div>
           <h1>
@@ -110,7 +112,7 @@ export default function VacancySearch() {
           <p>원하는 날짜와 지역의 빈자리를 찾고, 오늘의 할인 자리는 타임세일로 모아보세요.</p>
         </div>
         <span className={styles.demoNote}>
-          <Asset name="8-3-7.svg" />※ 본 화면의 할인율, 예약금, 잔여 시간은{' '}
+          <InfoIcon size={20} className={styles.noteIcon} />※ 본 화면의 할인율, 예약금, 잔여 시간은{' '}
           <strong>MVP 모의 정책</strong> 예시 데이터입니다
         </span>
       </section>
@@ -229,7 +231,7 @@ export default function VacancySearch() {
       )}
       <div className="b-preview b-row">
         <div className="b-flex">
-          <Asset name="8-3-12.svg" />
+          <FilterIcon size={20} className={styles.previewIcon} />
           <strong>상태별 UI 미리보기 모드:</strong>
           <span className="b-muted">개발 및 검증을 위한 화면 상태 토글</span>
         </div>

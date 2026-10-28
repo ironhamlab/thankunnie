@@ -15,7 +15,7 @@ export default function Footer() {
 
   return (
     <>
-      <footer className="b-footer">
+      <footer className={`b-footer ${styles.root}`}>
         <div className="b-container b-row">
           <div>
             <Link className="b-brand" to={ROUTES.HOME}>

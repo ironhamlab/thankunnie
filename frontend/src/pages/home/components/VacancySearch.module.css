@@ -13,6 +13,10 @@
   border-radius: var(--radius-md);
   font-size: 11px;
 }
+.noteIcon,
+.previewIcon {
+  color: var(--color-primary);
+}
 .demoNote strong {
   color: var(--color-primary);
 }
