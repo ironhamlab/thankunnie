@@ -23,6 +23,7 @@ import lombok.NoArgsConstructor;
 /**
  * 알림 대기 줄 한 장.
  * 빈자리 소식 하나와 받을 회원 한 명을 한 줄로 적는다.
+ * 문자 발송 결과도 이 줄에 남긴다. 새 이력 테이블은 두지 않는다.
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -50,10 +51,17 @@ public class NotificationDispatch extends BaseTimeEntity {
     @Column(name = "USER_ID", nullable = false)
     private Long userId;
 
-    /** 만들 때는 PENDING. 선점에 성공하면 PROCESSING. 재검사에 걸리면 SKIPPED. */
+    /**
+     * 만들 때는 PENDING. 선점에 성공하면 PROCESSING.
+     * 재검사에 걸리면 SKIPPED. 문자 결과는 SENT, FAILED, UNKNOWN.
+     */
     @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", nullable = false, length = 20)
     private NotificationDispatchStatus status;
+
+    /** 실패·결과 불명일 때만 채운다. 그 외에는 null. */
+    @Column(name = "FAIL_REASON", length = 500)
+    private String failReason;
 
     @Builder
     private NotificationDispatch(Long eventId, Long userId) {
@@ -65,5 +73,33 @@ public class NotificationDispatch extends BaseTimeEntity {
     /** 발송 직전 재검사에 걸리면 보내지 않고 끝낸다. */
     public void markSkipped() {
         this.status = NotificationDispatchStatus.SKIPPED;
+        this.failReason = null;
+    }
+
+    /** 문자 발송이 끝났다. */
+    public void markSent() {
+        this.status = NotificationDispatchStatus.SENT;
+        this.failReason = null;
+    }
+
+    /**
+     * 문자 발송이 실패했다.
+     *
+     * @param failReason 오류 사유. 없으면 null
+     */
+    public void markFailed(String failReason) {
+        this.status = NotificationDispatchStatus.FAILED;
+        this.failReason = failReason;
+    }
+
+    /**
+     * 문자 API 응답이 애매해 발송 여부를 다시 봐야 한다.
+     * 성공으로 바꾸지 않는다.
+     *
+     * @param failReason 확인이 필요한 이유. 없으면 null
+     */
+    public void markUnknown(String failReason) {
+        this.status = NotificationDispatchStatus.UNKNOWN;
+        this.failReason = failReason;
     }
 }
