@@ -42,7 +42,7 @@ export default function OwnerSidebar() {
       <nav aria-label="사장님 메뉴">
         {NAVIGATION.map(([to, label, Icon]) => (
           <NavLink key={to} to={to}>
-            <Icon />
+            <Icon size={20} />
             {label}
           </NavLink>
         ))}

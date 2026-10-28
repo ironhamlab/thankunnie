@@ -5,6 +5,9 @@ import { useDesignStore } from '@/store/useDesignStore';
 import SearchIcon from '@/components/icons/SearchIcon';
 import NotificationIcon from '@/components/icons/NotificationIcon';
 import ProfileIcon from '@/components/icons/ProfileIcon';
+import TimerIcon from '@/components/icons/TimerIcon';
+import CalendarIcon from '@/components/icons/CalendarIcon';
+import BoltIcon from '@/components/icons/BoltIcon';
 import styles from './Header.module.css';
 
 const NOTIFICATIONS = [
@@ -90,19 +93,21 @@ export default function Header() {
               onChange={(e) => setSearch(e.target.value)}
             />
             <button aria-label="검색">
-              <SearchIcon />
+              <SearchIcon size={16} />
             </button>
           </form>
 
           <nav aria-label="고객 메뉴">
             <Link to={`${ROUTES.HOME}?view=list`} aria-current={current('search')}>
+              <SearchIcon size={16} />
               빈자리 탐색
             </Link>
             <Link to={`${ROUTES.HOME}?sale=1`} aria-current={current('sale')}>
+              <TimerIcon size={16} />
               타임세일
             </Link>
             <Link to={ROUTES.MY_RESERVATIONS} aria-current={current('reservations')}>
-              내 예약
+              <CalendarIcon size={16} /> 내 예약
             </Link>
           </nav>
 
@@ -188,10 +193,11 @@ export default function Header() {
           <span aria-hidden="true">⌖</span>빈자리 탐색
         </Link>
         <Link to={`${ROUTES.HOME}?sale=1`} aria-current={current('sale')}>
-          <span aria-hidden="true">ϟ</span>타임세일
+          <BoltIcon size={20} />
+          타임세일
         </Link>
         <Link to={ROUTES.MY_RESERVATIONS} aria-current={current('reservations')}>
-          <span aria-hidden="true">▦</span>내 예약
+          <CalendarIcon size={20} />내 예약
         </Link>
       </nav>
     </>

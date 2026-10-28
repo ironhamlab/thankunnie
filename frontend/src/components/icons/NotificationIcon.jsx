@@ -1,9 +1,13 @@
 /**
- * 알림 아이콘(종 모양). 색은 글자색(currentColor)을 따르고, 크기는 사용하는 쪽 CSS 에서 정한다.
+ * 알림 아이콘(종 모양). 24×24 격자 기준이며 색은 글자색(currentColor)을 따른다.
+ *
+ * @param {number} [size] 가로·세로 크기(px). 16·20·24 중에서 쓴다
  */
-export default function NotificationIcon(props) {
+export default function NotificationIcon({ size = 24, ...props }) {
   return (
     <svg
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

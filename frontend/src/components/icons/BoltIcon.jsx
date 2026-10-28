@@ -1,17 +1,19 @@
 /**
- * 번개 아이콘(즉시 등록). 색은 글자색(currentColor)을 따르고, 크기는 width·height 로 바꿀 수 있다.
+ * 번개 아이콘(즉시 등록). 24×24 격자 기준이며 색은 글자색(currentColor)을 따른다.
+ *
+ * @param {number} [size] 가로·세로 크기(px). 16·20·24 중에서 쓴다
  */
-export default function BoltIcon(props) {
+export default function BoltIcon({ size = 24, ...props }) {
   return (
     <svg
-      width="14.6667"
-      height="18.3333"
-      viewBox="0 0 14.6667 18.3333"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
       fill="currentColor"
       aria-hidden="true"
       {...props}
     >
-      <path d="M6.00417 14.85L10.7479 9.16667H7.08125L7.74583 3.96458L3.50625 10.0833H6.69167L6.00417 14.85V14.85M3.66667 18.3333L4.58333 11.9167H0L8.25 0H10.0833L9.16667 7.33333H14.6667L5.5 18.3333H3.66667V18.3333M7.12708 9.39583V9.39583V9.39583V9.39583V9.39583V9.39583V9.39583V9.39583" />
+      <path d="M10.55 18.2 L15.725 12 H11.725 L12.45 6.325 L7.825 13 H11.3 L10.55 18.2 V18.2 M8 22 L9 15 H4 L13 2 H15 L14 10 H20 L10 22 H8 V22 M11.775 12.25 V12.25 V12.25 V12.25 V12.25 V12.25 V12.25 V12.25" />
     </svg>
   );
 }

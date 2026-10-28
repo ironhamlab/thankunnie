@@ -20,28 +20,24 @@ const cards = [
     '매장 정보 관리',
     '대표 사진, 영업시간, 오시는 길 주소 및 주차 안내 수정',
     StoreIcon,
-    { width: 18.4194, height: 16.5 },
   ],
   [
     ROUTES.OWNER_MENUS,
     '시술 메뉴 관리',
     '단일 시술 등록, 소요시간 설정 및 정상가 실시간 편집',
     ScissorsIcon,
-    { width: 18.3333, height: 18.3333 },
   ],
   [
     ROUTES.OWNER_SLOTS,
     '빈자리 관리 & 즉시 등록',
     '당일 캔슬 즉시 타임세일 슬롯 배정 및 노출 개시',
     BoltIcon,
-    {},
   ],
   [
     ROUTES.OWNER_BOOKINGS,
     '예약 관리 & 상세 내역',
     '고객 예약 확인 및 결제 상세 내역 조회',
     CalendarIcon,
-    { width: 16.5, height: 18.3333 },
   ],
 ];
 export default function OwnerDashboardPage() {
@@ -105,9 +101,9 @@ export default function OwnerDashboardPage() {
       </div>
       <h2>핵심 운영 기능 바로가기</h2>
       <div className={`b-three-grid ${styles.cards}`}>
-        {cards.map(([to, title, description, Icon, iconSize]) => (
+        {cards.map(([to, title, description, Icon]) => (
           <Link key={to} to={to} className="b-panel b-pad">
-            <Icon {...iconSize} />
+            <Icon size={24} />
             <span className={styles.cardArrow}>→</span>
             <h2>{title}</h2>
             <p>{description}</p>

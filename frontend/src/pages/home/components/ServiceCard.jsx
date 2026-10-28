@@ -25,7 +25,11 @@ export default function ServiceCard({ service }) {
         </span>
         {service.discount > 0 && (
           <span className={styles.startTag}>
-            {service.id === 'nail' ? <TimerIcon className={styles.timerIcon} /> : <ClockIcon />}
+            {service.id === 'nail' ? (
+              <TimerIcon size={16} className={styles.timerIcon} />
+            ) : (
+              <ClockIcon size={16} />
+            )}
             {service.id === 'nail' ? '40분 뒤 시작!' : day + ' ' + service.time + ' 시작'}
           </span>
         )}
@@ -34,14 +38,14 @@ export default function ServiceCard({ service }) {
         <div className={`b-row ${styles.meta}`}>
           <span>{service.shop}</span>
           <small>
-            <LocationIcon />
+            <LocationIcon size={16} />
             {service.location}
           </small>
         </div>
         <h3>{service.name}</h3>
         <div className={`b-flex ${styles.time}`}>
           <span className={styles.duration}>
-            <ClockIcon />
+            <ClockIcon size={16} />
             {service.duration}분 소요
           </span>
           <strong className={service.discount ? 'b-pink' : ''}>

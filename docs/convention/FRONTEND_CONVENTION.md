@@ -318,7 +318,8 @@ generatePath(ROUTES.PRODUCT_DETAIL, { id: productId });
 
 - 공통 컴포넌트의 종류 값(`variant`, `tone`)은 색 이름이 아니라 의미로 짓는다. 예: `success`, `error`, `danger` (`green`, `pink` 사용 금지)
 - 아이콘은 색이 바뀌는지에 따라 둘 곳을 나눈다.
-  - 선택·강조 상태에 따라 색이 바뀌는 아이콘은 `components/icons/{이름}Icon.jsx` 컴포넌트로 만든다. SVG 의 선·면 색은 `currentColor`로 두어 글자색을 따르게 하고, 크기는 사용하는 쪽 CSS 에서 정한다. 예: `<ProfileIcon />`
+  - 선택·강조 상태에 따라 색이 바뀌는 아이콘은 `components/icons/{이름}Icon.jsx` 컴포넌트로 만든다. SVG 의 선·면 색은 `currentColor`로 두어 글자색을 따르게 한다.
+  - 아이콘 컴포넌트는 같은 규격으로 만든다: `viewBox="0 0 24 24"`(모양은 가운데 20×20 안), 크기는 `size` 하나로 받고 기본값 24, 쓰는 곳에서는 16·20·24 중 하나를 쓴다. 예: `<SearchIcon size={16} />`
   - 색이 고정된 그림(피그마에서 받은 이미지·일러스트 등)은 `assets/` 아래에 `.svg` 파일로 두고 `Asset` 컴포넌트로 불러온다. 파일로 불러온 SVG 는 CSS 로 색을 바꿀 수 없다.
   - 아이콘을 한 화면 파일 안에 함수로 만들지 않는다. 다른 화면에서 다시 쓸 때 복사본이 생긴다.
 
