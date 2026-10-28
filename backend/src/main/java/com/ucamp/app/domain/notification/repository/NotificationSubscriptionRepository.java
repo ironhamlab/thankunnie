@@ -78,6 +78,34 @@ public interface NotificationSubscriptionRepository extends JpaRepository<Notifi
     Optional<NotificationSubscription> findByIdAndUserId(Long id, Long userId);
 
     /**
+     * 업장 구독 등록 시 중복 여부. ACTIVE 이고 회원·매장·희망 시작·종료가 모두 같으면 true.
+     */
+    boolean existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTime(
+            Long userId, SubscriptionStatus status, Long shopId,
+            LocalDateTime startTime, LocalDateTime endTime);
+
+    /**
+     * 업장 구독 수정 시 중복 여부. 자기 구독(id)은 제외하고 본다.
+     */
+    boolean existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
+            Long userId, SubscriptionStatus status, Long shopId,
+            LocalDateTime startTime, LocalDateTime endTime, Long id);
+
+    /**
+     * 카테고리·지역 구독 등록 시 중복 여부. ACTIVE 이고 회원·카테고리·지역·희망 시작·종료가 모두 같으면 true.
+     */
+    boolean existsByUserIdAndStatusAndCategoryIdAndRegionCodeAndStartTimeAndEndTime(
+            Long userId, SubscriptionStatus status, Long categoryId, String regionCode,
+            LocalDateTime startTime, LocalDateTime endTime);
+
+    /**
+     * 카테고리·지역 구독 수정 시 중복 여부. 자기 구독(id)은 제외하고 본다.
+     */
+    boolean existsByUserIdAndStatusAndCategoryIdAndRegionCodeAndStartTimeAndEndTimeAndIdNot(
+            Long userId, SubscriptionStatus status, Long categoryId, String regionCode,
+            LocalDateTime startTime, LocalDateTime endTime, Long id);
+
+    /**
      * 이 매장 업장 구독 중, 빈자리 시작 시각을 알려줄 대상을 찾는다.
      * 해제한 구독과, 희망 종료 시각이 이미 지난 구독은 제외한다.
      * 빈자리 시작 시각이 희망 시작 이상이고 희망 종료 이하이면 포함한다.
