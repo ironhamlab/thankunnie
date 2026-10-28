@@ -301,9 +301,16 @@ generatePath(ROUTES.PRODUCT_DETAIL, { id: productId });
 ## 9. 스타일링
 
 - reset, 공통 CSS 변수, 폰트 등 전역 스타일은 `assets/styles/global.css`에 작성한다.
-- 컴포넌트 스타일은 같은 폴더에 `{컴포넌트명}.module.css` 또는 `{컴포넌트명}.css`로 배치한다.
-- 공통으로 사용하는 색상·간격·폰트 크기는 CSS 변수로 정의한다.
-  - 예: `--color-primary`, `--spacing-md`
+- 컴포넌트 스타일은 같은 폴더에 `{컴포넌트명}.module.css`로 배치하고 `import styles from './{컴포넌트명}.module.css'`로 사용한다.
+  - 모듈 클래스 이름은 camelCase로 쓴다. 예: `styles.ownerBrand`
+  - 공통 클래스를 함께 써야 하는 선택자는 `:global(.b-xxx)`로 감싼다.
+- 새 전역 클래스는 만들지 않는다. `assets/styles/design.css`의 공통 클래스(`b-panel`, `b-flex` 등)는 기존 화면 호환용이며, 공통 컴포넌트로 옮기면서 줄여 나간다.
+- 버튼과 상태 라벨은 직접 꾸미지 않고 `components/common`의 `Button`, `Badge`를 사용한다.
+  - 예: `<Button variant="primary">저장</Button>`, `<Button as={Link} to={ROUTES.HOME} size="small">홈</Button>`, `<Badge tone="neutral">예약 확정</Badge>`
+- 색·글꼴·모서리 값은 직접 적지 않고 `global.css`의 CSS 변수를 사용한다.
+  - 예: `var(--color-primary)`, `var(--font-body)`, `var(--radius-md)`, `var(--spacing-md)`
+  - 새 공통 값이 필요하면 `global.css`에 변수를 추가하고 PR에 적는다.
+- 전역 CSS(`global.css`, `design.css` 등)는 `main.jsx`에서 컴포넌트보다 먼저 불러온다. 순서가 바뀌면 같은 우선순위의 전역 규칙이 모듈 규칙을 덮어쓴다.
 - 반응형 브레이크포인트는 팀에서 정한 값을 CSS 미디어 쿼리에 일관되게 사용한다.
 - JavaScript에서도 같은 기준이 필요하면 `constants/breakpoints.js`의 값을 CSS와 맞춘다.
 - CSS 미디어 쿼리 조건에 일반 CSS 변수인 `var(...)`를 사용할 수 있다고 가정하지 않는다.
