@@ -117,7 +117,15 @@ public class SolapiSmsClient {
         message.setText(messageBody);
 
         MultipleDetailMessageSentResponse response = messageService.send(message, null);
-        if (response == null || response.getGroupInfo() == null) {
+        if (response == null) {
+            return null;
+        }
+        // groupId 만 보면 개별 거절도 성공으로 남는다. 실패 목록이 있으면 FAILED 로 보낸다.
+        if (response.getFailedMessageList() != null
+                && !response.getFailedMessageList().isEmpty()) {
+            throw new SolapiMessageNotReceivedException("개별 메시지 발송이 거절되었습니다.");
+        }
+        if (response.getGroupInfo() == null) {
             return null;
         }
         return response.getGroupInfo().getGroupId();
