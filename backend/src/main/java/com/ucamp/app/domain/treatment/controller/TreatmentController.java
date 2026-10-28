@@ -24,7 +24,6 @@ import com.ucamp.app.common.auth.LoginUser;
 import com.ucamp.app.common.response.ApiResponse;
 import com.ucamp.app.domain.treatment.dto.request.TreatmentSaveRequest;
 import com.ucamp.app.domain.treatment.dto.request.TreatmentStatusUpdateRequest;
-import com.ucamp.app.domain.treatment.dto.response.TreatmentCategoryResponse;
 import com.ucamp.app.domain.treatment.dto.response.TreatmentDetailResponse;
 import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
 import com.ucamp.app.domain.treatment.service.TreatmentService;
@@ -47,13 +46,6 @@ public class TreatmentController {
             @LoginUser AuthUser user, @PathVariable Long shopId,
             @RequestParam(required = false) TreatmentStatus status) {
         return ApiResponse.success(treatmentService.getTreatments(user, shopId, status));
-    }
-
-    @Operation(summary = "선택 가능한 시술 카테고리 조회")
-    @GetMapping("/categories")
-    public ApiResponse<List<TreatmentCategoryResponse>> getCategories(
-            @LoginUser AuthUser user, @PathVariable Long shopId) {
-        return ApiResponse.success(treatmentService.getCategories(user, shopId));
     }
 
     @Operation(summary = "시술 단건 조회")

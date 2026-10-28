@@ -8,12 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
-import com.ucamp.app.domain.shop.entity.ShopCategory;
-import com.ucamp.app.domain.shop.repository.ShopCategoryRepository;
 import com.ucamp.app.domain.shop.repository.ShopRepository;
 import com.ucamp.app.domain.treatment.dto.request.TreatmentSaveRequest;
 import com.ucamp.app.domain.treatment.dto.request.TreatmentStatusUpdateRequest;
-import com.ucamp.app.domain.treatment.dto.response.TreatmentCategoryResponse;
 import com.ucamp.app.domain.treatment.dto.response.TreatmentDetailResponse;
 import com.ucamp.app.domain.treatment.entity.Treatment;
 import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
@@ -25,13 +22,10 @@ public class TreatmentService {
 
     private final TreatmentRepository treatmentRepository;
     private final ShopRepository shopRepository;
-    private final ShopCategoryRepository categoryRepository;
 
-    public TreatmentService(TreatmentRepository treatmentRepository, ShopRepository shopRepository,
-            ShopCategoryRepository categoryRepository) {
+    public TreatmentService(TreatmentRepository treatmentRepository, ShopRepository shopRepository) {
         this.treatmentRepository = treatmentRepository;
         this.shopRepository = shopRepository;
-        this.categoryRepository = categoryRepository;
     }
 
     public List<TreatmentDetailResponse> getTreatments(AuthUser user, Long shopId) {
@@ -49,13 +43,6 @@ public class TreatmentService {
                 .map(TreatmentDetailResponse::from).toList();
     }
 
-    public List<TreatmentCategoryResponse> getCategories(AuthUser user, Long shopId) {
-        user.requireShopOwner(shopId);
-        requireShop(shopId);
-        return categoryRepository.findAllByOrderByNameAsc().stream()
-                .map(TreatmentCategoryResponse::from).toList();
-    }
-
     public TreatmentDetailResponse getTreatment(AuthUser user, Long shopId, Long treatmentId) {
         user.requireShopOwner(shopId);
         return TreatmentDetailResponse.from(findTreatment(shopId, treatmentId));
@@ -66,7 +53,7 @@ public class TreatmentService {
         user.requireShopOwner(shopId);
         var shop = shopRepository.findById(shopId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
-        Treatment treatment = Treatment.create(shop, findCategory(request.categoryId()), request);
+        Treatment treatment = Treatment.create(shop, request);
         return TreatmentDetailResponse.from(treatmentRepository.saveAndFlush(treatment));
     }
 
@@ -75,7 +62,7 @@ public class TreatmentService {
             TreatmentSaveRequest request) {
         user.requireShopOwner(shopId);
         Treatment treatment = findTreatment(shopId, treatmentId);
-        treatment.updateMenu(findCategory(request.categoryId()), request);
+        treatment.updateMenu(request);
         treatmentRepository.flush();
         return TreatmentDetailResponse.from(treatment);
     }
@@ -93,11 +80,6 @@ public class TreatmentService {
     private Treatment findTreatment(Long shopId, Long treatmentId) {
         return treatmentRepository.findByTreatmentIdAndShopShopId(treatmentId, shopId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
-    }
-
-    private ShopCategory findCategory(Long categoryId) {
-        return categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT, "존재하지 않는 카테고리입니다."));
     }
 
     private void requireShop(Long shopId) {
