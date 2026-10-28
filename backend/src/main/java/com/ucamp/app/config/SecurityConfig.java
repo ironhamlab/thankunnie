@@ -1,5 +1,10 @@
 package com.ucamp.app.config;
 
+import java.time.Clock;
+import java.time.Duration;
+
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -8,10 +13,15 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 
+import com.ucamp.app.common.auth.JwtAuthFilter;
+import com.ucamp.app.common.auth.JwtProvider;
 import com.ucamp.app.common.auth.StubAuthFilter;
+import com.ucamp.app.common.util.TimeUtils;
 
 /**
  * Spring Security 설정.
@@ -36,10 +46,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtProvider jwtProvider) throws Exception {
+        // stub 이 먼저 테스트 사용자를 인증하고, JWT 필터는 아직 인증되지 않은 요청만 처리한다
         if (environment.acceptsProfiles(Profiles.of(STUB_AUTH_PROFILES))) {
             http.addFilterBefore(new StubAuthFilter(), AnonymousAuthenticationFilter.class);
         }
+        http.addFilterBefore(new JwtAuthFilter(jwtProvider), AnonymousAuthenticationFilter.class);
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
@@ -50,8 +62,27 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_PATHS).permitAll()
-                        // 인증(JWT 등) 도입 전까지 전체 허용. 인증 이슈에서 authenticated() 로 변경한다
+                        // 경로 단위로 막지 않는다. 인증은 @LoginUser(비로그인 401),
+                        // 역할·매장 권한은 서비스의 requireRole·requireShopOwner(403)에서 검사한다
                         .anyRequest().permitAll());
         return http.build();
+    }
+
+    /**
+     * 액세스 토큰 발급·검증기. @WebMvcTest 처럼 TimeConfig 가 없는 슬라이스 테스트에서도
+     * 이 설정만 Import 하면 동작하도록 Clock 이 없으면 한국 시간 시스템 시계를 쓴다.
+     */
+    @Bean
+    public JwtProvider jwtProvider(
+            @Value("${app.jwt.secret}") String secret,
+            @Value("${app.jwt.access-token-validity:PT24H}") Duration accessTokenValidity,
+            ObjectProvider<Clock> clockProvider) {
+        Clock clock = clockProvider.getIfAvailable(() -> Clock.system(TimeUtils.KST));
+        return new JwtProvider(secret, accessTokenValidity, clock);
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
