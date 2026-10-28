@@ -2,6 +2,7 @@ package com.ucamp.app.domain.notification.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -333,6 +334,8 @@ class NotificationDispatchServiceTest {
         NotificationDispatch saved = notificationDispatchRepository.findById(job.getId()).orElseThrow();
         assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.SENT);
         assertThat(saved.getFailReason()).isNull();
+        // 본문 시각은 연도 포함 한국어 형식이다. 기본 toString(2026-10-22T15:00)을 쓰지 않는다.
+        verify(solapiSmsClient).send(anyString(), contains("2026년 10월 22일 15:00 시작 빈자리가 생겼습니다."));
     }
 
     @Test

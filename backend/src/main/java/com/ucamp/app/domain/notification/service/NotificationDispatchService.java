@@ -2,6 +2,7 @@ package com.ucamp.app.domain.notification.service;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +39,10 @@ import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
 public class NotificationDispatchService {
 
     private static final int FAIL_REASON_MAX_LENGTH = 500;
+
+    /** 문자 본문에 넣는 빈자리 시작 시각. 연도를 포함해 다른 해 예약과 구분한다. */
+    private static final DateTimeFormatter SLOT_START_TEXT =
+            DateTimeFormatter.ofPattern("yyyy년 M월 d일 HH:mm");
 
     /** 이미 끝난 발송. 이 상태면 문자를 다시 보내지 않는다. */
     private static final Set<NotificationDispatchStatus> DO_NOT_RESEND = EnumSet.of(
@@ -218,7 +223,8 @@ public class NotificationDispatchService {
 
     private String buildMessage(NotificationEvent event) {
         String shopName = recipientContactRepository.findShopNameById(event.getShopId()).orElse("매장");
-        return shopName + "에 " + event.getSlotStartsAt() + " 시작 빈자리가 생겼습니다.";
+        String startsAtText = event.getSlotStartsAt().format(SLOT_START_TEXT);
+        return shopName + "에 " + startsAtText + " 시작 빈자리가 생겼습니다.";
     }
 
     private void applySendResult(NotificationDispatch job, SmsSendResult result) {
