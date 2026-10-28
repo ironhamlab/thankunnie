@@ -2,11 +2,14 @@ package com.ucamp.app.domain.notification.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.solapi.sdk.message.exception.SolapiEmptyResponseException;
 import com.solapi.sdk.message.exception.SolapiMessageNotReceivedException;
+import com.solapi.sdk.message.model.FailedMessage;
 
 class SolapiSmsClientTest {
 
@@ -42,6 +45,43 @@ class SolapiSmsClientTest {
         assertThat(result.status()).isEqualTo(SmsSendStatus.FAILED);
         assertThat(result.failReason()).contains("잔액");
         assertThat(result.providerMessageId()).isNull();
+    }
+
+    @Test
+    @DisplayName("실패 목록의 statusCode·statusMessage 를 FAIL_REASON 에 남긴다")
+    void send_failedMessageList_keepsStatusReason() {
+        SolapiSmsClient client = new SolapiSmsClient(
+                "api-key",
+                "api-secret",
+                "01000000000",
+                (to, from, body) -> {
+                    FailedMessage failed = new FailedMessage();
+                    failed.setStatusCode("1062");
+                    failed.setStatusMessage("발신번호 미등록");
+                    SolapiMessageNotReceivedException ex =
+                            new SolapiMessageNotReceivedException("개별 메시지 발송이 거절되었습니다.");
+                    ex.setFailedMessageList(List.of(failed));
+                    throw ex;
+                });
+
+        SmsSendResult result = client.send("010-1234-5678", "빈자리가 생겼습니다.");
+
+        assertThat(result.status()).isEqualTo(SmsSendStatus.FAILED);
+        assertThat(result.failReason()).isEqualTo("1062: 발신번호 미등록");
+        assertThat(result.providerMessageId()).isNull();
+    }
+
+    @Test
+    @DisplayName("실패 목록 사유는 statusCode 와 statusMessage 를 이어 붙인다")
+    void formatFailedMessages_joinsCodeAndMessage() {
+        FailedMessage failed = new FailedMessage();
+        failed.setStatusCode("1062");
+        failed.setStatusMessage("발신번호 미등록");
+
+        assertThat(SolapiSmsClient.formatFailedMessages(List.of(failed)))
+                .isEqualTo("1062: 발신번호 미등록");
+        assertThat(SolapiSmsClient.formatFailedMessages(List.of())).isNull();
+        assertThat(SolapiSmsClient.formatFailedMessages(null)).isNull();
     }
 
     @Test

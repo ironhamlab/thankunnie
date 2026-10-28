@@ -1,5 +1,7 @@
 package com.ucamp.app.domain.notification.client;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -13,6 +15,7 @@ import com.solapi.sdk.message.exception.SolapiEmptyResponseException;
 import com.solapi.sdk.message.exception.SolapiInvalidApiKeyException;
 import com.solapi.sdk.message.exception.SolapiMessageNotReceivedException;
 import com.solapi.sdk.message.exception.SolapiUnknownException;
+import com.solapi.sdk.message.model.FailedMessage;
 import com.solapi.sdk.message.model.Message;
 import com.solapi.sdk.message.service.DefaultMessageService;
 
@@ -89,8 +92,12 @@ public class SolapiSmsClient {
             }
             log.info("Solapi API 호출 성공 providerMessageId={}", providerMessageId);
             return SmsSendResult.success(providerMessageId);
-        } catch (SolapiMessageNotReceivedException
-                | SolapiBadRequestException
+        } catch (SolapiMessageNotReceivedException e) {
+            // 실패 목록의 statusCode·statusMessage 를 FAIL_REASON 에 남긴다.
+            String failReason = failReasonFromNotReceived(e);
+            log.warn("Solapi 발송 거절: message={}", failReason);
+            return SmsSendResult.failed(failReason);
+        } catch (SolapiBadRequestException
                 | SolapiInvalidApiKeyException
                 | SolapiApiKeyException e) {
             log.warn("Solapi 발송 거절: message={}", e.getMessage());
@@ -121,14 +128,46 @@ public class SolapiSmsClient {
             return null;
         }
         // groupId 만 보면 개별 거절도 성공으로 남는다. 실패 목록이 있으면 FAILED 로 보낸다.
-        if (response.getFailedMessageList() != null
-                && !response.getFailedMessageList().isEmpty()) {
-            throw new SolapiMessageNotReceivedException("개별 메시지 발송이 거절되었습니다.");
+        List<FailedMessage> failedMessages = response.getFailedMessageList();
+        if (failedMessages != null && !failedMessages.isEmpty()) {
+            SolapiMessageNotReceivedException ex =
+                    new SolapiMessageNotReceivedException(formatFailedMessages(failedMessages));
+            ex.setFailedMessageList(failedMessages);
+            throw ex;
         }
         if (response.getGroupInfo() == null) {
             return null;
         }
         return response.getGroupInfo().getGroupId();
+    }
+
+    // 예외에 실패 목록이 있으면 statusCode·statusMessage 를 쓰고, 없으면 예외 메시지를 쓴다.
+    static String failReasonFromNotReceived(SolapiMessageNotReceivedException exception) {
+        String fromList = formatFailedMessages(exception.getFailedMessageList());
+        if (StringUtils.hasText(fromList)) {
+            return fromList;
+        }
+        return exception.getMessage();
+    }
+
+    // 한 건 발송이므로 첫 실패만 사유로 남긴다. 예: "1062: 발신번호 미등록"
+    static String formatFailedMessages(List<FailedMessage> failedMessages) {
+        if (failedMessages == null || failedMessages.isEmpty()) {
+            return null;
+        }
+        FailedMessage first = failedMessages.get(0);
+        String statusCode = first.getStatusCode();
+        String statusMessage = first.getStatusMessage();
+        if (StringUtils.hasText(statusCode) && StringUtils.hasText(statusMessage)) {
+            return statusCode + ": " + statusMessage;
+        }
+        if (StringUtils.hasText(statusMessage)) {
+            return statusMessage;
+        }
+        if (StringUtils.hasText(statusCode)) {
+            return statusCode;
+        }
+        return "개별 메시지 발송이 거절되었습니다.";
     }
 
     /**
