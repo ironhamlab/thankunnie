@@ -100,3 +100,6 @@
     transition: none;
   }
 }
+.timerIcon {
+  color: var(--color-primary-soft);
+}

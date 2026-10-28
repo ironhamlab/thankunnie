@@ -3,14 +3,18 @@ import Asset from '@/components/common/Asset';
 import { ROUTES } from '@/constants/routes';
 import { useDesignStore } from '@/store/useDesignStore';
 import Button from '@/components/common/Button';
+import StoreIcon from '@/components/icons/StoreIcon';
+import ScissorsIcon from '@/components/icons/ScissorsIcon';
+import CalendarCheckIcon from '@/components/icons/CalendarCheckIcon';
+import CalendarIcon from '@/components/icons/CalendarIcon';
 import styles from './OwnerSidebar.module.css';
 
 const NAVIGATION = [
-  [ROUTES.OWNER_SHOP, '매장 정보', '12-1798-6.svg'],
-  [ROUTES.OWNER_MENUS, '시술 관리', '12-1798-7.svg'],
-  [ROUTES.OWNER_SLOTS, '빈자리 관리', '12-1798-8.svg'],
-  [ROUTES.OWNER_SCHEDULE, '영업시간·일정', '12-1798-8.svg'],
-  [ROUTES.OWNER_BOOKINGS, '예약 관리', '12-1798-9.svg'],
+  [ROUTES.OWNER_SHOP, '매장 정보', StoreIcon],
+  [ROUTES.OWNER_MENUS, '시술 관리', ScissorsIcon],
+  [ROUTES.OWNER_SLOTS, '빈자리 관리', CalendarCheckIcon],
+  [ROUTES.OWNER_SCHEDULE, '영업시간·일정', CalendarCheckIcon],
+  [ROUTES.OWNER_BOOKINGS, '예약 관리', CalendarIcon],
 ];
 
 /**
@@ -36,9 +40,9 @@ export default function OwnerSidebar() {
         ⊕ 빈자리 즉시 등록
       </Button>
       <nav aria-label="사장님 메뉴">
-        {NAVIGATION.map(([to, label, icon]) => (
+        {NAVIGATION.map(([to, label, Icon]) => (
           <NavLink key={to} to={to}>
-            <Asset name={icon} />
+            <Icon />
             {label}
           </NavLink>
         ))}

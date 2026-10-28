@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useDesignStore } from '@/store/useDesignStore';
-import Asset from '@/components/common/Asset';
+import SearchIcon from '@/components/icons/SearchIcon';
 import NotificationIcon from '@/components/icons/NotificationIcon';
 import ProfileIcon from '@/components/icons/ProfileIcon';
 import styles from './Header.module.css';
@@ -33,7 +33,7 @@ function getActiveMenu({ pathname, search }) {
   const params = new URLSearchParams(search);
   if (pathname === ROUTES.HOME && params.get('sale') === '1') return 'sale';
   if (pathname === ROUTES.HOME && (params.has('view') || params.has('search'))) return 'search';
-  if (pathname.startsWith(ROUTES.MY_RESERVATIONS)) return 'reservations';
+  if (pathname === ROUTES.MY_RESERVATIONS) return 'reservations';
   if (pathname === ROUTES.PROFILE) return 'profile';
   return null;
 }
@@ -90,7 +90,7 @@ export default function Header() {
               onChange={(e) => setSearch(e.target.value)}
             />
             <button aria-label="검색">
-              <Asset name="8-3-15.svg" />
+              <SearchIcon />
             </button>
           </form>
 

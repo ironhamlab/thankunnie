@@ -2,6 +2,9 @@ import { generatePath, Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { money } from '@/utils/demoData';
 import Asset from '@/components/common/Asset';
+import TimerIcon from '@/components/icons/TimerIcon';
+import ClockIcon from '@/components/icons/ClockIcon';
+import LocationIcon from '@/components/icons/LocationIcon';
 import styles from './ServiceCard.module.css';
 
 export default function ServiceCard({ service }) {
@@ -22,7 +25,7 @@ export default function ServiceCard({ service }) {
         </span>
         {service.discount > 0 && (
           <span className={styles.startTag}>
-            <Asset name={service.id === 'nail' ? '8-3-8.svg' : '8-3-11.svg'} />
+            {service.id === 'nail' ? <TimerIcon className={styles.timerIcon} /> : <ClockIcon />}
             {service.id === 'nail' ? '40분 뒤 시작!' : day + ' ' + service.time + ' 시작'}
           </span>
         )}
@@ -31,14 +34,14 @@ export default function ServiceCard({ service }) {
         <div className={`b-row ${styles.meta}`}>
           <span>{service.shop}</span>
           <small>
-            <Asset name="8-3-9.svg" />
+            <LocationIcon />
             {service.location}
           </small>
         </div>
         <h3>{service.name}</h3>
         <div className={`b-flex ${styles.time}`}>
           <span className={styles.duration}>
-            <Asset name="8-3-10.svg" />
+            <ClockIcon />
             {service.duration}분 소요
           </span>
           <strong className={service.discount ? 'b-pink' : ''}>

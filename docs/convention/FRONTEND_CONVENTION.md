@@ -20,7 +20,7 @@ frontend/
 │   ├── assets/                 # 이미지, 폰트, 전역 스타일
 │   ├── components/             # 페이지에 종속되지 않는 재사용 UI
 │   │   ├── common/             # Button, Input, Modal, Spinner
-│   │   ├── icons/              # 색이 바뀌는 SVG 아이콘 컴포넌트: NotificationIcon, ProfileIcon
+│   │   ├── icons/              # 색이 바뀌는 SVG 아이콘 컴포넌트: SearchIcon, CalendarIcon 등
 │   │   └── layout/             # Header, Footer, Sidebar, MainLayout
 │   ├── pages/                  # 라우트에 연결되는 페이지 컴포넌트
 │   │   ├── auth/               # LoginPage.jsx, SignupPage.jsx

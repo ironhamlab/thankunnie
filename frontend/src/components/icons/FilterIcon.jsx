@@ -1,0 +1,17 @@
+/**
+ * 조절 막대 아이콘(필터·설정). 색은 글자색(currentColor)을 따르고, 크기는 width·height 로 바꿀 수 있다.
+ */
+export default function FilterIcon(props) {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 15 15"
+      fill="currentColor"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M6.66667 15V10H8.33333V11.6667H15V13.3333H8.33333V15H6.66667V15M0 13.3333V11.6667H5V13.3333H0V13.3333M3.33333 10V8.33333H0V6.66667H3.33333V5H5V10H3.33333V10M6.66667 8.33333V6.66667H15V8.33333H6.66667V8.33333M10 5V0H11.6667V1.66667H15V3.33333H11.6667V5H10V5M0 3.33333V1.66667H8.33333V3.33333H0V3.33333" />
+    </svg>
+  );
+}
