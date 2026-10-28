@@ -10,26 +10,28 @@ import com.ucamp.app.domain.notification.entity.NotificationEventStatus;
 import com.ucamp.app.domain.notification.entity.NotificationEventType;
 
 /**
- * 알림 이벤트 저장소.
+ * 알림 소식을 저장하고 찾는 곳.
+ * 같은 매장·같은 종류·같은 시작 시각은 한 번만 쌓였는지 확인한다.
  */
 public interface NotificationEventRepository extends JpaRepository<NotificationEvent, Long> {
 
     /**
-     * 같은 빈자리·유형·시작 시각의 이벤트가 이미 있는지 확인한다.
+     * 같은 매장, 같은 종류, 같은 시작 시각의 소식이 이미 있는지 본다.
+     * OPEN 행이 없는 재공개도 이 기준으로 중복을 막는다.
      *
-     * @param exceptionId  빈자리인 OPEN 예외 일정 ID
-     * @param eventType    이벤트 유형
+     * @param shopId       매장 번호
+     * @param eventType    임박, 초임박, 다시 열림 중 무엇인지
      * @param slotStartsAt 빈자리 시작 시각
      * @return 이미 있으면 true
      */
-    boolean existsByExceptionIdAndEventTypeAndSlotStartsAt(Long exceptionId, NotificationEventType eventType,
+    boolean existsByShopIdAndEventTypeAndSlotStartsAt(Long shopId, NotificationEventType eventType,
             LocalDateTime slotStartsAt);
 
     /**
      * 해당 상태의 이벤트 중 ID가 가장 작은 하나를 조회한다.
      *
-     * @param status 이벤트 상태
-     * @return 있으면 그 이벤트. 없으면 empty
+     * @param status 아직 받을 사람을 고르기 전인지, 고른 뒤인지
+     * @return 있으면 그 소식. 없으면 빈 값
      */
     Optional<NotificationEvent> findFirstByStatusOrderByIdAsc(NotificationEventStatus status);
 }
