@@ -15,13 +15,12 @@ public record TreatmentSaveRequest(
         @NotNull @Positive Integer regularPrice,
         @NotNull Integer price,
         @NotNull Integer lastMinutePrice,
-        @NotNull @Positive Long categoryId,
         @NotNull @Positive @Max(9990) Integer durationMinutes,
         @Valid TreatmentConditionsRequest conditions) {
 
     public TreatmentSaveRequest(String name, String description, Integer regularPrice, Integer price,
-            Integer lastMinutePrice, Long categoryId, Integer durationMinutes) {
-        this(name, description, regularPrice, price, lastMinutePrice, categoryId, durationMinutes, null);
+            Integer lastMinutePrice, Integer durationMinutes) {
+        this(name, description, regularPrice, price, lastMinutePrice, durationMinutes, null);
     }
 
     @AssertTrue(message = "소요 시간은 30분 배수여야 합니다.")

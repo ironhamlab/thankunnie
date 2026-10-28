@@ -15,6 +15,9 @@ const BookingResultPage = lazy(() => import('@/pages/reservation/BookingResultPa
 const BookingsPage = lazy(() => import('@/pages/my/BookingsPage'));
 const MyReservationsPage = lazy(() => import('@/pages/my/MyReservationsPage'));
 const CustomerProfilePage = lazy(() => import('@/pages/my/CustomerProfilePage'));
+const CustomerCancelPage = lazy(() => import('@/pages/cancel/CustomerCancelPage'));
+const CancelResultPage = lazy(() => import('@/pages/cancel/CancelResultPage'));
+const OwnerCancelPage = lazy(() => import('@/pages/cancel/OwnerCancelPage'));
 const OwnerDashboardPage = lazy(() => import('@/pages/owner/OwnerDashboardPage'));
 const ShopPage = lazy(() => import('@/pages/owner/ShopPage'));
 const MenusPage = lazy(() => import('@/pages/owner/MenusPage'));
@@ -49,6 +52,11 @@ export default function AppRouter() {
           <Route path={ROUTES.PROFILE} element={<CustomerProfilePage />} />
           <Route path={ROUTES.BOOKINGS} element={<BookingsPage />} />
           <Route path={ROUTES.MY_RESERVATIONS} element={<MyReservationsPage />} />
+          <Route path={ROUTES.MY_RESERVATION_CANCEL} element={<CustomerCancelPage />} />
+          <Route
+            path={ROUTES.MY_RESERVATION_CANCEL_RESULT}
+            element={<CancelResultPage viewer="customer" />}
+          />
           <Route path={ROUTES.NOT_FOUND} element={<NotFoundPage />} />
         </Route>
         <Route path={ROUTES.OWNER} element={<OwnerLayout />}>
@@ -59,6 +67,11 @@ export default function AppRouter() {
           <Route path={ROUTES.OWNER_SLOT_NEW} element={<NewSlotPage />} />
           <Route path={ROUTES.OWNER_SCHEDULE} element={<SchedulePage />} />
           <Route path={ROUTES.OWNER_BOOKINGS} element={<OwnerBookingsPage />} />
+          <Route path={ROUTES.OWNER_RESERVATION_CANCEL} element={<OwnerCancelPage />} />
+          <Route
+            path={ROUTES.OWNER_RESERVATION_CANCEL_RESULT}
+            element={<CancelResultPage viewer="owner" />}
+          />
           <Route path={ROUTES.NOT_FOUND} element={<NotFoundPage />} />
         </Route>
         <Route path={ROUTES.LEGACY_DESIGN} element={<LegacyDesignRedirect />} />
