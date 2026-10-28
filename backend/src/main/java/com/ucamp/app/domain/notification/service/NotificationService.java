@@ -18,6 +18,7 @@ import com.ucamp.app.domain.notification.dto.request.NotificationSubscriptionUpd
 import com.ucamp.app.domain.notification.dto.response.NotificationSubscriptionResponse;
 import com.ucamp.app.domain.notification.entity.NotificationSubscription;
 import com.ucamp.app.domain.notification.entity.SubscriptionStatus;
+import com.ucamp.app.domain.notification.entity.SubscriptionType;
 import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepository;
 
 /**
@@ -44,6 +45,10 @@ public class NotificationService {
             NotificationSubscriptionCreateRequest request) {
         loginUser.requireRole(UserRole.CUSTOMER);
         validateNotExpired(request.localEndTime());
+        // 등록이므로 제외할 구독 ID 는 없다 (excludeId = null)
+        validateNoDuplicate(loginUser.userId(), request.subscriptionType(), request.shopId(),
+                request.categoryId(), request.regionCode(), request.localStartTime(), request.localEndTime(),
+                null);
         NotificationSubscription subscription = NotificationSubscription.builder()
                 .userId(loginUser.userId())
                 .subscriptionType(request.subscriptionType())
@@ -85,6 +90,10 @@ public class NotificationService {
         loginUser.requireRole(UserRole.CUSTOMER);
         NotificationSubscription subscription = getActiveSubscription(loginUser, subscriptionId);
         validateNotExpired(request.localEndTime());
+        // 수정이므로 자기 구독은 중복에서 뺀다 (excludeId = 자기 ID)
+        validateNoDuplicate(loginUser.userId(), subscription.getSubscriptionType(), request.shopId(),
+                request.categoryId(), request.regionCode(), request.localStartTime(), request.localEndTime(),
+                subscription.getId());
         subscription.changeCondition(request.shopId(), request.categoryId(), request.regionCode(),
                 request.localStartTime(), request.localEndTime());
         return NotificationSubscriptionResponse.from(subscription);
@@ -143,6 +152,44 @@ public class NotificationService {
         LocalDateTime current = now();
         if (endTime.isBefore(current) || endTime.isEqual(current)) {
             throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TIME);
+        }
+    }
+
+    /**
+     * ACTIVE 구독 중 같은 대상·같은 희망 시간(시작·종료 둘 다 동일)이 있으면 막는다.
+     * INACTIVE 는 다시 등록할 수 있다.
+     *
+     * @param excludeId 수정 시 자기 구독 ID. 등록 시에는 null
+     */
+    private void validateNoDuplicate(Long userId, SubscriptionType subscriptionType, Long shopId,
+            Long categoryId, String regionCode, LocalDateTime startTime, LocalDateTime endTime,
+            Long excludeId) {
+        boolean duplicated;
+        if (subscriptionType == SubscriptionType.STORE) {
+            if (excludeId == null) {
+                duplicated = notificationSubscriptionRepository
+                        .existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTime(
+                                userId, SubscriptionStatus.ACTIVE, shopId, startTime, endTime);
+            } else {
+                duplicated = notificationSubscriptionRepository
+                        .existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
+                                userId, SubscriptionStatus.ACTIVE, shopId, startTime, endTime, excludeId);
+            }
+        } else {
+            // CATEGORY_REGION
+            if (excludeId == null) {
+                duplicated = notificationSubscriptionRepository
+                        .existsByUserIdAndStatusAndCategoryIdAndRegionCodeAndStartTimeAndEndTime(
+                                userId, SubscriptionStatus.ACTIVE, categoryId, regionCode, startTime, endTime);
+            } else {
+                duplicated = notificationSubscriptionRepository
+                        .existsByUserIdAndStatusAndCategoryIdAndRegionCodeAndStartTimeAndEndTimeAndIdNot(
+                                userId, SubscriptionStatus.ACTIVE, categoryId, regionCode, startTime, endTime,
+                                excludeId);
+            }
+        }
+        if (duplicated) {
+            throw new BusinessException(ErrorCode.SUBSCRIPTION_DUPLICATE);
         }
     }
 
