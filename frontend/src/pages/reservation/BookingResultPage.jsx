@@ -38,11 +38,11 @@ export default function BookingResultPage() {
   }[scenario];
   const bookingStatusLabel = booking.status === 'cancelled' ? '고객 취소' : '예약 확정';
   return (
-    <div className={`b-container b-page ${styles.resultPage}`}>
+    <div className={`b-container b-page ${styles.root}`}>
       <div className="b-notice b-demo-disclaimer">
         본 화면은 MVP 모의 결제 환경입니다. 실제 신용카드 과금 및 금융 승인이 발생하지 않습니다.
       </div>
-      <section className={`b-panel b-pad b-row ${styles.resultControls}`}>
+      <section className={`b-panel b-pad b-row ${styles.controls}`}>
         <strong>시연용 화면 상태 컨트롤:</strong>
         <div className="b-options">
           {scenarios.map(([value, label]) => (
@@ -57,16 +57,16 @@ export default function BookingResultPage() {
           ))}
         </div>
       </section>
-      <section className={`b-panel ${styles.resultCard} ` + (!success ? styles.resultProblem : '')}>
-        <header className={styles.resultHeader}>
-          <div className={styles.resultIcon}>{success ? '✓' : '!'}</div>
+      <section className={`b-panel ${styles.card} ` + (!success ? styles.problem : '')}>
+        <header className={styles.header}>
+          <div className={styles.icon}>{success ? '✓' : '!'}</div>
           <h1>{title}</h1>
           <p>
             {success
               ? '매장 방문 시 확정된 예약 시간 5분 전까지 도착해 주세요.'
               : '실제 과금은 발생하지 않았습니다. 다른 빈자리나 시간을 확인해 주세요.'}
           </p>
-          <div className={`b-flex ${styles.resultBadges}`}>
+          <div className={`b-flex ${styles.badges}`}>
             <Badge>{success ? '예약 상태: ' + bookingStatusLabel : '시연 오류 미리보기'}</Badge>
             <Badge tone="neutral">
               {success ? '결제 상태: 모의 결제 완료' : '새로운 예약은 생성되지 않습니다'}
@@ -76,7 +76,7 @@ export default function BookingResultPage() {
         </header>
         {success ? (
           <>
-            <div className={`b-notice ${styles.resultReservation}`}>
+            <div className={`b-notice ${styles.reservation}`}>
               <div className="b-row">
                 <small>예약 번호</small>
                 <strong>{booking.id}</strong>
@@ -121,7 +121,7 @@ export default function BookingResultPage() {
             <p>이 컨트롤은 결과 화면의 상태만 변경합니다. 기존 확정 예약은 취소되지 않습니다.</p>
           </div>
         )}
-        <div className={`b-flex ${styles.resultActions}`}>
+        <div className={`b-flex ${styles.actions}`}>
           <Button as={Link} variant="primary" to={ROUTES.BOOKINGS}>
             내 예약 상세 보기
           </Button>
@@ -131,7 +131,7 @@ export default function BookingResultPage() {
         </div>
       </section>
       {success && (
-        <section className={styles.resultNotification}>
+        <section className={styles.notification}>
           <div className="b-row">
             <h3>카카오 알림톡 자동 발송 내역</h3>
             <small className="b-pink">● 실제 발송 없는 시연</small>

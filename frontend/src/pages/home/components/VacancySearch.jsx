@@ -120,7 +120,7 @@ export default function VacancySearch() {
           value={saleOnly ? '타임세일' : '전체'}
           onChange={(value) => updateOption('sale', value === '타임세일' ? '1' : '')}
         />
-        <p className={styles.vacancyDescription}>
+        <p className={styles.description}>
           {saleOnly
             ? '오늘 시작하는 할인 빈자리만 보여드려요.'
             : '정상가와 할인가를 포함한 모든 날짜의 빈자리를 보여드려요.'}

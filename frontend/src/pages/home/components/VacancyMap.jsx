@@ -22,8 +22,8 @@ export default function VacancyMap({ services }) {
   const [zoom, setZoom] = useState(1);
   const selected = services.find((service) => service.id === selectedId) || services[0];
   return (
-    <section className={`b-map ${styles.vacancyMap}`} aria-label="빈자리 예시 지도">
-      <div className={styles.mapCanvas} style={{ transform: `scale(${zoom})` }}>
+    <section className={`b-map ${styles.root}`} aria-label="빈자리 예시 지도">
+      <div className={styles.canvas} style={{ transform: `scale(${zoom})` }}>
         <MapArtwork />
         {services.map((service) => {
           const [left, top] = Object.hasOwn(PIN_POSITIONS, service.id)
@@ -32,7 +32,7 @@ export default function VacancyMap({ services }) {
           return (
             <button
               key={service.id}
-              className={`${styles.mapPin} ${selected.id === service.id ? 'is-selected' : ''}`}
+              className={`${styles.pin} ${selected.id === service.id ? 'is-selected' : ''}`}
               style={{
                 left: `${left}%`,
                 top: `${top}%`,
@@ -46,8 +46,8 @@ export default function VacancyMap({ services }) {
           );
         })}
       </div>
-      <span className={styles.vacancyMapNote}>예시 지도 · 실제 위치와 다를 수 있어요</span>
-      <div className={styles.mapTools}>
+      <span className={styles.note}>예시 지도 · 실제 위치와 다를 수 있어요</span>
+      <div className={styles.tools}>
         <button
           aria-label="지도 확대"
           disabled={zoom >= 1.4}
@@ -63,9 +63,9 @@ export default function VacancyMap({ services }) {
           −
         </button>
       </div>
-      <div className={`${styles.mapDetail} b-panel`}>
+      <div className={`${styles.detail} b-panel`}>
         <div className="b-flex">
-          <Asset name={selected.image} className={styles.mapThumb} alt={selected.shop} />
+          <Asset name={selected.image} className={styles.thumb} alt={selected.shop} />
           <div>
             <h2>{selected.shop}</h2>
             <p>

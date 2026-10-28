@@ -93,7 +93,7 @@ export default function SlotsPage() {
           실제 결제와 자동 재공개는 백엔드 연결 후 제공됩니다. 현재 데모 상태만 변경됩니다.
         </small>
       </div>
-      <div className={`b-panel b-pad ${styles.slotFilters}`}>
+      <div className={`b-panel b-pad ${styles.filters}`}>
         <label>
           일정 선택
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />

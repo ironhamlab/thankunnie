@@ -48,7 +48,7 @@ export default function NewSlotPage() {
     }
   };
   return (
-    <div className={styles.newSlotPage}>
+    <div className={styles.root}>
       <Link className="b-back" to={ROUTES.OWNER_SLOTS}>
         ← 빈자리 관리 목록으로 돌아가기
       </Link>
@@ -62,7 +62,7 @@ export default function NewSlotPage() {
             등록합니다.
           </p>
         </div>
-        <div className={`b-panel b-options ${styles.newSlotScenarios}`}>
+        <div className={`b-panel b-options ${styles.scenarios}`}>
           <strong>검사 시뮬레이션:</strong>
           <button
             className={scenario === 'normal' ? 'is-selected' : ''}
@@ -143,7 +143,7 @@ export default function NewSlotPage() {
             <h2 className="b-panel-heading">
               <span className={styles.stepNumber}>2</span> 일정 및 시간대 설정
             </h2>
-            <div className={`b-three-grid ${styles.slotDateFields}`}>
+            <div className={`b-three-grid ${styles.dateFields}`}>
               <label>
                 시술 날짜
                 <input
@@ -200,9 +200,7 @@ export default function NewSlotPage() {
             </div>
           </section>
           <div
-            className={
-              conflict ? `${styles.slotValidation} b-error` : `${styles.slotValidation} b-success`
-            }
+            className={conflict ? `${styles.validation} b-error` : `${styles.validation} b-success`}
             role="status"
           >
             <span>{conflict ? '!' : '✓'}</span>
@@ -217,7 +215,7 @@ export default function NewSlotPage() {
             </div>
           </div>
         </div>
-        <aside className={`b-stack ${styles.slotSummary}`}>
+        <aside className={`b-stack ${styles.summary}`}>
           <section className="b-panel b-pad">
             <div className="b-row b-panel-heading">
               <h2>♧ 타임세일 자동 정산 미리보기</h2>

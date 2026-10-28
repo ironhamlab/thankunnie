@@ -1,4 +1,4 @@
-.payCard {
+.root {
   border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: 20px;
@@ -7,26 +7,26 @@
   flex-direction: column;
   gap: 16px;
 }
-.payHead {
+.head {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
 }
-.payHead > div {
+.head > div {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.payMethod {
+.method {
   font-size: 15px;
 }
-.payStats {
+.stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
-.payStats > div {
+.stats > div {
   background: var(--color-surface);
   border-radius: var(--radius-md);
   padding: 12px 14px;
@@ -34,65 +34,65 @@
   flex-direction: column;
   gap: 2px;
 }
-.payStats > div:global(.is-refund) {
+.stats > div:global(.is-refund) {
   background: var(--b-pay-paid-bg);
 }
-.payStats span {
+.stats span {
   color: var(--color-text-muted);
   font-size: 11px;
 }
-.payStats strong {
+.stats strong {
   font-size: 17px;
   font-variant-numeric: tabular-nums;
 }
-.payStats > div:global(.is-refund) strong {
+.stats > div:global(.is-refund) strong {
   color: var(--b-pay-paid);
 }
-.payMeter {
+.meter {
   height: 8px;
   border-radius: var(--radius-pill);
   background: var(--color-primary-soft);
   overflow: hidden;
 }
-.payMeter > span {
+.meter > span {
   display: block;
   height: 100%;
   background: var(--b-pay-paid);
   border-radius: var(--radius-pill);
   transition: width 0.6s ease;
 }
-.payMeterLegend {
+.meterLegend {
   display: flex;
   justify-content: space-between;
   margin-top: -10px;
   font-size: 11px;
   color: var(--color-text-muted);
 }
-.payMeta > div {
+.meta > div {
   padding: 9px 0;
 }
-.payMono {
+.mono {
   font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
   font-size: 12px;
   word-break: break-all;
 }
-.payTimeline {
+.timeline {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
 }
-.payTimeline li {
+.timeline li {
   position: relative;
   display: flex;
   gap: 12px;
   padding: 0 0 16px;
 }
-.payTimeline li:last-child {
+.timeline li:last-child {
   padding-bottom: 0;
 }
-.payTimeline li:not(:last-child)::before {
+.timeline li:not(:last-child)::before {
   content: '';
   position: absolute;
   left: 6px;
@@ -101,10 +101,10 @@
   width: 2px;
   background: var(--color-border);
 }
-.payTimeline li:global(.is-done):not(:last-child)::before {
+.timeline li:global(.is-done):not(:last-child)::before {
   background: var(--b-pay-paid);
 }
-.payDot {
+.dot {
   flex: none;
   width: 14px;
   height: 14px;
@@ -113,34 +113,34 @@
   border: 2px solid var(--color-border);
   background: white;
 }
-.payTimeline li:global(.is-done) .payDot {
+.timeline li:global(.is-done) .dot {
   border-color: var(--b-pay-paid);
   background: var(--b-pay-paid);
 }
-.payTimeline li:global(.is-current) .payDot {
+.timeline li:global(.is-current) .dot {
   border-color: var(--b-pay-pending);
   box-shadow: 0 0 0 4px var(--b-pay-pending-bg);
 }
-.payTimeline li > div {
+.timeline li > div {
   display: flex;
   flex-direction: column;
   font-size: 13px;
 }
-.payTimeline li:global(.is-todo) strong {
+.timeline li:global(.is-todo) strong {
   color: var(--color-text-muted);
   font-weight: 500;
 }
-.payTimeline small {
+.timeline small {
   color: var(--color-text-muted);
   font-size: 11px;
 }
 @media (max-width: 540px) {
-  .payStats {
+  .stats {
     grid-template-columns: 1fr;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .payMeter > span {
+  .meter > span {
     transition: none;
   }
 }

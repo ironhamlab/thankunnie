@@ -10,8 +10,8 @@ export default function HomeBeautyMap({ services }) {
   const [saleOnly, setSaleOnly] = useState(false);
   const selected = services.find((service) => service.id === selectedId);
   return (
-    <div className={styles.homeMapSection}>
-      <div className={styles.homeMapHeading}>
+    <div className={styles.section}>
+      <div className={styles.heading}>
         <h2>내 주변 실시간 빈자리 지도</h2>
         <span>● 강남역 부근</span>
         <button
@@ -23,8 +23,8 @@ export default function HomeBeautyMap({ services }) {
           ⌖ 지도 초기화
         </button>
       </div>
-      <div className={styles.homeBeautyMap}>
-        <div className={styles.homeMapToolbar}>
+      <div className={styles.root}>
+        <div className={styles.toolbar}>
           <span>⌖ 강남역 11번 출구 도보 500m 이내</span>
           <div>
             <button aria-pressed={!saleOnly} onClick={() => setSaleOnly(false)}>
@@ -35,7 +35,7 @@ export default function HomeBeautyMap({ services }) {
             </button>
           </div>
         </div>
-        <div className={styles.homeMapRoads} aria-hidden="true">
+        <div className={styles.roads} aria-hidden="true">
           <i />
           <i />
           <i />
@@ -45,7 +45,7 @@ export default function HomeBeautyMap({ services }) {
           .filter((service) => !saleOnly || service.discount > 0)
           .map((service) => (
             <button
-              className={`${styles.homeMapPin} home-pin-${service.id} ${selectedId === service.id ? 'is-active' : ''}`}
+              className={`${styles.pin} home-pin-${service.id} ${selectedId === service.id ? 'is-active' : ''}`}
               aria-pressed={selectedId === service.id}
               key={service.id}
               onClick={() => setSelectedId(service.id)}
@@ -55,10 +55,10 @@ export default function HomeBeautyMap({ services }) {
                 : `${service.shop.split(' ')[0]} ${money(service.price)}`}
             </button>
           ))}
-        <span className={styles.homeMapLandmark}>벨루아 뷰티</span>
-        <small className={styles.homeMapDisclaimer}>예시 지도 · 실제 위치와 다를 수 있어요</small>
-        <div className={styles.homeMapPreview}>
-          <span className={styles.homeStoreIcon} aria-hidden="true">
+        <span className={styles.landmark}>벨루아 뷰티</span>
+        <small className={styles.disclaimer}>예시 지도 · 실제 위치와 다를 수 있어요</small>
+        <div className={styles.preview}>
+          <span className={styles.storeIcon} aria-hidden="true">
             ▤
           </span>
           <div>

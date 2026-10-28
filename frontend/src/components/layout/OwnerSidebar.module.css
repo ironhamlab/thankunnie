@@ -1,4 +1,4 @@
-.sidebar {
+.root {
   position: sticky;
   top: 0;
   height: 100vh;
@@ -9,19 +9,19 @@
   flex-direction: column;
   gap: 24px;
 }
-.ownerBrand {
+.brand {
   display: flex;
   flex-direction: column;
   padding-left: 8px;
 }
-.ownerBrand strong {
+.brand strong {
   color: var(--color-primary);
   font-size: 22px;
 }
-.ownerBrand small {
+.brand small {
   color: var(--color-text-secondary);
 }
-.ownerShop {
+.shop {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -31,22 +31,22 @@
   border-radius: var(--radius-md);
   font-size: 12px;
 }
-.ownerShop img {
+.shop img {
   width: 40px;
   height: 40px;
   object-fit: cover;
   border-radius: var(--radius-sm);
 }
-.ownerShop small {
+.shop small {
   display: block;
 }
-.sidebar nav {
+.root nav {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.sidebar nav a,
-.sidebarBottom a {
+.root nav a,
+.bottom a {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -54,45 +54,45 @@
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
 }
-.sidebar a:global(.active) {
+.root a:global(.active) {
   background: #f8e5ef;
   color: var(--color-primary);
   font-weight: 700;
 }
-.sidebarBottom {
+.bottom {
   margin-top: auto;
   font-size: 12px;
 }
-.sidebarBottom small {
+.bottom small {
   display: block;
   color: var(--color-text-muted);
   margin-top: 16px;
   text-align: center;
 }
 @media (max-width: 900px) {
-  .sidebar {
+  .root {
     position: static;
     height: auto;
     padding: 16px 24px;
     gap: 16px;
   }
-  .sidebar nav {
+  .root nav {
     flex-direction: row;
     flex-wrap: wrap;
   }
-  .sidebar .ownerShop,
-  .sidebar .sidebarBottom,
-  .sidebar > :global(.b-button) {
+  .root .shop,
+  .root .bottom,
+  .root > :global(.b-button) {
     display: none;
   }
-  .ownerBrand {
+  .brand {
     flex-direction: row;
     align-items: center;
     gap: 16px;
   }
 }
 @media (max-width: 540px) {
-  .sidebar nav a {
+  .root nav a {
     padding: 8px;
     font-size: 12px;
   }

@@ -1,21 +1,21 @@
-.resultPage {
+.root {
   padding-top: 20px;
 }
-.resultPage > :global(.b-demo-disclaimer) {
+.root > :global(.b-demo-disclaimer) {
   margin-bottom: 28px;
   padding: 8px 16px;
 }
-.resultControls {
+.controls {
   padding: 12px 20px;
   margin-bottom: 28px;
   flex-wrap: wrap;
   font-size: 12px;
 }
-.resultControls :global(.is-selected) {
+.controls :global(.is-selected) {
   background: var(--color-primary);
   color: white;
 }
-.resultCard {
+.card {
   max-width: 760px;
   margin: 0 auto;
   padding: 34px;
@@ -25,10 +25,10 @@
   gap: 24px;
   box-shadow: 0 5px 16px #b700520b;
 }
-.resultHeader {
+.header {
   text-align: center;
 }
-.resultIcon {
+.icon {
   display: grid;
   place-items: center;
   width: 72px;
@@ -41,71 +41,71 @@
   font-size: 40px;
   line-height: 1;
 }
-.resultHeader h1 {
+.header h1 {
   font-size: 25px;
   margin-bottom: 10px;
 }
-.resultHeader p {
+.header p {
   font-size: 13px;
   color: var(--color-text-secondary);
 }
-.resultBadges {
+.badges {
   justify-content: center;
   flex-wrap: wrap;
   margin-top: 18px;
 }
-.resultHeader > :global(.b-help) {
+.header > :global(.b-help) {
   display: block;
 }
-.resultReservation > :global(.b-row) {
+.reservation > :global(.b-row) {
   font-size: 11px;
   padding-bottom: 14px;
   border-bottom: 1px dashed #dce1f0;
   margin-bottom: 18px;
 }
-.resultReservation strong {
+.reservation strong {
   overflow-wrap: anywhere;
 }
-.resultReservation :global(.b-two-grid) > div > small {
+.reservation :global(.b-two-grid) > div > small {
   display: block;
   color: var(--color-text-muted);
   margin-bottom: 5px;
 }
-.resultReservation :global(.b-two-grid) p {
+.reservation :global(.b-two-grid) p {
   font-size: 11px;
 }
-.resultReservation :global(.b-two-grid) strong {
+.reservation :global(.b-two-grid) strong {
   font-size: 12px;
   display: block;
 }
-.resultCard > :global(.b-notice) {
+.card > :global(.b-notice) {
   font-size: 12px;
 }
-.resultActions {
+.actions {
   justify-content: center;
   flex-wrap: wrap;
   gap: 16px;
 }
-.resultActions :global(.b-danger) {
+.actions :global(.b-danger) {
   margin-top: 0;
 }
-.resultProblem {
+.problem {
   min-height: 460px;
   justify-content: center;
 }
-.resultNotification {
+.notification {
   max-width: 760px;
   margin: 32px auto 0;
   padding-top: 28px;
   border-top: 1px solid var(--color-border);
 }
-.resultNotification > :global(.b-row) {
+.notification > :global(.b-row) {
   margin-bottom: 16px;
 }
-.resultNotification :global(.b-panel) {
+.notification :global(.b-panel) {
   font-size: 12px;
 }
-.resultNotification p {
+.notification p {
   margin-top: 5px;
   color: var(--color-text-secondary);
 }
@@ -122,31 +122,31 @@
   flex-shrink: 0;
 }
 @media (max-width: 700px) {
-  .resultCard {
+  .card {
     padding: 24px;
   }
-  .resultHeader h1 {
+  .header h1 {
     font-size: 22px;
   }
-  .resultReservation :global(.b-two-grid) {
+  .reservation :global(.b-two-grid) {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 @media (max-width: 540px) {
-  .resultCard {
+  .card {
     padding: 20px;
     gap: 20px;
   }
-  .resultReservation :global(.b-row) {
+  .reservation :global(.b-row) {
     flex-wrap: wrap;
   }
-  .resultActions {
+  .actions {
     flex-direction: column;
   }
-  .resultActions :global(.b-button) {
+  .actions :global(.b-button) {
     width: 100%;
   }
-  .resultNotification > :global(.b-row) {
+  .notification > :global(.b-row) {
     flex-wrap: wrap;
   }
 }

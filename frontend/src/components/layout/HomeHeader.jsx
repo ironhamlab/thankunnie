@@ -56,12 +56,12 @@ export default function HomeHeader() {
   };
   return (
     <>
-      <header className={styles.homeHeader}>
-        <div className={`b-container ${styles.homeHeaderInner}`}>
+      <header className={styles.root}>
+        <div className={`b-container ${styles.inner}`}>
           <Link to={ROUTES.HOME} className="b-brand">
             땡잡은 언니
           </Link>
-          <form className={styles.homeHeaderSearch} onSubmit={handleSearch}>
+          <form className={styles.search} onSubmit={handleSearch}>
             <input
               aria-label="지역, 시술 종류, 매장 검색"
               placeholder="지역, 시술 종류, 매장 검색"
@@ -77,13 +77,13 @@ export default function HomeHeader() {
             <Link to={ROUTES.BOOKINGS}>▦ 내 예약</Link>
             <Link to={ROUTES.MY_RESERVATIONS}>예약 내역</Link>
           </nav>
-          <div className={styles.homeHeaderActions}>
-            <Link to={ROUTES.OWNER} className={styles.homeAccount}>
+          <div className={styles.actions}>
+            <Link to={ROUTES.OWNER} className={styles.account}>
               ● [테스트] 고객 계정
             </Link>
             <div ref={popoverRef}>
               <button
-                className={styles.homeNotificationButton}
+                className={styles.notificationButton}
                 aria-label="알림"
                 aria-expanded={open}
                 aria-controls="home-notifications"
@@ -106,7 +106,7 @@ export default function HomeHeader() {
                   className="home-notifications"
                   aria-label="실시간 알림"
                 >
-                  <div className={styles.homeNotificationsTitle}>
+                  <div className={styles.notificationsTitle}>
                     <strong>♧ 실시간 알림 {read ? 0 : 2}</strong>
                     <div>
                       <button onClick={() => setRead(true)}>
@@ -117,7 +117,7 @@ export default function HomeHeader() {
                       </button>
                     </div>
                   </div>
-                  <div className={styles.homeNotificationTabs}>
+                  <div className={styles.notificationTabs}>
                     {['전체', '예약', '타임세일'].map((label) => (
                       <button
                         key={label}
@@ -129,7 +129,7 @@ export default function HomeHeader() {
                     ))}
                   </div>
                   {NOTIFICATIONS.filter((n) => tab === '전체' || n.category === tab).map((n) => (
-                    <div className={styles.homeNotificationItem} key={n.id}>
+                    <div className={styles.notificationItem} key={n.id}>
                       <Link to={n.to} onClick={() => setOpen(false)}>
                         <strong>
                           {!read && <em>● </em>}
@@ -149,7 +149,7 @@ export default function HomeHeader() {
           </div>
         </div>
       </header>
-      <nav className={styles.homeMobileNav} aria-label="모바일 고객 메뉴">
+      <nav className={styles.mobileNav} aria-label="모바일 고객 메뉴">
         <Link to={`${ROUTES.HOME}?view=list`}>
           <span>⌖</span>빈자리 탐색
         </Link>

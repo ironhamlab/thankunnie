@@ -1,35 +1,35 @@
-.profilePage {
+.root {
   max-width: 1200px;
   padding-top: 20px;
 }
-.profileRibbon {
+.ribbon {
   border-radius: 0;
   margin-bottom: 30px;
   padding: 10px 20px;
   font-size: 11px;
 }
-.customerSummary {
+.summary {
   padding: 28px;
 }
-.customerSummary > :global(.b-row) {
+.summary > :global(.b-row) {
   flex-wrap: wrap;
 }
-.customerSummary > :global(.b-row) > :global(.b-flex) {
+.summary > :global(.b-row) > :global(.b-flex) {
   min-width: 0;
   flex-wrap: wrap;
 }
-.customerSummary h1 {
+.summary h1 {
   font-size: 23px;
 }
-.customerSummary p {
+.summary p {
   font-size: 11px;
   color: var(--color-text-secondary);
   margin-top: 8px;
 }
-.customerSummary :global(.b-flex) :global(.b-flex) {
+.summary :global(.b-flex) :global(.b-flex) {
   flex-wrap: wrap;
 }
-.customerAvatar {
+.avatar {
   position: relative;
   display: grid;
   place-items: center;
@@ -44,7 +44,7 @@
   font-weight: 800;
   margin-right: 8px;
 }
-.customerAvatar span {
+.avatar span {
   position: absolute;
   bottom: -5px;
   right: -4px;
@@ -59,24 +59,24 @@
   background: var(--color-primary-soft);
   color: var(--color-primary);
 }
-.profileStats {
+.stats {
   margin-top: 26px;
   padding-top: 22px;
   border-top: 1px solid var(--color-border);
 }
-.profileStats > div {
+.stats > div {
   text-align: center;
   background: #f5f6ff;
   border-radius: 10px;
   padding: 16px 8px;
   font-size: 11px;
 }
-.profileStats strong {
+.stats strong {
   display: block;
   margin-top: 5px;
   font-size: 22px;
 }
-.profileStats strong span {
+.stats strong span {
   font-size: 13px;
   margin-left: 4px;
 }
@@ -112,14 +112,14 @@
   border-radius: 6px;
   padding: 4px 10px;
 }
-.profileTabs {
+.tabs {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
   padding: 5px;
   margin: 24px 0;
 }
-.profileTabs button {
+.tabs button {
   border: 0;
   border-radius: 6px;
   background: white;
@@ -127,43 +127,43 @@
   padding: 12px 5px;
   font-size: 12px;
 }
-.profileTabs button:global(.is-selected) {
+.tabs button:global(.is-selected) {
   background: var(--color-primary);
   color: white;
   font-weight: 700;
 }
-.profileTabPanel > :global(.b-panel-heading) {
+.tabPanel > :global(.b-panel-heading) {
   border: 0;
   margin-bottom: 16px !important;
   padding-bottom: 0;
 }
-.profileTabPanel > :global(.b-stack) {
+.tabPanel > :global(.b-stack) {
   gap: 16px;
 }
-.profileBooking {
+.booking {
   gap: 18px;
 }
-.profileBooking :global(.b-thumb) {
+.booking :global(.b-thumb) {
   width: 78px;
   height: 78px;
 }
-.profileBooking > :global(.b-flex) {
+.booking > :global(.b-flex) {
   min-width: 0;
 }
-.profileBooking h2 {
+.booking h2 {
   font-size: 18px;
   margin: 5px 0;
 }
-.profileBooking p {
+.booking p {
   font-size: 12px;
   color: var(--color-text-muted);
   line-height: 1.7;
 }
-.profileBookingActions {
+.bookingActions {
   gap: 8px;
   flex: 0 0 140px;
 }
-.profileBookingActions :global(.b-button) {
+.bookingActions :global(.b-button) {
   padding: 7px 12px;
 }
 .alertCondition {
@@ -172,48 +172,48 @@
   gap: 8px;
   font-size: 13px;
 }
-.profilePage > :global(.b-preview) p {
+.root > :global(.b-preview) p {
   font-size: 11px;
   margin-top: 5px;
   color: var(--color-text-muted);
 }
-.profilePage > :global(.b-success) {
+.root > :global(.b-success) {
   margin-top: 20px;
 }
 @media (max-width: 1100px) {
   .nearest {
     flex-wrap: wrap;
   }
-  .profileTabs {
+  .tabs {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 @media (max-width: 700px) {
-  .profileBooking {
+  .booking {
     flex-wrap: wrap;
   }
-  .profileBooking > :global(.b-flex) {
+  .booking > :global(.b-flex) {
     flex-wrap: wrap;
     max-width: 100%;
   }
-  .profileBookingActions {
+  .bookingActions {
     flex-basis: 100%;
     flex-direction: row;
     flex-wrap: wrap;
   }
 }
 @media (max-width: 540px) {
-  .customerSummary {
+  .summary {
     padding: 20px;
   }
-  .customerSummary :global(.b-row) > :global(.b-flex) > div {
+  .summary :global(.b-row) > :global(.b-flex) > div {
     min-width: 0;
     max-width: 100%;
   }
-  .profileStats {
+  .stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .profileTabs {
+  .tabs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .nearest :global(.b-badge) {

@@ -1,4 +1,4 @@
-:global(.beauty-app) .treatmentFields {
+:global(.beauty-app) .fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
@@ -8,10 +8,10 @@
   min-width: 0;
 }
 @media (max-width: 600px) {
-  :global(.beauty-app) .treatmentFields {
+  :global(.beauty-app) .fields {
     grid-template-columns: minmax(0, 1fr);
   }
-  :global(.beauty-app) .treatmentFields :global(.b-span-two) {
+  :global(.beauty-app) .fields :global(.b-span-two) {
     grid-column: auto;
   }
 }

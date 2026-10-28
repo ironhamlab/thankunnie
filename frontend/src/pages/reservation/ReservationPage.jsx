@@ -83,7 +83,7 @@ export default function ReservationPage() {
       <Link className="b-back" to={ROUTES.HOME}>
         ← 매장·시술 목록으로 돌아가기
       </Link>
-      <section className={`b-hero ${styles.reserveHero}`}>
+      <section className={`b-hero ${styles.hero}`}>
         <div>
           <Badge>일반 예약 모드 (원하는 시간에 맞춤 예약)</Badge>
           <h1>예약 날짜와 시간을 선택해 주세요</h1>

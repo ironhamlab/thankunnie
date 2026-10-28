@@ -21,8 +21,8 @@ export default function CancelRefundDialog({ booking, onClose, onConfirm }) {
 
   return (
     <Dialog title="예약을 취소하시겠어요?" onClose={onClose}>
-      <div className={styles.cancelDialog}>
-        <div className={styles.cancelTarget}>
+      <div className={styles.root}>
+        <div className={styles.target}>
           <small className="b-muted">{booking.id}</small>
           <strong>{service?.name}</strong>
           <span>
@@ -30,7 +30,7 @@ export default function CancelRefundDialog({ booking, onClose, onConfirm }) {
           </span>
         </div>
 
-        <div className={`${styles.cancelAmount} ${isNoRefund ? styles.isZero : ''}`}>
+        <div className={`${styles.amount} ${isNoRefund ? styles.isZero : ''}`}>
           <span>환불 예정 금액</span>
           <strong>{money(quote.refundAmount)}</strong>
           <small>
@@ -45,7 +45,7 @@ export default function CancelRefundDialog({ booking, onClose, onConfirm }) {
           </p>
         )}
 
-        <fieldset className={styles.cancelReasons}>
+        <fieldset className={styles.reasons}>
           <legend>취소 사유</legend>
           {CANCEL_REASONS.map((item) => (
             <label key={item} className={reason === item ? 'is-selected' : ''}>
@@ -61,7 +61,7 @@ export default function CancelRefundDialog({ booking, onClose, onConfirm }) {
           ))}
         </fieldset>
 
-        <label className={styles.cancelAgree}>
+        <label className={styles.agree}>
           <input
             type="checkbox"
             checked={isAgreed}
@@ -70,7 +70,7 @@ export default function CancelRefundDialog({ booking, onClose, onConfirm }) {
           환불 정책과 환불 예정 금액을 확인했습니다.
         </label>
 
-        <div className={styles.cancelActions}>
+        <div className={styles.actions}>
           <Button onClick={onClose}>예약 유지</Button>
           <Button variant="primary" disabled={!isAgreed} onClick={handleConfirm}>
             {money(quote.refundAmount)} 환불받고 취소

@@ -94,7 +94,7 @@ export default function OwnerDashboardPage() {
         ))}
       </div>
       <h2>핵심 운영 기능 바로가기</h2>
-      <div className={`b-three-grid ${styles.dashboardCards}`}>
+      <div className={`b-three-grid ${styles.cards}`}>
         {cards.map(([to, title, description, icon]) => (
           <Link key={to} to={to} className="b-panel b-pad">
             <Asset name={icon} />

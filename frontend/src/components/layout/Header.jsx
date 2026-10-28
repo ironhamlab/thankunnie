@@ -22,7 +22,7 @@ export default function Header() {
   };
 
   return (
-    <header className={styles.header}>
+    <header className={styles.root}>
       <div className={`b-container ${styles.nav}`}>
         <Link to={ROUTES.HOME} className="b-brand">
           땡잡은 언니 <span>뷰티 타임세일</span>

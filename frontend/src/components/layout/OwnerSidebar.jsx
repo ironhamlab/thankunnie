@@ -20,12 +20,12 @@ export default function OwnerSidebar() {
   const shop = useDesignStore((s) => s.shop);
 
   return (
-    <aside className={styles.sidebar}>
-      <Link to={ROUTES.OWNER} className={styles.ownerBrand}>
+    <aside className={styles.root}>
+      <Link to={ROUTES.OWNER} className={styles.brand}>
         <strong>땡잡은 언니</strong>
         <small>사장님 센터</small>
       </Link>
-      <div className={styles.ownerShop}>
+      <div className={styles.shop}>
         <Asset name="12-1798-0.png" alt="매장 대표 이미지" />
         <div>
           <strong>{shop.name}</strong>
@@ -43,7 +43,7 @@ export default function OwnerSidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className={styles.sidebarBottom}>
+      <div className={styles.bottom}>
         <NavLink to={ROUTES.OWNER} end>
           마이페이지
         </NavLink>

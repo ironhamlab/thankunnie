@@ -1,28 +1,28 @@
-.newSlotPage > :global(.b-title-row) {
+.root > :global(.b-title-row) {
   margin-bottom: 24px;
   align-items: flex-end;
 }
-.newSlotPage > :global(.b-title-row) > div:first-child {
+.root > :global(.b-title-row) > div:first-child {
   flex: 1;
   min-width: 220px;
 }
-.newSlotPage :global(.b-columns) {
+.root :global(.b-columns) {
   grid-template-columns: minmax(0, 2fr) minmax(270px, 1fr);
   gap: 24px;
 }
-.newSlotPage :global(.b-title-row) p {
+.root :global(.b-title-row) p {
   font-size: 13px;
 }
-.newSlotScenarios {
+.scenarios {
   padding: 8px;
   font-size: 11px;
   align-items: center;
 }
-.newSlotScenarios :global(.is-selected) {
+.scenarios :global(.is-selected) {
   background: var(--color-primary);
   color: white;
 }
-.newSlotScenarios strong {
+.scenarios strong {
   margin-right: 6px;
   font-size: 11px;
 }
@@ -37,14 +37,14 @@
   margin-right: 6px;
   font-size: 15px;
 }
-.newSlotPage :global(.b-panel-heading) {
+.root :global(.b-panel-heading) {
   flex-wrap: wrap;
 }
-.newSlotPage :global(.b-panel-heading) > :global(.b-help) {
+.root :global(.b-panel-heading) > :global(.b-help) {
   margin-top: 0 !important;
   margin-left: auto;
 }
-.newSlotPage h2:global(.b-panel-heading) {
+.root h2:global(.b-panel-heading) {
   justify-content: flex-start;
   gap: 6px;
 }
@@ -91,21 +91,21 @@
   font-size: 13px;
   white-space: nowrap;
 }
-.slotDateFields label {
+.dateFields label {
   display: flex;
   flex-direction: column;
   gap: 8px;
   font-size: 11px;
   min-width: 0;
 }
-.slotDateFields input {
+.dateFields input {
   width: 100%;
   font-size: 12px;
 }
-.slotDateFields small {
+.dateFields small {
   color: var(--color-text-muted);
 }
-.slotDateFields input[readonly] {
+.dateFields input[readonly] {
   color: var(--color-primary);
   font-weight: 700;
 }
@@ -118,14 +118,14 @@
   border-color: var(--color-primary);
   background: #fff3f8;
 }
-.slotValidation {
+.validation {
   display: flex;
   align-items: flex-start;
   gap: 14px;
   padding: 22px;
   font-size: 13px;
 }
-.slotValidation > span {
+.validation > span {
   display: grid;
   place-items: center;
   background: #00b48b;
@@ -136,40 +136,40 @@
   flex-shrink: 0;
   font-size: 20px;
 }
-.slotValidation:global(.b-error) > span {
+.validation:global(.b-error) > span {
   background: #db2e56;
 }
-.slotValidation p {
+.validation p {
   font-size: 12px;
   margin-top: 6px;
 }
-.slotSummary {
+.summary {
   position: sticky;
   top: 20px;
   gap: 20px;
 }
-.slotSummary :global(.b-panel):first-child {
+.summary :global(.b-panel):first-child {
   border-top: 5px solid var(--color-primary);
 }
-.slotSummary :global(.b-details) {
+.summary :global(.b-details) {
   margin-top: 16px;
 }
-.slotSummary :global(.b-details) > div {
+.summary :global(.b-details) > div {
   font-size: 12px;
 }
-.slotSummary :global(.b-panel):last-child {
+.summary :global(.b-panel):last-child {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.slotSummary :global(.b-panel):last-child :global(.b-help) {
+.summary :global(.b-panel):last-child :global(.b-help) {
   margin-top: 0 !important;
 }
 @media (max-width: 1100px) {
-  .newSlotPage :global(.b-columns) {
+  .root :global(.b-columns) {
     grid-template-columns: minmax(0, 1fr);
   }
-  .slotSummary {
+  .summary {
     position: static;
   }
 }
@@ -188,10 +188,10 @@
   .serviceOption > span {
     flex-basis: calc(100% - 40px);
   }
-  .slotDateFields {
+  .dateFields {
     grid-template-columns: minmax(0, 1fr);
   }
-  .slotSummary :global(.b-row) {
+  .summary :global(.b-row) {
     flex-wrap: wrap;
   }
 }

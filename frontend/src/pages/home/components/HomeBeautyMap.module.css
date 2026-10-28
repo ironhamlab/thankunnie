@@ -1,27 +1,27 @@
-.homeMapHeading {
+.heading {
   margin-bottom: 10px;
 }
-.homeMapSection {
+.section {
   min-width: 0;
   display: flex;
   flex-direction: column;
 }
-.homeMapHeading {
+.heading {
   display: flex;
   align-items: center;
   gap: 8px;
   min-height: 25px;
   flex-wrap: wrap;
 }
-.homeMapHeading h2 {
+.heading h2 {
   font-size: 18px;
 }
-.homeMapHeading > span {
+.heading > span {
   font-size: 10px;
   font-weight: 700;
   color: var(--color-primary);
 }
-.homeMapHeading > button {
+.heading > button {
   margin-left: auto;
   border: 0;
   background: none;
@@ -29,7 +29,7 @@
   font-size: 10px;
   color: var(--color-text-secondary);
 }
-.homeBeautyMap {
+.root {
   position: relative;
   flex: 1;
   min-height: 380px;
@@ -43,7 +43,7 @@
   border-radius: 24px;
   padding: 16px;
 }
-.homeMapToolbar {
+.toolbar {
   position: relative;
   z-index: 2;
   display: flex;
@@ -51,8 +51,8 @@
   gap: 6px;
   align-items: center;
 }
-.homeMapToolbar > span,
-.homeMapToolbar > div {
+.toolbar > span,
+.toolbar > div {
   background: #fffffff0;
   border: 1px solid var(--color-border);
   border-radius: 24px;
@@ -60,48 +60,48 @@
   padding: 6px 10px;
   font-size: 10px;
 }
-.homeMapToolbar > div {
+.toolbar > div {
   display: flex;
   padding: 4px;
   flex-shrink: 0;
 }
-.homeMapToolbar button {
+.toolbar button {
   border: 0;
   border-radius: var(--radius-xl);
   background: none;
   padding: 3px 8px;
   font-size: 10px;
 }
-.homeMapToolbar button[aria-pressed='true'] {
+.toolbar button[aria-pressed='true'] {
   background: var(--color-primary);
   color: white;
 }
-.homeMapRoads {
+.roads {
   position: absolute;
   inset: 0;
   pointer-events: none;
   opacity: 0.6;
 }
-.homeMapRoads i {
+.roads i {
   display: block;
   position: absolute;
   background: #ffffff88;
 }
-.homeMapRoads i:nth-child(1) {
+.roads i:nth-child(1) {
   width: 120%;
   height: 28px;
   top: 33%;
   left: -10%;
   transform: rotate(-12deg);
 }
-.homeMapRoads i:nth-child(2) {
+.roads i:nth-child(2) {
   width: 32px;
   height: 110%;
   top: -5%;
   right: 33%;
   transform: rotate(8deg);
 }
-.homeMapRoads i:nth-child(3) {
+.roads i:nth-child(3) {
   width: 144px;
   height: 112px;
   border-radius: var(--radius-lg);
@@ -109,7 +109,7 @@
   left: 40px;
   border: 1px solid white;
 }
-.homeMapRoads i:nth-child(4) {
+.roads i:nth-child(4) {
   width: 112px;
   height: 96px;
   border-radius: var(--radius-lg);
@@ -117,7 +117,7 @@
   right: 48px;
   border: 1px solid white;
 }
-.homeMapPin {
+.pin {
   position: absolute;
   z-index: 2;
   border: 1px solid var(--color-primary);
@@ -128,7 +128,7 @@
   font-weight: 700;
   box-shadow: 0 2px 5px #0002;
 }
-.homeMapPin::after {
+.pin::after {
   content: '';
   position: absolute;
   width: 9px;
@@ -140,11 +140,11 @@
   left: 48%;
   transform: rotate(45deg);
 }
-.homeMapPin:global(.is-active) {
+.pin:global(.is-active) {
   background: var(--color-primary);
   color: #fff;
 }
-.homeMapLandmark {
+.landmark {
   position: absolute;
   bottom: 34%;
   left: 29%;
@@ -153,14 +153,14 @@
   padding: 3px 8px;
   font-size: 10px;
 }
-.homeMapDisclaimer {
+.disclaimer {
   position: absolute;
   bottom: 94px;
   left: 20px;
   font-size: 10px;
   color: #5a6070;
 }
-.homeMapPreview {
+.preview {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -174,7 +174,7 @@
   border-radius: var(--radius-lg);
   box-shadow: 0 4px 6px #0001;
 }
-.homeStoreIcon {
+.storeIcon {
   display: grid;
   place-items: center;
   background: var(--color-primary-soft);
@@ -185,12 +185,12 @@
   font-size: 24px;
   flex-shrink: 0;
 }
-.homeMapPreview > div {
+.preview > div {
   min-width: 0;
   flex: 1;
   font-size: 12px;
 }
-.homeMapPreview > div > span {
+.preview > div > span {
   margin-left: 6px;
   color: var(--color-primary);
   background: #ffebf0;
@@ -198,7 +198,7 @@
   border-radius: 4px;
   font-size: 10px;
 }
-.homeMapPreview p {
+.preview p {
   font-size: 10px;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -206,34 +206,34 @@
   color: var(--color-text-secondary);
   margin-top: 4px;
 }
-.homeMapPreview :global(.b-button) {
+.preview :global(.b-button) {
   flex-shrink: 0;
   font-size: 11px;
   padding: 7px 10px;
 }
 @media (max-width: 767px) {
-  .homeMapHeading h2 {
+  .heading h2 {
     font-size: 16px;
   }
-  .homeMapHeading {
+  .heading {
     gap: 6px;
   }
-  .homeMapHeading > span {
+  .heading > span {
     font-size: 9px;
   }
-  .homeMapToolbar {
+  .toolbar {
     flex-wrap: wrap;
   }
-  .homeMapPreview {
+  .preview {
     gap: 7px;
     padding: 10px;
   }
-  .homeMapPreview > div > span {
+  .preview > div > span {
     display: block;
     margin: 2px 0 0;
     width: fit-content;
   }
-  .homeMapPreview .homeStoreIcon {
+  .preview .storeIcon {
     display: none;
   }
 }

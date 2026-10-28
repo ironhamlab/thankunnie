@@ -78,14 +78,10 @@ export default function HomePage() {
   };
   return (
     <div className="b-container home-redesign">
-      <section
-        className={styles.homeBanner}
-        aria-label="메인 혜택 배너"
-        aria-roledescription="캐러셀"
-      >
-        <div className={styles.homeBannerContent} aria-live="polite">
+      <section className={styles.banner} aria-label="메인 혜택 배너" aria-roledescription="캐러셀">
+        <div className={styles.bannerContent} aria-live="polite">
           <div>
-            <div className={styles.homeEyebrow}>
+            <div className={styles.eyebrow}>
               <span>ϟ {slide.tag}</span>
               <small>{slide.eyebrow}</small>
             </div>
@@ -96,7 +92,7 @@ export default function HomePage() {
             </h1>
             <p>{slide.description}</p>
             <button
-              className={styles.homeLiveBadge}
+              className={styles.liveBadge}
               onClick={() =>
                 slideIndex === 1 ? setModelOpen(true) : chooseCategory(CATEGORIES[0])
               }
@@ -104,7 +100,7 @@ export default function HomePage() {
               ● {slide.badge}
             </button>
           </div>
-          <aside className={styles.homeDemo}>
+          <aside className={styles.demo}>
             <b>ⓘ</b>
             <p>
               <strong>※ MVP 모의 데모:</strong> 본 화면의 데이터는 실시간 결제 없는
@@ -112,8 +108,8 @@ export default function HomePage() {
             </p>
           </aside>
         </div>
-        <div className={styles.homeSliderControls}>
-          <div className={styles.homeSliderDots}>
+        <div className={styles.sliderControls}>
+          <div className={styles.sliderDots}>
             {SLIDES.map((item, index) => (
               <button
                 key={item.tag}
@@ -136,20 +132,20 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-      <section className={styles.homeDiscover} aria-label="시술 분야와 주변 빈자리">
-        <div className={styles.homeCategories}>
+      <section className={styles.discover} aria-label="시술 분야와 주변 빈자리">
+        <div className={styles.categories}>
           <h2>어떤 시술을 찾고 계신가요?</h2>
-          <div className={styles.homeCategoryGrid}>
+          <div className={styles.categoryGrid}>
             {CATEGORIES.map((item) => (
               <button
                 key={item.title}
-                className={styles.homeCategory}
+                className={styles.category}
                 aria-pressed={item.model ? undefined : category === item.title}
                 onClick={() => chooseCategory(item)}
               >
-                <span className={styles.homeCategoryTop}>
+                <span className={styles.categoryTop}>
                   <span
-                    className={`${styles.homeCategoryIcon} ${styles.homeSymbol} ${item.sale || item.model ? styles.isFilled : ''}`}
+                    className={`${styles.categoryIcon} ${styles.symbol} ${item.sale || item.model ? styles.isFilled : ''}`}
                     aria-hidden="true"
                   >
                     {item.icon}
@@ -157,7 +153,7 @@ export default function HomePage() {
                   <small>{item.badge}</small>
                 </span>
                 <strong>{item.title}</strong>
-                <span className={styles.homeCategoryDescription}>{item.text}</span>
+                <span className={styles.categoryDescription}>{item.text}</span>
               </button>
             ))}
           </div>
@@ -165,7 +161,7 @@ export default function HomePage() {
         <HomeBeautyMap services={RECOMMENDATIONS} />
       </section>
       <section id="home-deals" className="home-deals">
-        <div className={styles.homeSectionHeading}>
+        <div className={styles.sectionHeading}>
           <div>
             <h2>
               {category === '전체' || category === '오늘 임박'
@@ -177,36 +173,36 @@ export default function HomePage() {
           </div>
           <Link to={`${ROUTES.HOME}?view=list`}>전체보기 ›</Link>
         </div>
-        <div className={styles.homeDealGrid}>
+        <div className={styles.dealGrid}>
           {results.map((service) => (
-            <article className={styles.homeDealCard} key={service.id}>
-              <div className={styles.homeDealPhoto}>
+            <article className={styles.dealCard} key={service.id}>
+              <div className={styles.dealPhoto}>
                 <Asset name={service.image} alt={`${service.shop} ${service.category} 시술`} />
                 <span
-                  className={`${styles.homeUrgency} ${service.urgency !== '초임박 특가' ? styles.isSoon : ''}`}
+                  className={`${styles.urgency} ${service.urgency !== '초임박 특가' ? styles.isSoon : ''}`}
                 >
                   ● {service.urgency}
                 </span>
                 {DEMO_REMAINING[service.id] && (
-                  <span className={styles.homeCountdown}>
+                  <span className={styles.countdown}>
                     <span>◷ 마감 임박</span>
                     <b>{DEMO_REMAINING[service.id]}</b>
                   </span>
                 )}
               </div>
-              <div className={styles.homeDealBody}>
-                <div className={styles.homeDealMeta}>
+              <div className={styles.dealBody}>
+                <div className={styles.dealMeta}>
                   <strong>{service.shop}</strong>
                   <span>⌖ {service.location}</span>
                 </div>
                 <h3>{service.name}</h3>
-                <p className={styles.homeDealTime}>
+                <p className={styles.dealTime}>
                   ⌛ {service.duration}분 소요 <span>·</span>{' '}
                   <strong>
                     {['오늘', '내일', '모레'][service.day]} {service.time}
                   </strong>
                 </p>
-                <div className={styles.homeDealPrice}>
+                <div className={styles.dealPrice}>
                   <div>
                     {service.discount > 0 && <del>{money(service.original)}</del>}
                     <div>

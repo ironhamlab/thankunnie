@@ -1,4 +1,4 @@
-.nativeDialog {
+.root {
   padding: 0;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
@@ -7,13 +7,13 @@
   color: var(--color-text);
   box-shadow: 0 20px 80px #111c2d33;
 }
-.nativeDialog::backdrop {
+.root::backdrop {
   background: #111c2d77;
 }
-.nativeDialog :global(.beauty-app) {
+.root :global(.beauty-app) {
   min-height: auto;
   background: white;
 }
-.nativeDialog p {
+.root p {
   margin: 12px 0 20px;
 }

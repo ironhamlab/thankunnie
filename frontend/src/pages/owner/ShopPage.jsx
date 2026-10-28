@@ -149,7 +149,7 @@ export default function ShopPage() {
               업로드 기능은 미지원하며 기본 매장 이미지가 자동 적용됩니다.
             </div>
             <Asset
-              className={styles.shopImage}
+              className={styles.image}
               name="12-2061-0.png"
               alt="프리미엄 네일 살롱 대표 이미지"
             />
@@ -157,7 +157,7 @@ export default function ShopPage() {
           </section>
           <section className="b-panel b-pad">
             <h2 className="b-panel-heading">고객 앱 카드 노출 미리보기</h2>
-            <Asset className={styles.shopImage} name="12-2061-1.png" alt="네일 시술 예시" />
+            <Asset className={styles.image} name="12-2061-1.png" alt="네일 시술 예시" />
             <h2>{form.name || '매장명을 입력해 주세요'}</h2>
             <p>{form.address}</p>
             <div className="b-row">

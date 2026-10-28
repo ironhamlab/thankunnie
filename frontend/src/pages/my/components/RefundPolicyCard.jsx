@@ -20,13 +20,13 @@ export default function RefundPolicyCard({ booking }) {
     : 0;
 
   return (
-    <div className={styles.refundCard}>
+    <div className={styles.root}>
       <div className="b-row">
         <Badge tone="neutral">{describeDays(quote.daysLeft)}</Badge>
         <small className="b-muted">납부 예약금 한도 내 환불</small>
       </div>
 
-      <ul className={styles.refundTiers}>
+      <ul className={styles.tiers}>
         {REFUND_TIERS.map((tier) => (
           <li key={tier.key} className={tier.key === quote.tier.key ? 'is-current' : ''}>
             <span>{tier.label}</span>
@@ -36,16 +36,16 @@ export default function RefundPolicyCard({ booking }) {
         ))}
       </ul>
 
-      <div className={styles.refundResult}>
+      <div className={styles.result}>
         <div>
           <span>{isCancelled ? '환불 금액' : '지금 취소하면 환불'}</span>
           <strong className="b-pink">{money(quote.refundAmount)}</strong>
         </div>
-        <div className={styles.refundSplit} role="img" aria-label={`환불 ${refundRate}%`}>
+        <div className={styles.split} role="img" aria-label={`환불 ${refundRate}%`}>
           <span className="is-refund" style={{ width: `${refundRate}%` }} />
           <span className={styles.isKept} style={{ width: `${100 - refundRate}%` }} />
         </div>
-        <dl className={styles.refundBreakdown}>
+        <dl className={styles.breakdown}>
           <div>
             <dt>납부 예약금</dt>
             <dd>{money(quote.paidAmount)}</dd>

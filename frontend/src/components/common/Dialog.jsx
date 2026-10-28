@@ -16,7 +16,7 @@ export default function Dialog({ title, onClose, children }) {
   return (
     <dialog
       ref={ref}
-      className={styles.nativeDialog}
+      className={styles.root}
       onCancel={(e) => {
         e.preventDefault();
         onClose();

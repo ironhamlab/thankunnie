@@ -16,10 +16,10 @@ export default function OwnerLayout() {
 
   return (
     <div className="beauty-app">
-      <div className={styles.owner}>
+      <div className={styles.root}>
         <OwnerSidebar />
         <div className="b-owner-body">
-          <header className={styles.ownerHeader}>
+          <header className={styles.header}>
             <div className="b-flex">
               <strong>{shop.name}</strong>
               <Badge>파트너 가맹점</Badge>
@@ -31,7 +31,7 @@ export default function OwnerLayout() {
               <span className="b-account">● [테스트] 사장님 계정 (살롱 드 르네)</span>
             </div>
           </header>
-          <main className={styles.ownerMain} key={location.pathname}>
+          <main className={styles.main} key={location.pathname}>
             <Suspense
               fallback={
                 <div className="b-empty" role="status">

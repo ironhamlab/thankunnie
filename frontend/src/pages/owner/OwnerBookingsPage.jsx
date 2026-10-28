@@ -133,7 +133,7 @@ export default function OwnerBookingsPage() {
         </div>
       </div>
 
-      <div className={styles.ownerBookingsGrid}>
+      <div className={styles.grid}>
         <section className="b-panel b-table-panel">
           <div className="b-row b-pad">
             <h2>예약 목록</h2>

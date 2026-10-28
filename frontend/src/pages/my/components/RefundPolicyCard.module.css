@@ -1,4 +1,4 @@
-.refundCard {
+.root {
   border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: 20px;
@@ -7,7 +7,7 @@
   flex-direction: column;
   gap: 16px;
 }
-.refundTiers {
+.tiers {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -15,7 +15,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
-.refundTiers li {
+.tiers li {
   position: relative;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -25,19 +25,19 @@
   gap: 2px;
   color: var(--color-text-secondary);
 }
-.refundTiers li span {
+.tiers li span {
   font-size: 11px;
 }
-.refundTiers li strong {
+.tiers li strong {
   font-size: 16px;
   font-variant-numeric: tabular-nums;
 }
-.refundTiers li:global(.is-current) {
+.tiers li:global(.is-current) {
   border: 2px solid var(--color-primary);
   background: #fff5f8;
   color: var(--color-text);
 }
-.refundTiers li em {
+.tiers li em {
   position: absolute;
   top: -9px;
   right: 10px;
@@ -49,7 +49,7 @@
   font-style: normal;
   font-weight: 700;
 }
-.refundResult {
+.result {
   background: var(--color-surface);
   border-radius: var(--radius-md);
   padding: 16px;
@@ -57,50 +57,50 @@
   flex-direction: column;
   gap: 12px;
 }
-.refundResult > div:first-child {
+.result > div:first-child {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
 }
-.refundResult > div:first-child strong {
+.result > div:first-child strong {
   font-size: 22px;
   font-variant-numeric: tabular-nums;
 }
-.refundSplit {
+.split {
   display: flex;
   height: 10px;
   border-radius: var(--radius-pill);
   overflow: hidden;
   background: white;
 }
-.refundSplit :global(.is-refund) {
+.split :global(.is-refund) {
   background: var(--b-pay-paid);
 }
-.refundSplit .isKept {
+.split .isKept {
   background: var(--color-border-strong);
 }
-.refundBreakdown {
+.breakdown {
   margin: 0;
   font-size: 12px;
 }
-.refundBreakdown > div {
+.breakdown > div {
   display: flex;
   justify-content: space-between;
   padding: 4px 0;
 }
-.refundBreakdown dt {
+.breakdown dt {
   color: var(--color-text-muted);
 }
-.refundBreakdown dd {
+.breakdown dd {
   margin: 0;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.refundCard :global(.b-help) {
+.root :global(.b-help) {
   margin-top: 0 !important;
 }
 @media (max-width: 540px) {
-  .refundTiers {
+  .tiers {
     grid-template-columns: 1fr;
   }
 }

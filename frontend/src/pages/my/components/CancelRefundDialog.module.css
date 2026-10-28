@@ -1,9 +1,9 @@
-.cancelDialog {
+.root {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
-.cancelTarget {
+.target {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -11,7 +11,7 @@
   border-radius: var(--radius-md);
   background: var(--color-surface);
 }
-.cancelAmount {
+.amount {
   text-align: center;
   padding: 18px;
   border-radius: 14px;
@@ -20,26 +20,26 @@
   flex-direction: column;
   gap: 4px;
 }
-.cancelAmount span {
+.amount span {
   font-size: 12px;
   color: var(--color-text-secondary);
 }
-.cancelAmount strong {
+.amount strong {
   font-size: 30px;
   color: var(--b-pay-paid);
   font-variant-numeric: tabular-nums;
 }
-.cancelAmount small {
+.amount small {
   color: var(--color-text-muted);
   font-size: 11px;
 }
-.cancelAmount.isZero {
+.amount.isZero {
   background: #fff1f4;
 }
-.cancelAmount.isZero strong {
+.amount.isZero strong {
   color: var(--color-primary);
 }
-.cancelReasons {
+.reasons {
   border: 0;
   margin: 0;
   padding: 0;
@@ -47,11 +47,11 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
-.cancelReasons legend {
+.reasons legend {
   font-weight: 700;
   margin-bottom: 8px;
 }
-.cancelReasons label {
+.reasons label {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -61,38 +61,38 @@
   font-size: 12px;
   cursor: pointer;
 }
-.cancelReasons label:global(.is-selected) {
+.reasons label:global(.is-selected) {
   border-color: var(--color-primary);
   background: #fff5f8;
 }
-.cancelReasons input {
+.reasons input {
   accent-color: var(--color-primary);
 }
-.cancelAgree {
+.agree {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 12px;
   color: var(--color-text-secondary);
 }
-.cancelAgree input {
+.agree input {
   accent-color: var(--color-primary);
 }
-.cancelActions {
+.actions {
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 8px;
 }
-.cancelActions :global(.b-primary):disabled {
+.actions :global(.b-primary):disabled {
   opacity: 0.45;
   cursor: not-allowed;
   filter: none;
 }
 @media (max-width: 540px) {
-  .cancelReasons {
+  .reasons {
     grid-template-columns: 1fr;
   }
-  .cancelActions {
+  .actions {
     grid-template-columns: 1fr;
   }
 }

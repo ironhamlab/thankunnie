@@ -1,7 +1,7 @@
 .amber {
   color: var(--color-warning);
 }
-.serviceCard {
+.root {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -11,17 +11,17 @@
     box-shadow 0.2s,
     transform 0.2s;
 }
-.serviceCard:hover {
+.root:hover {
   box-shadow: 0 8px 22px #b7005212;
   transform: translateY(-2px);
 }
-.servicePhoto {
+.photo {
   position: relative;
   aspect-ratio: 1.6;
   overflow: hidden;
   background: var(--color-surface-blue);
 }
-.servicePhoto > img {
+.photo > img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -43,27 +43,27 @@
   color: #ecf1ff;
   font-size: 11px;
 }
-.serviceBody {
+.body {
   padding: 20px;
 }
-.serviceMeta {
+.meta {
   font-size: 13px;
   color: var(--color-text-secondary);
   gap: 8px;
 }
-.serviceMeta small {
+.meta small {
   display: flex;
   align-items: center;
   gap: 2px;
   font-size: 11px;
   color: var(--color-text-muted);
 }
-.serviceBody h3 {
+.body h3 {
   font-size: 18px;
   margin: 6px 0;
   letter-spacing: -0.09px;
 }
-.serviceTime {
+.time {
   font-size: 12px;
 }
 .duration {
@@ -91,12 +91,12 @@
   letter-spacing: -0.2px;
 }
 @media (max-width: 900px) {
-  .serviceMeta {
+  .meta {
     flex-wrap: wrap;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .serviceCard {
+  .root {
     transition: none;
   }
 }

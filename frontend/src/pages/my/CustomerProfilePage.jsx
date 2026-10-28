@@ -46,15 +46,15 @@ export default function CustomerProfilePage() {
     }
   };
   return (
-    <div className={`b-container b-page ${styles.profilePage}`}>
-      <div className={`b-notice ${styles.profileRibbon}`}>
+    <div className={`b-container b-page ${styles.root}`}>
+      <div className={`b-notice ${styles.ribbon}`}>
         <strong>MVP 모의 결제 데모:</strong> 본 마이페이지에서 표시되는 내역은 가상 시뮬레이션
         데이터입니다.
       </div>
-      <section className={`b-panel b-pad ${styles.customerSummary}`}>
+      <section className={`b-panel b-pad ${styles.summary}`}>
         <div className="b-row">
           <div className="b-flex">
-            <div className={styles.customerAvatar}>
+            <div className={styles.avatar}>
               언니<span>★</span>
             </div>
             <div>
@@ -82,7 +82,7 @@ export default function CustomerProfilePage() {
             </Button>
           </div>
         </div>
-        <div className={`b-stat-grid ${styles.profileStats}`}>
+        <div className={`b-stat-grid ${styles.stats}`}>
           {[
             ['방문 예정 예약', upcoming.length, '건'],
             ['주니어 모델 신청', 1, '건'],
@@ -130,7 +130,7 @@ export default function CustomerProfilePage() {
           </div>
         </section>
       )}
-      <nav className={`b-panel ${styles.profileTabs}`} aria-label="마이페이지 메뉴">
+      <nav className={`b-panel ${styles.tabs}`} aria-label="마이페이지 메뉴">
         {tabs.map((label) => (
           <button
             key={label}
@@ -142,7 +142,7 @@ export default function CustomerProfilePage() {
           </button>
         ))}
       </nav>
-      <section aria-label={tab} className={styles.profileTabPanel}>
+      <section aria-label={tab} className={styles.tabPanel}>
         <div className="b-row b-panel-heading">
           <h2>{tab === tabs[0] ? '예약 목록' : tab}</h2>
           <small className="b-muted">가상 데이터 시연</small>
@@ -154,7 +154,7 @@ export default function CustomerProfilePage() {
                 {customerBookings.map((b) => {
                   const s = SERVICES.find((item) => item.id === b.serviceId);
                   return (
-                    <article className={`b-panel b-pad ${styles.profileBooking} b-row`} key={b.id}>
+                    <article className={`b-panel b-pad ${styles.booking} b-row`} key={b.id}>
                       <div className="b-flex">
                         <Asset name="8-8-0.png" alt="예약 매장 대표 이미지" className="b-thumb" />
                         <div>
@@ -170,7 +170,7 @@ export default function CustomerProfilePage() {
                           </p>
                         </div>
                       </div>
-                      <div className={`b-stack ${styles.profileBookingActions}`}>
+                      <div className={`b-stack ${styles.bookingActions}`}>
                         <Button as={Link} variant="primary" to={ROUTES.BOOKINGS}>
                           상세 영수증
                         </Button>
@@ -181,7 +181,7 @@ export default function CustomerProfilePage() {
                     </article>
                   );
                 })}
-                <article className={`b-panel b-pad ${styles.profileBooking} b-row`}>
+                <article className={`b-panel b-pad ${styles.booking} b-row`}>
                   <div className="b-flex">
                     <Asset name="8-3-2.png" alt="속눈썹 케어 시술" className="b-thumb" />
                     <div>
@@ -191,7 +191,7 @@ export default function CustomerProfilePage() {
                       <p>결제 총액: 24,000원 (타임세일 특가) · 과거 이용 예시</p>
                     </div>
                   </div>
-                  <div className={`b-stack ${styles.profileBookingActions}`}>
+                  <div className={`b-stack ${styles.bookingActions}`}>
                     <Button variant="soft" onClick={() => setDialog('review')}>
                       리뷰 작성
                     </Button>

@@ -1,15 +1,15 @@
-.detailPage {
+.root {
   padding-top: 18px;
 }
-.detailPage :global(.b-columns) {
+.root :global(.b-columns) {
   grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr);
   gap: 28px;
 }
-.detailPage :global(.b-demo-disclaimer) {
+.root :global(.b-demo-disclaimer) {
   padding: 8px 16px;
   margin-bottom: 20px;
 }
-.detailBreadcrumb {
+.breadcrumb {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -18,19 +18,19 @@
   color: var(--color-text-secondary);
   margin-bottom: 22px;
 }
-.detailPhoto {
+.photo {
   position: relative;
   border-radius: var(--radius-lg);
   overflow: hidden;
   aspect-ratio: 1.6;
 }
-.detailPhoto > img {
+.photo > img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.detailLocation {
+.location {
   position: absolute;
   bottom: 12px;
   left: 16px;
@@ -52,103 +52,103 @@
   color: var(--color-primary);
   font-size: 22px !important;
 }
-.detailContent {
+.content {
   gap: 20px;
 }
-.detailContent h1 {
+.content h1 {
   font-size: 24px;
 }
-.detailContent :global(.b-panel-heading) p {
+.content :global(.b-panel-heading) p {
   margin-top: 6px !important;
 }
-.detailIntro {
+.intro {
   margin-top: 10px;
   font-size: 13px;
   line-height: 1.8;
 }
-.detailContent :global(.b-panel):global(.b-pad) p {
+.content :global(.b-panel):global(.b-pad) p {
   font-size: 12px;
   line-height: 1.8;
   margin-top: 8px;
 }
-.serviceBenefits {
+.benefits {
   flex-wrap: wrap;
   margin-top: 12px;
   font-size: 11px;
 }
-.serviceBenefits span {
+.benefits span {
   background: var(--color-surface);
   color: var(--color-text-secondary);
   border-radius: 4px;
   padding: 2px 8px;
 }
-.detailSlot {
+.slot {
   border-color: #ff9dc4;
   box-shadow: 0 3px 12px #b700520b;
 }
-.detailSlot h2 {
+.slot h2 {
   font-size: 18px;
 }
-.detailSlot h2 em {
+.slot h2 em {
   display: inline-block;
   margin-left: 12px;
 }
-.detailPolicies {
+.policies {
   font-size: 12px;
   line-height: 1.8;
 }
-.detailPolicies h3 {
+.policies h3 {
   margin-bottom: 12px;
   color: var(--color-primary);
 }
-.detailAside {
+.aside {
   position: sticky;
   top: 20px;
   gap: 16px;
 }
-.detailAside :global(.b-summary) {
+.aside :global(.b-summary) {
   position: static;
   gap: 18px;
   border-color: #ffb8d3;
 }
-.detailAside :global(.b-hold-bar) {
+.aside :global(.b-hold-bar) {
   border: 1px solid #ffbad5;
   border-radius: var(--radius-md);
   padding: 12px;
   color: var(--color-primary);
   font-size: 12px;
 }
-.detailAside :global(.b-notice) > :global(.b-row) {
+.aside :global(.b-notice) > :global(.b-row) {
   font-size: 12px;
   margin-bottom: 10px;
 }
-.detailAside :global(.b-error) p {
+.aside :global(.b-error) p {
   font-size: 11px;
   margin-top: 8px;
 }
-.detailAside :global(.b-summary) :global(.b-center) {
+.aside :global(.b-summary) :global(.b-center) {
   margin: 0;
 }
 @media (max-width: 1100px) {
-  .detailPage :global(.b-columns) {
+  .root :global(.b-columns) {
     grid-template-columns: minmax(0, 1fr);
   }
-  .detailAside {
+  .aside {
     position: static;
   }
 }
 @media (max-width: 540px) {
-  .detailContent h1 {
+  .content h1 {
     font-size: 21px;
   }
-  .detailContent :global(.b-panel-heading) {
+  .content :global(.b-panel-heading) {
     align-items: flex-start;
   }
-  .detailSlot :global(.b-row),
-  .detailAside :global(.b-notice) > :global(.b-row) {
+  .slot :global(.b-row),
+  .aside :global(.b-notice) > :global(.b-row) {
     flex-wrap: wrap;
   }
-  .detailSlot h2 em {
+  .slot h2 em {
     margin-left: 0;
     display: block;
   }

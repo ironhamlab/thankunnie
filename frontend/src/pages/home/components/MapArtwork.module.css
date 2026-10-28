@@ -1,106 +1,106 @@
-.mapArtwork {
+.root {
   position: relative;
   width: 490.67px;
   height: 558px;
 }
-.mapArtwork > img {
+.root > img {
   position: absolute;
 }
-.mapVector0 {
+.vector0 {
   left: 20px;
   top: 30px;
 }
-.mapVector1 {
+.vector1 {
   left: 200px;
   top: 20px;
 }
-.mapVector2 {
+.vector2 {
   left: 30px;
   top: 160px;
 }
-.mapVector3 {
+.vector3 {
   left: 200px;
   top: 170px;
 }
-.mapVector4 {
+.vector4 {
   left: 25px;
   top: 360px;
 }
-.mapVector5 {
+.vector5 {
   left: 210px;
   top: 350px;
 }
-.mapVector6 {
+.vector6 {
   left: 80px;
   top: 240px;
 }
-.mapVector7 {
+.vector7 {
   left: 172px;
   top: 0px;
 }
-.mapVector8 {
+.vector8 {
   left: 184.25px;
   top: 0px;
 }
-.mapVector9 {
+.vector9 {
   left: 0px;
   top: 326px;
 }
-.mapVector10 {
+.vector10 {
   left: 0px;
   top: 339.25px;
 }
-.mapVector11 {
+.vector11 {
   left: 0px;
   top: 142px;
 }
-.mapVector12 {
+.vector12 {
   left: 383px;
   top: 0px;
 }
-.mapVector13 {
+.vector13 {
   left: 0px;
   top: 483px;
 }
-.mapVector14 {
+.vector14 {
   left: 173px;
   top: 138px;
 }
-.mapVector15 {
+.vector15 {
   left: 178px;
   top: 143px;
 }
-.mapVector16 {
+.vector16 {
   left: 169px;
   top: 324px;
 }
-.mapVector17 {
+.vector17 {
   left: 177px;
   top: 332px;
 }
-.mapRoad {
+.road {
   position: absolute;
   color: #64748b;
   font-size: 10px;
 }
-.mapGangnam {
+.gangnam {
   left: 177px;
   top: 80px;
   writing-mode: vertical-rl;
 }
-.mapTeheran {
+.teheran {
   left: 260px;
   top: 326px;
 }
-.mapSapyeong {
+.sapyeong {
   left: 60px;
   top: 137px;
 }
-.mapSinnonhyeon {
+.sinnonhyeon {
   left: 197px;
   top: 144px;
 }
-.mapStation {
+.station {
   left: 199px;
   top: 333px;
 }

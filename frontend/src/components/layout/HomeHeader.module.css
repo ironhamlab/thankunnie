@@ -1,7 +1,7 @@
-.homeHeader {
+.root {
   font-family: var(--font-display);
 }
-.homeHeader {
+.root {
   position: sticky;
   top: 0;
   z-index: 40;
@@ -10,30 +10,30 @@
   backdrop-filter: blur(12px);
   box-shadow: 0 1px 3px #0001;
 }
-.homeHeaderInner {
+.inner {
   height: 80px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
 }
-.homeHeader :global(.b-brand) {
+.root :global(.b-brand) {
   font-size: 20px;
   white-space: nowrap;
 }
-.homeHeaderSearch {
+.search {
   flex: 1;
   max-width: 360px;
   position: relative;
 }
-.homeHeaderSearch input {
+.search input {
   width: 100%;
   background: var(--color-surface);
   border-radius: 30px;
   padding: 9px 42px 9px 16px;
   font-size: 13px;
 }
-.homeHeaderSearch button {
+.search button {
   position: absolute;
   right: 4px;
   top: 4px;
@@ -45,31 +45,31 @@
   color: #fff;
   font-size: 20px;
 }
-.homeHeader nav {
+.root nav {
   display: flex;
   align-items: center;
   gap: 18px;
   font-size: 12px;
   color: var(--color-text-secondary);
 }
-.homeHeader nav a:first-child {
+.root nav a:first-child {
   color: var(--color-primary);
   font-weight: 700;
 }
-.homeHeader nav button {
+.root nav button {
   background: none;
   border: 0;
   padding: 0;
   color: inherit;
   font-size: 12px;
 }
-.homeHeaderActions {
+.actions {
   position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.homeAccount {
+.account {
   padding: 5px 10px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
@@ -77,7 +77,7 @@
   font-size: 10px;
   color: var(--color-text-secondary);
 }
-.homeNotificationButton {
+.notificationButton {
   position: relative;
   width: 36px;
   height: 36px;
@@ -87,11 +87,11 @@
   background: none;
   border-radius: 50%;
 }
-.homeNotificationButton svg {
+.notificationButton svg {
   width: 21px;
   height: 21px;
 }
-.homeNotificationButton > b {
+.notificationButton > b {
   position: absolute;
   top: -1px;
   right: -2px;
@@ -101,82 +101,82 @@
   font-size: 10px;
   min-width: 17px;
 }
-.homeNotificationsTitle {
+.notificationsTitle {
   padding: 12px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: var(--color-surface);
 }
-.homeNotificationsTitle strong {
+.notificationsTitle strong {
   font-size: 13px;
 }
-.homeNotificationTabs {
+.notificationTabs {
   display: flex;
   gap: 6px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--color-border);
 }
-.homeNotificationTabs button {
+.notificationTabs button {
   padding: 4px 9px;
   border-radius: var(--radius-xl);
 }
-.homeNotificationTabs button[aria-pressed='true'] {
+.notificationTabs button[aria-pressed='true'] {
   color: white;
   background: var(--color-primary);
 }
-.homeNotificationItem {
+.notificationItem {
   padding: 16px;
   border-bottom: 1px solid var(--color-border);
 }
-.homeNotificationItem strong {
+.notificationItem strong {
   display: block;
   font-size: 13px;
 }
-.homeNotificationItem p {
+.notificationItem p {
   font-size: 12px;
   color: var(--color-text-secondary);
   margin-top: 5px;
 }
-.homeNotificationItem small {
+.notificationItem small {
   color: var(--color-text-muted);
 }
-.homeMobileNav {
+.mobileNav {
   display: none;
 }
 @media (max-width: 1200px) {
-  .homeHeaderInner {
+  .inner {
     gap: 16px;
   }
-  .homeAccount {
+  .account {
     display: none;
   }
 }
 @media (max-width: 1000px) {
-  .homeHeader nav {
+  .root nav {
     gap: 10px;
   }
-  .homeHeaderSearch {
+  .search {
     max-width: 250px;
   }
 }
 @media (max-width: 767px) {
-  .homeHeader nav {
+  .root nav {
     display: none;
   }
-  .homeHeaderInner {
+  .inner {
     flex-wrap: wrap;
     height: auto;
     padding-top: 16px;
     padding-bottom: 12px;
     gap: 12px;
   }
-  .homeHeaderSearch {
+  .search {
     order: 3;
     max-width: none;
     flex-basis: 100%;
   }
-  .homeMobileNav {
+  .mobileNav {
     display: flex;
     position: fixed;
     bottom: 0;
@@ -190,8 +190,8 @@
     font-size: 10px;
     backdrop-filter: blur(10px);
   }
-  .homeMobileNav a,
-  .homeMobileNav button {
+  .mobileNav a,
+  .mobileNav button {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -201,7 +201,7 @@
     font: inherit;
     color: var(--color-text-secondary);
   }
-  .homeMobileNav span {
+  .mobileNav span {
     font-size: 20px;
   }
 }

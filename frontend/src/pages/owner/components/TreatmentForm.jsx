@@ -75,7 +75,7 @@ export default function TreatmentForm({ treatment, categories, isSaving, error, 
   return (
     <Dialog title={treatment ? '시술 메뉴 수정' : '신규 시술 등록'} onClose={onClose}>
       <form onSubmit={submit} className="b-form-grid">
-        <fieldset disabled={isSaving} className={`${styles.treatmentFields} b-span-two`}>
+        <fieldset disabled={isSaving} className={`${styles.fields} b-span-two`}>
           <label className="b-span-two">
             목적 태그 *
             <select required name="treatmentType" value={form.treatmentType} onChange={change}>

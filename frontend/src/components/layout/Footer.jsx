@@ -26,7 +26,7 @@ export default function Footer() {
               않습니다.
             </p>
           </div>
-          <div className={styles.footerLinks}>
+          <div className={styles.links}>
             {FOOTER_NOTICES.map((label) => (
               <button key={label} onClick={() => setNotice(label)}>
                 {label}

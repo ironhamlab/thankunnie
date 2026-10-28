@@ -7,8 +7,8 @@ import styles from './ServiceCard.module.css';
 export default function ServiceCard({ service }) {
   const day = ['오늘', '내일', '모레'][service.day];
   return (
-    <article className={styles.serviceCard}>
-      <div className={styles.servicePhoto}>
+    <article className={styles.root}>
+      <div className={styles.photo}>
         <Asset name={service.image} alt={service.shop + ' ' + service.category + ' 시술'} />
         <span
           className={
@@ -27,8 +27,8 @@ export default function ServiceCard({ service }) {
           </span>
         )}
       </div>
-      <div className={styles.serviceBody}>
-        <div className={`b-row ${styles.serviceMeta}`}>
+      <div className={styles.body}>
+        <div className={`b-row ${styles.meta}`}>
           <span>{service.shop}</span>
           <small>
             <Asset name="8-3-9.svg" />
@@ -36,7 +36,7 @@ export default function ServiceCard({ service }) {
           </small>
         </div>
         <h3>{service.name}</h3>
-        <div className={`b-flex ${styles.serviceTime}`}>
+        <div className={`b-flex ${styles.time}`}>
           <span className={styles.duration}>
             <Asset name="8-3-10.svg" />
             {service.duration}분 소요

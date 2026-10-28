@@ -41,11 +41,11 @@ export default function PaymentStatusCard({ booking }) {
     : 0;
 
   return (
-    <div className={styles.payCard}>
-      <div className={styles.payHead}>
+    <div className={styles.root}>
+      <div className={styles.head}>
         <div>
           <small className="b-muted">예약금결제 #{payment.depositPaymentId}</small>
-          <strong className={styles.payMethod}>{payment.method}</strong>
+          <strong className={styles.method}>{payment.method}</strong>
         </div>
         <span className={`b-pay-status is-${status.tone}`}>
           {payment.status === 'REFUND_PENDING' && (
@@ -55,7 +55,7 @@ export default function PaymentStatusCard({ booking }) {
         </span>
       </div>
 
-      <div className={styles.payStats}>
+      <div className={styles.stats}>
         <div>
           <span>결제한 예약금</span>
           <strong>{money(payment.amount)}</strong>
@@ -70,18 +70,18 @@ export default function PaymentStatusCard({ booking }) {
         </div>
       </div>
 
-      <div className={styles.payMeter} role="img" aria-label={`예약금 중 ${refundRate}% 환불`}>
+      <div className={styles.meter} role="img" aria-label={`예약금 중 ${refundRate}% 환불`}>
         <span style={{ width: `${refundRate}%` }} />
       </div>
-      <div className={styles.payMeterLegend}>
+      <div className={styles.meterLegend}>
         <span>환불 {refundRate}%</span>
         <span>결제 유지 {100 - refundRate}%</span>
       </div>
 
-      <dl className={`b-details ${styles.payMeta}`}>
+      <dl className={`b-details ${styles.meta}`}>
         <div>
           <dt>결제 번호 (imp_uid)</dt>
-          <dd className={styles.payMono}>{payment.impUid}</dd>
+          <dd className={styles.mono}>{payment.impUid}</dd>
         </div>
         <div>
           <dt>결제 승인</dt>
@@ -101,10 +101,10 @@ export default function PaymentStatusCard({ booking }) {
         )}
       </dl>
 
-      <ol className={styles.payTimeline}>
+      <ol className={styles.timeline}>
         {timeline.map((step) => (
           <li key={step.key} className={`is-${step.state}`}>
-            <span className={styles.payDot} aria-hidden="true" />
+            <span className={styles.dot} aria-hidden="true" />
             <div>
               <strong>{step.label}</strong>
               <small>{step.state === 'current' ? '처리 중…' : formatDateTime(step.at)}</small>
