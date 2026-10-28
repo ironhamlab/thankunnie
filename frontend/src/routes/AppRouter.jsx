@@ -17,6 +17,7 @@ const MyReservationsPage = lazy(() => import('@/pages/my/MyReservationsPage'));
 const CustomerProfilePage = lazy(() => import('@/pages/my/CustomerProfilePage'));
 const CustomerCancelPage = lazy(() => import('@/pages/cancel/CustomerCancelPage'));
 const CancelResultPage = lazy(() => import('@/pages/cancel/CancelResultPage'));
+const OwnerCancelPage = lazy(() => import('@/pages/cancel/OwnerCancelPage'));
 const OwnerDashboardPage = lazy(() => import('@/pages/owner/OwnerDashboardPage'));
 const ShopPage = lazy(() => import('@/pages/owner/ShopPage'));
 const MenusPage = lazy(() => import('@/pages/owner/MenusPage'));
@@ -66,6 +67,7 @@ export default function AppRouter() {
           <Route path={ROUTES.OWNER_SLOT_NEW} element={<NewSlotPage />} />
           <Route path={ROUTES.OWNER_SCHEDULE} element={<SchedulePage />} />
           <Route path={ROUTES.OWNER_BOOKINGS} element={<OwnerBookingsPage />} />
+          <Route path={ROUTES.OWNER_RESERVATION_CANCEL} element={<OwnerCancelPage />} />
           <Route
             path={ROUTES.OWNER_RESERVATION_CANCEL_RESULT}
             element={<CancelResultPage viewer="owner" />}

@@ -53,6 +53,19 @@ export const useCancelStore = create((set, get) => ({
     }
   },
 
+  cancelByOwner: async (reservationId, body) => {
+    set({ submitting: true });
+    try {
+      const result = await cancelApi.cancelByOwner(reservationId, body);
+      set({ lastResult: result });
+      return result;
+    } catch (error) {
+      throw toError(error, '예약을 취소하지 못했습니다.');
+    } finally {
+      set({ submitting: false });
+    }
+  },
+
   clearQuote: () =>
     set((state) => ({
       quote: null,
