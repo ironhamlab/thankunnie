@@ -1,5 +1,6 @@
 import { money } from '@/utils/demoData';
 import { REFUND_TIERS, quoteRefund } from '@/utils/demoRefundPolicy';
+import Badge from '@/components/common/Badge';
 import styles from './RefundPolicyCard.module.css';
 
 const describeDays = (daysLeft) => {
@@ -21,7 +22,7 @@ export default function RefundPolicyCard({ booking }) {
   return (
     <div className={styles.refundCard}>
       <div className="b-row">
-        <span className="b-badge b-neutral">{describeDays(quote.daysLeft)}</span>
+        <Badge tone="neutral">{describeDays(quote.daysLeft)}</Badge>
         <small className="b-muted">납부 예약금 한도 내 환불</small>
       </div>
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useScheduleStore } from '@/store/useScheduleStore';
+import Button from '@/components/common/Button';
 
 const DAY_LABELS = {
   MON: '월',
@@ -142,9 +143,9 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
             {message.text}
           </p>
         )}
-        <button className="b-button b-primary" disabled={isSaving}>
+        <Button variant="primary" disabled={isSaving}>
           영업시간 저장
-        </button>
+        </Button>
       </form>
     </section>
   );

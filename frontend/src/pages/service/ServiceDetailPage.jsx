@@ -6,6 +6,8 @@ import { useDesignStore } from '@/store/useDesignStore';
 import Asset from '@/components/common/Asset';
 import Dialog from '@/components/common/Dialog';
 import getServiceShop from '@/utils/getServiceShop';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
 import styles from './ServiceDetailPage.module.css';
 
 export default function ServiceDetailPage() {
@@ -90,17 +92,13 @@ export default function ServiceDetailPage() {
             <div className="b-row b-panel-heading">
               <div>
                 <h1>
-                  {name} <span className="b-badge b-green">영업중</span>
+                  {name} <Badge tone="green">영업중</Badge>
                 </h1>
                 <p className="b-pink b-help">{shopAddress}</p>
               </div>
-              <button
-                className="b-button b-small"
-                aria-label="매장 주소 보기"
-                onClick={() => setAddress(true)}
-              >
+              <Button size="small" aria-label="매장 주소 보기" onClick={() => setAddress(true)}>
                 지도
-              </button>
+              </Button>
             </div>
             <small className="b-muted">매장 소개</small>
             <div className={`b-notice ${styles.detailIntro}`}>
@@ -113,7 +111,7 @@ export default function ServiceDetailPage() {
           <section className="b-panel b-pad">
             <div className="b-row b-panel-heading">
               <h2>♧ 시술 정보</h2>
-              <span className="b-badge">소요 시간 {service.duration}분</span>
+              <Badge>소요 시간 {service.duration}분</Badge>
             </div>
             <div className="b-panel b-pad">
               <h3>{service.name}</h3>
@@ -131,7 +129,7 @@ export default function ServiceDetailPage() {
           <section className={`b-panel b-pad ${styles.detailSlot}`}>
             <div className="b-row b-panel-heading">
               <h3>선택한 빈자리 슬롯</h3>
-              <span className="b-badge">노쇼 방지 예약금 20%</span>
+              <Badge>노쇼 방지 예약금 20%</Badge>
             </div>
             <div className="b-row b-notice">
               <div>
@@ -143,7 +141,7 @@ export default function ServiceDetailPage() {
                 </h2>
                 <small>방문 2시간 전까지 전액 모의 환불 · 시술 시작 후 취소 불가</small>
               </div>
-              <span className="b-badge">잔여 수량: 1자리</span>
+              <Badge>잔여 수량: 1자리</Badge>
             </div>
           </section>
           <section className={`b-notice ${styles.detailPolicies}`}>
@@ -199,12 +197,12 @@ export default function ServiceDetailPage() {
                 <p>이미 예약된 시연 슬롯은 아래 날짜·시간 선택에서 다른 일정을 선택해 주세요.</p>
               </div>
             )}
-            <button className="b-button b-primary b-wide" onClick={reserve}>
+            <Button variant="primary" wide onClick={reserve}>
               ⚡ 이 빈자리 예약하기 ({money(service.price)})
-            </button>
-            <Link className="b-button b-wide" to={generatePath(ROUTES.RESERVE, { id })}>
+            </Button>
+            <Button as={Link} wide to={generatePath(ROUTES.RESERVE, { id })}>
               원하는 날짜·시간 선택
-            </Link>
+            </Button>
             <Link className="b-help b-pink b-center" to={ROUTES.BOOKINGS}>
               내 예약 상세 확인 →
             </Link>
@@ -219,9 +217,9 @@ export default function ServiceDetailPage() {
       {address && (
         <Dialog title={name + ' 위치'} onClose={() => setAddress(false)}>
           <p>{shopAddress}</p>
-          <Link className="b-button b-primary" to={`${ROUTES.HOME}?view=map`}>
+          <Button as={Link} variant="primary" to={`${ROUTES.HOME}?view=map`}>
             예시 지도에서 보기
-          </Link>
+          </Button>
         </Dialog>
       )}
     </div>

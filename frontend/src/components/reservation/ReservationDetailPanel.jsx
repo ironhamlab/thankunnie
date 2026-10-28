@@ -7,6 +7,8 @@ import {
   reservationStatusOf,
 } from '@/constants/reservationStatus';
 import { formatDateTime, formatMoney, formatReservationTime } from '@/utils/reservationFormat';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
 
 /**
  * 예약 상세 (사장님 예약 현황·고객 내 예약 공용). 사장님은 예약자 연락처를, 고객은 매장을 본다.
@@ -45,7 +47,7 @@ export default function ReservationDetailPanel({ viewer, cancelPath }) {
           <small className="b-muted">예약번호 {summary.reservationId}</small>
           <h2>예약 상세</h2>
         </div>
-        <span className={`b-badge ${status.tone}`}>{status.label}</span>
+        <Badge className={status.tone}>{status.label}</Badge>
       </div>
 
       {viewer === 'owner' ? (
@@ -139,9 +141,9 @@ export default function ReservationDetailPanel({ viewer, cancelPath }) {
       )}
 
       {summary.cancellable && (
-        <Link className="b-button b-danger b-wide" to={cancelPath(summary.reservationId)}>
+        <Button as={Link} variant="danger" wide to={cancelPath(summary.reservationId)}>
           취소하기
-        </Link>
+        </Button>
       )}
     </section>
   );

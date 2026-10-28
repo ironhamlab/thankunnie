@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useDesignStore } from '@/store/useDesignStore';
 import Dialog from '@/components/common/Dialog';
+import Button from '@/components/common/Button';
 import '@/assets/styles/home-redesign.css';
 import styles from './HomeHeader.module.css';
 
@@ -168,9 +169,9 @@ export default function HomeHeader() {
       {modelOpen && (
         <Dialog title="시술 모델 모집" onClose={() => setModelOpen(false)}>
           <p>시술 모델 모집 화면은 준비 중입니다. 현재는 메인페이지 UI 시연 환경입니다.</p>
-          <button className="b-button b-primary" onClick={() => setModelOpen(false)}>
+          <Button variant="primary" onClick={() => setModelOpen(false)}>
             확인
-          </button>
+          </Button>
         </Dialog>
       )}
     </>

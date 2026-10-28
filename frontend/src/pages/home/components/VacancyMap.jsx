@@ -4,6 +4,7 @@ import { ROUTES } from '@/constants/routes';
 import MapArtwork from '@/pages/home/components/MapArtwork';
 import Asset from '@/components/common/Asset';
 import { money } from '@/utils/demoData';
+import Button from '@/components/common/Button';
 import styles from './VacancyMap.module.css';
 
 const PIN_POSITIONS = {
@@ -73,12 +74,13 @@ export default function VacancyMap({ services }) {
             <strong>{money(selected.price)}</strong>
           </div>
         </div>
-        <Link
-          className="b-button b-primary"
+        <Button
+          as={Link}
+          variant="primary"
           to={generatePath(ROUTES.SERVICE_DETAIL, { id: selected.id })}
         >
           선택한 빈자리 확인
-        </Link>
+        </Button>
       </div>
     </section>
   );

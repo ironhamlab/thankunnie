@@ -7,6 +7,8 @@ import { formatMoney, formatReservationTime } from '@/utils/reservationFormat';
 import { addDays, todayKst } from '@/utils/scheduleDate';
 import ReservationDetailPanel from '@/components/reservation/ReservationDetailPanel';
 import ReservationPagination from '@/components/reservation/ReservationPagination';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
 
 // 탭별 조회 조건. 날짜는 시술 시작일 기준이다
 const TABS = [
@@ -76,7 +78,7 @@ export default function MyReservationsPage() {
     <div className="b-container b-page">
       <div className="b-row b-title-row">
         <h1>
-          내 예약 <span className="b-badge">{pageInfo.totalElements}건</span>
+          내 예약 <Badge>{pageInfo.totalElements}건</Badge>
         </h1>
       </div>
       <div className="b-options b-tabs" role="group" aria-label="예약 구분">
@@ -99,9 +101,9 @@ export default function MyReservationsPage() {
         <div className="b-panel b-empty">
           <h2>예약 내역이 없어요</h2>
           <p>실시간 빈자리를 찾아보세요.</p>
-          <Link to={ROUTES.HOME} className="b-button b-primary">
+          <Button as={Link} variant="primary" to={ROUTES.HOME}>
             빈자리 탐색하기
-          </Link>
+          </Button>
         </div>
       )}
       {listStatus === 'succeeded' && reservations.length > 0 && (
@@ -117,7 +119,7 @@ export default function MyReservationsPage() {
                   onClick={() => setSelectedId(item.reservationId)}
                 >
                   <div className="b-flex">
-                    <span className={`b-badge ${status.tone}`}>{status.label}</span>
+                    <Badge className={status.tone}>{status.label}</Badge>
                     {item.paymentStatus && (
                       <small className="b-muted">{PAYMENT_STATUS[item.paymentStatus]}</small>
                     )}

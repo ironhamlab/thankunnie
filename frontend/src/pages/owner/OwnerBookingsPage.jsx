@@ -7,6 +7,8 @@ import { formatReservationTime } from '@/utils/reservationFormat';
 import { todayKst } from '@/utils/scheduleDate';
 import ReservationDetailPanel from '@/components/reservation/ReservationDetailPanel';
 import ReservationPagination from '@/components/reservation/ReservationPagination';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
 import styles from './OwnerBookingsPage.module.css';
 
 // 상태를 고르지 않으면 서버가 점유 만료(EXPIRED)를 뺀 전체를 준다
@@ -103,9 +105,9 @@ export default function OwnerBookingsPage() {
               onChange={(event) => changeFilter(() => setTo(event.target.value))}
             />
           </label>
-          <button
+          <Button
+            size="small"
             type="button"
-            className="b-button b-small"
             onClick={() =>
               changeFilter(() => {
                 setFrom(todayKst());
@@ -115,7 +117,7 @@ export default function OwnerBookingsPage() {
             }
           >
             필터 초기화
-          </button>
+          </Button>
         </div>
         <div className="b-options" role="group" aria-label="예약 상태">
           {STATUS_FILTERS.map((filter) => (
@@ -168,16 +170,16 @@ export default function OwnerBookingsPage() {
                           <td>{formatReservationTime(item.startsAt, item.endsAt)}</td>
                           <td>{PAYMENT_STATUS[item.paymentStatus] ?? '결제 전'}</td>
                           <td>
-                            <span className={`b-badge ${status.tone}`}>{status.label}</span>
+                            <Badge className={status.tone}>{status.label}</Badge>
                           </td>
                           <td>
-                            <button
+                            <Button
+                              size="small"
                               type="button"
-                              className="b-button b-small"
                               onClick={() => setSelectedId(item.reservationId)}
                             >
                               상세 보기
-                            </button>
+                            </Button>
                           </td>
                         </tr>
                       );

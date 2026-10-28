@@ -4,6 +4,8 @@ import { ROUTES } from '@/constants/routes';
 import { useDesignStore } from '@/store/useDesignStore';
 import Asset from '@/components/common/Asset';
 import Dialog from '@/components/common/Dialog';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
 import styles from './OwnerDashboardPage.module.css';
 
 const cards = [
@@ -51,17 +53,17 @@ export default function OwnerDashboardPage() {
           <Asset name="32-767-0.png" alt="살롱 드 르네 대표 사진" className="b-thumb" />
           <div>
             <h2>
-              {shop.name} <span className="b-badge">인증 파트너스</span>
+              {shop.name} <Badge>인증 파트너스</Badge>
             </h2>
             <p>
               {shop.address} {shop.detail}
             </p>
-            <span className="b-badge">파트너스 등급: 강남권 우수 살롱</span>
+            <Badge>파트너스 등급: 강남권 우수 살롱</Badge>
           </div>
         </div>
-        <Link className="b-button b-primary" to={ROUTES.OWNER_SHOP}>
+        <Button as={Link} variant="primary" to={ROUTES.OWNER_SHOP}>
           매장 정보 관리로 이동 →
-        </Link>
+        </Button>
       </section>
       <h2>오늘의 빠른 운영 현황</h2>
       <div className="b-stat-grid">
@@ -118,14 +120,14 @@ export default function OwnerDashboardPage() {
       <section className="b-panel b-pad">
         <div className="b-row b-panel-heading">
           <h2>알림 수신 설정 및 자동화 운영 정책</h2>
-          <button
-            className="b-button b-small"
+          <Button
+            size="small"
             onClick={() =>
               setNotice('데모 설정이 저장되었습니다. 실제 알림톡은 발송되지 않습니다.')
             }
           >
             설정 저장
-          </button>
+          </Button>
         </div>
         <label className="b-toggle-row">
           <div>
@@ -156,7 +158,7 @@ export default function OwnerDashboardPage() {
             <strong>타임세일 자동 할인 적용 구간 설정</strong>
             <p>권장 할인율을 자동 산정합니다. 시연에서는 예시만 표시됩니다.</p>
           </div>
-          <span className="b-badge">적용 범위: 30% ~ 50%</span>
+          <Badge>적용 범위: 30% ~ 50%</Badge>
         </div>
       </section>
       <section className="b-panel b-pad">
@@ -183,18 +185,18 @@ export default function OwnerDashboardPage() {
               : '모든 입점 서류 및 결제 정산 계좌가 승인 완료된 예시 상태입니다.'}
           </p>
           {newShop && (
-            <Link className="b-button b-primary" to={ROUTES.OWNER_SHOP}>
+            <Button as={Link} variant="primary" to={ROUTES.OWNER_SHOP}>
               매장 등록하기
-            </Link>
+            </Button>
           )}
         </div>
       </section>
       {notice && (
         <Dialog title="안내" onClose={() => setNotice('')}>
           <p>{notice}</p>
-          <button className="b-button b-primary" onClick={() => setNotice('')}>
+          <Button variant="primary" onClick={() => setNotice('')}>
             확인
-          </button>
+          </Button>
         </Dialog>
       )}
     </div>

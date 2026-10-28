@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { SERVICES, finish, money } from '@/utils/demoData';
 import { CANCEL_REASONS, quoteRefund } from '@/utils/demoRefundPolicy';
 import Dialog from '@/components/common/Dialog';
+import Button from '@/components/common/Button';
 import styles from './CancelRefundDialog.module.css';
 
 /**
@@ -70,12 +71,10 @@ export default function CancelRefundDialog({ booking, onClose, onConfirm }) {
         </label>
 
         <div className={styles.cancelActions}>
-          <button className="b-button" onClick={onClose}>
-            예약 유지
-          </button>
-          <button className="b-button b-primary" disabled={!isAgreed} onClick={handleConfirm}>
+          <Button onClick={onClose}>예약 유지</Button>
+          <Button variant="primary" disabled={!isAgreed} onClick={handleConfirm}>
             {money(quote.refundAmount)} 환불받고 취소
-          </button>
+          </Button>
         </div>
       </div>
     </Dialog>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Dialog from '@/components/common/Dialog';
+import Button from '@/components/common/Button';
 import styles from './TreatmentForm.module.css';
 
 export default function TreatmentForm({ treatment, categories, isSaving, error, onSave, onClose }) {
@@ -200,9 +201,9 @@ export default function TreatmentForm({ treatment, categories, isSaving, error, 
             {validationError || error.message}
           </p>
         )}
-        <button className="b-button b-primary b-span-two" disabled={isSaving}>
+        <Button variant="primary" className="b-span-two" disabled={isSaving}>
           {isSaving ? '저장 중…' : '저장'}
-        </button>
+        </Button>
       </form>
     </Dialog>
   );

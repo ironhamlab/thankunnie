@@ -3,6 +3,8 @@ import { generatePath, Link, useNavigate, useParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { DEMO_DATE, SERVICES, finish, minutes, money, overlaps } from '@/utils/demoData';
 import { useDesignStore } from '@/store/useDesignStore';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
 import styles from './ReservationPage.module.css';
 
 const dayLabel = (isClosed, isDemoDate) => {
@@ -83,13 +85,13 @@ export default function ReservationPage() {
       </Link>
       <section className={`b-hero ${styles.reserveHero}`}>
         <div>
-          <span className="b-badge">일반 예약 모드 (원하는 시간에 맞춤 예약)</span>
+          <Badge>일반 예약 모드 (원하는 시간에 맞춤 예약)</Badge>
           <h1>예약 날짜와 시간을 선택해 주세요</h1>
           <p>
             <strong>
               {service.shop} · {service.name}
             </strong>{' '}
-            <span className="b-badge">시술 소요 시간 {duration}분</span>
+            <Badge>시술 소요 시간 {duration}분</Badge>
           </p>
         </div>
         <div>
@@ -164,7 +166,7 @@ export default function ReservationPage() {
           <section className="b-panel b-pad">
             <div className="b-row b-panel-heading">
               <h2>시작 시간 선택 (30분 단위)</h2>
-              <span className="b-badge">매장 운영 10:00 ~ 20:00</span>
+              <Badge>매장 운영 10:00 ~ 20:00</Badge>
             </div>
             <div className="b-notice">
               실시간 충돌 검증 룰 적용 중 · 시술 종료 시각은 {duration}분 뒤로 자동 계산됩니다.
@@ -267,13 +269,14 @@ export default function ReservationPage() {
               {error}
             </p>
           )}
-          <button
-            className="b-button b-primary b-wide"
+          <Button
+            variant="primary"
+            wide
             disabled={loading || mode === 'loading' || !time || mode === 'soldout'}
             onClick={handleNext}
           >
             {loading || mode === 'loading' ? '실시간 검증 중…' : '다음 (예약 가능 여부 확인)'}
-          </button>
+          </Button>
           <p className="b-help">매장 사정 취소 시 100% 모의 환불 및 보상 정책 적용</p>
         </aside>
       </div>

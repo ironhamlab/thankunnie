@@ -5,6 +5,8 @@ import { addDays, datePart, timePart, todayKst } from '@/utils/scheduleDate';
 import AvailableTimesPanel from '@/pages/owner/components/AvailableTimesPanel';
 import BusinessHoursPanel from '@/pages/owner/components/BusinessHoursPanel';
 import ScheduleExceptionDialog from '@/pages/owner/components/ScheduleExceptionDialog';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
 
 // 열기·닫기는 오늘 포함 60일 안에서만 등록할 수 있다.
 const BOOKING_MAX_DAYS = 60;
@@ -75,13 +77,9 @@ export default function SchedulePage() {
             안에서 시술 소요 시간만큼 비어 있는 시각을 예약합니다.
           </p>
         </div>
-        <button
-          className="b-button b-primary"
-          disabled={isBusy}
-          onClick={() => setParams({ new: '1' })}
-        >
+        <Button variant="primary" disabled={isBusy} onClick={() => setParams({ new: '1' })}>
           + 시간대 열기·닫기
-        </button>
+        </Button>
       </div>
       {(status === 'idle' || status === 'loading') && (
         <p role="status">영업시간과 일정을 불러오는 중입니다.</p>
@@ -89,9 +87,7 @@ export default function SchedulePage() {
       {status === 'failed' && (
         <div role="alert">
           <p>{error.message}</p>
-          <button className="b-button" onClick={loadSchedule}>
-            다시 불러오기
-          </button>
+          <Button onClick={loadSchedule}>다시 불러오기</Button>
         </div>
       )}
       {status === 'succeeded' && (
@@ -144,16 +140,16 @@ export default function SchedulePage() {
                     return (
                       <tr key={exception.exceptionId}>
                         <td>
-                          <span className={`b-badge ${badge}`}>{label}</span>
+                          <Badge className={badge}>{label}</Badge>
                         </td>
                         <td>
-                          <button
+                          <Button
+                            size="small"
                             type="button"
-                            className="b-button b-small"
                             onClick={() => setSelectedDate(datePart(exception.startsAt))}
                           >
                             {datePart(exception.startsAt)}
-                          </button>
+                          </Button>
                         </td>
                         <td>
                           {timePart(exception.startsAt)} ~ {timePart(exception.endsAt)}
@@ -161,20 +157,20 @@ export default function SchedulePage() {
                         <td>{exception.reason ?? '-'}</td>
                         <td>
                           <div className="b-flex">
-                            <button
-                              className="b-button b-small"
+                            <Button
+                              size="small"
                               disabled={isBusy}
                               onClick={() => setEditing(exception)}
                             >
                               수정
-                            </button>
-                            <button
-                              className="b-button b-small"
+                            </Button>
+                            <Button
+                              size="small"
                               disabled={isBusy}
                               onClick={() => handleDelete(exception)}
                             >
                               삭제
-                            </button>
+                            </Button>
                           </div>
                         </td>
                       </tr>

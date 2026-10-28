@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useDesignStore } from '@/store/useDesignStore';
 import Asset from '@/components/common/Asset';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
 import styles from './ShopPage.module.css';
 
 export default function ShopPage() {
@@ -123,26 +125,25 @@ export default function ShopPage() {
               {status || '모든 변경사항이 안전하게 보관되어 있습니다.'}
             </span>
             <div className="b-flex">
-              <button
+              <Button
                 type="button"
-                className="b-button"
                 onClick={() => {
                   setForm({ ...shop });
                   setStatus('변경사항을 취소했습니다.');
                 }}
               >
                 취소
-              </button>
-              <button className="b-button b-primary" type="submit">
+              </Button>
+              <Button variant="primary" type="submit">
                 변경사항 저장
-              </button>
+              </Button>
             </div>
           </div>
         </div>
         <aside className="b-stack">
           <section className="b-panel b-pad">
             <h2 className="b-panel-heading">
-              매장 대표 이미지 <span className="b-badge b-neutral">자동 매칭</span>
+              매장 대표 이미지 <Badge tone="neutral">자동 매칭</Badge>
             </h2>
             <div className="b-highlight">
               업로드 기능은 미지원하며 기본 매장 이미지가 자동 적용됩니다.

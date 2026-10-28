@@ -4,6 +4,8 @@ import { ROUTES } from '@/constants/routes';
 import { SERVICES, finish, money } from '@/utils/demoData';
 import { useDesignStore } from '@/store/useDesignStore';
 import Asset from '@/components/common/Asset';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
 import styles from './CheckoutPage.module.css';
 
 export default function CheckoutPage() {
@@ -28,9 +30,9 @@ export default function CheckoutPage() {
       <div className="b-container b-empty">
         <h1>선택한 예약이 없습니다</h1>
         <p>빈자리와 시간을 먼저 선택해 주세요.</p>
-        <Link to={ROUTES.HOME} className="b-button b-primary">
+        <Button as={Link} variant="primary" to={ROUTES.HOME}>
           빈자리 탐색
-        </Link>
+        </Button>
       </div>
     );
   const service = SERVICES.find((s) => s.id === hold.serviceId);
@@ -99,7 +101,7 @@ export default function CheckoutPage() {
             </section>
             <section className="b-panel b-pad">
               <h2 className="b-panel-heading">
-                2. 예약자 정보 <span className="b-badge b-neutral">테스트 계정 기본 표시</span>
+                2. 예약자 정보 <Badge tone="neutral">테스트 계정 기본 표시</Badge>
               </h2>
               <div className="b-form-grid">
                 <label>
@@ -223,13 +225,9 @@ export default function CheckoutPage() {
                   : error}
               </p>
             )}
-            <button
-              className="b-button b-primary b-wide"
-              disabled={remaining === 0}
-              onClick={handlePay}
-            >
+            <Button variant="primary" wide disabled={remaining === 0} onClick={handlePay}>
               {money(hold.deposit)} 모의 결제로 진행하기
-            </button>
+            </Button>
             <Link className="b-back b-center" to={ROUTES.HOME} onClick={release}>
               예약 취소하고 목록으로 돌아가기
             </Link>

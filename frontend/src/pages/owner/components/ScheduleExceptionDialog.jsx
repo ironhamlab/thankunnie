@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useScheduleStore } from '@/store/useScheduleStore';
 import { datePart, timePart, toKstDateTime } from '@/utils/scheduleDate';
 import Dialog from '@/components/common/Dialog';
+import Button from '@/components/common/Button';
 
 const TYPE_LABELS = {
   OPEN: '열기 (영업시간 밖 추가 영업)',
@@ -125,9 +126,9 @@ export default function ScheduleExceptionDialog({ exception, date, minDate, maxD
             {errorMessage}
           </p>
         )}
-        <button className="b-button b-primary b-span-two" disabled={isSaving}>
+        <Button variant="primary" className="b-span-two" disabled={isSaving}>
           {exception ? '수정 저장' : '등록하기'}
-        </button>
+        </Button>
       </form>
     </Dialog>
   );

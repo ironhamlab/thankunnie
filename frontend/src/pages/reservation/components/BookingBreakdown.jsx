@@ -1,4 +1,5 @@
 import { money } from '@/utils/demoData';
+import Badge from '@/components/common/Badge';
 import styles from './BookingBreakdown.module.css';
 
 export default function BookingBreakdown({ service, booking, compact = false }) {
@@ -9,7 +10,7 @@ export default function BookingBreakdown({ service, booking, compact = false }) 
     >
       <div className="b-row">
         <h2>결제 및 정산 요약</h2>
-        <span className="b-badge">타임세일 할인 {discount}% 적용</span>
+        <Badge>타임세일 할인 {discount}% 적용</Badge>
       </div>
       <dl className="b-details">
         <div>
@@ -32,7 +33,7 @@ export default function BookingBreakdown({ service, booking, compact = false }) 
       <div className="b-two-grid">
         <div className="b-highlight">
           <small>
-            모의 결제 완료 예약금 <span className="b-badge">완료</span>
+            모의 결제 완료 예약금 <Badge>완료</Badge>
           </small>
           <strong className="b-pink">{money(booking.deposit)}</strong>
           <small>실제 과금 없는 모의 테스트 승인 (20%)</small>

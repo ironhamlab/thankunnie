@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { generatePath, Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { money } from '@/utils/demoData';
+import Button from '@/components/common/Button';
 import styles from './HomeBeautyMap.module.css';
 
 export default function HomeBeautyMap({ services }) {
@@ -67,12 +68,13 @@ export default function HomeBeautyMap({ services }) {
               {selected.location} · {selected.name}
             </p>
           </div>
-          <Link
-            className="b-button b-primary"
+          <Button
+            as={Link}
+            variant="primary"
             to={generatePath(ROUTES.SERVICE_DETAIL, { id: selected.id })}
           >
             빈자리 보기
-          </Link>
+          </Button>
         </div>
       </div>
     </div>

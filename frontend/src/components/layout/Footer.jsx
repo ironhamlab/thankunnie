@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Dialog from '@/components/common/Dialog';
 import { ROUTES } from '@/constants/routes';
+import Button from '@/components/common/Button';
 import styles from './Footer.module.css';
 
 const FOOTER_NOTICES = ['이용약관', '개인정보처리방침', '고객센터', '입점 문의'];
@@ -41,9 +42,9 @@ export default function Footer() {
             현재는 Figma 디자인 시연 화면입니다. 실제 서비스의 {notice} 내용은 운영 정책 확정 후
             연결됩니다.
           </p>
-          <button className="b-button b-primary" onClick={() => setNotice('')}>
+          <Button variant="primary" onClick={() => setNotice('')}>
             닫기
-          </button>
+          </Button>
         </Dialog>
       )}
     </>

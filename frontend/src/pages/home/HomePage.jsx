@@ -6,6 +6,7 @@ import Asset from '@/components/common/Asset';
 import Dialog from '@/components/common/Dialog';
 import VacancySearch from '@/pages/home/components/VacancySearch';
 import HomeBeautyMap from '@/pages/home/components/HomeBeautyMap';
+import Button from '@/components/common/Button';
 import '@/assets/styles/home-redesign.css';
 import styles from './HomePage.module.css';
 
@@ -213,12 +214,13 @@ export default function HomePage() {
                       <b>{money(service.price)}</b>
                     </div>
                   </div>
-                  <Link
-                    className="b-button b-primary"
+                  <Button
+                    as={Link}
+                    variant="primary"
                     to={generatePath(ROUTES.SERVICE_DETAIL, { id: service.id })}
                   >
                     빈자리 확인
-                  </Link>
+                  </Button>
                 </div>
               </div>
             </article>
@@ -228,9 +230,9 @@ export default function HomePage() {
       {modelOpen && (
         <Dialog title="시술 모델 모집" onClose={() => setModelOpen(false)}>
           <p>시술 모델 모집 화면은 준비 중입니다. 현재는 메인페이지 UI 시연 환경입니다.</p>
-          <button className="b-button b-primary" onClick={() => setModelOpen(false)}>
+          <Button variant="primary" onClick={() => setModelOpen(false)}>
             확인
-          </button>
+          </Button>
         </Dialog>
       )}
     </div>

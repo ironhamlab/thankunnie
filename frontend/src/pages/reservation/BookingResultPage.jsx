@@ -4,6 +4,8 @@ import { ROUTES } from '@/constants/routes';
 import { SERVICES, finish } from '@/utils/demoData';
 import { useDesignStore } from '@/store/useDesignStore';
 import BookingBreakdown from '@/pages/reservation/components/BookingBreakdown';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
 import styles from './BookingResultPage.module.css';
 
 const scenarios = [
@@ -65,12 +67,10 @@ export default function BookingResultPage() {
               : '실제 과금은 발생하지 않았습니다. 다른 빈자리나 시간을 확인해 주세요.'}
           </p>
           <div className={`b-flex ${styles.resultBadges}`}>
-            <span className="b-badge">
-              {success ? '예약 상태: ' + bookingStatusLabel : '시연 오류 미리보기'}
-            </span>
-            <span className="b-badge b-neutral">
+            <Badge>{success ? '예약 상태: ' + bookingStatusLabel : '시연 오류 미리보기'}</Badge>
+            <Badge tone="neutral">
               {success ? '결제 상태: 모의 결제 완료' : '새로운 예약은 생성되지 않습니다'}
-            </span>
+            </Badge>
           </div>
           {!isActualResult && <small className="b-help">저장된 예약의 시연 예시입니다.</small>}
         </header>
@@ -122,12 +122,12 @@ export default function BookingResultPage() {
           </div>
         )}
         <div className={`b-flex ${styles.resultActions}`}>
-          <Link className="b-button b-primary" to={ROUTES.BOOKINGS}>
+          <Button as={Link} variant="primary" to={ROUTES.BOOKINGS}>
             내 예약 상세 보기
-          </Link>
-          <Link className="b-button b-danger" to={ROUTES.HOME}>
+          </Button>
+          <Button as={Link} variant="danger" to={ROUTES.HOME}>
             다른 빈자리 더 찾아보기
-          </Link>
+          </Button>
         </div>
       </section>
       {success && (

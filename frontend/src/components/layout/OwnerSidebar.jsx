@@ -2,6 +2,7 @@ import { Link, NavLink } from 'react-router-dom';
 import Asset from '@/components/common/Asset';
 import { ROUTES } from '@/constants/routes';
 import { useDesignStore } from '@/store/useDesignStore';
+import Button from '@/components/common/Button';
 import styles from './OwnerSidebar.module.css';
 
 const NAVIGATION = [
@@ -31,9 +32,9 @@ export default function OwnerSidebar() {
           <small className="b-green-text">● 영업 중</small>
         </div>
       </div>
-      <Link className="b-button b-primary b-wide" to={ROUTES.OWNER_SLOT_NEW}>
+      <Button as={Link} variant="primary" wide to={ROUTES.OWNER_SLOT_NEW}>
         ⊕ 빈자리 즉시 등록
-      </Link>
+      </Button>
       <nav aria-label="사장님 메뉴">
         {NAVIGATION.map(([to, label, icon]) => (
           <NavLink key={to} to={to}>

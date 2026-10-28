@@ -4,6 +4,8 @@ import { ROUTES } from '@/constants/routes';
 import { DEMO_DATE, finish, money, validateSlot } from '@/utils/demoData';
 import { useDesignStore } from '@/store/useDesignStore';
 import useSlotTreatments from '@/hooks/useSlotTreatments';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
 import styles from './NewSlotPage.module.css';
 
 export default function NewSlotPage() {
@@ -53,7 +55,7 @@ export default function NewSlotPage() {
       <div className="b-row b-title-row">
         <div>
           <h1>
-            빈자리 즉시 등록 <span className="b-badge">⚡ 실시간 동기화</span>
+            빈자리 즉시 등록 <Badge>⚡ 실시간 동기화</Badge>
           </h1>
           <p className="b-muted">
             시술 메뉴와 일정을 선택하면 기존 예약과 중복 여부를 자동 검사하고 타임세일 빈자리로
@@ -123,13 +125,9 @@ export default function NewSlotPage() {
             {loadError && (
               <div role="alert">
                 <p>{loadError.message}</p>
-                <button
-                  type="button"
-                  className="b-button"
-                  onClick={() => refreshMenus().catch(() => {})}
-                >
+                <Button type="button" onClick={() => refreshMenus().catch(() => {})}>
                   다시 불러오기
-                </button>
+                </Button>
               </div>
             )}
             {status === 'succeeded' && !menus.length && (
@@ -223,7 +221,7 @@ export default function NewSlotPage() {
           <section className="b-panel b-pad">
             <div className="b-row b-panel-heading">
               <h2>♧ 타임세일 자동 정산 미리보기</h2>
-              <span className="b-badge">초임박 특가</span>
+              <Badge>초임박 특가</Badge>
             </div>
             <div className="b-highlight">
               <strong>⚡ 당일 타임세일 자동 적용 구간</strong>
@@ -268,16 +266,17 @@ export default function NewSlotPage() {
                 {error}
               </p>
             )}
-            <button
-              className="b-button b-primary b-wide"
+            <Button
+              variant="primary"
+              wide
               type="submit"
               disabled={status !== 'succeeded' || !menu?.active || Boolean(conflict)}
             >
               ⚑ 빈자리 즉시 등록하기
-            </button>
-            <Link className="b-button b-wide" to={ROUTES.OWNER_SLOTS}>
+            </Button>
+            <Button as={Link} wide to={ROUTES.OWNER_SLOTS}>
               취소
-            </Link>
+            </Button>
             <p className="b-help">
               등록 시 데모 빈자리 목록에서 바로 확인할 수 있습니다. 실제 고객 알림은 발송되지
               않습니다.

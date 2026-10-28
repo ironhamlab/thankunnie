@@ -5,6 +5,8 @@ import { useDesignStore } from '@/store/useDesignStore';
 import Asset from '@/components/common/Asset';
 import ServiceCard from '@/pages/home/components/ServiceCard';
 import VacancyMap from '@/pages/home/components/VacancyMap';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
 import './VacancySearch.css';
 import styles from './VacancySearch.module.css';
 
@@ -182,7 +184,7 @@ export default function VacancySearch() {
       </section>
       <div className={`b-row ${styles.resultsHeading}`}>
         <h2>
-          예약 가능한 빈자리 <span className="b-badge">{results.length}건</span>
+          예약 가능한 빈자리 <Badge>{results.length}건</Badge>
         </h2>
         <Filter
           label="보기 방식"
@@ -202,9 +204,9 @@ export default function VacancySearch() {
         <div className="b-empty b-panel" role="alert">
           <h2>빈자리를 불러오지 못했어요</h2>
           <p>잠시 후 다시 시도해 주세요.</p>
-          <button className="b-button b-primary" onClick={() => setMode('정상 결과 (6건)')}>
+          <Button variant="primary" onClick={() => setMode('정상 결과 (6건)')}>
             다시 시도
-          </button>
+          </Button>
         </div>
       ) : results.length ? (
         <div className={mapView ? 'b-vacancy-map-layout' : ''}>
@@ -219,9 +221,9 @@ export default function VacancySearch() {
         <div className="b-empty b-panel">
           <h2>조건에 맞는 빈자리가 없어요</h2>
           <p>다른 날짜나 지역을 선택해 보세요.</p>
-          <button className="b-button b-primary" onClick={reset}>
+          <Button variant="primary" onClick={reset}>
             필터 초기화
-          </button>
+          </Button>
         </div>
       )}
       <div className="b-preview b-row">
