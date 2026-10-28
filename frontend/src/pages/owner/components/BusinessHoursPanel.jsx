@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useScheduleStore } from '@/store/useScheduleStore';
 import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Alert from '@/components/common/Alert';
 
 const DAY_LABELS = {
   MON: '월',
@@ -74,7 +76,7 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
   };
 
   return (
-    <section className="b-panel b-pad">
+    <Panel as="section" padded>
       <div className="b-row b-panel-heading">
         <h2>요일별 영업시간</h2>
         <small className="b-muted">30분 단위 · 자정을 넘기는 영업은 지원하지 않습니다</small>
@@ -136,17 +138,18 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
           </table>
         </div>
         {message && (
-          <p
-            className={message.type === 'success' ? 'b-success' : 'b-error'}
+          <Alert
+            as="p"
+            tone={message.type === 'success' ? 'success' : 'error'}
             role={message.type === 'success' ? 'status' : 'alert'}
           >
             {message.text}
-          </p>
+          </Alert>
         )}
         <Button variant="primary" disabled={isSaving}>
           영업시간 저장
         </Button>
       </form>
-    </section>
+    </Panel>
   );
 }

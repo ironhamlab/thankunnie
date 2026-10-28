@@ -5,6 +5,10 @@ import { DEMO_DATE, SERVICES, finish, minutes, money, overlaps } from '@/utils/d
 import { useDesignStore } from '@/store/useDesignStore';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Notice from '@/components/common/Notice';
+import EmptyState from '@/components/common/EmptyState';
+import Alert from '@/components/common/Alert';
 import styles from './ReservationPage.module.css';
 
 const dayLabel = (isClosed, isDemoDate) => {
@@ -29,10 +33,10 @@ export default function ReservationPage() {
   const [loading, setLoading] = useState(false);
   if (!service)
     return (
-      <div className="b-empty">
+      <EmptyState>
         <h1>시술을 찾을 수 없어요</h1>
         <Link to={ROUTES.HOME}>빈자리 탐색으로</Link>
-      </div>
+      </EmptyState>
     );
   const duration = 90;
   const blocked = (value) =>
@@ -101,7 +105,7 @@ export default function ReservationPage() {
       </section>
       <div className="b-columns">
         <div className="b-stack">
-          <div className={`b-panel ${styles.steps}`}>
+          <Panel className={styles.steps}>
             {['1. 시술 확인', '2. 날짜·시간 선택', '3. 임시 확보 (5분)', '4. 예약금 결제'].map(
               (step, i) => (
                 <span key={step} className={i === 1 ? 'is-current' : ''}>
@@ -109,8 +113,8 @@ export default function ReservationPage() {
                 </span>
               ),
             )}
-          </div>
-          <section className="b-panel b-pad">
+          </Panel>
+          <Panel as="section" padded>
             <div className="b-row b-panel-heading">
               <h2>날짜 선택</h2>
               <div className="b-flex">
@@ -162,15 +166,15 @@ export default function ReservationPage() {
             <p className="b-help">
               선택한 날짜: <strong className="b-pink">{date}</strong> · 시연 기준 2025년 10월
             </p>
-          </section>
-          <section className="b-panel b-pad">
+          </Panel>
+          <Panel as="section" padded>
             <div className="b-row b-panel-heading">
               <h2>시작 시간 선택 (30분 단위)</h2>
               <Badge>매장 운영 10:00 ~ 20:00</Badge>
             </div>
-            <div className="b-notice">
+            <Notice>
               실시간 충돌 검증 룰 적용 중 · 시술 종료 시각은 {duration}분 뒤로 자동 계산됩니다.
-            </div>
+            </Notice>
             {['오전 (10:00 ~ 12:00)', '오후 (12:00 ~ 20:00)'].map((label, group) => (
               <div key={label} className={styles.timeGroup}>
                 <p>{label}</p>
@@ -196,7 +200,7 @@ export default function ReservationPage() {
                 </div>
               </div>
             ))}
-          </section>
+          </Panel>
           <div className="b-preview">
             <strong>화면 상태 시뮬레이터 (MVP 데모 인터랙션)</strong>
             <div className="b-options">
@@ -219,7 +223,7 @@ export default function ReservationPage() {
             </div>
           </div>
         </div>
-        <aside className="b-panel b-pad b-summary">
+        <Panel as="aside" padded className="b-summary">
           <div className="b-eyebrow">GENERAL RESERVATION</div>
           <h2>선택 요약</h2>
           <dl className="b-details">
@@ -255,19 +259,19 @@ export default function ReservationPage() {
               <dt>정규 시술 금액 (정상가)</dt>
               <dd>{money(service.original)}</dd>
             </div>
-            <div className="b-notice">
+            <Notice>
               <dt>지금 결제할 예약금 (20%)</dt>
               <dd className="b-pink">{money(service.original * 0.2)}</dd>
-            </div>
+            </Notice>
             <div>
               <dt>매장 방문 현장 잔금 (80%)</dt>
               <dd>{money(service.original * 0.8)}</dd>
             </div>
           </dl>
           {error && (
-            <p className="b-error" role="alert">
+            <Alert as="p" tone="error" role="alert">
               {error}
-            </p>
+            </Alert>
           )}
           <Button
             variant="primary"
@@ -278,7 +282,7 @@ export default function ReservationPage() {
             {loading || mode === 'loading' ? '실시간 검증 중…' : '다음 (예약 가능 여부 확인)'}
           </Button>
           <p className="b-help">매장 사정 취소 시 100% 모의 환불 및 보상 정책 적용</p>
-        </aside>
+        </Panel>
       </div>
       <p className="b-help">
         타임세일 시간으로 빠르게 예약하려면{' '}

@@ -3,6 +3,7 @@ import { SERVICES, finish, money } from '@/utils/demoData';
 import { CANCEL_REASONS, quoteRefund } from '@/utils/demoRefundPolicy';
 import Dialog from '@/components/common/Dialog';
 import Button from '@/components/common/Button';
+import Alert from '@/components/common/Alert';
 import styles from './CancelRefundDialog.module.css';
 
 /**
@@ -40,9 +41,9 @@ export default function CancelRefundDialog({ booking, onClose, onConfirm }) {
         </div>
 
         {isNoRefund && (
-          <p className="b-error" role="alert">
+          <Alert as="p" tone="error" role="alert">
             이용 당일 취소는 예약금이 환불되지 않습니다.
-          </p>
+          </Alert>
         )}
 
         <fieldset className={styles.reasons}>

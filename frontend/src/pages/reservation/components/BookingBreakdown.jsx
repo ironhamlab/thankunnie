@@ -1,5 +1,6 @@
 import { money } from '@/utils/demoData';
 import Badge from '@/components/common/Badge';
+import Notice from '@/components/common/Notice';
 import styles from './BookingBreakdown.module.css';
 
 export default function BookingBreakdown({ service, booking, compact = false }) {
@@ -38,11 +39,11 @@ export default function BookingBreakdown({ service, booking, compact = false }) 
           <strong className="b-pink">{money(booking.deposit)}</strong>
           <small>실제 과금 없는 모의 테스트 승인 (20%)</small>
         </div>
-        <div className="b-notice">
+        <Notice>
           <small>매장 방문 현장 잔금</small>
           <strong>{money(booking.price - booking.deposit)}</strong>
           <small>시술 종료 후 매장에서 직접 결제</small>
-        </div>
+        </Notice>
       </div>
     </section>
   );

@@ -3,6 +3,8 @@ import { useDesignStore } from '@/store/useDesignStore';
 import Asset from '@/components/common/Asset';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Notice from '@/components/common/Notice';
 import styles from './ShopPage.module.css';
 
 export default function ShopPage() {
@@ -26,11 +28,11 @@ export default function ShopPage() {
   };
   return (
     <div className="b-stack">
-      <div className="b-notice">
+      <Notice>
         <strong>본 환경은 사장님 전용 테스트 모드이며, 모의 결제 기반으로 운영됩니다.</strong>
         <p>실제 고객 예약금 결제 및 정산 시스템은 영업 인증 완료 후 활성화됩니다.</p>
-      </div>
-      <div className="b-panel b-pad b-row">
+      </Notice>
+      <Panel padded className="b-row">
         <strong>화면 상태 시연 컨트롤러</strong>
         <div className="b-options">
           {[
@@ -62,10 +64,10 @@ export default function ShopPage() {
             </button>
           ))}
         </div>
-      </div>
+      </Panel>
       <form onSubmit={submit} className="b-columns">
         <div className="b-stack">
-          <section className="b-panel b-pad">
+          <Panel as="section" padded>
             <h2 className="b-panel-heading">
               매장 기본 정보 <small className="b-pink">* 필수 입력 항목</small>
             </h2>
@@ -103,8 +105,8 @@ export default function ShopPage() {
                 />
               </label>
             </div>
-          </section>
-          <section className="b-panel b-pad">
+          </Panel>
+          <Panel as="section" padded>
             <h2 className="b-panel-heading">운영 시간 및 예약 정책 요약</h2>
             <div className="b-three-grid">
               {[
@@ -112,15 +114,15 @@ export default function ShopPage() {
                 ['빈자리 예약 마감 기준', '시술 시작 30분 전까지', '실시간 자동 확정'],
                 ['노쇼 방지 예약금', '기본 시술가의 20%', '현장 결제 시 차감'],
               ].map(([label, value, note]) => (
-                <div key={label} className="b-notice">
+                <Notice key={label}>
                   <small>{label}</small>
                   <strong>{value}</strong>
                   <small className="b-pink">{note}</small>
-                </div>
+                </Notice>
               ))}
             </div>
-          </section>
-          <div className="b-panel b-pad b-row">
+          </Panel>
+          <Panel padded className="b-row">
             <span className={scenario === 'error' ? 'b-error' : 'b-muted'} role="status">
               {status || '모든 변경사항이 안전하게 보관되어 있습니다.'}
             </span>
@@ -138,10 +140,10 @@ export default function ShopPage() {
                 변경사항 저장
               </Button>
             </div>
-          </div>
+          </Panel>
         </div>
         <aside className="b-stack">
-          <section className="b-panel b-pad">
+          <Panel as="section" padded>
             <h2 className="b-panel-heading">
               매장 대표 이미지 <Badge tone="neutral">자동 매칭</Badge>
             </h2>
@@ -154,8 +156,8 @@ export default function ShopPage() {
               alt="프리미엄 네일 살롱 대표 이미지"
             />
             <p className="b-help">공식 테마 이미지 · 네일 살롱 A형</p>
-          </section>
-          <section className="b-panel b-pad">
+          </Panel>
+          <Panel as="section" padded>
             <h2 className="b-panel-heading">고객 앱 카드 노출 미리보기</h2>
             <Asset className={styles.image} name="12-2061-1.png" alt="네일 시술 예시" />
             <h2>{form.name || '매장명을 입력해 주세요'}</h2>
@@ -164,8 +166,8 @@ export default function ShopPage() {
               <strong className="b-pink">35% 42,000원</strong>
               <del className="b-muted">65,000원</del>
             </div>
-            <div className="b-notice">수정된 내용은 저장 후 데모 화면에 반영됩니다.</div>
-          </section>
+            <Notice>수정된 내용은 저장 후 데모 화면에 반영됩니다.</Notice>
+          </Panel>
         </aside>
       </form>
     </div>

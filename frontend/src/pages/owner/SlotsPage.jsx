@@ -7,6 +7,10 @@ import Dialog from '@/components/common/Dialog';
 import useSlotTreatments from '@/hooks/useSlotTreatments';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Notice from '@/components/common/Notice';
+import EmptyState from '@/components/common/EmptyState';
+import Alert from '@/components/common/Alert';
 import styles from './SlotsPage.module.css';
 
 export default function SlotsPage() {
@@ -87,13 +91,13 @@ export default function SlotsPage() {
           + 신규 빈자리 등록
         </Button>
       </div>
-      <div className="b-notice">
+      <Notice>
         <p>※ 확정된 예약은 빈자리 수정이나 판매 중지 동작으로 취소되지 않습니다.</p>
         <small>
           실제 결제와 자동 재공개는 백엔드 연결 후 제공됩니다. 현재 데모 상태만 변경됩니다.
         </small>
-      </div>
-      <div className={`b-panel b-pad ${styles.filters}`}>
+      </Notice>
+      <Panel padded className={styles.filters}>
         <label>
           일정 선택
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -129,8 +133,8 @@ export default function SlotsPage() {
         >
           필터 초기화
         </Button>
-      </div>
-      <section className="b-panel b-table-panel">
+      </Panel>
+      <Panel as="section" className="b-table-panel">
         <div className="b-pad">
           <h2>
             등록된 빈자리 목록 <small className="b-muted">(총 {list.length}개 타임슬롯)</small>
@@ -213,12 +217,12 @@ export default function SlotsPage() {
             </tbody>
           </table>
         </div>
-        {!list.length && <p className="b-empty">조건에 맞는 빈자리가 없습니다.</p>}
-      </section>
+        {!list.length && <EmptyState as="p">조건에 맞는 빈자리가 없습니다.</EmptyState>}
+      </Panel>
       {notice && (
-        <p className="b-success" role="status">
+        <Alert as="p" tone="success" role="status">
           {notice}
-        </p>
+        </Alert>
       )}
       {draft && (
         <Dialog title="빈자리 등록 및 실시간 겹침 검사" onClose={close}>
@@ -293,18 +297,18 @@ export default function SlotsPage() {
                 onChange={(e) => update('discount', e.target.value)}
               />
             </label>
-            <div className="b-notice">
+            <Notice>
               <small>종료 시각 (자동)</small>
               <strong>{finish(draft.time || '00:00', duration || 60)}</strong>
               <small>
                 현재 적용 가격{' '}
                 {money(Math.round((menu?.original || 0) * (1 - Number(draft.discount) / 100)))}
               </small>
-            </div>
+            </Notice>
             {error && (
-              <p role="alert" className="b-error b-span-two">
+              <Alert as="p" tone="error" className="b-span-two" role="alert">
                 {error}
-              </p>
+              </Alert>
             )}
             <Button
               variant="primary"

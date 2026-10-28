@@ -7,6 +7,10 @@ import Asset from '@/components/common/Asset';
 import Dialog from '@/components/common/Dialog';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Notice from '@/components/common/Notice';
+import EmptyState from '@/components/common/EmptyState';
+import Alert from '@/components/common/Alert';
 import styles from './CustomerProfilePage.module.css';
 
 const tabs = [
@@ -47,11 +51,11 @@ export default function CustomerProfilePage() {
   };
   return (
     <div className={`b-container b-page ${styles.root}`}>
-      <div className={`b-notice ${styles.ribbon}`}>
+      <Notice className={styles.ribbon}>
         <strong>MVP 모의 결제 데모:</strong> 본 마이페이지에서 표시되는 내역은 가상 시뮬레이션
         데이터입니다.
-      </div>
-      <section className={`b-panel b-pad ${styles.summary}`}>
+      </Notice>
+      <Panel as="section" padded className={styles.summary}>
         <div className="b-row">
           <div className="b-flex">
             <div className={styles.avatar}>
@@ -98,9 +102,9 @@ export default function CustomerProfilePage() {
             </div>
           ))}
         </div>
-      </section>
+      </Panel>
       {nearest && (
-        <section className={`b-panel b-pad ${styles.nearest}`}>
+        <Panel as="section" padded className={styles.nearest}>
           <div>
             <div className="b-flex">
               <Badge>
@@ -128,9 +132,9 @@ export default function CustomerProfilePage() {
               길찾기
             </Button>
           </div>
-        </section>
+        </Panel>
       )}
-      <nav className={`b-panel ${styles.tabs}`} aria-label="마이페이지 메뉴">
+      <Panel as="nav" className={styles.tabs} aria-label="마이페이지 메뉴">
         {tabs.map((label) => (
           <button
             key={label}
@@ -141,7 +145,7 @@ export default function CustomerProfilePage() {
             {label}
           </button>
         ))}
-      </nav>
+      </Panel>
       <section aria-label={tab} className={styles.tabPanel}>
         <div className="b-row b-panel-heading">
           <h2>{tab === tabs[0] ? '예약 목록' : tab}</h2>
@@ -202,28 +206,28 @@ export default function CustomerProfilePage() {
                 </article>
               </>
             ) : (
-              <div className="b-panel b-empty">
+              <EmptyState className="b-panel">
                 <h2>예약 내역이 없어요</h2>
                 <Button as={Link} variant="primary" to={ROUTES.HOME}>
                   지금 빈자리 찾아보기
                 </Button>
-              </div>
+              </EmptyState>
             )}
           </div>
         )}
         {tab === tabs[1] && (
-          <div className="b-panel b-pad">
+          <Panel padded>
             <Badge>검토 중</Badge>
             <h2>주니어 네일 모델 신청</h2>
             <p>살롱 드 르네 · 2025.10.25 · 재료비 시술 · 신청 내역 예시</p>
             <p className="b-help">실제 신청과 매장 연락은 API 연결 후 제공됩니다.</p>
-          </div>
+          </Panel>
         )}
         {tab === tabs[2] && (
           <div className="b-stack">
             {showFavorites && favorites.length ? (
               SERVICES.filter((s) => favorites.includes(s.id)).map((s) => (
-                <article className="b-panel b-pad b-row" key={s.id}>
+                <Panel as="article" padded className="b-row" key={s.id}>
                   <div className="b-flex">
                     <Asset name={s.image} alt={s.shop} className="b-thumb" />
                     <div>
@@ -238,19 +242,21 @@ export default function CustomerProfilePage() {
                     </div>
                   </div>
                   <Button onClick={() => toggleFavorite(s.id)}>찜 해제</Button>
-                </article>
+                </Panel>
               ))
             ) : (
-              <div className="b-panel b-empty">
+              <EmptyState className="b-panel">
                 <h2>찜한 매장이 없어요</h2>
                 <Link to={ROUTES.HOME}>마음에 드는 매장을 찾아보세요</Link>
-              </div>
+              </EmptyState>
             )}
           </div>
         )}
         {tab === tabs[3] && (
-          <form
-            className="b-panel b-pad b-stack"
+          <Panel
+            as="form"
+            padded
+            className="b-stack"
             onSubmit={(e) => {
               e.preventDefault();
               setNotice('데모 알림 조건을 저장했습니다. 실제 알림은 발송되지 않습니다.');
@@ -274,21 +280,21 @@ export default function CustomerProfilePage() {
               />
             </label>
             <Button variant="primary">알림 조건 저장</Button>
-          </form>
+          </Panel>
         )}
         {tab === tabs[4] && (
           <div className="b-stack">
-            <div className="b-notice">
+            <Notice>
               <h3>예약 안내</h3>
               <p>방문 예정 예약은 내 예약 상세에서 확인할 수 있습니다.</p>
-            </div>
-            <div className="b-notice">
+            </Notice>
+            <Notice>
               <h3>빈자리 타임세일</h3>
               <p>
                 찜한 매장의 새 빈자리를 탐색해 보세요. 알림 예시이며 실제 메시지는 발송되지
                 않습니다.
               </p>
-            </div>
+            </Notice>
           </div>
         )}
       </section>
@@ -319,9 +325,9 @@ export default function CustomerProfilePage() {
         </div>
       </div>
       {notice && (
-        <p className="b-success" role="status">
+        <Alert as="p" tone="success" role="status">
           {notice}
-        </p>
+        </Alert>
       )}
       {dialog && (
         <Dialog

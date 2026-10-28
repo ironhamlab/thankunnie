@@ -9,6 +9,9 @@ import ReservationDetailPanel from '@/components/reservation/ReservationDetailPa
 import ReservationPagination from '@/components/reservation/ReservationPagination';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Notice from '@/components/common/Notice';
+import EmptyState from '@/components/common/EmptyState';
 
 // 탭별 조회 조건. 날짜는 시술 시작일 기준이다
 const TABS = [
@@ -98,13 +101,13 @@ export default function MyReservationsPage() {
       {listStatus === 'loading' && <p role="status">예약을 불러오는 중입니다.</p>}
       {listStatus === 'failed' && <p role="alert">{listError.message}</p>}
       {listStatus === 'succeeded' && !reservations.length && (
-        <div className="b-panel b-empty">
+        <EmptyState className="b-panel">
           <h2>예약 내역이 없어요</h2>
           <p>실시간 빈자리를 찾아보세요.</p>
           <Button as={Link} variant="primary" to={ROUTES.HOME}>
             빈자리 탐색하기
           </Button>
-        </div>
+        </EmptyState>
       )}
       {listStatus === 'succeeded' && reservations.length > 0 && (
         <div className="b-bookings-grid">
@@ -112,10 +115,11 @@ export default function MyReservationsPage() {
             {reservations.map((item) => {
               const status = reservationStatusOf(item.status);
               return (
-                <button
+                <Panel
+                  as="button"
+                  className={`b-booking-card ${activeId === item.reservationId ? 'is-active' : ''}`}
                   key={item.reservationId}
                   type="button"
-                  className={`b-panel b-booking-card ${activeId === item.reservationId ? 'is-active' : ''}`}
                   onClick={() => setSelectedId(item.reservationId)}
                 >
                   <div className="b-flex">
@@ -127,12 +131,12 @@ export default function MyReservationsPage() {
                   <small>{item.shopName}</small>
                   <h3>{item.treatmentName}</h3>
                   <p>{formatReservationTime(item.startsAt, item.endsAt)}</p>
-                  <div className="b-notice b-row">
+                  <Notice className="b-row">
                     <span>예약금 {formatMoney(item.deposit)}</span>
                     <span>현장 잔금 {formatMoney(item.balance)}</span>
-                  </div>
+                  </Notice>
                   <span className="b-pink">예약 상세 보기 →</span>
-                </button>
+                </Panel>
               );
             })}
             <ReservationPagination page={page} pageInfo={pageInfo} onPageChange={setPage} />

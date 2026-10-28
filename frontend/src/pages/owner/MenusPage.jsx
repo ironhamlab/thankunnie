@@ -4,6 +4,10 @@ import { money } from '@/utils/demoData';
 import TreatmentForm from '@/pages/owner/components/TreatmentForm';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Notice from '@/components/common/Notice';
+import EmptyState from '@/components/common/EmptyState';
+import Alert from '@/components/common/Alert';
 
 export default function MenusPage() {
   const treatments = useTreatmentStore((state) => state.treatments);
@@ -70,13 +74,13 @@ export default function MenusPage() {
           + 신규 시술 등록
         </Button>
       </div>
-      <div className="b-notice">
+      <Notice>
         <strong>시술 정보 변경 유의사항</strong>
         <p>
           비활성 시술은 신규 빈자리 선택에서 제외됩니다. 기존 빈자리와 예약 이력은 유지됩니다. 소요
           시간은 30분 배수로 입력해 주세요.
         </p>
-      </div>
+      </Notice>
       {(status === 'idle' || status === 'loading') && (
         <p role="status">시술 메뉴를 불러오는 중입니다.</p>
       )}
@@ -93,18 +97,18 @@ export default function MenusPage() {
               선택 가능한 카테고리가 없습니다. 관리자에게 카테고리 등록을 요청해 주세요.
             </p>
           )}
-          <section className="b-panel b-table-panel" aria-busy={isSaving}>
+          <Panel as="section" className="b-table-panel" aria-busy={isSaving}>
             <div className="b-row b-pad">
               <h2>시술 목록</h2>
-              <Badge tone="green">
+              <Badge tone="success">
                 활성 {treatments.filter((item) => item.status === 'ACTIVE').length}건
               </Badge>
             </div>
             {!treatments.length ? (
-              <div className="b-empty">
+              <EmptyState>
                 <h2>등록된 시술이 없어요</h2>
                 <p>신규 시술을 등록해 주세요.</p>
-              </div>
+              </EmptyState>
             ) : (
               <div className="b-table-scroll">
                 <table>
@@ -151,13 +155,13 @@ export default function MenusPage() {
                 </table>
               </div>
             )}
-          </section>
+          </Panel>
         </>
       )}
       {notice && (
-        <p className="b-success" role="status">
+        <Alert as="p" tone="success" role="status">
           {notice}
-        </p>
+        </Alert>
       )}
       {!edit && actionError && <p role="alert">{actionError.message}</p>}
       {edit && (

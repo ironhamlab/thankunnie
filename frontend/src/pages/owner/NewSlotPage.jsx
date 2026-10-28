@@ -6,6 +6,9 @@ import { useDesignStore } from '@/store/useDesignStore';
 import useSlotTreatments from '@/hooks/useSlotTreatments';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Notice from '@/components/common/Notice';
+import Alert from '@/components/common/Alert';
 import styles from './NewSlotPage.module.css';
 
 export default function NewSlotPage() {
@@ -62,7 +65,7 @@ export default function NewSlotPage() {
             등록합니다.
           </p>
         </div>
-        <div className={`b-panel b-options ${styles.scenarios}`}>
+        <Panel className={`b-options ${styles.scenarios}`}>
           <strong>검사 시뮬레이션:</strong>
           <button
             className={scenario === 'normal' ? 'is-selected' : ''}
@@ -76,11 +79,11 @@ export default function NewSlotPage() {
           >
             일정 중복 충돌 오류 예시
           </button>
-        </div>
+        </Panel>
       </div>
       <form className="b-columns" onSubmit={submit}>
         <div className="b-stack">
-          <section className="b-panel b-pad">
+          <Panel as="section" padded>
             <div className="b-row b-panel-heading">
               <h2>
                 <span className={styles.stepNumber}>1</span> 시술 메뉴 선택
@@ -135,11 +138,11 @@ export default function NewSlotPage() {
                 선택 가능한 활성 시술이 없습니다. 시술 메뉴에서 등록하거나 활성화해 주세요.
               </p>
             )}
-            <div className="b-notice b-help">
+            <Notice className="b-help">
               비활성 시술은 선택할 수 없습니다. 시술 관리 메뉴에서 활성화한 뒤 등록해 주세요.
-            </div>
-          </section>
-          <section className="b-panel b-pad">
+            </Notice>
+          </Panel>
+          <Panel as="section" padded>
             <h2 className="b-panel-heading">
               <span className={styles.stepNumber}>2</span> 일정 및 시간대 설정
             </h2>
@@ -198,7 +201,7 @@ export default function NewSlotPage() {
                 </button>
               ))}
             </div>
-          </section>
+          </Panel>
           <div
             className={conflict ? `${styles.validation} b-error` : `${styles.validation} b-success`}
             role="status"
@@ -216,7 +219,7 @@ export default function NewSlotPage() {
           </div>
         </div>
         <aside className={`b-stack ${styles.summary}`}>
-          <section className="b-panel b-pad">
+          <Panel as="section" padded>
             <div className="b-row b-panel-heading">
               <h2>♧ 타임세일 자동 정산 미리보기</h2>
               <Badge>초임박 특가</Badge>
@@ -253,16 +256,16 @@ export default function NewSlotPage() {
                 <dd>{money(price - Math.round(price * 0.2))}</dd>
               </div>
             </dl>
-            <div className="b-notice b-help">
+            <Notice className="b-help">
               최종 할인율과 결제 금액은 실제 고객 예약 확정 시점에 결정됩니다. 이 화면은 모의 정책
               예시입니다.
-            </div>
-          </section>
-          <section className="b-panel b-pad">
+            </Notice>
+          </Panel>
+          <Panel as="section" padded>
             {error && (
-              <p className="b-error" role="alert">
+              <Alert as="p" tone="error" role="alert">
                 {error}
-              </p>
+              </Alert>
             )}
             <Button
               variant="primary"
@@ -279,7 +282,7 @@ export default function NewSlotPage() {
               등록 시 데모 빈자리 목록에서 바로 확인할 수 있습니다. 실제 고객 알림은 발송되지
               않습니다.
             </p>
-          </section>
+          </Panel>
         </aside>
       </form>
     </div>

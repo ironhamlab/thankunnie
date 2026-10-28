@@ -9,6 +9,8 @@ import {
 import { formatDateTime, formatMoney, formatReservationTime } from '@/utils/reservationFormat';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Notice from '@/components/common/Notice';
 
 /**
  * 예약 상세 (사장님 예약 현황·고객 내 예약 공용). 사장님은 예약자 연락처를, 고객은 매장을 본다.
@@ -21,16 +23,16 @@ export default function ReservationDetailPanel({ viewer, cancelPath }) {
 
   if (detailStatus === 'loading') {
     return (
-      <section className="b-panel b-pad" role="status">
+      <Panel as="section" padded role="status">
         예약 상세를 불러오는 중입니다.
-      </section>
+      </Panel>
     );
   }
   if (detailStatus === 'failed') {
     return (
-      <section className="b-panel b-pad" role="alert">
+      <Panel as="section" padded role="alert">
         {detailError.message}
-      </section>
+      </Panel>
     );
   }
   if (!detail) {
@@ -41,7 +43,7 @@ export default function ReservationDetailPanel({ viewer, cancelPath }) {
   const status = reservationStatusOf(summary.status);
 
   return (
-    <section className="b-panel b-pad b-stack">
+    <Panel as="section" padded className="b-stack">
       <div className="b-row b-panel-heading">
         <div>
           <small className="b-muted">예약번호 {summary.reservationId}</small>
@@ -51,28 +53,28 @@ export default function ReservationDetailPanel({ viewer, cancelPath }) {
       </div>
 
       {viewer === 'owner' ? (
-        <div className="b-notice">
+        <Notice>
           <h3>예약자</h3>
           <div className="b-row">
             <strong>{summary.customerName}</strong>
             <span>{detail.customerPhone}</span>
           </div>
           <small>요청사항: {detail.customerRequest || '없음'}</small>
-        </div>
+        </Notice>
       ) : (
-        <div className="b-notice">
+        <Notice>
           <h3>매장</h3>
           <strong>{summary.shopName}</strong>
           <small>요청사항: {detail.customerRequest || '없음'}</small>
-        </div>
+        </Notice>
       )}
 
-      <div className="b-notice">
+      <Notice>
         <h3>시술</h3>
         <strong>{summary.treatmentName}</strong>
         <p className="b-pink">{formatReservationTime(summary.startsAt, summary.endsAt)}</p>
         <small>예약일 {formatDateTime(detail.reservedAt)}</small>
-      </div>
+      </Notice>
 
       <dl className="b-details">
         <div>
@@ -145,6 +147,6 @@ export default function ReservationDetailPanel({ viewer, cancelPath }) {
           취소하기
         </Button>
       )}
-    </section>
+    </Panel>
   );
 }

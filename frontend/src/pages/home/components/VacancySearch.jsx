@@ -7,6 +7,7 @@ import ServiceCard from '@/pages/home/components/ServiceCard';
 import VacancyMap from '@/pages/home/components/VacancyMap';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import EmptyState from '@/components/common/EmptyState';
 import './VacancySearch.css';
 import styles from './VacancySearch.module.css';
 
@@ -201,13 +202,13 @@ export default function VacancySearch() {
           ))}
         </div>
       ) : mode === '조회 오류' ? (
-        <div className="b-empty b-panel" role="alert">
+        <EmptyState className="b-panel" role="alert">
           <h2>빈자리를 불러오지 못했어요</h2>
           <p>잠시 후 다시 시도해 주세요.</p>
           <Button variant="primary" onClick={() => setMode('정상 결과 (6건)')}>
             다시 시도
           </Button>
-        </div>
+        </EmptyState>
       ) : results.length ? (
         <div className={mapView ? 'b-vacancy-map-layout' : ''}>
           <div className={styles.cardGrid}>
@@ -218,13 +219,13 @@ export default function VacancySearch() {
           {mapView && <VacancyMap services={results} />}
         </div>
       ) : (
-        <div className="b-empty b-panel">
+        <EmptyState className="b-panel">
           <h2>조건에 맞는 빈자리가 없어요</h2>
           <p>다른 날짜나 지역을 선택해 보세요.</p>
           <Button variant="primary" onClick={reset}>
             필터 초기화
           </Button>
-        </div>
+        </EmptyState>
       )}
       <div className="b-preview b-row">
         <div className="b-flex">

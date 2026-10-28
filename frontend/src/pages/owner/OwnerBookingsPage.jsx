@@ -9,6 +9,8 @@ import ReservationDetailPanel from '@/components/reservation/ReservationDetailPa
 import ReservationPagination from '@/components/reservation/ReservationPagination';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import EmptyState from '@/components/common/EmptyState';
 import styles from './OwnerBookingsPage.module.css';
 
 // 상태를 고르지 않으면 서버가 점유 만료(EXPIRED)를 뺀 전체를 준다
@@ -86,7 +88,7 @@ export default function OwnerBookingsPage() {
         </div>
       </div>
 
-      <div className="b-panel b-pad b-stack">
+      <Panel padded className="b-stack">
         <div className="b-flex">
           <label>
             시작일부터{' '}
@@ -131,10 +133,10 @@ export default function OwnerBookingsPage() {
             </button>
           ))}
         </div>
-      </div>
+      </Panel>
 
       <div className={styles.grid}>
-        <section className="b-panel b-table-panel">
+        <Panel as="section" className="b-table-panel">
           <div className="b-row b-pad">
             <h2>예약 목록</h2>
             <small>{pageInfo.totalElements}건</small>
@@ -187,11 +189,11 @@ export default function OwnerBookingsPage() {
                   </tbody>
                 </table>
               </div>
-              {!reservations.length && <p className="b-empty">조건에 맞는 예약이 없습니다.</p>}
+              {!reservations.length && <EmptyState as="p">조건에 맞는 예약이 없습니다.</EmptyState>}
               <ReservationPagination page={page} pageInfo={pageInfo} onPageChange={setPage} />
             </>
           )}
-        </section>
+        </Panel>
         <aside className="b-stack">
           {listStatus === 'succeeded' && (
             <ReservationDetailPanel viewer="owner" cancelPath={cancelPath} />

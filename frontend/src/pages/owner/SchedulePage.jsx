@@ -7,6 +7,9 @@ import BusinessHoursPanel from '@/pages/owner/components/BusinessHoursPanel';
 import ScheduleExceptionDialog from '@/pages/owner/components/ScheduleExceptionDialog';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import EmptyState from '@/components/common/EmptyState';
+import Alert from '@/components/common/Alert';
 
 // 열기·닫기는 오늘 포함 60일 안에서만 등록할 수 있다.
 const BOOKING_MAX_DAYS = 60;
@@ -93,17 +96,18 @@ export default function SchedulePage() {
       {status === 'succeeded' && (
         <>
           {refreshFailed && (
-            <p className="b-error" role="alert">
+            <Alert as="p" tone="error" role="alert">
               변경은 완료됐지만 목록을 새로 불러오지 못했습니다. 페이지를 새로고침해 주세요.
-            </p>
+            </Alert>
           )}
           {notice && (
-            <p
-              className={notice.type === 'success' ? 'b-success' : 'b-error'}
+            <Alert
+              as="p"
+              tone={notice.type === 'success' ? 'success' : 'error'}
               role={notice.type === 'success' ? 'status' : 'alert'}
             >
               {notice.text}
-            </p>
+            </Alert>
           )}
           <div className="b-columns">
             <BusinessHoursPanel
@@ -118,7 +122,7 @@ export default function SchedulePage() {
               reloadKey={reloadKey}
             />
           </div>
-          <section className="b-panel b-table-panel">
+          <Panel as="section" className="b-table-panel">
             <div className="b-pad">
               <h2>
                 시간대 열기·닫기{' '}
@@ -179,8 +183,10 @@ export default function SchedulePage() {
                 </tbody>
               </table>
             </div>
-            {!exceptions.length && <p className="b-empty">등록된 열기·닫기 일정이 없습니다.</p>}
-          </section>
+            {!exceptions.length && (
+              <EmptyState as="p">등록된 열기·닫기 일정이 없습니다.</EmptyState>
+            )}
+          </Panel>
         </>
       )}
       {status === 'succeeded' && (editing || isCreating) && (

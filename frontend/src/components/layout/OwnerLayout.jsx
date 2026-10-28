@@ -4,6 +4,7 @@ import { ROUTES } from '@/constants/routes';
 import { useDesignStore } from '@/store/useDesignStore';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import EmptyState from '@/components/common/EmptyState';
 import OwnerSidebar from './OwnerSidebar';
 import styles from './OwnerLayout.module.css';
 
@@ -32,13 +33,7 @@ export default function OwnerLayout() {
             </div>
           </header>
           <main className={styles.main} key={location.pathname}>
-            <Suspense
-              fallback={
-                <div className="b-empty" role="status">
-                  화면을 불러오는 중입니다.
-                </div>
-              }
-            >
+            <Suspense fallback={<EmptyState role="status">화면을 불러오는 중입니다.</EmptyState>}>
               <Outlet />
             </Suspense>
           </main>

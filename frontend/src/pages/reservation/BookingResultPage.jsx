@@ -6,6 +6,10 @@ import { useDesignStore } from '@/store/useDesignStore';
 import BookingBreakdown from '@/pages/reservation/components/BookingBreakdown';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Notice from '@/components/common/Notice';
+import EmptyState from '@/components/common/EmptyState';
+import Alert from '@/components/common/Alert';
 import styles from './BookingResultPage.module.css';
 
 const scenarios = [
@@ -24,10 +28,10 @@ export default function BookingResultPage() {
   const isActualResult = Boolean(location.state?.confirmed);
   if (!booking)
     return (
-      <div className="b-empty">
+      <EmptyState>
         <h1>확인할 예약이 없습니다</h1>
         <Link to={ROUTES.HOME}>빈자리 탐색</Link>
-      </div>
+      </EmptyState>
     );
   const service = SERVICES.find((s) => s.id === booking.serviceId);
   const success = scenario === 'success';
@@ -39,10 +43,10 @@ export default function BookingResultPage() {
   const bookingStatusLabel = booking.status === 'cancelled' ? '고객 취소' : '예약 확정';
   return (
     <div className={`b-container b-page ${styles.root}`}>
-      <div className="b-notice b-demo-disclaimer">
+      <Notice className="b-demo-disclaimer">
         본 화면은 MVP 모의 결제 환경입니다. 실제 신용카드 과금 및 금융 승인이 발생하지 않습니다.
-      </div>
-      <section className={`b-panel b-pad b-row ${styles.controls}`}>
+      </Notice>
+      <Panel as="section" padded className={`b-row ${styles.controls}`}>
         <strong>시연용 화면 상태 컨트롤:</strong>
         <div className="b-options">
           {scenarios.map(([value, label]) => (
@@ -56,7 +60,7 @@ export default function BookingResultPage() {
             </button>
           ))}
         </div>
-      </section>
+      </Panel>
       <section className={`b-panel ${styles.card} ` + (!success ? styles.problem : '')}>
         <header className={styles.header}>
           <div className={styles.icon}>{success ? '✓' : '!'}</div>
@@ -76,7 +80,7 @@ export default function BookingResultPage() {
         </header>
         {success ? (
           <>
-            <div className={`b-notice ${styles.reservation}`}>
+            <Notice className={styles.reservation}>
               <div className="b-row">
                 <small>예약 번호</small>
                 <strong>{booking.id}</strong>
@@ -105,21 +109,21 @@ export default function BookingResultPage() {
                   </strong>
                 </div>
               </div>
-            </div>
+            </Notice>
             <BookingBreakdown service={service} booking={booking} />
-            <div className="b-notice">
+            <Notice>
               <h3>방문 및 취소 유의사항</h3>
               <p>· 타임세일 특가 예약의 원활한 운영을 위해 예약 시간 전까지 도착해 주세요.</p>
               <p>
                 · 매장 사정으로 시술 일정이 변경될 수 있으므로 방문 전 예약 정보를 확인해 주세요.
               </p>
-            </div>
+            </Notice>
           </>
         ) : (
-          <div className="b-error">
+          <Alert tone="error">
             <h2>{scenario === 'failure' ? '결제 시뮬레이터 오류' : '5분 임시 확보 만료'}</h2>
             <p>이 컨트롤은 결과 화면의 상태만 변경합니다. 기존 확정 예약은 취소되지 않습니다.</p>
-          </div>
+          </Alert>
         )}
         <div className={`b-flex ${styles.actions}`}>
           <Button as={Link} variant="primary" to={ROUTES.BOOKINGS}>
@@ -136,7 +140,7 @@ export default function BookingResultPage() {
             <h3>카카오 알림톡 자동 발송 내역</h3>
             <small className="b-pink">● 실제 발송 없는 시연</small>
           </div>
-          <div className="b-panel b-pad b-flex">
+          <Panel padded className="b-flex">
             <span className={styles.talk}>TALK</span>
             <div>
               <strong>[땡잡은 언니] 예약 확정 안내</strong>
@@ -145,7 +149,7 @@ export default function BookingResultPage() {
                 확정되었습니다. 예약 번호와 매장 약도를 확인해 주세요.
               </p>
             </div>
-          </div>
+          </Panel>
         </section>
       )}
     </div>

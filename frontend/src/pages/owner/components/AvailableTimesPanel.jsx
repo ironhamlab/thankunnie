@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useScheduleStore } from '@/store/useScheduleStore';
 import { timePart } from '@/utils/scheduleDate';
+import Panel from '@/components/common/Panel';
+import EmptyState from '@/components/common/EmptyState';
 
 /**
  * 선택한 날짜에 고객이 예약할 수 있는 30분 칸. 영업시간·열기·닫기·예약을 서버가 반영해 계산한다.
@@ -15,7 +17,7 @@ export default function AvailableTimesPanel({ date, minDate, maxDate, onDateChan
   }, [loadAvailableTimes, date, reloadKey]);
 
   return (
-    <section className="b-panel b-pad">
+    <Panel as="section" padded>
       <div className="b-row b-panel-heading">
         <h2>날짜별 예약 가능 시간</h2>
         <label>
@@ -36,7 +38,7 @@ export default function AvailableTimesPanel({ date, minDate, maxDate, onDateChan
       {timesStatus === 'loading' && <p role="status">예약 가능 시간을 불러오는 중입니다.</p>}
       {timesStatus === 'failed' && <p role="alert">예약 가능 시간을 불러오지 못했습니다.</p>}
       {timesStatus === 'succeeded' && !availableTimes.length && (
-        <p className="b-empty">이 날은 예약 가능한 시간이 없습니다.</p>
+        <EmptyState as="p">이 날은 예약 가능한 시간이 없습니다.</EmptyState>
       )}
       {timesStatus === 'succeeded' && availableTimes.length > 0 && (
         <div className="b-time-grid">
@@ -47,6 +49,6 @@ export default function AvailableTimesPanel({ date, minDate, maxDate, onDateChan
           ))}
         </div>
       )}
-    </section>
+    </Panel>
   );
 }

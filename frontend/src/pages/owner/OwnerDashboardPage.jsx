@@ -6,6 +6,8 @@ import Asset from '@/components/common/Asset';
 import Dialog from '@/components/common/Dialog';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Notice from '@/components/common/Notice';
 import styles from './OwnerDashboardPage.module.css';
 
 const cards = [
@@ -44,11 +46,11 @@ export default function OwnerDashboardPage() {
   const [notice, setNotice] = useState('');
   return (
     <div className="b-stack">
-      <div className="b-notice">
+      <Notice>
         본 화면은 땡잡은 언니 MVP 사장님 통합 운영 센터입니다. 예약 데이터 및 빈자리 등록은 시연
         상태로 연결되어 있습니다.
-      </div>
-      <section className={`b-panel b-pad b-row ${styles.profile}`}>
+      </Notice>
+      <Panel as="section" padded className={`b-row ${styles.profile}`}>
         <div className="b-flex">
           <Asset name="32-767-0.png" alt="살롱 드 르네 대표 사진" className="b-thumb" />
           <div>
@@ -64,7 +66,7 @@ export default function OwnerDashboardPage() {
         <Button as={Link} variant="primary" to={ROUTES.OWNER_SHOP}>
           매장 정보 관리로 이동 →
         </Button>
-      </section>
+      </Panel>
       <h2>오늘의 빠른 운영 현황</h2>
       <div className="b-stat-grid">
         {[
@@ -83,14 +85,14 @@ export default function OwnerDashboardPage() {
           ['노쇼/취소 발생률', 0, '%', '청정 매장 뱃지 유지 중'],
           ['미확인 운영 알림', 2, '건', '신규 문의 및 정산 안내'],
         ].map(([label, value, unit, note]) => (
-          <article className="b-panel b-pad" key={label}>
+          <Panel as="article" padded key={label}>
             <small>{label}</small>
             <h2 className="b-pink">
               {value}
               <small>{unit}</small>
             </h2>
             <small className="b-green-text">{note}</small>
-          </article>
+          </Panel>
         ))}
       </div>
       <h2>핵심 운영 기능 바로가기</h2>
@@ -103,21 +105,22 @@ export default function OwnerDashboardPage() {
             <p>{description}</p>
           </Link>
         ))}
-        <button
-          className="b-panel b-pad"
+        <Panel
+          as="button"
+          padded
           onClick={() =>
             setNotice('주니어 모델 모집 공고는 상세 디자인 및 API 연결 후 제공됩니다.')
           }
         >
           <h2>주니어 모델 모집 공고 관리</h2>
           <p>실습생 포트폴리오 모집 등록 및 공고 관리</p>
-        </button>
+        </Panel>
         <Link to={ROUTES.HOME} className="b-panel b-pad">
           <h2>고객용 내 매장 뷰 미리보기</h2>
           <p>고객 앱에 노출되는 타임세일 화면 시뮬레이션</p>
         </Link>
       </div>
-      <section className="b-panel b-pad">
+      <Panel as="section" padded>
         <div className="b-row b-panel-heading">
           <h2>알림 수신 설정 및 자동화 운영 정책</h2>
           <Button
@@ -160,8 +163,8 @@ export default function OwnerDashboardPage() {
           </div>
           <Badge>적용 범위: 30% ~ 50%</Badge>
         </div>
-      </section>
-      <section className="b-panel b-pad">
+      </Panel>
+      <Panel as="section" padded>
         <div className="b-row b-panel-heading">
           <h2>입점 상태별 마이페이지 뷰 시뮬레이터</h2>
           <div className="b-options">
@@ -173,7 +176,7 @@ export default function OwnerDashboardPage() {
             </button>
           </div>
         </div>
-        <div className="b-notice">
+        <Notice>
           <strong>
             {newShop
               ? '첫 매장을 등록하고 빈자리 판매를 시작해 보세요.'
@@ -189,8 +192,8 @@ export default function OwnerDashboardPage() {
               매장 등록하기
             </Button>
           )}
-        </div>
-      </section>
+        </Notice>
+      </Panel>
       {notice && (
         <Dialog title="안내" onClose={() => setNotice('')}>
           <p>{notice}</p>
