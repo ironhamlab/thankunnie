@@ -40,7 +40,8 @@ export function loadKakaoMap() {
     );
 
     // autoload=false 로 받아야 kakao.maps.load 콜백 이후에 지도를 안전하게 만들 수 있다
-    script.src = `${SDK_URL}?appkey=${encodeURIComponent(appKey)}&autoload=false`;
+    // services: 매장 가입의 주소 → 좌표·지역코드 변환(Geocoder). SDK 는 한 번만 붙으므로 처음부터 함께 받는다
+    script.src = `${SDK_URL}?appkey=${encodeURIComponent(appKey)}&autoload=false&libraries=services`;
     script.async = true;
     script.onload = () => {
       if (!window.kakao?.maps) {

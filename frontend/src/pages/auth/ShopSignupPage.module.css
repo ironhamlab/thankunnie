@@ -1,0 +1,23 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.form h2 {
+  font-size: 15px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+.form > button {
+  min-height: 46px;
+  margin: 0;
+}
+.links {
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.links a {
+  color: var(--color-primary);
+  font-weight: 700;
+}
