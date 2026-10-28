@@ -39,6 +39,8 @@ public class AuthService {
     private final ShopCategoryRepository shopCategoryRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
+    // 없는 아이디로 로그인할 때 비교할 해시. 같은 인코더로 만들어 실제 계정과 비교 비용이 같다
+    private final String dummyPasswordHash;
 
     public AuthService(AppUserRepository appUserRepository, ShopAccountRepository shopAccountRepository,
             ShopCategoryRepository shopCategoryRepository, PasswordEncoder passwordEncoder,
@@ -48,6 +50,7 @@ public class AuthService {
         this.shopCategoryRepository = shopCategoryRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtProvider = jwtProvider;
+        this.dummyPasswordHash = passwordEncoder.encode("dummy-password-for-unknown-login-id");
     }
 
     /** 고객으로 가입하고 바로 로그인한다. */
@@ -96,9 +99,10 @@ public class AuthService {
 
     /** 고객·관리자 로그인. 아이디가 없을 때와 비밀번호가 틀릴 때를 구분하지 않는다. */
     public AuthTokenResponse loginCustomer(AuthLoginRequest request) {
-        AppUser user = appUserRepository.findByLoginId(request.loginId())
-                .filter(found -> passwordEncoder.matches(request.password(), found.getPasswordHash()))
-                .orElseThrow(() -> new BusinessException(ErrorCode.AUTH_LOGIN_FAILED));
+        AppUser user = appUserRepository.findByLoginId(request.loginId()).orElse(null);
+        if (!matchesPassword(request.password(), user == null ? null : user.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.AUTH_LOGIN_FAILED);
+        }
         // 비밀번호가 맞은 뒤에만 비활성 여부를 알려 계정 존재 여부가 드러나지 않게 한다
         if (!user.isActive()) {
             throw new BusinessException(ErrorCode.AUTH_INACTIVE_ACCOUNT);
@@ -111,9 +115,10 @@ public class AuthService {
      * INACTIVE 매장도 로그인해서 매장을 관리할 수 있어야 한다.
      */
     public AuthTokenResponse loginShop(AuthLoginRequest request) {
-        ShopAccount account = shopAccountRepository.findByLoginId(request.loginId())
-                .filter(found -> passwordEncoder.matches(request.password(), found.getPasswordHash()))
-                .orElseThrow(() -> new BusinessException(ErrorCode.AUTH_LOGIN_FAILED));
+        ShopAccount account = shopAccountRepository.findByLoginId(request.loginId()).orElse(null);
+        if (!matchesPassword(request.password(), account == null ? null : account.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.AUTH_LOGIN_FAILED);
+        }
         return issue(account.toAuthUser());
     }
 
@@ -122,6 +127,15 @@ public class AuthService {
         return shopCategoryRepository.findAllByOrderByNameAsc().stream()
                 .map(AuthShopCategoryResponse::from)
                 .toList();
+    }
+
+    // 계정이 없어도 같은 비용의 BCrypt 비교를 한 번 수행해 응답 시간으로 아이디 존재 여부가 드러나지 않게 한다
+    private boolean matchesPassword(String rawPassword, String passwordHash) {
+        if (passwordHash == null) {
+            passwordEncoder.matches(rawPassword, dummyPasswordHash);
+            return false;
+        }
+        return passwordEncoder.matches(rawPassword, passwordHash);
     }
 
     private AuthTokenResponse issue(AuthUser authUser) {
