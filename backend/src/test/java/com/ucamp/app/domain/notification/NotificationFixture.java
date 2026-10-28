@@ -41,6 +41,15 @@ public final class NotificationFixture {
                 """, treatmentId, shopId, shopId, treatmentType);
     }
 
+    /** 요일 영업시간. dayOfWeek 는 MON~SUN, open/close 는 HH:MM. */
+    public static void businessHour(JdbcTemplate jdbc, long businessHourId, long shopId, String dayOfWeek,
+            String openTime, String closeTime) {
+        jdbc.update("""
+                INSERT INTO SHOP_BUSINESS_HOUR (BUSINESS_HOUR_ID, SHOP_ID, DAY_OF_WEEK, OPEN_TIME, CLOSE_TIME, IS_CLOSED)
+                VALUES (?, ?, ?, ?, ?, 'N')
+                """, businessHourId, shopId, dayOfWeek, openTime, closeTime);
+    }
+
     public static void exception(JdbcTemplate jdbc, long exceptionId, long shopId, Long reservationId,
             String exceptionType, LocalDateTime startsAt, LocalDateTime endsAt) {
         jdbc.update("""

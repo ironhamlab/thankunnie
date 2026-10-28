@@ -8,6 +8,10 @@ import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
 import Notice from '@/components/common/Notice';
+import StoreIcon from '@/components/icons/StoreIcon';
+import ScissorsIcon from '@/components/icons/ScissorsIcon';
+import BoltIcon from '@/components/icons/BoltIcon';
+import CalendarIcon from '@/components/icons/CalendarIcon';
 import styles from './OwnerDashboardPage.module.css';
 
 const cards = [
@@ -15,25 +19,25 @@ const cards = [
     ROUTES.OWNER_SHOP,
     '매장 정보 관리',
     '대표 사진, 영업시간, 오시는 길 주소 및 주차 안내 수정',
-    '32-767-28.svg',
+    StoreIcon,
   ],
   [
     ROUTES.OWNER_MENUS,
     '시술 메뉴 관리',
     '단일 시술 등록, 소요시간 설정 및 정상가 실시간 편집',
-    '32-767-30.svg',
+    ScissorsIcon,
   ],
   [
     ROUTES.OWNER_SLOTS,
     '빈자리 관리 & 즉시 등록',
     '당일 캔슬 즉시 타임세일 슬롯 배정 및 노출 개시',
-    '32-767-31.svg',
+    BoltIcon,
   ],
   [
     ROUTES.OWNER_BOOKINGS,
     '예약 관리 & 상세 내역',
     '고객 예약 확인 및 결제 상세 내역 조회',
-    '32-767-32.svg',
+    CalendarIcon,
   ],
 ];
 export default function OwnerDashboardPage() {
@@ -97,9 +101,9 @@ export default function OwnerDashboardPage() {
       </div>
       <h2>핵심 운영 기능 바로가기</h2>
       <div className={`b-three-grid ${styles.cards}`}>
-        {cards.map(([to, title, description, icon]) => (
+        {cards.map(([to, title, description, Icon]) => (
           <Link key={to} to={to} className="b-panel b-pad">
-            <Asset name={icon} />
+            <Icon size={24} />
             <span className={styles.cardArrow}>→</span>
             <h2>{title}</h2>
             <p>{description}</p>

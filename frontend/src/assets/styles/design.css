@@ -74,7 +74,8 @@
 .beauty-app textarea {
   resize: vertical;
 }
-.beauty-app img {
+.beauty-app img,
+.beauty-app svg {
   vertical-align: middle;
 }
 .b-layout {

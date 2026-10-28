@@ -43,15 +43,18 @@ import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepo
 import com.ucamp.app.domain.notification.repository.RecipientContactRepository;
 import com.ucamp.app.domain.notification.repository.ShopCategoryRegionRepository;
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
+import com.ucamp.app.domain.vacancy.repository.ShopStatusQueryRepository;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({NotificationDispatchService.class, SubscriptionMatchService.class, ShopCategoryRegionRepository.class,
-        VacancySlotRepository.class, RecipientContactRepository.class,
-        NotificationDispatchServiceTest.FixedClock.class})
+        VacancySlotRepository.class, RecipientContactRepository.class, AvailabilityService.class,
+        ShopStatusQueryRepository.class, NotificationDispatchServiceTest.FixedClock.class})
 @ActiveProfiles("test")
 class NotificationDispatchServiceTest {
 
+    // 2026-10-22 은 목요일(THU). 영업시간 픽스처와 맞춰 둔다.
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 22, 12, 0);
     private static final LocalDateTime SLOT_START = NOW.plusHours(3);
     private static final long SHOP_ID = 1L;
@@ -290,12 +293,29 @@ class NotificationDispatchServiceTest {
     @Test
     @DisplayName("취소된 예약 시간이 아직 팔리면 재공개 작업은 그대로 둔다")
     void recheckClaimedJob_reopenedStillSellable_keepsProcessing() {
-        LocalDateTime startsAt = NOW.plusHours(11);
-        openSlot(1L, NOW.plusHours(10), NOW.plusHours(14));
+        LocalDateTime startsAt = NOW.plusHours(3);
+        openSlot(1L, NOW.plusHours(2), NOW.plusHours(6));
         NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
         NotificationFixture.reservation(jdbcTemplate, 500L, USER_ID, 100L, "CANCELLED",
                 startsAt, startsAt.plusHours(1), startsAt.minusHours(1));
-        notificationSubscriptionRepository.save(storeUntil(USER_ID, NOW.plusHours(13)));
+        notificationSubscriptionRepository.save(storeUntil(USER_ID, NOW.plusHours(5)));
+        NotificationDispatch job = claimedReopenedJob(startsAt);
+
+        boolean canSend = notificationDispatchService.recheckClaimedJob(job);
+
+        assertThat(canSend).isTrue();
+        assertThat(job.getStatus()).isEqualTo(NotificationDispatchStatus.PROCESSING);
+    }
+
+    @Test
+    @DisplayName("OPEN 행이 없어도 영업시간 안이면 재공개 작업은 그대로 둔다")
+    void recheckClaimedJob_reopenedBusinessHoursOnly_keepsProcessing() {
+        LocalDateTime startsAt = NOW.plusHours(3);
+        NotificationFixture.businessHour(jdbcTemplate, 1L, SHOP_ID, "THU", "10:00", "20:00");
+        NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
+        NotificationFixture.reservation(jdbcTemplate, 500L, USER_ID, 100L, "CANCELLED",
+                startsAt, startsAt.plusHours(1), startsAt.minusHours(1));
+        notificationSubscriptionRepository.save(storeUntil(USER_ID, NOW.plusHours(5)));
         NotificationDispatch job = claimedReopenedJob(startsAt);
 
         boolean canSend = notificationDispatchService.recheckClaimedJob(job);
@@ -307,14 +327,32 @@ class NotificationDispatchServiceTest {
     @Test
     @DisplayName("취소된 예약 시간을 닫았으면 재공개 작업은 끝으로 두고 보내지 않는다")
     void recheckClaimedJob_reopenedClosed_skips() {
-        LocalDateTime startsAt = NOW.plusHours(11);
-        openSlot(1L, NOW.plusHours(10), NOW.plusHours(14));
+        LocalDateTime startsAt = NOW.plusHours(3);
+        openSlot(1L, NOW.plusHours(2), NOW.plusHours(6));
         NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
         NotificationFixture.reservation(jdbcTemplate, 500L, USER_ID, 100L, "CANCELLED",
                 startsAt, startsAt.plusHours(1), startsAt.minusHours(1));
         NotificationFixture.exception(jdbcTemplate, 2L, SHOP_ID, 500L, "CLOSE", startsAt, startsAt.plusHours(1));
-        notificationSubscriptionRepository.save(storeUntil(USER_ID, NOW.plusHours(13)));
+        notificationSubscriptionRepository.save(storeUntil(USER_ID, NOW.plusHours(5)));
         NotificationDispatch job = claimedReopenedJob(startsAt);
+
+        boolean canSend = notificationDispatchService.recheckClaimedJob(job);
+
+        assertThat(canSend).isFalse();
+        assertThat(job.getStatus()).isEqualTo(NotificationDispatchStatus.SKIPPED);
+    }
+
+    @Test
+    @DisplayName("매장이 비활성이면 재공개 작업은 끝으로 두고 보내지 않는다")
+    void recheckClaimedJob_reopenedInactiveShop_skips() {
+        LocalDateTime startsAt = NOW.plusHours(3);
+        openSlot(1L, NOW.plusHours(2), NOW.plusHours(6));
+        NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
+        NotificationFixture.reservation(jdbcTemplate, 500L, USER_ID, 100L, "CANCELLED",
+                startsAt, startsAt.plusHours(1), startsAt.minusHours(1));
+        notificationSubscriptionRepository.save(storeUntil(USER_ID, NOW.plusHours(5)));
+        NotificationDispatch job = claimedReopenedJob(startsAt);
+        jdbcTemplate.update("UPDATE SHOP SET STATUS = 'INACTIVE' WHERE SHOP_ID = ?", SHOP_ID);
 
         boolean canSend = notificationDispatchService.recheckClaimedJob(job);
 
@@ -452,9 +490,10 @@ class NotificationDispatchServiceTest {
     }
 
     private NotificationDispatch claimedReopenedJob(LocalDateTime startsAt) {
+        // 재공개는 OPEN 행이 없을 수 있어 exceptionId 를 비운다.
         NotificationEvent savedEvent = notificationEventRepository.saveAndFlush(NotificationEvent.builder()
                 .eventType(NotificationEventType.REOPENED)
-                .exceptionId(1L)
+                .exceptionId(null)
                 .shopId(SHOP_ID)
                 .reservationId(500L)
                 .slotStartsAt(startsAt)
@@ -491,12 +530,14 @@ class NotificationDispatchServiceTest {
     }
 
     private static NotificationEvent event(long exceptionId) {
+        // 유니크가 매장+종류+시작 시각이라, 이벤트마다 시작 시각을 다르게 둔다.
+        LocalDateTime startsAt = SLOT_START.plusHours(exceptionId - 1);
         return NotificationEvent.builder()
                 .eventType(NotificationEventType.IMMINENT)
                 .exceptionId(exceptionId)
                 .shopId(SHOP_ID)
-                .slotStartsAt(SLOT_START)
-                .slotEndsAt(SLOT_START.plusHours(1))
+                .slotStartsAt(startsAt)
+                .slotEndsAt(startsAt.plusHours(1))
                 .build();
     }
 

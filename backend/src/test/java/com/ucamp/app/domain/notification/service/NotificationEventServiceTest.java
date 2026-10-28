@@ -2,8 +2,10 @@ package com.ucamp.app.domain.notification.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,15 +14,19 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.auditing.DateTimeProvider;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ucamp.app.common.policy.BookingPolicy;
-import com.ucamp.app.config.TimeConfig;
+import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.notification.NotificationFixture;
 import com.ucamp.app.domain.notification.entity.NotificationEvent;
 import com.ucamp.app.domain.notification.entity.NotificationEventStatus;
@@ -29,16 +35,18 @@ import com.ucamp.app.domain.notification.event.SlotReopenedEvent;
 import com.ucamp.app.domain.notification.event.SlotReopenedEventListener;
 import com.ucamp.app.domain.notification.repository.NotificationEventRepository;
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 // 재공개 이벤트는 새 트랜잭션에서 저장하므로 테스트 데이터도 커밋하고 매번 지운다
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({TimeConfig.class, NotificationEventService.class, VacancySlotRepository.class,
-        SlotReopenedEventListener.class})
+@Import({NotificationEventService.class, VacancySlotRepository.class, AvailabilityService.class,
+        SlotReopenedEventListener.class, NotificationEventServiceTest.FixedClock.class})
 @ActiveProfiles("test")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class NotificationEventServiceTest {
 
+    // 2026-10-23 은 금요일(FRI). 영업시간 픽스처와 맞춰 둔다.
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 23, 9, 0);
     private static final long SHOP_ID = 1L;
     private static final long NORMAL_TREATMENT = 100L;
@@ -69,8 +77,8 @@ class NotificationEventServiceTest {
 
     @AfterEach
     void tearDown() {
-        List.of("NOTIFICATION_EVENT", "SHOP_SCHEDULE_EXCEPTION", "RESERVATION", "TREATMENT", "APP_USER", "SHOP",
-                "CATEGORY").forEach(table -> jdbcTemplate.update("DELETE FROM " + table));
+        List.of("NOTIFICATION_EVENT", "SHOP_SCHEDULE_EXCEPTION", "RESERVATION", "TREATMENT", "SHOP_BUSINESS_HOUR",
+                "APP_USER", "SHOP", "CATEGORY").forEach(table -> jdbcTemplate.update("DELETE FROM " + table));
     }
 
     @Test
@@ -98,6 +106,23 @@ class NotificationEventServiceTest {
 
         assertThat(secondRun).isZero();
         assertThat(notificationEventRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("같은 매장·시작 시각 OPEN이 여러 개여도 임박 이벤트는 한 번만 만든다")
+    void createImminentEvents_duplicateOpenStartsAt_createsOnce() {
+        LocalDateTime startsAt = NOW.plusHours(5);
+        openSlot(1L, startsAt, startsAt.plusHours(2));
+        openSlot(2L, startsAt, startsAt.plusHours(3));
+
+        int created = notificationEventService.createImminentEvents(NOW);
+
+        assertThat(created).isEqualTo(1);
+        assertThat(notificationEventRepository.count()).isEqualTo(1);
+        NotificationEvent event = notificationEventRepository.findAll().get(0);
+        assertThat(event.getEventType()).isEqualTo(NotificationEventType.IMMINENT);
+        assertThat(event.getExceptionId()).isEqualTo(1L);
+        assertThat(event.getSlotStartsAt()).isEqualTo(startsAt);
     }
 
     @Test
@@ -167,6 +192,23 @@ class NotificationEventServiceTest {
     }
 
     @Test
+    @DisplayName("같은 매장·시작 시각 OPEN이 여러 개여도 초임박 이벤트는 한 번만 만든다")
+    void createLastMinuteEvents_duplicateOpenStartsAt_createsOnce() {
+        LocalDateTime startsAt = NOW.plusHours(2);
+        openSlot(1L, startsAt, startsAt.plusHours(2));
+        openSlot(2L, startsAt, startsAt.plusHours(3));
+
+        int created = notificationEventService.createLastMinuteEvents(NOW);
+
+        assertThat(created).isEqualTo(1);
+        assertThat(notificationEventRepository.count()).isEqualTo(1);
+        NotificationEvent event = notificationEventRepository.findAll().get(0);
+        assertThat(event.getEventType()).isEqualTo(NotificationEventType.LAST_MINUTE);
+        assertThat(event.getExceptionId()).isEqualTo(1L);
+        assertThat(event.getSlotStartsAt()).isEqualTo(startsAt);
+    }
+
+    @Test
     @DisplayName("정확히 3시간 전은 초임박 이벤트를 만들고, 3시간보다 많이 남으면 만들지 않는다")
     void createLastMinuteEvents_boundary_createsOnlyWithinThreeHours() {
         openSlot(1L, NOW.plusHours(3), NOW.plusHours(5));
@@ -231,10 +273,26 @@ class NotificationEventServiceTest {
         assertThat(again).isFalse();
         NotificationEvent event = notificationEventRepository.findAll().get(0);
         assertThat(event.getEventType()).isEqualTo(NotificationEventType.REOPENED);
-        assertThat(event.getExceptionId()).isEqualTo(1L);
+        assertThat(event.getExceptionId()).isNull();
         assertThat(event.getReservationId()).isEqualTo(CANCELLED_RESERVATION);
         assertThat(event.getSlotStartsAt()).isEqualTo(NOW.plusHours(11));
         assertThat(event.getSlotEndsAt()).isEqualTo(NOW.plusHours(12));
+    }
+
+    @Test
+    @DisplayName("OPEN 행이 없어도 영업시간 안이면 재공개 이벤트를 만든다")
+    void createReopenedEvent_businessHoursOnly_createsEvent() {
+        // OPEN 없이 금요일 영업시간만 둔다. 11~12시는 영업시간(10~20) 안이다.
+        NotificationFixture.businessHour(jdbcTemplate, 1L, SHOP_ID, "FRI", "10:00", "20:00");
+        reservation(CANCELLED_RESERVATION, NORMAL_TREATMENT, "CANCELLED", NOW.plusHours(2), NOW.plusHours(3));
+
+        boolean created = notificationEventService.createReopenedEvent(CANCELLED_RESERVATION, NOW);
+
+        assertThat(created).isTrue();
+        NotificationEvent event = notificationEventRepository.findAll().get(0);
+        assertThat(event.getEventType()).isEqualTo(NotificationEventType.REOPENED);
+        assertThat(event.getExceptionId()).isNull();
+        assertThat(event.getShopId()).isEqualTo(SHOP_ID);
     }
 
     @Test
@@ -269,23 +327,26 @@ class NotificationEventServiceTest {
     }
 
     @Test
-    @DisplayName("모델 시술, OPEN 밖의 시간, 접수 마감된 시간은 재공개 이벤트 대상이 아니다")
+    @DisplayName("모델 시술, 영업시간·OPEN 밖 시간, 접수 마감된 시간은 재공개 이벤트 대상이 아니다")
     void createReopenedEvent_notTarget_returnsFalse() {
         openSlot(1L, NOW.plusHours(10), NOW.plusHours(14));
         reservation(CANCELLED_RESERVATION, MODEL_TREATMENT, "CANCELLED", NOW.plusHours(11), NOW.plusHours(12));
+        // OPEN(10~14시) 밖
         reservation(502L, NORMAL_TREATMENT, "CANCELLED", NOW.plusHours(15), NOW.plusHours(16));
+        // 시작이 지금(09:00)이면 접수 마감(시작 20분 전)이 이미 지났다
         openSlot(2L, NOW, NOW.plusHours(2));
-        reservation(503L, NORMAL_TREATMENT, "CANCELLED", NOW.plusMinutes(30), NOW.plusMinutes(90));
+        reservation(503L, NORMAL_TREATMENT, "CANCELLED", NOW, NOW.plusHours(1));
 
         assertThat(notificationEventService.createReopenedEvent(CANCELLED_RESERVATION, NOW)).isFalse();
         assertThat(notificationEventService.createReopenedEvent(502L, NOW)).isFalse();
-        assertThat(notificationEventService.createReopenedEvent(503L, NOW.plusMinutes(10))).isFalse();
+        assertThat(notificationEventService.createReopenedEvent(503L, NOW)).isFalse();
         assertThat(notificationEventRepository.count()).isZero();
     }
 
     @Test
     @DisplayName("재공개 담당이 재공개 완료 이벤트를 발행하면 재공개 알림 이벤트가 저장된다")
     void slotReopenedEvent_published_createsReopenedEvent() {
+        // 리스너는 실제 시계를 쓰므로, 시작 시각도 실제 내일로 둔다
         LocalDateTime startsAt = LocalDateTime.now(BookingPolicy.ZONE).plusDays(1).withHour(13)
                 .withMinute(0).withSecond(0).withNano(0);
         openSlot(1L, startsAt.minusHours(1), startsAt.plusHours(3));
@@ -311,5 +372,21 @@ class NotificationEventServiceTest {
             LocalDateTime startsAt, LocalDateTime endsAt) {
         NotificationFixture.reservation(jdbcTemplate, reservationId, 1L, treatmentId, status,
                 startsAt, endsAt, startsAt.minusHours(1));
+    }
+
+    /** isAvailable 이 쓰는 시계를 테스트 NOW 로 고정한다. */
+    @TestConfiguration
+    @EnableJpaAuditing(dateTimeProviderRef = "auditingDateTimeProvider")
+    static class FixedClock {
+
+        @Bean
+        Clock clock() {
+            return Clock.fixed(NOW.atZone(TimeUtils.KST).toInstant(), TimeUtils.KST);
+        }
+
+        @Bean
+        DateTimeProvider auditingDateTimeProvider(Clock clock) {
+            return () -> Optional.of(LocalDateTime.now(clock));
+        }
     }
 }
