@@ -1,0 +1,77 @@
+.panel {
+  max-width: 640px;
+  width: 100%;
+}
+.choices {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.choices legend {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.choices label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.choices label:global(.is-selected) {
+  border-color: var(--color-primary);
+  background: #fff5f8;
+}
+.choices input {
+  margin-top: 3px;
+  accent-color: var(--color-primary);
+}
+.choices span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.choices small {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+.refund {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 700;
+}
+.refund small {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+.refundInput {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+}
+.refundInput input {
+  flex: 1;
+  min-width: 0;
+}
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 8px;
+}
+.actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+@media (max-width: 540px) {
+  .choices,
+  .actions {
+    grid-template-columns: 1fr;
+  }
+}
