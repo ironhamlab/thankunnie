@@ -141,6 +141,18 @@ class AuthIntegrationTest {
     }
 
     @Test
+    @DisplayName("매장 STATUS 는 노출 여부라 INACTIVE 매장도 로그인한다")
+    void loginShop_inactiveShop_stillLogsIn() throws Exception {
+        signupShop("closedshop").andExpect(status().isCreated());
+        jdbc.update("UPDATE SHOP SET STATUS = 'INACTIVE' WHERE LOGIN_ID = 'closedshop'");
+        entityManager.clear();
+
+        login("/api/v1/auth/shops/login", "closedshop", PASSWORD)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.role").value("OWNER"));
+    }
+
+    @Test
     @DisplayName("매장 가입 토큰으로 본인 매장은 조회되고 다른 매장은 403")
     void signupShop_thenOwnShopOnly() throws Exception {
         JsonNode data = data(signupShop("nailshop").andExpect(status().isCreated()));

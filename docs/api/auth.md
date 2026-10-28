@@ -106,6 +106,10 @@
 
 요청 형식은 고객 로그인과 같다. 응답의 `role`은 `OWNER`, `userId`·`shopId`는 매장 ID.
 
+`SHOP.STATUS`는 매장 노출·판매 여부라서 로그인 판단에 쓰지 않는다. INACTIVE 매장도 로그인해 매장을 관리할 수 있다.
+
+오류: 아이디 없음·비밀번호 불일치 `AUTH_002`(401)
+
 ## GET /api/v1/auth/shop-categories — 매장 가입용 카테고리
 
 로그인 없이 조회한다.

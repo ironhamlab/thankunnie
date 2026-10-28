@@ -106,14 +106,14 @@ public class AuthService {
         return issue(user.toAuthUser());
     }
 
-    /** 사장님(매장 계정) 로그인. */
+    /**
+     * 사장님(매장 계정) 로그인. SHOP.STATUS 는 매장 노출·판매 여부라 계정 잠금으로 쓰지 않는다.
+     * INACTIVE 매장도 로그인해서 매장을 관리할 수 있어야 한다.
+     */
     public AuthTokenResponse loginShop(AuthLoginRequest request) {
         ShopAccount account = shopAccountRepository.findByLoginId(request.loginId())
                 .filter(found -> passwordEncoder.matches(request.password(), found.getPasswordHash()))
                 .orElseThrow(() -> new BusinessException(ErrorCode.AUTH_LOGIN_FAILED));
-        if (!account.isActive()) {
-            throw new BusinessException(ErrorCode.AUTH_INACTIVE_ACCOUNT);
-        }
         return issue(account.toAuthUser());
     }
 
