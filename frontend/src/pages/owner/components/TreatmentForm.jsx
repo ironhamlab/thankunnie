@@ -3,7 +3,7 @@ import Dialog from '@/components/common/Dialog';
 import Button from '@/components/common/Button';
 import styles from './TreatmentForm.module.css';
 
-export default function TreatmentForm({ treatment, categories, isSaving, error, onSave, onClose }) {
+export default function TreatmentForm({ treatment, isSaving, error, onSave, onClose }) {
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -11,7 +11,6 @@ export default function TreatmentForm({ treatment, categories, isSaving, error, 
     price: 50000,
     lastMinutePrice: 50000,
     durationMinutes: 60,
-    categoryId: '',
     treatmentType: 'NORMAL',
     modelCondition: '',
     photoNotice: '',
@@ -62,7 +61,6 @@ export default function TreatmentForm({ treatment, categories, isSaving, error, 
       regularPrice: Number(form.regularPrice),
       price: Number(form.price),
       lastMinutePrice: Number(form.lastMinutePrice),
-      categoryId: Number(form.categoryId),
       durationMinutes: Number(form.durationMinutes),
       conditions: {
         treatmentType: form.treatmentType,
@@ -119,17 +117,6 @@ export default function TreatmentForm({ treatment, categories, isSaving, error, 
               value={form.name}
               onChange={change}
             />
-          </label>
-          <label className="b-span-two">
-            카테고리 *
-            <select required name="categoryId" value={form.categoryId} onChange={change}>
-              <option value="">카테고리를 선택해 주세요</option>
-              {categories.map((category) => (
-                <option key={category.categoryId} value={category.categoryId}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
           </label>
           <label>
             소요 시간 (분) *

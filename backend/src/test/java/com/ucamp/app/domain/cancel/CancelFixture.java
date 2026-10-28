@@ -30,9 +30,9 @@ public final class CancelFixture {
                 VALUES (?, 1, 'owner1', 'hash', '매장', '11110', '주소', 37.5, 127.0, '010', %s, %s)
                 """.formatted(CREATED, CREATED), SHOP_ID);
         jdbcTemplate.update("""
-                INSERT INTO TREATMENT (TREATMENT_ID, SHOP_ID, CATEGORY_ID, NAME, REGULAR_PRICE, PRICE,
+                INSERT INTO TREATMENT (TREATMENT_ID, SHOP_ID, NAME, REGULAR_PRICE, PRICE,
                     LAST_MINUTE_PRICE, DURATION_MINUTES, TREATMENT_TYPE, CREATED_AT, UPDATED_AT)
-                VALUES (?, ?, 1, '젤네일', 25000, 22000, 18000, 60, 'NORMAL', %s, %s)
+                VALUES (?, ?, '젤네일', 25000, 22000, 18000, 60, 'NORMAL', %s, %s)
                 """.formatted(CREATED, CREATED), TREATMENT_ID, SHOP_ID);
     }
 
