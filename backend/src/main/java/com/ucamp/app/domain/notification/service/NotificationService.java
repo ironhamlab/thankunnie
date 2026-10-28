@@ -45,10 +45,7 @@ public class NotificationService {
             NotificationSubscriptionCreateRequest request) {
         loginUser.requireRole(UserRole.CUSTOMER);
         validateNotExpired(request.localEndTime());
-        // 등록이므로 제외할 구독 ID 는 없다 (excludeId = null)
-        validateNoDuplicate(loginUser.userId(), request.subscriptionType(), request.shopId(),
-                request.categoryId(), request.regionCode(), request.localStartTime(), request.localEndTime(),
-                null);
+        // 대상·시간 형식을 먼저 검사한 뒤 중복을 본다 (잘못된 요청이 409 로 나가면 안 됨)
         NotificationSubscription subscription = NotificationSubscription.builder()
                 .userId(loginUser.userId())
                 .subscriptionType(request.subscriptionType())
@@ -58,6 +55,10 @@ public class NotificationService {
                 .startTime(request.localStartTime())
                 .endTime(request.localEndTime())
                 .build();
+        // 등록이므로 제외할 구독 ID 는 없다 (excludeId = null)
+        validateNoDuplicate(loginUser.userId(), subscription.getSubscriptionType(), subscription.getShopId(),
+                subscription.getCategoryId(), subscription.getRegionCode(), subscription.getStartTime(),
+                subscription.getEndTime(), null);
         return NotificationSubscriptionResponse.from(notificationSubscriptionRepository.save(subscription));
     }
 
@@ -90,12 +91,13 @@ public class NotificationService {
         loginUser.requireRole(UserRole.CUSTOMER);
         NotificationSubscription subscription = getActiveSubscription(loginUser, subscriptionId);
         validateNotExpired(request.localEndTime());
-        // 수정이므로 자기 구독은 중복에서 뺀다 (excludeId = 자기 ID)
-        validateNoDuplicate(loginUser.userId(), subscription.getSubscriptionType(), request.shopId(),
-                request.categoryId(), request.regionCode(), request.localStartTime(), request.localEndTime(),
-                subscription.getId());
+        // 대상·시간 형식을 먼저 검사한 뒤 중복을 본다 (잘못된 요청이 409 로 나가면 안 됨)
         subscription.changeCondition(request.shopId(), request.categoryId(), request.regionCode(),
                 request.localStartTime(), request.localEndTime());
+        // 수정이므로 자기 구독은 중복에서 뺀다 (excludeId = 자기 ID). 중복이면 트랜잭션이 롤백된다.
+        validateNoDuplicate(loginUser.userId(), subscription.getSubscriptionType(), subscription.getShopId(),
+                subscription.getCategoryId(), subscription.getRegionCode(), subscription.getStartTime(),
+                subscription.getEndTime(), subscription.getId());
         return NotificationSubscriptionResponse.from(subscription);
     }
 

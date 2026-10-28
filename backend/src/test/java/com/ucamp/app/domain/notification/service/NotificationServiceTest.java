@@ -131,6 +131,9 @@ class NotificationServiceTest {
         assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
                 createRequest(SubscriptionType.STORE, 1L, 10L, null, start, end)),
                 ErrorCode.SUBSCRIPTION_INVALID_TARGET);
+        // 대상이 틀리면 중복 조회까지 가지 않는다
+        verify(repository, never()).existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTime(
+                any(), any(), any(), any(), any());
     }
 
     @Test
@@ -219,14 +222,26 @@ class NotificationServiceTest {
     @DisplayName("구독 유형에 맞지 않는 값으로 수정할 수 없다")
     void updateSubscription_typeMismatch_throwsInvalidTarget() {
         given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(storeSubscription()));
-        // 유형 검증 전에 중복 검사를 하므로, 여기서는 중복이 없다고 둔다 (자기 id 제외는 유지)
-        given(repository.existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
-                eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(null),
-                eq(toLocal(start)), eq(toLocal(end)), eq(10L))).willReturn(false);
 
         assertErrorCode(() -> notificationService.updateSubscription(CUSTOMER, 10L,
                 new NotificationSubscriptionUpdateRequest(null, 10L, "SEOUL_GANGNAM", start, end)),
                 ErrorCode.SUBSCRIPTION_INVALID_TARGET);
+        // 대상이 틀리면 중복 조회까지 가지 않는다 (409 가 나면 안 됨)
+        verify(repository, never()).existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
+                any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("STORE 수정에 카테고리가 섞여 있으면 매장 중복과 같아도 대상 오류다")
+    void updateSubscription_invalidTarget_notDuplicate() {
+        given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(storeSubscription()));
+
+        // shopId=2 는 다른 구독과 겹칠 수 있는 값이지만, categoryId 가 있어 대상 오류가 먼저다
+        assertErrorCode(() -> notificationService.updateSubscription(CUSTOMER, 10L,
+                new NotificationSubscriptionUpdateRequest(2L, 10L, null, start, end)),
+                ErrorCode.SUBSCRIPTION_INVALID_TARGET);
+        verify(repository, never()).existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
+                any(), any(), any(), any(), any(), any());
     }
 
     @Test
