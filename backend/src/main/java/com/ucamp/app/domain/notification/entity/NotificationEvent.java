@@ -47,16 +47,20 @@ public class NotificationEvent extends BaseTimeEntity {
     @Column(name = "EVENT_TYPE", nullable = false, length = 20)
     private NotificationEventType eventType;
 
-    /** 빈자리인 예외 일정 OPEN 행 ID. 다른 도메인이 지울 수 있어 외래키는 없다. */
+    /**
+     * 매장이 연 시간(OPEN) 한 줄의 번호.
+     * 임박·초임박은 보통 채우고, 재공개는 영업시간만으로도 생길 수 있어 비울 수 있다.
+     * 다른 기능이 그 줄을 지울 수 있어서 외래키는 없다.
+     */
     @JdbcTypeCode(SqlTypes.NUMERIC)
-    @Column(name = "EXCEPTION_ID", nullable = false)
+    @Column(name = "EXCEPTION_ID")
     private Long exceptionId;
 
     @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "SHOP_ID", nullable = false)
     private Long shopId;
 
-    /** 취소 재공개일 때만 취소된 예약 ID. 임박·초임박이면 null. */
+    /** 취소 재공개일 때만 취소된 예약 번호. 임박·초임박이면 비운다. */
     @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "RESERVATION_ID")
     private Long reservationId;
@@ -73,6 +77,10 @@ public class NotificationEvent extends BaseTimeEntity {
     @Column(name = "STATUS", nullable = false, length = 10)
     private NotificationEventStatus status;
 
+    /**
+     * 알림 소식을 만든다.
+     * exceptionId 는 없어도 된다. 재공개처럼 OPEN 행이 없는 경우를 위해 null 을 받는다.
+     */
     @Builder
     private NotificationEvent(NotificationEventType eventType, Long exceptionId, Long shopId, Long reservationId,
             LocalDateTime slotStartsAt, LocalDateTime slotEndsAt) {
@@ -85,7 +93,7 @@ public class NotificationEvent extends BaseTimeEntity {
         this.status = NotificationEventStatus.PENDING;
     }
 
-    /** 이 이벤트의 발송 대기 작업을 만든 뒤 호출한다. */
+    /** 이 소식을 받을 사람 대기 줄을 만든 뒤에 부른다. */
     public void markProcessed() {
         this.status = NotificationEventStatus.PROCESSED;
     }

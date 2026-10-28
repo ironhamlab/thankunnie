@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.notification.service;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
@@ -27,6 +28,8 @@ import com.ucamp.app.domain.notification.repository.NotificationDispatchReposito
 import com.ucamp.app.domain.notification.repository.NotificationEventRepository;
 import com.ucamp.app.domain.notification.repository.RecipientContactRepository;
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
+import com.ucamp.app.domain.vacancy.repository.ShopStatusQueryRepository;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 /**
  * 알림 이벤트를 회원별 발송 대기 작업으로 저장하고, 그 작업을 하나씩 가져간다.
@@ -53,9 +56,11 @@ public class NotificationDispatchService {
     private final NotificationDispatchRepository notificationDispatchRepository;
     private final SubscriptionMatchService subscriptionMatchService;
     private final VacancySlotRepository vacancySlotRepository;
+    private final AvailabilityService availabilityService;
     private final RecipientContactRepository recipientContactRepository;
     private final SolapiSmsClient solapiSmsClient;
     private final Clock clock;
+    private final ShopStatusQueryRepository shopStatusQueryRepository;
 
     /**
      * PENDING 이벤트 하나를 고른다. 맞는 회원마다 대기 작업을 넣고 그 이벤트를 PROCESSED로 바꾼다.
@@ -279,15 +284,20 @@ public class NotificationDispatchService {
         return userIds.contains(userId);
     }
 
-    // 임박·초임박은 매장이 연 시간이 아직 팔리는지, 다시 열린 자리는 취소된 예약 시간이 아직 팔리는지 본다.
+    // 재공개는 화면과 같은 isAvailable 로 본다. 임박·초임박은 당분간 OPEN 기준을 유지한다.
     private boolean slotStillSellable(NotificationEvent event) {
-        LocalDateTime now = LocalDateTime.now(clock);
         if (event.getEventType() == NotificationEventType.REOPENED) {
-            if (event.getReservationId() == null) {
+            if (!shopStatusQueryRepository.isActive(event.getShopId())) {
                 return false;
             }
-            return vacancySlotRepository.findReopened(event.getReservationId(), now).isPresent();
+            int durationMinutes = (int) Duration.between(event.getSlotStartsAt(), event.getSlotEndsAt()).toMinutes();
+            if (durationMinutes <= 0) {
+                return false;
+            }
+            return availabilityService.isAvailable(
+                    event.getShopId(), event.getSlotStartsAt(), durationMinutes);
         }
+        LocalDateTime now = LocalDateTime.now(clock);
         return vacancySlotRepository.isOpenSlotSellable(event.getExceptionId(), now);
     }
 

@@ -31,12 +31,13 @@ import com.ucamp.app.domain.notification.entity.NotificationEventType;
 import com.ucamp.app.domain.notification.repository.NotificationEventRepository;
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
 import com.ucamp.app.domain.notification.service.NotificationEventService;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 // 스케줄 메서드가 각자 커밋하므로 테스트 데이터도 커밋하고 매번 지운다
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({NotificationEventService.class, VacancySlotRepository.class, ImminentEventScheduler.class,
-        ImminentEventSchedulerTest.FixedClock.class})
+@Import({NotificationEventService.class, VacancySlotRepository.class, AvailabilityService.class,
+        ImminentEventScheduler.class, ImminentEventSchedulerTest.FixedClock.class})
 @ActiveProfiles("test")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class ImminentEventSchedulerTest {
