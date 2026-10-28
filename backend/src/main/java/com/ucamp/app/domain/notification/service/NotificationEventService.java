@@ -1,5 +1,6 @@
 package com.ucamp.app.domain.notification.service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -16,9 +17,11 @@ import com.ucamp.app.domain.notification.entity.NotificationEventType;
 import com.ucamp.app.domain.notification.repository.NotificationEventRepository;
 import com.ucamp.app.domain.notification.repository.VacancySlot;
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 /**
- * 빈자리 알림 이벤트 생성. 임박·초임박 진입은 스케줄러가 각각 주기적으로, 취소 재공개는 재공개 완료 시 만든다.
+ * 빈자리 알림 소식을 만드는 곳.
+ * 임박·초임박은 1분마다 찾고, 재공개는 취소가 끝난 뒤에 만든다.
  */
 @Slf4j
 @Service
@@ -28,6 +31,7 @@ public class NotificationEventService {
 
     private final NotificationEventRepository notificationEventRepository;
     private final VacancySlotRepository vacancySlotRepository;
+    private final AvailabilityService availabilityService;
 
     /**
      * 임박 구간(시작 8시간 전부터 3시간 초과 전까지)에 들어온 빈자리마다 임박 이벤트를 한 번만 만든다.
@@ -79,33 +83,45 @@ public class NotificationEventService {
     }
 
     /**
-     * 취소된 예약 시간이 실제로 다시 판매 가능할 때만 재공개 이벤트를 만든다.
-     * 예약이 취소됐다는 사실만으로는 만들지 않는다. 재공개 커밋 뒤에 호출되므로 새 트랜잭션에서 저장한다.
+     * 취소된 예약 시간이 지금 다시 예약 가능할 때만 재공개 소식을 만든다.
+     * 취소됐다는 것만으로는 만들지 않는다.
+     * OPEN 행이 없어도, 영업시간 기준으로 팔리면 만든다.
      *
-     * @param reservationId 취소된 예약 ID
-     * @param now           현재 시각 (서울)
-     * @return 이벤트를 만들었으면 true, 판매 가능하지 않거나 이미 있으면 false
+     * @param reservationId 취소된 예약 번호
+     * @param now           현재 시각 (서울). 호출 쪽에서 넘기지만, 가능 여부는 AvailabilityService 시계 기준이다
+     * @return 소식을 만들었으면 true. 아직 못 팔거나 이미 있으면 false
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean createReopenedEvent(Long reservationId, LocalDateTime now) {
-        Optional<VacancySlot> reopened = vacancySlotRepository.findReopened(reservationId, now);
-        if (reopened.isEmpty()) {
-            log.info("재공개 이벤트 생략: 판매 가능한 빈자리가 아님 reservationId={}", reservationId);
+        Optional<VacancySlot> cancelled = vacancySlotRepository.findCancelledReservation(reservationId);
+        if (cancelled.isEmpty()) {
+            log.info("재공개 이벤트 생략: 취소 완료된 일반 시술 예약이 아님 reservationId={}", reservationId);
             return false;
         }
 
-        VacancySlot slot = reopened.get();
-        // 같은 빈자리, 같은 시작 시각의 재공개 이벤트는 한 번만 만든다.
-        boolean alreadyCreated = notificationEventRepository.existsByExceptionIdAndEventTypeAndSlotStartsAt(
-                slot.exceptionId(), NotificationEventType.REOPENED, slot.startsAt());
+        VacancySlot slot = cancelled.get();
+        int durationMinutes = (int) Duration.between(slot.startsAt(), slot.endsAt()).toMinutes();
+        if (durationMinutes <= 0) {
+            log.info("재공개 이벤트 생략: 예약 시간이 올바르지 않음 reservationId={}", reservationId);
+            return false;
+        }
 
+        // 화면과 같은 기준으로, 지금 이 시각에 예약할 수 있는지 본다.
+        if (!availabilityService.isAvailable(slot.shopId(), slot.startsAt(), durationMinutes)) {
+            log.info("재공개 이벤트 생략: 아직 예약할 수 없음 reservationId={}", reservationId);
+            return false;
+        }
+
+        // 같은 매장, 같은 시작 시각의 재공개 소식은 한 번만 만든다.
+        boolean alreadyCreated = notificationEventRepository.existsByShopIdAndEventTypeAndSlotStartsAt(
+                slot.shopId(), NotificationEventType.REOPENED, slot.startsAt());
         if (alreadyCreated) {
             return false;
         }
-        
+
         NotificationEvent event = NotificationEvent.builder()
                 .eventType(NotificationEventType.REOPENED)
-                .exceptionId(slot.exceptionId())
+                .exceptionId(null)
                 .shopId(slot.shopId())
                 .reservationId(slot.reservationId())
                 .slotStartsAt(slot.startsAt())

@@ -156,6 +156,18 @@ public class VacancySlotRepository {
         FETCH FIRST 1 ROWS ONLY
         """;
 
+    // 취소 완료된 일반 시술 예약만 읽는다. OPEN 행은 보지 않는다. 팔리는지는 isAvailable 이 본다.
+    private static final String FIND_CANCELLED_RESERVATION_SQL = """
+        SELECT t.SHOP_ID, r.RESERVATION_ID, r.STARTS_AT, r.ENDS_AT
+        FROM RESERVATION r
+        JOIN TREATMENT t ON t.TREATMENT_ID = r.TREATMENT_ID
+        JOIN SHOP s ON s.SHOP_ID = t.SHOP_ID
+        WHERE r.RESERVATION_ID = :reservationId
+        AND r.STATUS = 'CANCELLED'
+        AND t.TREATMENT_TYPE = 'NORMAL'
+        AND s.STATUS = 'ACTIVE'
+        """;
+
     // 이미 이벤트가 있는 빈자리도 다시 본다. 영업 중이고, 아직 클릭할 수 있고, 휴무·점유가 없을 것
     private static final String IS_OPEN_SLOT_SELLABLE_SQL = """
         SELECT o.EXCEPTION_ID
@@ -266,6 +278,27 @@ public class VacancySlotRepository {
         return Optional.of(slots.get(0));
     }
 
+    /**
+     * 취소가 끝난 일반 시술 예약을 읽는다.
+     * OPEN 행은 보지 않는다. 그 시간이 지금 예약 가능한지는 AvailabilityService 가 본다.
+     *
+     * @param reservationId 취소된 예약 번호
+     * @return 매장·시작·끝. 취소 완료·일반 시술·영업 중 매장이 아니면 빈 값
+     */
+    public Optional<VacancySlot> findCancelledReservation(Long reservationId) {
+        if (reservationId == null) {
+            return Optional.empty();
+        }
+        List<VacancySlot> slots = jdbcTemplate.query(
+                FIND_CANCELLED_RESERVATION_SQL,
+                Map.of("reservationId", reservationId),
+                VacancySlotRepository::toCancelledSlot);
+        if (slots.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(slots.get(0));
+    }
+
     // query가 (결과 행, 행 번호)를 넘긴다. 행 번호는 쓰지 않는다.
     // 임박·초임박은 예약이 없다. 시각은 OPEN의 시작·종료다.
     private static VacancySlot toOpenSlot(ResultSet rs, int rowNum) throws SQLException {
@@ -277,10 +310,20 @@ public class VacancySlotRepository {
                 toLocalDateTime(rs, "ENDS_AT"));
     }
 
-    // 재공개는 취소된 예약 ID가 있다. 시각은 그 예약의 시작·종료다.
+    // 재공개(OPEN 조회)는 취소된 예약 ID가 있다. 시각은 그 예약의 시작·종료다.
     private static VacancySlot toReopenedSlot(ResultSet rs, int rowNum) throws SQLException {
         return new VacancySlot(
                 rs.getLong("EXCEPTION_ID"),
+                rs.getLong("SHOP_ID"),
+                rs.getLong("RESERVATION_ID"),
+                toLocalDateTime(rs, "STARTS_AT"),
+                toLocalDateTime(rs, "ENDS_AT"));
+    }
+
+    // OPEN 없이 읽은 취소 예약. exceptionId 는 비운다.
+    private static VacancySlot toCancelledSlot(ResultSet rs, int rowNum) throws SQLException {
+        return new VacancySlot(
+                null,
                 rs.getLong("SHOP_ID"),
                 rs.getLong("RESERVATION_ID"),
                 toLocalDateTime(rs, "STARTS_AT"),
