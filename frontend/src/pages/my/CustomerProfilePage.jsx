@@ -5,6 +5,13 @@ import { DEMO_DATE, SERVICES, money } from '@/utils/demoData';
 import { useDesignStore } from '@/store/useDesignStore';
 import Asset from '@/components/common/Asset';
 import Dialog from '@/components/common/Dialog';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Notice from '@/components/common/Notice';
+import EmptyState from '@/components/common/EmptyState';
+import Alert from '@/components/common/Alert';
+import styles from './CustomerProfilePage.module.css';
 
 const tabs = [
   '내 예약 내역',
@@ -43,22 +50,22 @@ export default function CustomerProfilePage() {
     }
   };
   return (
-    <div className="b-container b-page b-profile-page">
-      <div className="b-notice b-profile-ribbon">
+    <div className={`b-container b-page ${styles.root}`}>
+      <Notice className={styles.ribbon}>
         <strong>MVP 모의 결제 데모:</strong> 본 마이페이지에서 표시되는 내역은 가상 시뮬레이션
         데이터입니다.
-      </div>
-      <section className="b-panel b-pad b-customer-summary">
+      </Notice>
+      <Panel as="section" padded className={styles.summary}>
         <div className="b-row">
           <div className="b-flex">
-            <div className="b-customer-avatar">
+            <div className={styles.avatar}>
               언니<span>★</span>
             </div>
             <div>
               <div className="b-flex">
                 <h1>{profile.name}</h1>
-                <span className="b-badge b-neutral">테스트 고객 계정</span>
-                <span className="b-badge">VIP 퍼스트패스</span>
+                <Badge tone="neutral">테스트 고객 계정</Badge>
+                <Badge>VIP 퍼스트패스</Badge>
               </div>
               <p>
                 가입일: 2025.01.15 · 최근 접속: 오늘 12:40 · <em>노쇼 이력 0회 (청정 매너)</em>
@@ -66,21 +73,20 @@ export default function CustomerProfilePage() {
             </div>
           </div>
           <div className="b-flex">
-            <button
-              className="b-button"
+            <Button
               onClick={() => {
                 setName(profile.name);
                 setDialog('profile');
               }}
             >
               프로필 수정
-            </button>
-            <button className="b-button b-share-button" onClick={share}>
+            </Button>
+            <Button className={styles.shareButton} onClick={share}>
               초대코드 공유
-            </button>
+            </Button>
           </div>
         </div>
-        <div className="b-stat-grid b-profile-stats">
+        <div className={`b-stat-grid ${styles.stats}`}>
           {[
             ['방문 예정 예약', upcoming.length, '건'],
             ['주니어 모델 신청', 1, '건'],
@@ -96,20 +102,20 @@ export default function CustomerProfilePage() {
             </div>
           ))}
         </div>
-      </section>
+      </Panel>
       {nearest && (
-        <section className="b-panel b-pad b-nearest">
+        <Panel as="section" padded className={styles.nearest}>
           <div>
             <div className="b-flex">
-              <span className="b-badge">
+              <Badge>
                 ◷ {nearest.date === DEMO_DATE ? 'D-DAY 오늘' : nearest.date} {nearest.time}
-              </span>
-              <span className="b-badge b-neutral">예약 확정</span>
+              </Badge>
+              <Badge tone="neutral">예약 확정</Badge>
               <small className="b-muted">예약번호 {nearest.id}</small>
             </div>
             <h2>{nearestService.shop}</h2>
             <p>{nearestService.name} | 담당 디자이너 자동 배정</p>
-            <div className="b-flex b-nearest-prices">
+            <div className={`b-flex ${styles.nearestPrices}`}>
               <span>
                 모의 결제 예약금: <strong>{money(nearest.deposit)} 완료</strong>
               </span>
@@ -119,19 +125,16 @@ export default function CustomerProfilePage() {
             </div>
           </div>
           <div className="b-flex">
-            <Link className="b-button b-primary" to={ROUTES.BOOKINGS}>
+            <Button as={Link} variant="primary" to={ROUTES.BOOKINGS}>
               예약 상세 보기
-            </Link>
-            <Link
-              className="b-button"
-              to={generatePath(ROUTES.SERVICE_DETAIL, { id: nearest.serviceId })}
-            >
+            </Button>
+            <Button as={Link} to={generatePath(ROUTES.SERVICE_DETAIL, { id: nearest.serviceId })}>
               길찾기
-            </Link>
+            </Button>
           </div>
-        </section>
+        </Panel>
       )}
-      <nav className="b-panel b-profile-tabs" aria-label="마이페이지 메뉴">
+      <Panel as="nav" className={styles.tabs} aria-label="마이페이지 메뉴">
         {tabs.map((label) => (
           <button
             key={label}
@@ -142,8 +145,8 @@ export default function CustomerProfilePage() {
             {label}
           </button>
         ))}
-      </nav>
-      <section aria-label={tab} className="b-profile-tab-panel">
+      </Panel>
+      <section aria-label={tab} className={styles.tabPanel}>
         <div className="b-row b-panel-heading">
           <h2>{tab === tabs[0] ? '예약 목록' : tab}</h2>
           <small className="b-muted">가상 데이터 시연</small>
@@ -155,14 +158,12 @@ export default function CustomerProfilePage() {
                 {customerBookings.map((b) => {
                   const s = SERVICES.find((item) => item.id === b.serviceId);
                   return (
-                    <article className="b-panel b-pad b-profile-booking b-row" key={b.id}>
+                    <article className={`b-panel b-pad ${styles.booking} b-row`} key={b.id}>
                       <div className="b-flex">
                         <Asset name="8-8-0.png" alt="예약 매장 대표 이미지" className="b-thumb" />
                         <div>
                           <small className="b-muted">
-                            <span className="b-badge">
-                              {b.status === 'confirmed' ? '방문 예정' : '고객 취소'}
-                            </span>{' '}
+                            <Badge>{b.status === 'confirmed' ? '방문 예정' : '고객 취소'}</Badge>{' '}
                             {b.date} {b.time}
                           </small>
                           <h2>{s.shop}</h2>
@@ -173,20 +174,18 @@ export default function CustomerProfilePage() {
                           </p>
                         </div>
                       </div>
-                      <div className="b-stack b-profile-booking-actions">
-                        <Link className="b-button b-primary" to={ROUTES.BOOKINGS}>
+                      <div className={`b-stack ${styles.bookingActions}`}>
+                        <Button as={Link} variant="primary" to={ROUTES.BOOKINGS}>
                           상세 영수증
-                        </Link>
+                        </Button>
                         {b.status === 'confirmed' && (
-                          <button className="b-button" onClick={() => setCancelId(b.id)}>
-                            예약 취소
-                          </button>
+                          <Button onClick={() => setCancelId(b.id)}>예약 취소</Button>
                         )}
                       </div>
                     </article>
                   );
                 })}
-                <article className="b-panel b-pad b-profile-booking b-row">
+                <article className={`b-panel b-pad ${styles.booking} b-row`}>
                   <div className="b-flex">
                     <Asset name="8-3-2.png" alt="속눈썹 케어 시술" className="b-thumb" />
                     <div>
@@ -196,39 +195,39 @@ export default function CustomerProfilePage() {
                       <p>결제 총액: 24,000원 (타임세일 특가) · 과거 이용 예시</p>
                     </div>
                   </div>
-                  <div className="b-stack b-profile-booking-actions">
-                    <button className="b-button b-soft" onClick={() => setDialog('review')}>
+                  <div className={`b-stack ${styles.bookingActions}`}>
+                    <Button variant="soft" onClick={() => setDialog('review')}>
                       리뷰 작성
-                    </button>
-                    <Link className="b-button" to={generatePath(ROUTES.RESERVE, { id: 'lash' })}>
+                    </Button>
+                    <Button as={Link} to={generatePath(ROUTES.RESERVE, { id: 'lash' })}>
                       다시 예약
-                    </Link>
+                    </Button>
                   </div>
                 </article>
               </>
             ) : (
-              <div className="b-panel b-empty">
+              <EmptyState className="b-panel">
                 <h2>예약 내역이 없어요</h2>
-                <Link className="b-button b-primary" to={ROUTES.HOME}>
+                <Button as={Link} variant="primary" to={ROUTES.HOME}>
                   지금 빈자리 찾아보기
-                </Link>
-              </div>
+                </Button>
+              </EmptyState>
             )}
           </div>
         )}
         {tab === tabs[1] && (
-          <div className="b-panel b-pad">
-            <span className="b-badge">검토 중</span>
+          <Panel padded>
+            <Badge>검토 중</Badge>
             <h2>주니어 네일 모델 신청</h2>
             <p>살롱 드 르네 · 2025.10.25 · 재료비 시술 · 신청 내역 예시</p>
             <p className="b-help">실제 신청과 매장 연락은 API 연결 후 제공됩니다.</p>
-          </div>
+          </Panel>
         )}
         {tab === tabs[2] && (
           <div className="b-stack">
             {showFavorites && favorites.length ? (
               SERVICES.filter((s) => favorites.includes(s.id)).map((s) => (
-                <article className="b-panel b-pad b-row" key={s.id}>
+                <Panel as="article" padded className="b-row" key={s.id}>
                   <div className="b-flex">
                     <Asset name={s.image} alt={s.shop} className="b-thumb" />
                     <div>
@@ -242,22 +241,22 @@ export default function CustomerProfilePage() {
                       </Link>
                     </div>
                   </div>
-                  <button className="b-button" onClick={() => toggleFavorite(s.id)}>
-                    찜 해제
-                  </button>
-                </article>
+                  <Button onClick={() => toggleFavorite(s.id)}>찜 해제</Button>
+                </Panel>
               ))
             ) : (
-              <div className="b-panel b-empty">
+              <EmptyState className="b-panel">
                 <h2>찜한 매장이 없어요</h2>
                 <Link to={ROUTES.HOME}>마음에 드는 매장을 찾아보세요</Link>
-              </div>
+              </EmptyState>
             )}
           </div>
         )}
         {tab === tabs[3] && (
-          <form
-            className="b-panel b-pad b-stack"
+          <Panel
+            as="form"
+            padded
+            className="b-stack"
             onSubmit={(e) => {
               e.preventDefault();
               setNotice('데모 알림 조건을 저장했습니다. 실제 알림은 발송되지 않습니다.');
@@ -272,7 +271,7 @@ export default function CustomerProfilePage() {
                 onChange={(e) => saveProfile({ alerts: e.target.checked })}
               />
             </label>
-            <label className="b-alert-condition">
+            <label className={styles.alertCondition}>
               원하는 시술·지역·시간
               <input
                 maxLength={100}
@@ -280,22 +279,22 @@ export default function CustomerProfilePage() {
                 onChange={(e) => setCondition(e.target.value)}
               />
             </label>
-            <button className="b-button b-primary">알림 조건 저장</button>
-          </form>
+            <Button variant="primary">알림 조건 저장</Button>
+          </Panel>
         )}
         {tab === tabs[4] && (
           <div className="b-stack">
-            <div className="b-notice">
+            <Notice>
               <h3>예약 안내</h3>
               <p>방문 예정 예약은 내 예약 상세에서 확인할 수 있습니다.</p>
-            </div>
-            <div className="b-notice">
+            </Notice>
+            <Notice>
               <h3>빈자리 타임세일</h3>
               <p>
                 찜한 매장의 새 빈자리를 탐색해 보세요. 알림 예시이며 실제 메시지는 발송되지
                 않습니다.
               </p>
-            </div>
+            </Notice>
           </div>
         )}
       </section>
@@ -326,9 +325,9 @@ export default function CustomerProfilePage() {
         </div>
       </div>
       {notice && (
-        <p className="b-success" role="status">
+        <Alert as="p" tone="success" role="status">
           {notice}
-        </p>
+        </Alert>
       )}
       {dialog && (
         <Dialog
@@ -346,7 +345,7 @@ export default function CustomerProfilePage() {
                 setNotice('프로필을 저장했습니다.');
               }}
             >
-              <label className="b-alert-condition">
+              <label className={styles.alertCondition}>
                 닉네임
                 <input
                   autoFocus
@@ -356,7 +355,7 @@ export default function CustomerProfilePage() {
                   onChange={(e) => setName(e.target.value)}
                 />
               </label>
-              <button className="b-button b-primary">프로필 저장</button>
+              <Button variant="primary">프로필 저장</Button>
             </form>
           )}
           {dialog === 'share' && (
@@ -374,11 +373,11 @@ export default function CustomerProfilePage() {
                 setNotice('리뷰를 데모로 저장했습니다. 실제 게시되지 않습니다.');
               }}
             >
-              <label className="b-alert-condition">
+              <label className={styles.alertCondition}>
                 시술은 어떠셨나요?
                 <textarea required rows="4" maxLength={500} />
               </label>
-              <button className="b-button b-primary">리뷰 저장</button>
+              <Button variant="primary">리뷰 저장</Button>
             </form>
           )}
         </Dialog>
@@ -389,8 +388,8 @@ export default function CustomerProfilePage() {
             이용 2일 전까지 20,000원, 1일 전 10,000원, 당일 0원이 예약금 한도 내에서 모의
             환불됩니다. 취소하시겠어요?
           </p>
-          <button
-            className="b-button b-primary"
+          <Button
+            variant="primary"
             onClick={() => {
               cancelBooking(cancelId);
               setCancelId('');
@@ -398,7 +397,7 @@ export default function CustomerProfilePage() {
             }}
           >
             예약 취소 확정
-          </button>
+          </Button>
         </Dialog>
       )}
     </div>

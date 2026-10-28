@@ -3,7 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useDesignStore } from '@/store/useDesignStore';
 import Dialog from '@/components/common/Dialog';
+import Button from '@/components/common/Button';
 import '@/assets/styles/home-redesign.css';
+import styles from './HomeHeader.module.css';
 
 const NOTIFICATIONS = [
   {
@@ -54,12 +56,12 @@ export default function HomeHeader() {
   };
   return (
     <>
-      <header className="home-header">
-        <div className="b-container home-header-inner">
+      <header className={styles.root}>
+        <div className={`b-container ${styles.inner}`}>
           <Link to={ROUTES.HOME} className="b-brand">
             땡잡은 언니
           </Link>
-          <form className="home-header-search" onSubmit={handleSearch}>
+          <form className={styles.search} onSubmit={handleSearch}>
             <input
               aria-label="지역, 시술 종류, 매장 검색"
               placeholder="지역, 시술 종류, 매장 검색"
@@ -75,13 +77,13 @@ export default function HomeHeader() {
             <Link to={ROUTES.BOOKINGS}>▦ 내 예약</Link>
             <Link to={ROUTES.MY_RESERVATIONS}>예약 내역</Link>
           </nav>
-          <div className="home-header-actions">
-            <Link to={ROUTES.OWNER} className="home-account">
+          <div className={styles.actions}>
+            <Link to={ROUTES.OWNER} className={styles.account}>
               ● [테스트] 고객 계정
             </Link>
             <div ref={popoverRef}>
               <button
-                className="home-notification-button"
+                className={styles.notificationButton}
                 aria-label="알림"
                 aria-expanded={open}
                 aria-controls="home-notifications"
@@ -104,7 +106,7 @@ export default function HomeHeader() {
                   className="home-notifications"
                   aria-label="실시간 알림"
                 >
-                  <div className="home-notifications-title">
+                  <div className={styles.notificationsTitle}>
                     <strong>♧ 실시간 알림 {read ? 0 : 2}</strong>
                     <div>
                       <button onClick={() => setRead(true)}>
@@ -115,7 +117,7 @@ export default function HomeHeader() {
                       </button>
                     </div>
                   </div>
-                  <div className="home-notification-tabs">
+                  <div className={styles.notificationTabs}>
                     {['전체', '예약', '타임세일'].map((label) => (
                       <button
                         key={label}
@@ -127,7 +129,7 @@ export default function HomeHeader() {
                     ))}
                   </div>
                   {NOTIFICATIONS.filter((n) => tab === '전체' || n.category === tab).map((n) => (
-                    <div className="home-notification-item" key={n.id}>
+                    <div className={styles.notificationItem} key={n.id}>
                       <Link to={n.to} onClick={() => setOpen(false)}>
                         <strong>
                           {!read && <em>● </em>}
@@ -147,7 +149,7 @@ export default function HomeHeader() {
           </div>
         </div>
       </header>
-      <nav className="home-mobile-nav" aria-label="모바일 고객 메뉴">
+      <nav className={styles.mobileNav} aria-label="모바일 고객 메뉴">
         <Link to={`${ROUTES.HOME}?view=list`}>
           <span>⌖</span>빈자리 탐색
         </Link>
@@ -167,9 +169,9 @@ export default function HomeHeader() {
       {modelOpen && (
         <Dialog title="시술 모델 모집" onClose={() => setModelOpen(false)}>
           <p>시술 모델 모집 화면은 준비 중입니다. 현재는 메인페이지 UI 시연 환경입니다.</p>
-          <button className="b-button b-primary" onClick={() => setModelOpen(false)}>
+          <Button variant="primary" onClick={() => setModelOpen(false)}>
             확인
-          </button>
+          </Button>
         </Dialog>
       )}
     </>

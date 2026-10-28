@@ -2,6 +2,8 @@ import { Link, NavLink } from 'react-router-dom';
 import Asset from '@/components/common/Asset';
 import { ROUTES } from '@/constants/routes';
 import { useDesignStore } from '@/store/useDesignStore';
+import Button from '@/components/common/Button';
+import styles from './OwnerSidebar.module.css';
 
 const NAVIGATION = [
   [ROUTES.OWNER_SHOP, '매장 정보', '12-1798-6.svg'],
@@ -18,21 +20,21 @@ export default function OwnerSidebar() {
   const shop = useDesignStore((s) => s.shop);
 
   return (
-    <aside className="b-sidebar">
-      <Link to={ROUTES.OWNER} className="b-owner-brand">
+    <aside className={styles.root}>
+      <Link to={ROUTES.OWNER} className={styles.brand}>
         <strong>땡잡은 언니</strong>
         <small>사장님 센터</small>
       </Link>
-      <div className="b-owner-shop">
+      <div className={styles.shop}>
         <Asset name="12-1798-0.png" alt="매장 대표 이미지" />
         <div>
           <strong>{shop.name}</strong>
           <small className="b-green-text">● 영업 중</small>
         </div>
       </div>
-      <Link className="b-button b-primary b-wide" to={ROUTES.OWNER_SLOT_NEW}>
+      <Button as={Link} variant="primary" wide to={ROUTES.OWNER_SLOT_NEW}>
         ⊕ 빈자리 즉시 등록
-      </Link>
+      </Button>
       <nav aria-label="사장님 메뉴">
         {NAVIGATION.map(([to, label, icon]) => (
           <NavLink key={to} to={to}>
@@ -41,7 +43,7 @@ export default function OwnerSidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="b-sidebar-bottom">
+      <div className={styles.bottom}>
         <NavLink to={ROUTES.OWNER} end>
           마이페이지
         </NavLink>

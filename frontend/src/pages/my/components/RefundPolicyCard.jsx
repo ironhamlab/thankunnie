@@ -1,5 +1,7 @@
 import { money } from '@/utils/demoData';
 import { REFUND_TIERS, quoteRefund } from '@/utils/demoRefundPolicy';
+import Badge from '@/components/common/Badge';
+import styles from './RefundPolicyCard.module.css';
 
 const describeDays = (daysLeft) => {
   if (daysLeft === null) return '취소 당시 적용된 구간';
@@ -18,13 +20,13 @@ export default function RefundPolicyCard({ booking }) {
     : 0;
 
   return (
-    <div className="b-refund-card">
+    <div className={styles.root}>
       <div className="b-row">
-        <span className="b-badge b-neutral">{describeDays(quote.daysLeft)}</span>
+        <Badge tone="neutral">{describeDays(quote.daysLeft)}</Badge>
         <small className="b-muted">납부 예약금 한도 내 환불</small>
       </div>
 
-      <ul className="b-refund-tiers">
+      <ul className={styles.tiers}>
         {REFUND_TIERS.map((tier) => (
           <li key={tier.key} className={tier.key === quote.tier.key ? 'is-current' : ''}>
             <span>{tier.label}</span>
@@ -34,16 +36,16 @@ export default function RefundPolicyCard({ booking }) {
         ))}
       </ul>
 
-      <div className="b-refund-result">
+      <div className={styles.result}>
         <div>
           <span>{isCancelled ? '환불 금액' : '지금 취소하면 환불'}</span>
           <strong className="b-pink">{money(quote.refundAmount)}</strong>
         </div>
-        <div className="b-refund-split" role="img" aria-label={`환불 ${refundRate}%`}>
+        <div className={styles.split} role="img" aria-label={`환불 ${refundRate}%`}>
           <span className="is-refund" style={{ width: `${refundRate}%` }} />
-          <span className="is-kept" style={{ width: `${100 - refundRate}%` }} />
+          <span className={styles.isKept} style={{ width: `${100 - refundRate}%` }} />
         </div>
-        <dl className="b-refund-breakdown">
+        <dl className={styles.breakdown}>
           <div>
             <dt>납부 예약금</dt>
             <dd>{money(quote.paidAmount)}</dd>

@@ -20,7 +20,7 @@ npm run dev
 | `src/components/common/`                                 | `Dialog`, `Asset`(Figma 에셋)                           |
 | `src/store/useDesignStore.js`                            | 시연 상태                                               |
 | `src/utils/demoData.js`, `src/utils/demoRefundPolicy.js` | 시연 데이터·환불 시연 계산                              |
-| `src/assets/styles/`                                     | `design.css` 등 디자인 테마                             |
+| `src/assets/styles/`                                     | `global.css`(디자인 토큰), `design.css`(공통 클래스)    |
 
 ## 구현 화면
 

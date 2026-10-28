@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useScheduleStore } from '@/store/useScheduleStore';
 import { datePart, timePart, toKstDateTime } from '@/utils/scheduleDate';
 import Dialog from '@/components/common/Dialog';
+import Button from '@/components/common/Button';
+import Alert from '@/components/common/Alert';
 
 const TYPE_LABELS = {
   OPEN: '열기 (영업시간 밖 추가 영업)',
@@ -121,13 +123,13 @@ export default function ScheduleExceptionDialog({ exception, date, minDate, maxD
           열기는 시작 30분 전까지 등록할 수 있고, 예약이 있는 시간은 닫을 수 없습니다.
         </p>
         {errorMessage && (
-          <p role="alert" className="b-error b-span-two">
+          <Alert as="p" tone="error" className="b-span-two" role="alert">
             {errorMessage}
-          </p>
+          </Alert>
         )}
-        <button className="b-button b-primary b-span-two" disabled={isSaving}>
+        <Button variant="primary" className="b-span-two" disabled={isSaving}>
           {exception ? '수정 저장' : '등록하기'}
-        </button>
+        </Button>
       </form>
     </Dialog>
   );

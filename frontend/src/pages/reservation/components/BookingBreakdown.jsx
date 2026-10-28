@@ -1,12 +1,17 @@
 import { money } from '@/utils/demoData';
+import Badge from '@/components/common/Badge';
+import Notice from '@/components/common/Notice';
+import styles from './BookingBreakdown.module.css';
 
 export default function BookingBreakdown({ service, booking, compact = false }) {
   const discount = Math.round((1 - booking.price / service.original) * 100);
   return (
-    <section className={'b-panel b-pad b-settlement ' + (compact ? 'b-settlement-compact' : '')}>
+    <section
+      className={`b-panel b-pad ${styles.settlement} ` + (compact ? 'b-settlement-compact' : '')}
+    >
       <div className="b-row">
         <h2>결제 및 정산 요약</h2>
-        <span className="b-badge">타임세일 할인 {discount}% 적용</span>
+        <Badge>타임세일 할인 {discount}% 적용</Badge>
       </div>
       <dl className="b-details">
         <div>
@@ -29,16 +34,16 @@ export default function BookingBreakdown({ service, booking, compact = false }) 
       <div className="b-two-grid">
         <div className="b-highlight">
           <small>
-            모의 결제 완료 예약금 <span className="b-badge">완료</span>
+            모의 결제 완료 예약금 <Badge>완료</Badge>
           </small>
           <strong className="b-pink">{money(booking.deposit)}</strong>
           <small>실제 과금 없는 모의 테스트 승인 (20%)</small>
         </div>
-        <div className="b-notice">
+        <Notice>
           <small>매장 방문 현장 잔금</small>
           <strong>{money(booking.price - booking.deposit)}</strong>
           <small>시술 종료 후 매장에서 직접 결제</small>
-        </div>
+        </Notice>
       </div>
     </section>
   );

@@ -1,0 +1,38 @@
+.settlement {
+  border-color: #ffc1d9;
+}
+.settlement :global(.b-details) {
+  margin: 6px 0 14px;
+}
+.settlement :global(.b-details) > div {
+  padding: 10px 0;
+}
+.settlement :global(.b-details) > div:last-child {
+  padding-bottom: 16px;
+  border-top: 1px dashed var(--color-border);
+}
+.settlement :global(.b-two-grid) > div {
+  padding: 16px;
+}
+.settlement :global(.b-two-grid) strong {
+  display: block;
+  font-size: 21px;
+  margin: 6px 0;
+}
+.settlement :global(.b-two-grid) small {
+  display: block;
+}
+.settlement :global(.b-row) {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+@media (max-width: 700px) {
+  .settlement :global(.b-two-grid) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 540px) {
+  .settlement > :global(.b-row) {
+    flex-wrap: wrap;
+  }
+}

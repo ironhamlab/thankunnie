@@ -4,6 +4,13 @@ import { ROUTES } from '@/constants/routes';
 import { SERVICES, finish, money } from '@/utils/demoData';
 import { useDesignStore } from '@/store/useDesignStore';
 import Asset from '@/components/common/Asset';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Notice from '@/components/common/Notice';
+import EmptyState from '@/components/common/EmptyState';
+import Alert from '@/components/common/Alert';
+import styles from './CheckoutPage.module.css';
 
 export default function CheckoutPage() {
   const hold = useDesignStore((s) => s.hold);
@@ -24,13 +31,13 @@ export default function CheckoutPage() {
   }, []);
   if (!hold)
     return (
-      <div className="b-container b-empty">
+      <EmptyState className="b-container">
         <h1>선택한 예약이 없습니다</h1>
         <p>빈자리와 시간을 먼저 선택해 주세요.</p>
-        <Link to={ROUTES.HOME} className="b-button b-primary">
+        <Button as={Link} variant="primary" to={ROUTES.HOME}>
           빈자리 탐색
-        </Link>
-      </div>
+        </Button>
+      </EmptyState>
     );
   const service = SERVICES.find((s) => s.id === hold.serviceId);
   const remaining = Math.max(0, Math.ceil((hold.expiresAt - now) / 1000));
@@ -79,26 +86,26 @@ export default function CheckoutPage() {
         </Link>
         <div className="b-columns">
           <div className="b-stack">
-            <section className="b-panel b-pad">
+            <Panel as="section" padded>
               <h2 className="b-panel-heading">1. 예약 정보 확인</h2>
               <div className="b-booking-service">
                 <Asset name="8-4-0.png" className="b-thumb" alt="살롱 드 르네 매장 내부" />
                 <div>
                   <small className="b-pink">{service.category} & 뷰티 케어</small>
                   <h2>{service.shop}</h2>
-                  <div className="b-notice">
+                  <Notice>
                     <strong>{service.name}</strong>
                     <p className="b-pink">
                       {hold.date} {hold.time} ~ {finish(hold.time, hold.duration)}
                     </p>
                     <small>소요 시간 약 {hold.duration}분 · 담당 디자이너 자동 배정</small>
-                  </div>
+                  </Notice>
                 </div>
               </div>
-            </section>
-            <section className="b-panel b-pad">
+            </Panel>
+            <Panel as="section" padded>
               <h2 className="b-panel-heading">
-                2. 예약자 정보 <span className="b-badge b-neutral">테스트 계정 기본 표시</span>
+                2. 예약자 정보 <Badge tone="neutral">테스트 계정 기본 표시</Badge>
               </h2>
               <div className="b-form-grid">
                 <label>
@@ -120,10 +127,10 @@ export default function CheckoutPage() {
                   />
                 </label>
               </div>
-            </section>
-            <section className="b-panel b-pad">
+            </Panel>
+            <Panel as="section" padded>
               <h2 className="b-panel-heading">3. 필수 약관 및 취소 정책 동의</h2>
-              <label className="b-check">
+              <label className={styles.check}>
                 <input
                   type="checkbox"
                   checked={policy}
@@ -137,7 +144,7 @@ export default function CheckoutPage() {
                   </small>
                 </span>
               </label>
-              <label className="b-check">
+              <label className={styles.check}>
                 <input type="checkbox" checked={demo} onChange={(e) => setDemo(e.target.checked)} />
                 <span>
                   <strong>[필수] MVP 모의 결제 확인</strong>
@@ -147,11 +154,11 @@ export default function CheckoutPage() {
                   </small>
                 </span>
               </label>
-            </section>
-            <section className="b-panel b-pad">
+            </Panel>
+            <Panel as="section" padded>
               <h2 className="b-panel-heading">4. 모의 결제 시연 패널</h2>
               <p className="b-help">다양한 테스트 시나리오를 실행해볼 수 있습니다.</p>
-              <div className="b-options b-scenarios">
+              <div className={`b-options ${styles.scenarios}`}>
                 {[
                   ['success', '성공 케이스 진행'],
                   ['failure', '결제 실패 오류 시연'],
@@ -167,22 +174,20 @@ export default function CheckoutPage() {
                   </button>
                 ))}
               </div>
-              <div className="b-notice">
+              <Notice>
                 <strong>선택된 결제 수단 · 모의 안전 결제</strong>
-                <div className="b-payment-method">
+                <div className={styles.paymentMethod}>
                   <span>언니</span>
                   <div>
                     <strong>테스트 결제용 가상 수단 (모의 간편결제)</strong>
                     <p>실제 카드 번호, CVC, 비밀번호 입력이 필요 없습니다.</p>
                   </div>
                 </div>
-              </div>
-            </section>
+              </Notice>
+            </Panel>
           </div>
-          <aside className="b-panel b-pad b-summary">
-            <div className="b-notice">
-              모의 결제 진행 시 {money(hold.price)}의 예약 권리가 확정됩니다.
-            </div>
+          <Panel as="aside" padded className="b-summary">
+            <Notice>모의 결제 진행 시 {money(hold.price)}의 예약 권리가 확정됩니다.</Notice>
             <h2>결제 금액 내역</h2>
             <dl className="b-details">
               <div>
@@ -216,24 +221,20 @@ export default function CheckoutPage() {
               </div>
             </dl>
             {(error || remaining === 0) && (
-              <p role="alert" className="b-error">
+              <Alert as="p" tone="error" role="alert">
                 {remaining === 0
                   ? '임시 확보 시간이 만료되었습니다. 시간을 다시 선택해 주세요.'
                   : error}
-              </p>
+              </Alert>
             )}
-            <button
-              className="b-button b-primary b-wide"
-              disabled={remaining === 0}
-              onClick={handlePay}
-            >
+            <Button variant="primary" wide disabled={remaining === 0} onClick={handlePay}>
               {money(hold.deposit)} 모의 결제로 진행하기
-            </button>
+            </Button>
             <Link className="b-back b-center" to={ROUTES.HOME} onClick={release}>
               예약 취소하고 목록으로 돌아가기
             </Link>
             <p className="b-help">MVP 모의 결제 환경으로 실제 금융 결제가 발생하지 않습니다.</p>
-          </aside>
+          </Panel>
         </div>
       </div>
     </>

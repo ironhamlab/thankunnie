@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+import Button from '@/components/common/Button';
+import styles from './Dialog.module.css';
 
 export default function Dialog({ title, onClose, children }) {
   const ref = useRef(null);
@@ -14,7 +16,7 @@ export default function Dialog({ title, onClose, children }) {
   return (
     <dialog
       ref={ref}
-      className="b-native-dialog"
+      className={styles.root}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
@@ -23,9 +25,9 @@ export default function Dialog({ title, onClose, children }) {
       <div className="beauty-app b-pad">
         <div className="b-row b-panel-heading">
           <h2>{title}</h2>
-          <button className="b-button b-small" aria-label="닫기" onClick={onClose}>
+          <Button size="small" aria-label="닫기" onClick={onClose}>
             ✕
-          </button>
+          </Button>
         </div>
         {children}
       </div>

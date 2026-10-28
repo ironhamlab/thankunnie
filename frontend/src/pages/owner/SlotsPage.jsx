@@ -5,6 +5,13 @@ import { useDesignStore } from '@/store/useDesignStore';
 import { DEMO_DATE, STATUS, finish, money, resolveSlotMenu } from '@/utils/demoData';
 import Dialog from '@/components/common/Dialog';
 import useSlotTreatments from '@/hooks/useSlotTreatments';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Notice from '@/components/common/Notice';
+import EmptyState from '@/components/common/EmptyState';
+import Alert from '@/components/common/Alert';
+import styles from './SlotsPage.module.css';
 
 export default function SlotsPage() {
   const slots = useDesignStore((s) => s.slots);
@@ -76,21 +83,21 @@ export default function SlotsPage() {
       <div className="b-row b-title-row">
         <div>
           <h1>
-            빈자리 관리 <span className="b-badge">실시간 {slots.length}건</span>
+            빈자리 관리 <Badge>실시간 {slots.length}건</Badge>
           </h1>
           <p className="b-muted">당일 및 임박 타임세일 빈자리를 등록하고 판매 상태를 관리합니다.</p>
         </div>
-        <Link className="b-button b-primary" to={ROUTES.OWNER_SLOT_NEW}>
+        <Button as={Link} variant="primary" to={ROUTES.OWNER_SLOT_NEW}>
           + 신규 빈자리 등록
-        </Link>
+        </Button>
       </div>
-      <div className="b-notice">
+      <Notice>
         <p>※ 확정된 예약은 빈자리 수정이나 판매 중지 동작으로 취소되지 않습니다.</p>
         <small>
           실제 결제와 자동 재공개는 백엔드 연결 후 제공됩니다. 현재 데모 상태만 변경됩니다.
         </small>
-      </div>
-      <div className="b-panel b-pad b-slot-filters">
+      </Notice>
+      <Panel padded className={styles.filters}>
         <label>
           일정 선택
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -117,8 +124,7 @@ export default function SlotsPage() {
             ))}
           </select>
         </label>
-        <button
-          className="b-button"
+        <Button
           onClick={() => {
             setDate('');
             setServiceId('');
@@ -126,9 +132,9 @@ export default function SlotsPage() {
           }}
         >
           필터 초기화
-        </button>
-      </div>
-      <section className="b-panel b-table-panel">
+        </Button>
+      </Panel>
+      <Panel as="section" className="b-table-panel">
         <div className="b-pad">
           <h2>
             등록된 빈자리 목록 <small className="b-muted">(총 {list.length}개 타임슬롯)</small>
@@ -169,7 +175,7 @@ export default function SlotsPage() {
                       <del>{money(m?.original || 0)}</del>
                     </td>
                     <td>
-                      <span className="b-badge">{slot.discount}%</span>
+                      <Badge>{slot.discount}%</Badge>
                     </td>
                     <td>
                       <strong>
@@ -188,18 +194,18 @@ export default function SlotsPage() {
                     <td>
                       {['selling', 'stopped'].includes(slot.status) ? (
                         <div className="b-flex">
-                          <button
-                            className="b-button b-small"
+                          <Button
+                            size="small"
                             onClick={() => {
                               setEdit({ ...slot });
                               setError('');
                             }}
                           >
                             수정
-                          </button>
-                          <button className="b-button b-small" onClick={() => toggle(slot.id)}>
+                          </Button>
+                          <Button size="small" onClick={() => toggle(slot.id)}>
                             {slot.status === 'selling' ? '판매 중지' : '재공개'}
-                          </button>
+                          </Button>
                         </div>
                       ) : (
                         <span className="b-muted">변경 불가</span>
@@ -211,12 +217,12 @@ export default function SlotsPage() {
             </tbody>
           </table>
         </div>
-        {!list.length && <p className="b-empty">조건에 맞는 빈자리가 없습니다.</p>}
-      </section>
+        {!list.length && <EmptyState as="p">조건에 맞는 빈자리가 없습니다.</EmptyState>}
+      </Panel>
       {notice && (
-        <p className="b-success" role="status">
+        <Alert as="p" tone="success" role="status">
           {notice}
-        </p>
+        </Alert>
       )}
       {draft && (
         <Dialog title="빈자리 등록 및 실시간 겹침 검사" onClose={close}>
@@ -224,13 +230,9 @@ export default function SlotsPage() {
             {loadError && (
               <div role="alert">
                 <p>{loadError.message}</p>
-                <button
-                  type="button"
-                  className="b-button"
-                  onClick={() => refreshMenus().catch(() => {})}
-                >
+                <Button type="button" onClick={() => refreshMenus().catch(() => {})}>
                   다시 불러오기
-                </button>
+                </Button>
               </div>
             )}
             {selectionStatus === 'loading' && <p role="status">시술을 불러오는 중입니다.</p>}
@@ -295,28 +297,29 @@ export default function SlotsPage() {
                 onChange={(e) => update('discount', e.target.value)}
               />
             </label>
-            <div className="b-notice">
+            <Notice>
               <small>종료 시각 (자동)</small>
               <strong>{finish(draft.time || '00:00', duration || 60)}</strong>
               <small>
                 현재 적용 가격{' '}
                 {money(Math.round((menu?.original || 0) * (1 - Number(draft.discount) / 100)))}
               </small>
-            </div>
+            </Notice>
             {error && (
-              <p role="alert" className="b-error b-span-two">
+              <Alert as="p" tone="error" className="b-span-two" role="alert">
                 {error}
-              </p>
+              </Alert>
             )}
-            <button
-              className="b-button b-primary b-span-two"
+            <Button
+              variant="primary"
+              className="b-span-two"
               disabled={
                 selectionStatus !== 'succeeded' ||
                 (!existingSlot && !selectableMenus.some((m) => m.active))
               }
             >
               빈자리 저장하기
-            </button>
+            </Button>
           </form>
         </Dialog>
       )}

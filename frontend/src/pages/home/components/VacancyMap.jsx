@@ -4,6 +4,8 @@ import { ROUTES } from '@/constants/routes';
 import MapArtwork from '@/pages/home/components/MapArtwork';
 import Asset from '@/components/common/Asset';
 import { money } from '@/utils/demoData';
+import Button from '@/components/common/Button';
+import styles from './VacancyMap.module.css';
 
 const PIN_POSITIONS = {
   nail: [30, 30],
@@ -20,8 +22,8 @@ export default function VacancyMap({ services }) {
   const [zoom, setZoom] = useState(1);
   const selected = services.find((service) => service.id === selectedId) || services[0];
   return (
-    <section className="b-map b-vacancy-map" aria-label="빈자리 예시 지도">
-      <div className="b-map-canvas" style={{ transform: `scale(${zoom})` }}>
+    <section className={`b-map ${styles.root}`} aria-label="빈자리 예시 지도">
+      <div className={styles.canvas} style={{ transform: `scale(${zoom})` }}>
         <MapArtwork />
         {services.map((service) => {
           const [left, top] = Object.hasOwn(PIN_POSITIONS, service.id)
@@ -30,7 +32,7 @@ export default function VacancyMap({ services }) {
           return (
             <button
               key={service.id}
-              className={`b-map-pin ${selected.id === service.id ? 'is-selected' : ''}`}
+              className={`${styles.pin} ${selected.id === service.id ? 'is-selected' : ''}`}
               style={{
                 left: `${left}%`,
                 top: `${top}%`,
@@ -44,8 +46,8 @@ export default function VacancyMap({ services }) {
           );
         })}
       </div>
-      <span className="b-vacancy-map-note">예시 지도 · 실제 위치와 다를 수 있어요</span>
-      <div className="b-map-tools">
+      <span className={styles.note}>예시 지도 · 실제 위치와 다를 수 있어요</span>
+      <div className={styles.tools}>
         <button
           aria-label="지도 확대"
           disabled={zoom >= 1.4}
@@ -61,9 +63,9 @@ export default function VacancyMap({ services }) {
           −
         </button>
       </div>
-      <div className="b-map-detail b-panel">
+      <div className={`${styles.detail} b-panel`}>
         <div className="b-flex">
-          <Asset name={selected.image} className="b-map-thumb" alt={selected.shop} />
+          <Asset name={selected.image} className={styles.thumb} alt={selected.shop} />
           <div>
             <h2>{selected.shop}</h2>
             <p>
@@ -72,12 +74,13 @@ export default function VacancyMap({ services }) {
             <strong>{money(selected.price)}</strong>
           </div>
         </div>
-        <Link
-          className="b-button b-primary"
+        <Button
+          as={Link}
+          variant="primary"
           to={generatePath(ROUTES.SERVICE_DETAIL, { id: selected.id })}
         >
           선택한 빈자리 확인
-        </Link>
+        </Button>
       </div>
     </section>
   );

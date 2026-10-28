@@ -2,7 +2,11 @@ import { Suspense } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useDesignStore } from '@/store/useDesignStore';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
+import EmptyState from '@/components/common/EmptyState';
 import OwnerSidebar from './OwnerSidebar';
+import styles from './OwnerLayout.module.css';
 
 /**
  * 사장님 센터 레이아웃: 사이드바 + 상단 매장 정보 + 본문
@@ -13,29 +17,23 @@ export default function OwnerLayout() {
 
   return (
     <div className="beauty-app">
-      <div className="b-owner">
+      <div className={styles.root}>
         <OwnerSidebar />
         <div className="b-owner-body">
-          <header className="b-owner-header">
+          <header className={styles.header}>
             <div className="b-flex">
               <strong>{shop.name}</strong>
-              <span className="b-badge">파트너 가맹점</span>
+              <Badge>파트너 가맹점</Badge>
             </div>
             <div className="b-flex">
-              <Link className="b-button b-small" to={ROUTES.HOME}>
+              <Button as={Link} size="small" to={ROUTES.HOME}>
                 ↔ 고객 모드로 전환
-              </Link>
+              </Button>
               <span className="b-account">● [테스트] 사장님 계정 (살롱 드 르네)</span>
             </div>
           </header>
-          <main className="b-owner-main" key={location.pathname}>
-            <Suspense
-              fallback={
-                <div className="b-empty" role="status">
-                  화면을 불러오는 중입니다.
-                </div>
-              }
-            >
+          <main className={styles.main} key={location.pathname}>
+            <Suspense fallback={<EmptyState role="status">화면을 불러오는 중입니다.</EmptyState>}>
               <Outlet />
             </Suspense>
           </main>

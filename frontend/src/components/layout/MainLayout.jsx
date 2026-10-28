@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
+import EmptyState from '@/components/common/EmptyState';
 import Footer from './Footer';
 import Header from './Header';
 import HomeHeader from './HomeHeader';
@@ -21,13 +22,7 @@ export default function MainLayout() {
       <div className="b-layout">
         {isHome ? <HomeHeader /> : <Header />}
         <main>
-          <Suspense
-            fallback={
-              <div className="b-empty" role="status">
-                화면을 불러오는 중입니다.
-              </div>
-            }
-          >
+          <Suspense fallback={<EmptyState role="status">화면을 불러오는 중입니다.</EmptyState>}>
             <Outlet />
           </Suspense>
         </main>

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import Dialog from '@/components/common/Dialog';
+import Button from '@/components/common/Button';
+import styles from './TreatmentForm.module.css';
 
 export default function TreatmentForm({ treatment, categories, isSaving, error, onSave, onClose }) {
   const [form, setForm] = useState({
@@ -73,7 +75,7 @@ export default function TreatmentForm({ treatment, categories, isSaving, error, 
   return (
     <Dialog title={treatment ? '시술 메뉴 수정' : '신규 시술 등록'} onClose={onClose}>
       <form onSubmit={submit} className="b-form-grid">
-        <fieldset disabled={isSaving} className="treatment-fields b-span-two">
+        <fieldset disabled={isSaving} className={`${styles.fields} b-span-two`}>
           <label className="b-span-two">
             목적 태그 *
             <select required name="treatmentType" value={form.treatmentType} onChange={change}>
@@ -199,9 +201,9 @@ export default function TreatmentForm({ treatment, categories, isSaving, error, 
             {validationError || error.message}
           </p>
         )}
-        <button className="b-button b-primary b-span-two" disabled={isSaving}>
+        <Button variant="primary" className="b-span-two" disabled={isSaving}>
           {isSaving ? '저장 중…' : '저장'}
-        </button>
+        </Button>
       </form>
     </Dialog>
   );

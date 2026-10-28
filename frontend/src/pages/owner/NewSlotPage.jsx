@@ -4,6 +4,12 @@ import { ROUTES } from '@/constants/routes';
 import { DEMO_DATE, finish, money, validateSlot } from '@/utils/demoData';
 import { useDesignStore } from '@/store/useDesignStore';
 import useSlotTreatments from '@/hooks/useSlotTreatments';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Notice from '@/components/common/Notice';
+import Alert from '@/components/common/Alert';
+import styles from './NewSlotPage.module.css';
 
 export default function NewSlotPage() {
   const { menus, status, error: loadError, refreshMenus } = useSlotTreatments();
@@ -45,21 +51,21 @@ export default function NewSlotPage() {
     }
   };
   return (
-    <div className="b-new-slot-page">
+    <div className={styles.root}>
       <Link className="b-back" to={ROUTES.OWNER_SLOTS}>
         ← 빈자리 관리 목록으로 돌아가기
       </Link>
       <div className="b-row b-title-row">
         <div>
           <h1>
-            빈자리 즉시 등록 <span className="b-badge">⚡ 실시간 동기화</span>
+            빈자리 즉시 등록 <Badge>⚡ 실시간 동기화</Badge>
           </h1>
           <p className="b-muted">
             시술 메뉴와 일정을 선택하면 기존 예약과 중복 여부를 자동 검사하고 타임세일 빈자리로
             등록합니다.
           </p>
         </div>
-        <div className="b-panel b-options b-new-slot-scenarios">
+        <Panel className={`b-options ${styles.scenarios}`}>
           <strong>검사 시뮬레이션:</strong>
           <button
             className={scenario === 'normal' ? 'is-selected' : ''}
@@ -73,27 +79,29 @@ export default function NewSlotPage() {
           >
             일정 중복 충돌 오류 예시
           </button>
-        </div>
+        </Panel>
       </div>
       <form className="b-columns" onSubmit={submit}>
         <div className="b-stack">
-          <section className="b-panel b-pad">
+          <Panel as="section" padded>
             <div className="b-row b-panel-heading">
               <h2>
-                <span className="b-step-number">1</span> 시술 메뉴 선택
+                <span className={styles.stepNumber}>1</span> 시술 메뉴 선택
               </h2>
               <Link className="b-pink b-help" to={ROUTES.OWNER_MENUS}>
                 ⊕ 신규 시술 등록하러 가기
               </Link>
             </div>
-            <fieldset className="b-service-selection">
+            <fieldset className={styles.serviceSelection}>
               <legend className="b-visually-hidden">빈자리에 연결할 시술</legend>
               {menus
                 .filter((m) => m.active)
                 .map((m) => (
                   <label
                     key={m.id}
-                    className={'b-service-option ' + (serviceId === m.id ? 'is-selected' : '')}
+                    className={
+                      `${styles.serviceOption} ` + (serviceId === m.id ? 'is-selected' : '')
+                    }
                   >
                     <input
                       type="radio"
@@ -120,13 +128,9 @@ export default function NewSlotPage() {
             {loadError && (
               <div role="alert">
                 <p>{loadError.message}</p>
-                <button
-                  type="button"
-                  className="b-button"
-                  onClick={() => refreshMenus().catch(() => {})}
-                >
+                <Button type="button" onClick={() => refreshMenus().catch(() => {})}>
                   다시 불러오기
-                </button>
+                </Button>
               </div>
             )}
             {status === 'succeeded' && !menus.length && (
@@ -134,15 +138,15 @@ export default function NewSlotPage() {
                 선택 가능한 활성 시술이 없습니다. 시술 메뉴에서 등록하거나 활성화해 주세요.
               </p>
             )}
-            <div className="b-notice b-help">
+            <Notice className="b-help">
               비활성 시술은 선택할 수 없습니다. 시술 관리 메뉴에서 활성화한 뒤 등록해 주세요.
-            </div>
-          </section>
-          <section className="b-panel b-pad">
+            </Notice>
+          </Panel>
+          <Panel as="section" padded>
             <h2 className="b-panel-heading">
-              <span className="b-step-number">2</span> 일정 및 시간대 설정
+              <span className={styles.stepNumber}>2</span> 일정 및 시간대 설정
             </h2>
-            <div className="b-three-grid b-slot-date-fields">
+            <div className={`b-three-grid ${styles.dateFields}`}>
               <label>
                 시술 날짜
                 <input
@@ -180,13 +184,13 @@ export default function NewSlotPage() {
                 <small>선택 시술 기준 {menu?.duration || 0}분 자동 계산</small>
               </label>
             </div>
-            <div className="b-flex b-time-recommendations">
+            <div className={`b-flex ${styles.timeRecommendations}`}>
               <small>추천 빈 슬롯:</small>
               {['14:00', '16:30', '19:00'].map((value) => (
                 <button
                   type="button"
                   key={value}
-                  className={'b-button b-small ' + (time === value ? 'b-selected-outline' : '')}
+                  className={'b-button b-small ' + (time === value ? styles.selectedOutline : '')}
                   onClick={() => {
                     setTime(value);
                     setError('');
@@ -197,9 +201,9 @@ export default function NewSlotPage() {
                 </button>
               ))}
             </div>
-          </section>
+          </Panel>
           <div
-            className={conflict ? 'b-slot-validation b-error' : 'b-slot-validation b-success'}
+            className={conflict ? `${styles.validation} b-error` : `${styles.validation} b-success`}
             role="status"
           >
             <span>{conflict ? '!' : '✓'}</span>
@@ -214,11 +218,11 @@ export default function NewSlotPage() {
             </div>
           </div>
         </div>
-        <aside className="b-stack b-slot-summary">
-          <section className="b-panel b-pad">
+        <aside className={`b-stack ${styles.summary}`}>
+          <Panel as="section" padded>
             <div className="b-row b-panel-heading">
               <h2>♧ 타임세일 자동 정산 미리보기</h2>
-              <span className="b-badge">초임박 특가</span>
+              <Badge>초임박 특가</Badge>
             </div>
             <div className="b-highlight">
               <strong>⚡ 당일 타임세일 자동 적용 구간</strong>
@@ -252,32 +256,33 @@ export default function NewSlotPage() {
                 <dd>{money(price - Math.round(price * 0.2))}</dd>
               </div>
             </dl>
-            <div className="b-notice b-help">
+            <Notice className="b-help">
               최종 할인율과 결제 금액은 실제 고객 예약 확정 시점에 결정됩니다. 이 화면은 모의 정책
               예시입니다.
-            </div>
-          </section>
-          <section className="b-panel b-pad">
+            </Notice>
+          </Panel>
+          <Panel as="section" padded>
             {error && (
-              <p className="b-error" role="alert">
+              <Alert as="p" tone="error" role="alert">
                 {error}
-              </p>
+              </Alert>
             )}
-            <button
-              className="b-button b-primary b-wide"
+            <Button
+              variant="primary"
+              wide
               type="submit"
               disabled={status !== 'succeeded' || !menu?.active || Boolean(conflict)}
             >
               ⚑ 빈자리 즉시 등록하기
-            </button>
-            <Link className="b-button b-wide" to={ROUTES.OWNER_SLOTS}>
+            </Button>
+            <Button as={Link} wide to={ROUTES.OWNER_SLOTS}>
               취소
-            </Link>
+            </Button>
             <p className="b-help">
               등록 시 데모 빈자리 목록에서 바로 확인할 수 있습니다. 실제 고객 알림은 발송되지
               않습니다.
             </p>
-          </section>
+          </Panel>
         </aside>
       </form>
     </div>

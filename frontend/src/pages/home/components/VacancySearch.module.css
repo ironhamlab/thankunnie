@@ -1,0 +1,166 @@
+.home {
+  padding-top: 24px;
+  padding-bottom: 64px;
+}
+.demoNote {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  white-space: nowrap;
+  background: #ffffffcc;
+  padding: 9px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 11px;
+}
+.demoNote strong {
+  color: var(--color-primary);
+}
+.filters {
+  padding: 20px;
+  margin: 24px 0;
+  min-height: 182px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.filterLabel {
+  display: inline-flex;
+  align-items: center;
+  min-width: 64px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+.dateFilter {
+  padding-bottom: 14px;
+}
+.dateFilter :global(.b-options) {
+  gap: 8px;
+}
+.dateFilter button {
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  background: var(--color-surface-blue);
+}
+.dateFilter button:global(.is-selected) {
+  color: white;
+  background: var(--color-primary);
+}
+.moreDate {
+  position: relative;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: 5px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.moreDate input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  cursor: pointer;
+}
+.filterLine {
+  padding: 8px 0;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.filterLine:last-child {
+  border-top: 1px solid var(--color-border);
+  padding-bottom: 0;
+}
+.segmented :global(.b-options) {
+  gap: 0;
+  background: var(--color-surface-blue);
+  border-radius: var(--radius-md);
+  padding: 3px;
+}
+.segmented :global(.b-options) button {
+  background: transparent;
+  font-size: 11px;
+}
+.segmented :global(.b-options) button:global(.is-selected) {
+  background: white;
+  color: var(--color-primary);
+}
+.resultsHeading {
+  padding: 4px;
+  margin: 26px 0 20px;
+  gap: 12px;
+}
+.resultsHeading h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+.home > :global(.b-help) {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+}
+@media (max-width: 1200px) {
+  .demoNote {
+    white-space: normal;
+  }
+}
+@media (max-width: 900px) {
+  .cardGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .filterGroup {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 540px) {
+  .cardGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .filters {
+    padding: 16px;
+  }
+  .filterGroup {
+    gap: 10px;
+  }
+  .dateFilter :global(.b-options) {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+    padding-bottom: 5px;
+  }
+  .dateFilter button,
+  .moreDate {
+    white-space: nowrap;
+  }
+  .resultsHeading {
+    flex-wrap: wrap;
+  }
+}
+.description {
+  color: #777;
+  font-size: 13px;
+  margin: 10px 0 22px;
+}
+:global(.b-vacancy-map-layout) .cardGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 540px) {
+  :global(.b-vacancy-map-layout) .cardGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

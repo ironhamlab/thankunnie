@@ -2,6 +2,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import Asset from '@/components/common/Asset';
 import { ROUTES } from '@/constants/routes';
 import { useDesignStore } from '@/store/useDesignStore';
+import styles from './Header.module.css';
 
 /**
  * 고객 화면 공통 헤더 (메인 홈 외 화면)
@@ -21,12 +22,12 @@ export default function Header() {
   };
 
   return (
-    <header className="b-header">
-      <div className="b-container b-nav">
+    <header className={styles.root}>
+      <div className={`b-container ${styles.nav}`}>
         <Link to={ROUTES.HOME} className="b-brand">
           땡잡은 언니 <span>뷰티 타임세일</span>
         </Link>
-        <form className="b-search" onSubmit={handleSearch}>
+        <form className={styles.search} onSubmit={handleSearch}>
           <input
             aria-label="지역, 시술 종류, 매장 검색"
             placeholder="지역, 시술 종류, 매장 검색"
@@ -45,7 +46,7 @@ export default function Header() {
           </NavLink>
           <NavLink to={ROUTES.PROFILE}>마이페이지</NavLink>
           <NavLink to={ROUTES.MY_RESERVATIONS}>예약 내역</NavLink>
-          <NavLink to={ROUTES.BOOKINGS} className="b-reservation-link">
+          <NavLink to={ROUTES.BOOKINGS} className={styles.reservationLink}>
             <Asset name="8-3-16.svg" />내 예약 <b>{count}</b>
           </NavLink>
         </nav>

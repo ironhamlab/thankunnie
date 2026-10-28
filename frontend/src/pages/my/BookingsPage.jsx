@@ -9,7 +9,14 @@ import Dialog from '@/components/common/Dialog';
 import getServiceShop from '@/utils/getServiceShop';
 import PaymentStatusCard from '@/pages/my/components/PaymentStatusCard';
 import RefundPolicyCard from '@/pages/my/components/RefundPolicyCard';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
+import Panel from '@/components/common/Panel';
+import Notice from '@/components/common/Notice';
+import EmptyState from '@/components/common/EmptyState';
+import Alert from '@/components/common/Alert';
 import './BookingsPage.css';
+import styles from './BookingsPage.module.css';
 
 function BookingsSummary({ bookings }) {
   const payments = bookings.map(getPayment);
@@ -20,12 +27,12 @@ function BookingsSummary({ bookings }) {
     ['환불 처리 중', `${payments.filter((p) => p.status === 'REFUND_PENDING').length}건`],
   ];
   return (
-    <div className="b-pay-summary">
+    <div className={styles.paySummary}>
       {stats.map(([label, value]) => (
-        <div key={label} className="b-panel">
+        <Panel key={label}>
           <span>{label}</span>
           <strong>{value}</strong>
-        </div>
+        </Panel>
       ))}
     </div>
   );
@@ -57,23 +64,21 @@ export default function BookingsPage() {
 
   return (
     <div className="b-container b-page">
-      <div className="b-notice b-demo-disclaimer">
+      <Notice className="b-demo-disclaimer">
         본 화면은 MVP 모의 결제/모의 환불 테스트 환경이며 실제 금융 결제 및 송금이 발생하지
         않습니다.
-      </div>
+      </Notice>
       {location.state?.confirmed && (
-        <div className="b-success" role="status">
+        <Alert tone="success" role="status">
           예약이 확정되었습니다. 모의 결제가 완료되었습니다.
-        </div>
+        </Alert>
       )}
       <div className="b-row b-title-row">
         <h1>
           내 예약{' '}
-          <span className="b-badge">
-            {customerBookings.filter((b) => b.status === 'confirmed').length}건 진행 중
-          </span>
+          <Badge>{customerBookings.filter((b) => b.status === 'confirmed').length}건 진행 중</Badge>
         </h1>
-        <span className="b-badge b-neutral">시연 기준일 2025.10.24 14:50</span>
+        <Badge tone="neutral">시연 기준일 2025.10.24 14:50</Badge>
       </div>
       <BookingsSummary bookings={customerBookings} />
       <div className="b-options b-tabs">
@@ -104,8 +109,8 @@ export default function BookingsPage() {
                 onClick={() => setSelectedId(b.id)}
               >
                 <div className="b-flex">
-                  <span className="b-badge">{STATUS[b.status]}</span>
-                  <span className={`b-pay-status is-${paymentStatus.tone} is-compact`}>
+                  <Badge>{STATUS[b.status]}</Badge>
+                  <span className={`b-pay-status is-${paymentStatus.tone} ${styles.isCompact}`}>
                     {paymentStatus.label}
                   </span>
                 </div>
@@ -123,7 +128,7 @@ export default function BookingsPage() {
                     </p>
                   </div>
                 </div>
-                <div className="b-notice b-row">
+                <Notice className="b-row">
                   <span>
                     예약금: <strong className="b-pink">{money(payment.amount)}</strong>
                   </span>
@@ -132,40 +137,40 @@ export default function BookingsPage() {
                   ) : (
                     <span>현장 잔금: {money(b.price - b.deposit)}</span>
                   )}
-                </div>
+                </Notice>
                 <small className="b-muted">예약번호: {b.id}</small>
                 <span className="b-pink">예약 상세 보기 →</span>
               </button>
             );
           })}
           {!list.length && (
-            <div className="b-panel b-empty">
+            <EmptyState className="b-panel">
               <h2>예약 내역이 없어요</h2>
               <p>실시간 빈자리 타임세일을 찾아보세요.</p>
-              <Link to={ROUTES.HOME} className="b-button b-primary">
+              <Button as={Link} variant="primary" to={ROUTES.HOME}>
                 실시간 빈자리 탐색하기
-              </Link>
-            </div>
+              </Button>
+            </EmptyState>
           )}
         </div>
         {selected && (
-          <section className="b-panel b-pad">
+          <Panel as="section" padded>
             <div className="b-row b-panel-heading">
               <div>
                 <small className="b-muted">예약번호 {selected.id}</small>
                 <h2>예약 상세 내역</h2>
               </div>
-              <span className="b-badge b-green">{STATUS[selected.status]}</span>
+              <Badge tone="success">{STATUS[selected.status]}</Badge>
             </div>
             <h3>매장 및 담당 디자이너 안내</h3>
-            <div className="b-notice">
+            <Notice>
               <strong>{selectedShop.name}</strong>
               <p>{selectedShop.address}</p>
               <small>담당 디자이너: 유나 수석 디자이너 · {service?.name}</small>
-              <button className="b-button b-small" onClick={() => setNotice(selectedShop.address)}>
+              <Button size="small" onClick={() => setNotice(selectedShop.address)}>
                 주소 보기
-              </button>
-            </div>
+              </Button>
+            </Notice>
             <h3>예약금 결제·환불 현황</h3>
             <PaymentStatusCard booking={selected} />
             <h3>
@@ -173,11 +178,11 @@ export default function BookingsPage() {
             </h3>
             <RefundPolicyCard booking={selected} />
             {selected.status === 'confirmed' && (
-              <button className="b-button b-danger b-wide" onClick={() => setShowCancel(true)}>
+              <Button variant="danger" wide onClick={() => setShowCancel(true)}>
                 예약 취소 신청
-              </button>
+              </Button>
             )}
-          </section>
+          </Panel>
         )}
       </div>
       {showCancel && selected && (
