@@ -107,19 +107,17 @@ UNNIE-111부터 시술별 카테고리를 제거하고 매장 카테고리만 �
 
 - `TREATMENT.CATEGORY_ID`가 존재하는 모든 Oracle DB가 제거 대상이다.
   과거 `UNNIE-32-treatment-category.sql`을 적용한 DB뿐 아니라 해당 컬럼이 포함된 변경 전 전체 DDL로 만든 DB도 포함한다.
-  대상 DB는 애플리케이션 중지 후
-  `docs/erd/migrations/UNNIE-111-remove-treatment-category.sql`을 1회 적용하고 새 버전을 배포한다.
-- `TREATMENT.CATEGORY_ID`가 없는 DB와 최신 전체 DDL로 만든 DB에는 제거 SQL을 실행하지 않는다.
-- 과거 UNNIE-32 파일은 배포 이력으로 보존하며 새로 적용하지 않는다.
-- 제거 SQL은 시술 카테고리 FK와 컬럼만 삭제한다. 매장 카테고리와 시술·예약 행은 유지한다.
+- SQL 변경은 `docs/erd/01_schema_ddl.sql`을 기준으로 관리하며 별도 마이그레이션 파일을 추가하지 않는다.
+  기존 DB에 적용할 변경 SQL과 적용 순서는 PR 본문에 기록한다.
+- 대상 DB는 애플리케이션 중지 후 PR 본문의 변경 SQL을 1회 적용하고 새 버전을 배포한다.
+  `TREATMENT.CATEGORY_ID`가 없는 DB와 최신 전체 DDL로 만든 DB에는 해당 SQL을 실행하지 않는다.
+- 변경 SQL은 시술 카테고리 FK와 컬럼만 삭제한다. 매장 카테고리와 시술·예약 행은 유지한다.
   매장과 다르게 지정했던 시술별 카테고리 값은 사라지므로 적용 전 백업·대상 스키마 확인이 필요하다.
 - Oracle DDL은 자동 커밋된다. Oracle 21c XE에서 실제 적용 결과는 별도 검증이 필요하다.
 
 ## 검증 결과 (UNNIE-111, 2026-10-28)
 
 - `backend/`: `gradlew.bat --no-daemon classes test` 성공.
-- 마이그레이션 테스트 추가 후 `gradlew.bat --no-daemon test --tests com.ucamp.app.domain.treatment.TreatmentCategoryMigrationTest --tests com.ucamp.app.domain.treatment.TreatmentIntegrationTest` 성공. 총 40개, 실패 0개.
-- 제거 SQL을 H2 Oracle 모드에서 실행하여 컬럼 제거와 기존 시술·예약 가격·예약금·매장 카테고리 보존을 확인했다. 실제 Oracle 적용은 미검증이다.
 - `gradlew.bat --no-daemon bootRun --args=--spring.profiles.active=category-smoke`에 임시 H2 Oracle 모드 URL, 로컬 이미지 저장소, 초기 데이터 로딩, 스케줄러 비활성화, 포트 18080을 환경변수로 전달해 `validate` 기동 성공. 개인 로컬 설정은 사용하지 않았다.
 - Gradle 검증 프로세스에만 `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=C:/UCAMP/Final/thankunnie/backend/build/socket-temp`를 지정했다.
 - `frontend/`: `npm run lint`, `npm run build` 성공.
