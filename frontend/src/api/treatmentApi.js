@@ -7,7 +7,6 @@ export const treatmentApi = {
   getTreatments: (shopId) => axiosInstance.get(basePath(shopId)),
   getActiveTreatments: (shopId) =>
     axiosInstance.get(basePath(shopId), { params: { status: 'ACTIVE' } }),
-  getCategories: (shopId) => axiosInstance.get(`${basePath(shopId)}/categories`),
   createTreatment: (shopId, payload) => axiosInstance.post(basePath(shopId), payload),
   updateTreatment: (shopId, treatmentId, payload) =>
     axiosInstance.put(`${basePath(shopId)}/${treatmentId}`, payload),
