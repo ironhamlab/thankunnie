@@ -19,3 +19,9 @@
     flex-wrap: wrap;
   }
 }
+@media (max-width: 767px) {
+  /* 휴대폰 폭에서는 화면 아래에 고정된 메뉴 막대(Header)가 푸터 끝을 가리지 않게 여백을 둔다 */
+  .root {
+    padding-bottom: 85px;
+  }
+}

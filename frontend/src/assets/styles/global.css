@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800&family=Material+Symbols+Outlined&display=swap');
 /* 전역 스타일: reset, 디자인 토큰(CSS 변수). 색·글꼴·모서리 값은 여기서만 정의하고 화면에서는 var()로 사용한다. */
 :root {
   /* 브랜드·텍스트 */
