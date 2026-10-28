@@ -5,6 +5,8 @@ import { useDesignStore } from '@/store/useDesignStore';
 import Asset from '@/components/common/Asset';
 import Dialog from '@/components/common/Dialog';
 import Button from '@/components/common/Button';
+import NotificationIcon from '@/components/icons/NotificationIcon';
+import ProfileIcon from '@/components/icons/ProfileIcon';
 import styles from './Header.module.css';
 
 const NOTIFICATIONS = [
@@ -36,18 +38,6 @@ function getActiveMenu({ pathname, search }) {
   if (pathname.startsWith(ROUTES.MY_RESERVATIONS)) return 'reservations';
   if (pathname === ROUTES.PROFILE) return 'profile';
   return null;
-}
-
-/**
- * 마이페이지 아이콘(사람 모양). 알림 아이콘과 같은 선 굵기로 맞추고, 색은 글자색을 따른다.
- */
-function ProfileIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
-    </svg>
-  );
 }
 
 /**
@@ -92,6 +82,8 @@ export default function Header() {
           <Link to={ROUTES.HOME} className="b-brand">
             땡잡은 언니
           </Link>
+
+          {/* 검색 폼 */}
           <form className={styles.search} onSubmit={handleSearch}>
             <input
               aria-label="지역, 시술 종류, 매장 검색"
@@ -103,6 +95,7 @@ export default function Header() {
               <Asset name="8-3-15.svg" />
             </button>
           </form>
+
           <nav aria-label="고객 메뉴">
             <Link to={`${ROUTES.HOME}?view=list`} aria-current={current('search')}>
               빈자리 탐색
@@ -110,18 +103,21 @@ export default function Header() {
             <Link to={`${ROUTES.HOME}?sale=1`} aria-current={current('sale')}>
               타임세일
             </Link>
-            <button onClick={() => setModelOpen(true)}>시술 모델 모집</button>
             <Link to={ROUTES.MY_RESERVATIONS} aria-current={current('reservations')}>
-              ▦ 내 예약
+              내 예약
             </Link>
           </nav>
+
           <div className={styles.actions}>
             <Link to={ROUTES.OWNER} className={styles.ownerLink}>
               사장님 센터
             </Link>
+
             <Link to={ROUTES.LOGIN} className={styles.loginLink}>
               로그인
             </Link>
+
+            {/* 알림 영역 */}
             <div ref={popoverRef}>
               <button
                 className={styles.notificationButton}
@@ -130,15 +126,7 @@ export default function Header() {
                 aria-controls="header-notifications"
                 onClick={() => setOpen(!open)}
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  aria-hidden="true"
-                >
-                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" />
-                </svg>
+                <NotificationIcon />
                 {!read && <b>2</b>}
               </button>
               {open && (
@@ -184,6 +172,7 @@ export default function Header() {
                 </section>
               )}
             </div>
+
             <Link
               to={ROUTES.PROFILE}
               className={styles.profileLink}

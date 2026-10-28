@@ -20,6 +20,7 @@ frontend/
 │   ├── assets/                 # 이미지, 폰트, 전역 스타일
 │   ├── components/             # 페이지에 종속되지 않는 재사용 UI
 │   │   ├── common/             # Button, Input, Modal, Spinner
+│   │   ├── icons/              # 색이 바뀌는 SVG 아이콘 컴포넌트: NotificationIcon, ProfileIcon
 │   │   └── layout/             # Header, Footer, Sidebar, MainLayout
 │   ├── pages/                  # 라우트에 연결되는 페이지 컴포넌트
 │   │   ├── auth/               # LoginPage.jsx, SignupPage.jsx
@@ -316,6 +317,10 @@ generatePath(ROUTES.PRODUCT_DETAIL, { id: productId });
 | 빈 목록·불러오는 중·없음 | `EmptyState` | `<EmptyState role="status">불러오는 중입니다.</EmptyState>` |
 
 - 공통 컴포넌트의 종류 값(`variant`, `tone`)은 색 이름이 아니라 의미로 짓는다. 예: `success`, `error`, `danger` (`green`, `pink` 사용 금지)
+- 아이콘은 색이 바뀌는지에 따라 둘 곳을 나눈다.
+  - 선택·강조 상태에 따라 색이 바뀌는 아이콘은 `components/icons/{이름}Icon.jsx` 컴포넌트로 만든다. SVG 의 선·면 색은 `currentColor`로 두어 글자색을 따르게 하고, 크기는 사용하는 쪽 CSS 에서 정한다. 예: `<ProfileIcon />`
+  - 색이 고정된 그림(피그마에서 받은 이미지·일러스트 등)은 `assets/` 아래에 `.svg` 파일로 두고 `Asset` 컴포넌트로 불러온다. 파일로 불러온 SVG 는 CSS 로 색을 바꿀 수 없다.
+  - 아이콘을 한 화면 파일 안에 함수로 만들지 않는다. 다른 화면에서 다시 쓸 때 복사본이 생긴다.
 
 ### 9.1 CSS 모듈 클래스 이름 짓기
 
