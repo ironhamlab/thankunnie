@@ -1,0 +1,106 @@
+.root {
+  position: relative;
+  width: 490.67px;
+  height: 558px;
+}
+.root > img {
+  position: absolute;
+}
+.vector0 {
+  left: 20px;
+  top: 30px;
+}
+.vector1 {
+  left: 200px;
+  top: 20px;
+}
+.vector2 {
+  left: 30px;
+  top: 160px;
+}
+.vector3 {
+  left: 200px;
+  top: 170px;
+}
+.vector4 {
+  left: 25px;
+  top: 360px;
+}
+.vector5 {
+  left: 210px;
+  top: 350px;
+}
+.vector6 {
+  left: 80px;
+  top: 240px;
+}
+.vector7 {
+  left: 172px;
+  top: 0px;
+}
+.vector8 {
+  left: 184.25px;
+  top: 0px;
+}
+.vector9 {
+  left: 0px;
+  top: 326px;
+}
+.vector10 {
+  left: 0px;
+  top: 339.25px;
+}
+.vector11 {
+  left: 0px;
+  top: 142px;
+}
+.vector12 {
+  left: 383px;
+  top: 0px;
+}
+.vector13 {
+  left: 0px;
+  top: 483px;
+}
+.vector14 {
+  left: 173px;
+  top: 138px;
+}
+.vector15 {
+  left: 178px;
+  top: 143px;
+}
+.vector16 {
+  left: 169px;
+  top: 324px;
+}
+.vector17 {
+  left: 177px;
+  top: 332px;
+}
+.road {
+  position: absolute;
+  color: #64748b;
+  font-size: 10px;
+}
+.gangnam {
+  left: 177px;
+  top: 80px;
+  writing-mode: vertical-rl;
+}
+.teheran {
+  left: 260px;
+  top: 326px;
+}
+.sapyeong {
+  left: 60px;
+  top: 137px;
+}
+.sinnonhyeon {
+  left: 197px;
+  top: 144px;
+}
+.station {
+  left: 199px;
+  top: 333px;
+}

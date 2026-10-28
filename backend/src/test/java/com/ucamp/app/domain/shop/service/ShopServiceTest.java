@@ -68,7 +68,7 @@ class ShopServiceTest {
     @DisplayName("유효한 카테고리이면 매장 프로필을 변경한다")
     void update_valid_updatesProfile() {
         Shop shop = mock(Shop.class);
-        when(shopRepository.findById(1L)).thenReturn(Optional.of(shop));
+        when(shopRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(shop));
         when(categoryRepository.existsById(1L)).thenReturn(true);
         service.updateShop(owner, 1L, request);
         verify(shop).updateProfile(request);
@@ -78,7 +78,7 @@ class ShopServiceTest {
     @DisplayName("없는 카테고리는 매장 변경 전에 거부한다")
     void update_missingCategory_throwsInvalidInput() {
         Shop shop = mock(Shop.class);
-        when(shopRepository.findById(1L)).thenReturn(Optional.of(shop));
+        when(shopRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(shop));
         assertThatThrownBy(() -> service.updateShop(owner, 1L, request))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));

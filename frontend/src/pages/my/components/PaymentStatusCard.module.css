@@ -1,0 +1,146 @@
+.root {
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 20px;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.method {
+  font-size: 15px;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.stats > div {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stats > div:global(.is-refund) {
+  background: var(--b-pay-paid-bg);
+}
+.stats span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+.stats strong {
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+.stats > div:global(.is-refund) strong {
+  color: var(--b-pay-paid);
+}
+.meter {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  overflow: hidden;
+}
+.meter > span {
+  display: block;
+  height: 100%;
+  background: var(--b-pay-paid);
+  border-radius: var(--radius-pill);
+  transition: width 0.6s ease;
+}
+.meterLegend {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -10px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.meta > div {
+  padding: 9px 0;
+}
+.mono {
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.timeline li {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 0 0 16px;
+}
+.timeline li:last-child {
+  padding-bottom: 0;
+}
+.timeline li:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 16px;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-border);
+}
+.timeline li:global(.is-done):not(:last-child)::before {
+  background: var(--b-pay-paid);
+}
+.dot {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: white;
+}
+.timeline li:global(.is-done) .dot {
+  border-color: var(--b-pay-paid);
+  background: var(--b-pay-paid);
+}
+.timeline li:global(.is-current) .dot {
+  border-color: var(--b-pay-pending);
+  box-shadow: 0 0 0 4px var(--b-pay-pending-bg);
+}
+.timeline li > div {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+.timeline li:global(.is-todo) strong {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+.timeline small {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+@media (max-width: 540px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .meter > span {
+    transition: none;
+  }
+}

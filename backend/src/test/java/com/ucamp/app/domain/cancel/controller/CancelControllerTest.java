@@ -26,6 +26,7 @@ import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.domain.cancel.dto.response.CancelQuoteResponse;
 import com.ucamp.app.domain.cancel.dto.response.CancelResultResponse;
+import com.ucamp.app.domain.cancel.dto.response.OwnerCancelResponse;
 import com.ucamp.app.domain.cancel.entity.CancelStatus;
 import com.ucamp.app.domain.cancel.entity.CancelType;
 import com.ucamp.app.domain.cancel.policy.GraceCancelResult;
@@ -117,5 +118,33 @@ class CancelControllerTest {
                 .andExpect(jsonPath("$.data.cancelStatus").value("COMPLETED"))
                 .andExpect(jsonPath("$.data.reservationStatus").value("CANCELLED"))
                 .andExpect(jsonPath("$.data.refundAmount").value(10_000));
+    }
+
+    @Test
+    @DisplayName("사장님 취소는 유형과 닫기 여부가 없으면 거부한다")
+    void cancelByOwner_missingFields_badRequest() throws Exception {
+        for (String body : new String[] {"{\"closeAfterCancel\":false}", "{\"cancelType\":\"SHOP_FAULT\"}"}) {
+            mockMvc.perform(post("/api/v1/reservations/100/owner-cancel").header("X-Test-User", "OWNER_1")
+                            .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isBadRequest());
+        }
+        verifyNoInteractions(cancelService);
+    }
+
+    @Test
+    @DisplayName("사장님 취소 결과에 닫기 여부와 고객 연락처를 담아 반환한다")
+    void cancelByOwner_returnsResultWithContact() throws Exception {
+        given(cancelService.cancelByOwner(any(), eq(100L), any())).willReturn(new OwnerCancelResponse(7L, 100L,
+                CancelType.SHOP_FAULT, CancelStatus.COMPLETED, ReservationStatus.CANCELLED, 20_000, true, "고객",
+                "010-1234-5678", OffsetDateTime.parse("2026-11-01T12:00:00+09:00"),
+                OffsetDateTime.parse("2026-11-01T12:00:03+09:00")));
+
+        mockMvc.perform(post("/api/v1/reservations/100/owner-cancel").header("X-Test-User", "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"cancelType\":\"SHOP_FAULT\",\"closeAfterCancel\":true,\"reason\":\"원장님 부상\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.cancelType").value("SHOP_FAULT"))
+                .andExpect(jsonPath("$.data.closed").value(true))
+                .andExpect(jsonPath("$.data.customerPhone").value("010-1234-5678"));
     }
 }

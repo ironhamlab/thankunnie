@@ -1,21 +1,48 @@
-/* 전역 스타일: reset, 공통 CSS 변수. 색상·간격 값은 디자인 확정 시 조정한다. */
+/* 전역 스타일: reset, 디자인 토큰(CSS 변수). 색·글꼴·모서리 값은 여기서만 정의하고 화면에서는 var()로 사용한다. */
 :root {
-  --color-primary: #2f6fed;
-  --color-text: #1f2933;
-  --color-text-muted: #6b7785;
-  --color-border: #e1e5ea;
-  --color-background: #ffffff;
+  /* 브랜드·텍스트 */
+  --color-primary: #b70052;
+  --color-primary-soft: #ffd9df;
+  --color-primary-tint: #f8e5ef; /* 선택된 메뉴·번호 배경 */
+  --color-primary-faint: #fff3f8; /* 선택된 항목의 아주 연한 배경 */
+  --color-text: #111c2d;
+  --color-text-secondary: #5a4045;
+  --color-text-muted: #8e6f75;
 
+  /* 배경·면·선 */
+  --color-background: #f9f9ff;
+  --color-surface: #f0f3ff;
+  --color-surface-blue: #e7eeff;
+  --color-border: rgba(226, 189, 195, 0.4);
+  --color-border-strong: #e2bdc3;
+
+  /* 상태 */
+  --color-success: #008970;
+  --color-success-bg: #eafff6;
+  --color-success-strong: #00b48b; /* 성공 아이콘 배경 */
+  --color-danger: #db2e56; /* 오류 아이콘 배경 */
+  --color-warning: #954500;
+  --color-warning-bg: #fff4e5;
+  --color-info: #3442b8;
+
+  /* 글꼴 */
+  --font-body: 'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+
+  /* 모서리 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
+  /* 간격 */
   --spacing-sm: 8px;
   --spacing-md: 16px;
   --spacing-lg: 24px;
 
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    'Noto Sans KR',
-    sans-serif;
+  font-family: var(--font-body);
   line-height: 1.5;
   color: var(--color-text);
   background-color: var(--color-background);

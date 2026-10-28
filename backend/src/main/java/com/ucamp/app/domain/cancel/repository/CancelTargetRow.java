@@ -17,6 +17,8 @@ public interface CancelTargetRow {
 
     LocalDateTime getStartsAt();
 
+    LocalDateTime getEndsAt();
+
     LocalDateTime getHeldAt();
 
     Long getDepositPaymentId();
@@ -26,4 +28,8 @@ public interface CancelTargetRow {
     LocalDateTime getApprovedAt();
 
     Long getRefundingPaymentCount();
+
+    String getCustomerName();
+
+    String getCustomerPhone();
 }
