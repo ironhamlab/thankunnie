@@ -6,7 +6,7 @@
 -- - 로컬 Oracle 은 01_schema_ddl.sql 실행 후 이 파일을 SCOTT 계정에 직접 실행한다.
 -- - ID 는 테스트 사용자(common/auth/TestUser)와 맞춘 고정값이다. 1~999 만 쓰고, 시퀀스는 1000 부터 시작한다.
 -- - 시각은 DB 시각 함수 없이 고정값이다. 예정 예약은 2026-11 로 두어 프로젝트 기간 동안 '예정'으로 보인다.
--- - 비밀번호 해시는 로그인 기능 전까지 쓰지 않는 더미 값이다.
+-- - 테스트 계정(customer1·customer2·admin·owner1·owner2) 비밀번호는 모두 test1234! 이다. 로컬·시연 전용이며 운영 계정에 쓰지 않는다.
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
@@ -23,13 +23,13 @@ INSERT INTO CATEGORY (CATEGORY_ID, NAME) VALUES (5, '바버');
 -- 사장님 계정은 매장(SHOP) 행에 있다
 -- ---------------------------------------------------------------------
 INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, STATUS, ROLE, CREATED_AT, UPDATED_AT)
-VALUES (1, 'customer1', 'CHANGE_ME', '고객일', '010-1111-1111', 'ACTIVE', 'USER',
+VALUES (1, 'customer1', '$2a$10$VGbJJf3D1hpZOQRyyP2lIOjNjXvIYgRrMg/JO8j7qUWYrKIP296kO', '고객일', '010-1111-1111', 'ACTIVE', 'USER',
         TIMESTAMP '2026-10-01 09:00:00', TIMESTAMP '2026-10-01 09:00:00');
 INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, STATUS, ROLE, CREATED_AT, UPDATED_AT)
-VALUES (2, 'customer2', 'CHANGE_ME', '고객이', '010-2222-2222', 'ACTIVE', 'USER',
+VALUES (2, 'customer2', '$2a$10$VGbJJf3D1hpZOQRyyP2lIOjNjXvIYgRrMg/JO8j7qUWYrKIP296kO', '고객이', '010-2222-2222', 'ACTIVE', 'USER',
         TIMESTAMP '2026-10-01 09:00:00', TIMESTAMP '2026-10-01 09:00:00');
 INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, STATUS, ROLE, CREATED_AT, UPDATED_AT)
-VALUES (21, 'admin', 'CHANGE_ME', '관리자', '010-0000-0000', 'ACTIVE', 'ADMIN',
+VALUES (21, 'admin', '$2a$10$VGbJJf3D1hpZOQRyyP2lIOjNjXvIYgRrMg/JO8j7qUWYrKIP296kO', '관리자', '010-0000-0000', 'ACTIVE', 'ADMIN',
         TIMESTAMP '2026-10-01 09:00:00', TIMESTAMP '2026-10-01 09:00:00');
 
 -- ---------------------------------------------------------------------
@@ -37,12 +37,12 @@ VALUES (21, 'admin', 'CHANGE_ME', '관리자', '010-0000-0000', 'ACTIVE', 'ADMIN
 -- ---------------------------------------------------------------------
 INSERT INTO SHOP (SHOP_ID, CATEGORY_ID, LOGIN_ID, PASSWORD_HASH, NAME, REGION_CODE, ADDRESS, ADDRESS_DETAIL,
                   LATITUDE, LONGITUDE, PHONE, DESCRIPTION, NOTICE, STATUS, CREATED_AT, UPDATED_AT)
-VALUES (1, 1, 'owner1', 'CHANGE_ME', '언니네 네일', '11680', '서울특별시 강남구 테헤란로 1', '2층',
+VALUES (1, 1, 'owner1', '$2a$10$VGbJJf3D1hpZOQRyyP2lIOjNjXvIYgRrMg/JO8j7qUWYrKIP296kO', '언니네 네일', '11680', '서울특별시 강남구 테헤란로 1', '2층',
         37.4979000, 127.0276000, '02-111-1111', '젤네일·케어 전문', '예약 시간 10분 전 도착해 주세요',
         'ACTIVE', TIMESTAMP '2026-10-01 09:00:00', TIMESTAMP '2026-10-01 09:00:00');
 INSERT INTO SHOP (SHOP_ID, CATEGORY_ID, LOGIN_ID, PASSWORD_HASH, NAME, REGION_CODE, ADDRESS, ADDRESS_DETAIL,
                   LATITUDE, LONGITUDE, PHONE, DESCRIPTION, NOTICE, STATUS, CREATED_AT, UPDATED_AT)
-VALUES (2, 2, 'owner2', 'CHANGE_ME', '땡잡은 헤어', '11650', '서울특별시 서초구 강남대로 2', NULL,
+VALUES (2, 2, 'owner2', '$2a$10$VGbJJf3D1hpZOQRyyP2lIOjNjXvIYgRrMg/JO8j7qUWYrKIP296kO', '땡잡은 헤어', '11650', '서울특별시 서초구 강남대로 2', NULL,
         37.4917000, 127.0074000, '02-222-2222', '커트·펌 전문', NULL,
         'ACTIVE', TIMESTAMP '2026-10-01 09:00:00', TIMESTAMP '2026-10-01 09:00:00');
 

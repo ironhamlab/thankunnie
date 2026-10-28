@@ -1,0 +1,86 @@
+.panel {
+  max-width: 560px;
+  margin: 0 auto;
+}
+.amount {
+  text-align: center;
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--b-pay-paid-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.amount span {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.amount strong {
+  font-size: 30px;
+  color: var(--b-pay-paid);
+  font-variant-numeric: tabular-nums;
+}
+.amount small {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+.amount.isZero {
+  background: #fff1f4;
+}
+.amount.isZero strong {
+  color: var(--color-primary);
+}
+.tiers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.tiers li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+}
+.tiers li:global(.is-current) {
+  border-color: var(--color-primary);
+  background: #fff5f8;
+}
+.agree {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.agree input {
+  accent-color: var(--color-primary);
+}
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+/* 링크 버튼과 일반 버튼이 같은 크기로 보이도록 맞춘다 (공통 b-danger 의 위 여백도 없앤다) */
+.actions > * {
+  width: 100%;
+  min-height: 46px;
+  margin: 0;
+  font-size: 13px;
+}
+.actions > :disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+}
+@media (max-width: 540px) {
+  .tiers,
+  .actions {
+    grid-template-columns: 1fr;
+  }
+}
