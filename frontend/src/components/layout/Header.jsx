@@ -3,8 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useDesignStore } from '@/store/useDesignStore';
 import Asset from '@/components/common/Asset';
-import Dialog from '@/components/common/Dialog';
-import Button from '@/components/common/Button';
 import NotificationIcon from '@/components/icons/NotificationIcon';
 import ProfileIcon from '@/components/icons/ProfileIcon';
 import styles from './Header.module.css';
@@ -52,7 +50,6 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const [read, setRead] = useState(false);
   const [tab, setTab] = useState('전체');
-  const [modelOpen, setModelOpen] = useState(false);
   const popoverRef = useRef(null);
   useEffect(() => {
     if (!open) return;
@@ -184,6 +181,7 @@ export default function Header() {
           </div>
         </div>
       </header>
+
       <nav className={styles.mobileNav} aria-label="모바일 고객 메뉴">
         <Link to={`${ROUTES.HOME}?view=list`} aria-current={current('search')}>
           <span>⌖</span>빈자리 탐색
@@ -191,27 +189,10 @@ export default function Header() {
         <Link to={`${ROUTES.HOME}?sale=1`} aria-current={current('sale')}>
           <span>ϟ</span>타임세일
         </Link>
-        <button onClick={() => setModelOpen(true)}>
-          <span>✧</span>모델 모집
-        </button>
         <Link to={ROUTES.MY_RESERVATIONS} aria-current={current('reservations')}>
           <span>▦</span>내 예약
         </Link>
-        <Link to={ROUTES.PROFILE} aria-current={current('profile')}>
-          <span>
-            <ProfileIcon />
-          </span>
-          마이
-        </Link>
       </nav>
-      {modelOpen && (
-        <Dialog title="시술 모델 모집" onClose={() => setModelOpen(false)}>
-          <p>시술 모델 모집 화면은 준비 중입니다. 현재는 메인페이지 UI 시연 환경입니다.</p>
-          <Button variant="primary" onClick={() => setModelOpen(false)}>
-            확인
-          </Button>
-        </Dialog>
-      )}
     </>
   );
 }
