@@ -256,15 +256,17 @@ class ReservationServiceTest {
     }
 
     @Test
-    @DisplayName("본인 점유를 예약금만큼 결제하면 예약 행을 잠가 조회한 뒤 CONFIRMED 로 확정한다")
+    @DisplayName("본인 점유를 예약금만큼 결제하면 예약 행을 잠가 조회한 뒤 CONFIRMED 로 확정하고 요청사항을 저장한다")
     void confirmReservation_validHold_confirms() {
         Reservation hold = userReservation(NOW.plusMinutes(5));
         given(reservationRepository.findByIdForUpdate(RESERVATION_ID)).willReturn(Optional.of(hold));
 
-        Reservation confirmed = reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000);
+        Reservation confirmed = reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000,
+                "손톱은 라운드로 부탁드려요");
 
         assertThat(confirmed.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
         assertThat(confirmed.getConfirmedAt()).isEqualTo(NOW);
+        assertThat(confirmed.getCustomerRequest()).isEqualTo("손톱은 라운드로 부탁드려요");
     }
 
     @Test
@@ -274,9 +276,9 @@ class ReservationServiceTest {
                 .willReturn(Optional.empty())
                 .willReturn(Optional.of(userReservation(NOW.plusMinutes(5))));
 
-        assertErrorCode(() -> reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000),
+        assertErrorCode(() -> reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000, null),
                 ErrorCode.RESERVATION_NOT_FOUND);
-        assertErrorCode(() -> reservationService.confirmReservation(999L, RESERVATION_ID, 20_000),
+        assertErrorCode(() -> reservationService.confirmReservation(999L, RESERVATION_ID, 20_000, null),
                 ErrorCode.RESERVATION_NOT_FOUND);
     }
 
@@ -295,7 +297,7 @@ class ReservationServiceTest {
                 .build();
         given(reservationRepository.findByIdForUpdate(RESERVATION_ID)).willReturn(Optional.of(hold));
 
-        assertErrorCode(() -> reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000),
+        assertErrorCode(() -> reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000, null),
                 ErrorCode.VACANCY_PAYMENT_CLOSED);
         assertThat(hold.getStatus()).isEqualTo(ReservationStatus.HOLD);
     }

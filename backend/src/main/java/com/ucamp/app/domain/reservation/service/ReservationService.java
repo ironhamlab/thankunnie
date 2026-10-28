@@ -113,16 +113,19 @@ public class ReservationService {
      * 예약 행을 잠근 뒤 검사하므로 중복 확정·확정과 만료가 겹쳐도 한 번만 반영된다 (D-06).
      * 시간 점유는 이미 HOLD 가 잡고 있어 매장 잠금과 가용 시간 재검사는 하지 않는다.
      *
-     * @param userId        결제한 고객 ID
-     * @param reservationId 확정할 예약 ID
-     * @param paidAmount    결제사에서 확인한 실제 결제 금액
+     * @param userId          결제한 고객 ID
+     * @param reservationId   확정할 예약 ID
+     * @param paidAmount      결제사에서 확인한 실제 결제 금액
+     * @param customerRequest 결제 화면에서 입력한 고객 요청사항, 없으면 null (Reservation.confirm 참고)
      * @return 확정된 예약 (결제 기록 저장에 사용)
      * @throws BusinessException 없거나 다른 고객의 예약이면 RESERVATION_NOT_FOUND,
      *                           결제 마감(시작 15분 전)이 지났으면 VACANCY_PAYMENT_CLOSED,
+     *                           요청사항이 1,000자를 넘으면 INVALID_INPUT,
      *                           그 밖의 상태·금액 오류는 Reservation.validateConfirmable 참고
      */
     @Transactional
-    public Reservation confirmReservation(Long userId, Long reservationId, int paidAmount) {
+    public Reservation confirmReservation(Long userId, Long reservationId, int paidAmount,
+            String customerRequest) {
         Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
                 .filter(found -> found.getUserId().equals(userId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
@@ -132,7 +135,7 @@ public class ReservationService {
         reservation.validateConfirmable(paidAmount, now);
         // 점유가 유효하면 결제 마감(시작 15분 전) 전이지만, 정책 기준을 한 곳에서 확인하도록 함께 검사한다
         SalePolicy.validatePayable(reservation.getStartsAt(), now);
-        reservation.confirm(paidAmount, now);
+        reservation.confirm(paidAmount, now, customerRequest);
         return reservation;
     }
 

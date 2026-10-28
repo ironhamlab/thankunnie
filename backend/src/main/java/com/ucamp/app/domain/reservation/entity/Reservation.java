@@ -70,7 +70,10 @@ public class Reservation extends BaseTimeEntity {
     @Column(name = "CONFIRMED_AT")
     private LocalDateTime confirmedAt;
 
-    @Column(name = "CUSTOMER_REQUEST", length = 1000)
+    /** 고객 요청사항 최대 길이 (RESERVATION.CUSTOMER_REQUEST VARCHAR2(1000)) */
+    public static final int CUSTOMER_REQUEST_MAX_LENGTH = 1000;
+
+    @Column(name = "CUSTOMER_REQUEST", length = CUSTOMER_REQUEST_MAX_LENGTH)
     private String customerRequest;
 
     @Builder
@@ -92,13 +95,24 @@ public class Reservation extends BaseTimeEntity {
      * 동시에 확정·만료되지 않도록 예약 행을 잠근 뒤 호출한다.
      *
      * @param paidAmount 결제사에서 확인한 실제 결제 금액
-     * @param now        확정 시각 (예약 행 잠금 뒤 읽은 현재 시각)
-     * @throws BusinessException validateConfirmable 과 같은 조건에서 발생하며, 이때 상태는 바뀌지 않는다
+     * @param now             확정 시각 (예약 행 잠금 뒤 읽은 현재 시각)
+     * @param customerRequest 결제 화면에서 입력한 고객 요청사항. null 이면 기존 값을 유지하고,
+     *                        앞뒤 공백을 제거해 저장하며 공백뿐이면 비운다
+     * @throws BusinessException validateConfirmable 과 같은 조건이거나 요청사항이 최대 길이를 넘으면 INVALID_INPUT.
+     *                           예외가 나면 상태와 요청사항은 바뀌지 않는다
      */
-    public void confirm(int paidAmount, LocalDateTime now) {
+    public void confirm(int paidAmount, LocalDateTime now, String customerRequest) {
         validateConfirmable(paidAmount, now);
+        String request = customerRequest == null ? null : customerRequest.strip();
+        if (request != null && request.length() > CUSTOMER_REQUEST_MAX_LENGTH) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT,
+                    "요청사항은 " + CUSTOMER_REQUEST_MAX_LENGTH + "자 이하로 입력해 주세요.");
+        }
         this.status = ReservationStatus.CONFIRMED;
         this.confirmedAt = now;
+        if (request != null) {
+            this.customerRequest = request.isEmpty() ? null : request;
+        }
     }
 
     /**

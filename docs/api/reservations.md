@@ -32,7 +32,7 @@
 |---|---|---|
 | `treatmentId` | O | 판매 중(ACTIVE)인 시술 ID |
 | `startsAt` | O | 시작 일시. 30분 단위, 오늘부터 60일 이내, 시작 20분 전까지 |
-| `customerRequest` | X | 고객 요청사항, 최대 1,000자. 화면은 이 값을 보내지 않고 결제 화면에서 받는다 ([요청사항 저장](#요청사항-저장-결정-미구현) 참고) |
+| `customerRequest` | X | 고객 요청사항, 최대 1,000자. 화면은 이 값을 보내지 않고 결제 화면에서 받는다 ([요청사항 저장](#요청사항-저장-예약-쪽-구현-완료-결제-연결-대기) 참고) |
 
 응답 `data` (201):
 
@@ -122,7 +122,7 @@
 | CANCELLED | 취소 완료 |
 | EXPIRED | 점유 만료. 5분 안에 결제하지 않음 |
 
-## 요청사항 저장 (결정, 미구현)
+## 요청사항 저장 (예약 쪽 구현 완료, 결제 연결 대기)
 
 원장님께 남길 요청사항은 예약 화면(`/reserve`)이 아니라 결제 화면(`/checkout`)에서 입력받는다.
 예약을 만든 뒤 요청사항만 고치는 API는 두지 않고, **결제 확인 요청에 함께 보내 결제가 확인될 때 저장**한다.
@@ -137,13 +137,18 @@
   }
   ```
 
-- 결제 확인 후 예약을 확정(`ReservationService.confirmReservation`)하는 같은 트랜잭션에서
-  `RESERVATION.CUSTOMER_REQUEST`에 저장한다. 결제가 실패하면 저장하지 않는다.
-- 앞뒤 공백을 제거하고, 빈 문자열은 null로 저장한다.
+- 결제 확인 후 예약을 확정하는 같은 트랜잭션에서 `RESERVATION.CUSTOMER_REQUEST`에 저장한다.
+  결제가 실패하면 저장하지 않는다.
+- **예약 쪽 구현 (완료)**: `ReservationService.confirmReservation(userId, reservationId, paidAmount, customerRequest)` →
+  `Reservation.confirm(paidAmount, now, customerRequest)`
+  - 앞뒤 공백을 제거해 저장한다. 공백뿐이면 비우고(null), null을 넘기면 예약 생성 때 받은 값을 유지한다.
+  - 1,000자를 넘으면 `COMMON_400`(INVALID_INPUT)이며 확정·저장하지 않는다.
+- **결제 쪽 연결 (결제 담당, 미구현)**: `PaymentVerifyRequest`에 `customerRequest`를 추가하고,
+  결제 확인을 마친 뒤 위 `confirmReservation`에 그대로 넘긴다.
 - 기존 `CUSTOMER_REQUEST` 컬럼(`VARCHAR2(1000)`)을 사용하므로 스키마 변경은 없다.
 - 예약 생성 요청의 `customerRequest`는 하위 호환을 위해 남겨 두지만 화면에서는 보내지 않는다.
-- 현재 상태: 프론트는 결제 화면에서 요청사항을 입력받아 상태로 들고 있다. 결제 요청·결제 확인 API 연결과
-  백엔드의 `PaymentVerifyRequest.customerRequest` 추가·저장은 결제 담당 작업에서 진행한다.
+- 현재 상태: 프론트는 결제 화면에서 요청사항을 입력받아 상태로 들고 있다. 결제 요청·결제 확인 API 연결은
+  결제 담당 작업에서 진행한다.
 
 ## 오류
 
@@ -182,4 +187,6 @@
 - 백엔드를 local 프로필·H2 메모리 DB로 기동해 실제 화면으로 확인:
   예약 생성 → 결제 화면 표시, 새로고침 유지, 5분 만료 안내, 같은 시간 재예약 거절(VACANCY_006),
   비로그인 거절(COMMON_401), 없는 예약·다른 고객 예약 안내.
-- 결제 확인 API의 `customerRequest` 저장은 미구현이라 검증하지 않았다.
+- `backend/`: `.\gradlew.bat --no-daemon test` 통과 (전체 572개, 실패 0개).
+  확정 시 요청사항 저장·공백 제거·null 유지·공백 비우기·1,000자 경계 테스트를 추가했다.
+- 결제 확인 API에서 요청사항을 넘기는 부분은 미구현이라 화면에서 끝까지 저장되는 흐름은 검증하지 않았다.
