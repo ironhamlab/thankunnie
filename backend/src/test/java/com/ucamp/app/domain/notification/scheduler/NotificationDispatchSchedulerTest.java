@@ -230,12 +230,14 @@ class NotificationDispatchSchedulerTest {
     }
 
     private NotificationEvent saveEvent(long exceptionId, long shopId) {
+        // 유니크가 매장+종류+시작 시각이라, 같은 매장에 여러 소식을 넣을 때 시작 시각을 다르게 둔다.
+        LocalDateTime startsAt = SLOT_START.plusHours(exceptionId - 1);
         return notificationEventRepository.saveAndFlush(NotificationEvent.builder()
                 .eventType(NotificationEventType.IMMINENT)
                 .exceptionId(exceptionId)
                 .shopId(shopId)
-                .slotStartsAt(SLOT_START)
-                .slotEndsAt(SLOT_START.plusHours(1))
+                .slotStartsAt(startsAt)
+                .slotEndsAt(startsAt.plusHours(1))
                 .build());
     }
 
