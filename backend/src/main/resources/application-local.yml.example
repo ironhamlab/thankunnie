@@ -49,3 +49,10 @@ iamport:
   imp-secret: CHANGE_ME
   # 테스트 채널 결제 조회용. 로컬에서만 true
   include-sandbox: true
+
+# Solapi 콘솔에서 확인한 값을 사람이 직접 넣는다. 실제 키를 Git 에 올리지 않는다
+solapi:
+  api-key: CHANGE_ME
+  api-secret: CHANGE_ME
+  # 콘솔에 등록한 발신번호. 숫자만 (예: 01012345678)
+  from-number: CHANGE_ME

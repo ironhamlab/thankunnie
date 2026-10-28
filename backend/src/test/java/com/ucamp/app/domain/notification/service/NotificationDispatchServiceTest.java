@@ -1,6 +1,11 @@
 package com.ucamp.app.domain.notification.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -19,9 +24,12 @@ import org.springframework.data.auditing.DateTimeProvider;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.notification.NotificationFixture;
+import com.ucamp.app.domain.notification.client.SmsSendResult;
+import com.ucamp.app.domain.notification.client.SolapiSmsClient;
 import com.ucamp.app.domain.notification.entity.NotificationDispatch;
 import com.ucamp.app.domain.notification.entity.NotificationDispatchStatus;
 import com.ucamp.app.domain.notification.entity.NotificationEvent;
@@ -32,13 +40,15 @@ import com.ucamp.app.domain.notification.entity.SubscriptionType;
 import com.ucamp.app.domain.notification.repository.NotificationDispatchRepository;
 import com.ucamp.app.domain.notification.repository.NotificationEventRepository;
 import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepository;
+import com.ucamp.app.domain.notification.repository.RecipientContactRepository;
 import com.ucamp.app.domain.notification.repository.ShopCategoryRegionRepository;
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({NotificationDispatchService.class, SubscriptionMatchService.class, ShopCategoryRegionRepository.class,
-        VacancySlotRepository.class, NotificationDispatchServiceTest.FixedClock.class})
+        VacancySlotRepository.class, RecipientContactRepository.class,
+        NotificationDispatchServiceTest.FixedClock.class})
 @ActiveProfiles("test")
 class NotificationDispatchServiceTest {
 
@@ -63,12 +73,16 @@ class NotificationDispatchServiceTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @MockitoBean
+    private SolapiSmsClient solapiSmsClient;
+
     @BeforeEach
     void setUp() {
         NotificationFixture.category(jdbcTemplate, 10L, "NAIL");
         NotificationFixture.shop(jdbcTemplate, SHOP_ID, 10L, "SEOUL_GANGNAM", "ACTIVE");
         NotificationFixture.user(jdbcTemplate, USER_ID);
         NotificationFixture.user(jdbcTemplate, OTHER_USER_ID);
+        given(solapiSmsClient.send(anyString(), anyString())).willReturn(SmsSendResult.success("G4V_TEST"));
     }
 
     @Test
@@ -306,6 +320,130 @@ class NotificationDispatchServiceTest {
 
         assertThat(canSend).isFalse();
         assertThat(job.getStatus()).isEqualTo(NotificationDispatchStatus.SKIPPED);
+    }
+
+    @Test
+    @DisplayName("재검사를 통과한 작업에 문자를 보내면 SENT 로 남긴다")
+    void sendClaimedJob_success_marksSent() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        notificationSubscriptionRepository.save(store(USER_ID));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+
+        notificationDispatchService.sendClaimedJob(job);
+
+        NotificationDispatch saved = notificationDispatchRepository.findById(job.getId()).orElseThrow();
+        assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.SENT);
+        assertThat(saved.getFailReason()).isNull();
+        // 본문 시각은 연도 포함 한국어 형식이다. 기본 toString(2026-10-22T15:00)을 쓰지 않는다.
+        verify(solapiSmsClient).send(anyString(), contains("2026년 10월 22일 15:00 시작 빈자리가 생겼습니다."));
+    }
+
+    @Test
+    @DisplayName("회원 전화번호가 없으면 FAILED 로 남긴다")
+    void sendClaimedJob_noPhone_marksFailed() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        notificationSubscriptionRepository.save(store(USER_ID));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+        jdbcTemplate.update("UPDATE APP_USER SET PHONE = ' ' WHERE USER_ID = ?", USER_ID);
+
+        notificationDispatchService.sendClaimedJob(job);
+
+        NotificationDispatch saved = notificationDispatchRepository.findById(job.getId()).orElseThrow();
+        assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.FAILED);
+        assertThat(saved.getFailReason()).contains("전화번호");
+    }
+
+    @Test
+    @DisplayName("문자 API가 실패하면 FAILED 로 남긴다")
+    void sendClaimedJob_smsFailed_marksFailed() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        notificationSubscriptionRepository.save(store(USER_ID));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+        given(solapiSmsClient.send(anyString(), anyString()))
+                .willReturn(SmsSendResult.failed("발송 거절"));
+
+        notificationDispatchService.sendClaimedJob(job);
+
+        NotificationDispatch saved = notificationDispatchRepository.findById(job.getId()).orElseThrow();
+        assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.FAILED);
+        assertThat(saved.getFailReason()).isEqualTo("발송 거절");
+    }
+
+    @Test
+    @DisplayName("문자 API 응답이 애매하면 UNKNOWN 으로 남긴다")
+    void sendClaimedJob_smsUnknown_marksUnknown() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        notificationSubscriptionRepository.save(store(USER_ID));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+        given(solapiSmsClient.send(anyString(), anyString()))
+                .willReturn(SmsSendResult.unknown("응답 없음"));
+
+        notificationDispatchService.sendClaimedJob(job);
+
+        NotificationDispatch saved = notificationDispatchRepository.findById(job.getId()).orElseThrow();
+        assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.UNKNOWN);
+        assertThat(saved.getFailReason()).isEqualTo("응답 없음");
+    }
+
+    @Test
+    @DisplayName("선점하지 않은 대기 작업에는 문자를 보내지 않는다")
+    void sendClaimedJob_pendingJob_isLeftPending() {
+        NotificationDispatch job = pendingJob(1L, USER_ID);
+
+        notificationDispatchService.sendClaimedJob(job);
+
+        assertThat(job.getStatus()).isEqualTo(NotificationDispatchStatus.PENDING);
+        verify(solapiSmsClient, times(0)).send(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("이미 SENT 이면 문자를 다시 보내지 않는다")
+    void sendClaimedJob_alreadySent_doesNotResend() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        notificationSubscriptionRepository.save(store(USER_ID));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+
+        notificationDispatchService.sendClaimedJob(job);
+        notificationDispatchService.sendClaimedJob(job);
+
+        NotificationDispatch saved = notificationDispatchRepository.findById(job.getId()).orElseThrow();
+        assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.SENT);
+        verify(solapiSmsClient, times(1)).send(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("이미 UNKNOWN 이면 문자를 다시 보내지 않는다")
+    void sendClaimedJob_alreadyUnknown_doesNotResend() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        notificationSubscriptionRepository.save(store(USER_ID));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+        given(solapiSmsClient.send(anyString(), anyString()))
+                .willReturn(SmsSendResult.unknown("응답 없음"));
+
+        notificationDispatchService.sendClaimedJob(job);
+        notificationDispatchService.sendClaimedJob(job);
+
+        NotificationDispatch saved = notificationDispatchRepository.findById(job.getId()).orElseThrow();
+        assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.UNKNOWN);
+        verify(solapiSmsClient, times(1)).send(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("같은 이벤트·회원에 SENT 가 있으면 대기 작업을 새로 만들지 않는다")
+    void createDispatchJobs_alreadySent_skipsUser() {
+        NotificationEvent event = notificationEventRepository.saveAndFlush(event(1L));
+        NotificationDispatch existing = notificationDispatchRepository.saveAndFlush(
+                NotificationDispatch.builder().eventId(event.getId()).userId(USER_ID).build());
+        existing.markSent();
+        notificationDispatchRepository.saveAndFlush(existing);
+        notificationSubscriptionRepository.save(store(USER_ID));
+
+        Optional<Integer> created = notificationDispatchService.createDispatchJobs();
+
+        assertThat(created).contains(0);
+        assertThat(notificationDispatchRepository.count()).isEqualTo(1);
+        assertThat(notificationDispatchRepository.findById(existing.getId()).orElseThrow().getStatus())
+                .isEqualTo(NotificationDispatchStatus.SENT);
     }
 
     private NotificationDispatch claimedJob(long exceptionId, long userId) {
