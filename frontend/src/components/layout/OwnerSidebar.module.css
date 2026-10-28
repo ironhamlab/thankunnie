@@ -55,7 +55,7 @@
   color: var(--color-text-secondary);
 }
 .root a:global(.active) {
-  background: #f8e5ef;
+  background: var(--color-primary-tint);
   color: var(--color-primary);
   font-weight: 700;
 }

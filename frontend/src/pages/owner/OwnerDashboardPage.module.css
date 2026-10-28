@@ -34,5 +34,5 @@
   background: var(--color-primary);
   padding: 10px;
   box-sizing: content-box;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }

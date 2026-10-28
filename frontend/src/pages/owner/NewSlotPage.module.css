@@ -31,7 +31,7 @@
   place-items: center;
   width: 30px;
   height: 30px;
-  background: #f8e5ef;
+  background: var(--color-primary-tint);
   border-radius: var(--radius-sm);
   color: var(--color-primary);
   margin-right: 6px;
@@ -69,7 +69,7 @@
 .serviceOption:global(.is-selected) {
   border: 2px solid var(--color-primary);
   padding: 17px;
-  background: #fffafd;
+  background: var(--color-primary-faint);
 }
 .serviceOption input {
   accent-color: var(--color-primary);
@@ -116,7 +116,7 @@
 .selectedOutline {
   color: var(--color-primary);
   border-color: var(--color-primary);
-  background: #fff3f8;
+  background: var(--color-primary-faint);
 }
 .validation {
   display: flex;
@@ -128,7 +128,7 @@
 .validation > span {
   display: grid;
   place-items: center;
-  background: #00b48b;
+  background: var(--color-success-strong);
   color: white;
   border-radius: 50%;
   width: 32px;
@@ -137,7 +137,7 @@
   font-size: 20px;
 }
 .validation:global(.b-error) > span {
-  background: #db2e56;
+  background: var(--color-danger);
 }
 .validation p {
   font-size: 12px;

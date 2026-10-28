@@ -80,7 +80,7 @@
 .segmented :global(.b-options) {
   gap: 0;
   background: var(--color-surface-blue);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 3px;
 }
 .segmented :global(.b-options) button {

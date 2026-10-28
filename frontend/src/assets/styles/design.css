@@ -230,7 +230,7 @@
   color: #c21b46;
   background: #fff1f4;
   padding: 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-size: 13px;
 }
 .b-empty {

@@ -3,6 +3,8 @@
   /* 브랜드·텍스트 */
   --color-primary: #b70052;
   --color-primary-soft: #ffd9df;
+  --color-primary-tint: #f8e5ef; /* 선택된 메뉴·번호 배경 */
+  --color-primary-faint: #fff3f8; /* 선택된 항목의 아주 연한 배경 */
   --color-text: #111c2d;
   --color-text-secondary: #5a4045;
   --color-text-muted: #8e6f75;
@@ -17,6 +19,8 @@
   /* 상태 */
   --color-success: #008970;
   --color-success-bg: #eafff6;
+  --color-success-strong: #00b48b; /* 성공 아이콘 배경 */
+  --color-danger: #db2e56; /* 오류 아이콘 배경 */
   --color-warning: #954500;
   --color-warning-bg: #fff4e5;
   --color-info: #3442b8;
