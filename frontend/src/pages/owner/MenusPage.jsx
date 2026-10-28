@@ -11,7 +11,6 @@ import Alert from '@/components/common/Alert';
 
 export default function MenusPage() {
   const treatments = useTreatmentStore((state) => state.treatments);
-  const categories = useTreatmentStore((state) => state.categories);
   const status = useTreatmentStore((state) => state.status);
   const error = useTreatmentStore((state) => state.error);
   const isSaving = useTreatmentStore((state) => state.mutationStatus === 'loading');
@@ -64,11 +63,11 @@ export default function MenusPage() {
           <h1>
             시술 메뉴 관리 <Badge>{treatments.length}개 등록됨</Badge>
           </h1>
-          <p className="b-muted">시술명, 설명, 카테고리, 정상가와 소요 시간을 관리합니다.</p>
+          <p className="b-muted">시술명, 설명, 정상가와 소요 시간을 관리합니다.</p>
         </div>
         <Button
           variant="primary"
-          disabled={status !== 'succeeded' || !categories.length || isSaving}
+          disabled={status !== 'succeeded' || isSaving}
           onClick={() => openForm(null)}
         >
           + 신규 시술 등록
@@ -78,7 +77,7 @@ export default function MenusPage() {
         <strong>시술 정보 변경 유의사항</strong>
         <p>
           비활성 시술은 신규 빈자리 선택에서 제외됩니다. 기존 빈자리와 예약 이력은 유지됩니다. 소요
-          시간은 30분 배수로 입력해 주세요.
+          시간은 30분 배수로 입력해 주세요. 모든 시술은 매장 카테고리를 따릅니다.
         </p>
       </Notice>
       {(status === 'idle' || status === 'loading') && (
@@ -92,11 +91,6 @@ export default function MenusPage() {
       )}
       {status === 'succeeded' && (
         <>
-          {!categories.length && (
-            <p role="alert">
-              선택 가능한 카테고리가 없습니다. 관리자에게 카테고리 등록을 요청해 주세요.
-            </p>
-          )}
           <Panel as="section" className="b-table-panel" aria-busy={isSaving}>
             <div className="b-row b-pad">
               <h2>시술 목록</h2>
@@ -114,7 +108,7 @@ export default function MenusPage() {
                 <table>
                   <thead>
                     <tr>
-                      {['시술명', '카테고리', '설명', '소요 시간', '정상가', '상태', '관리'].map(
+                      {['시술명', '설명', '소요 시간', '정상가', '상태', '관리'].map(
                         (heading) => (
                           <th key={heading} scope="col">
                             {heading}
@@ -132,7 +126,6 @@ export default function MenusPage() {
                             {item.treatmentType === 'MODEL' ? '모델 모집' : '일반 시술'}
                           </small>
                         </td>
-                        <td>{item.categoryName}</td>
                         <td>{item.description || '상세 설명 없음'}</td>
                         <td>{item.durationMinutes}분</td>
                         <td>
@@ -167,7 +160,6 @@ export default function MenusPage() {
       {edit && (
         <TreatmentForm
           treatment={edit.treatment}
-          categories={categories}
           isSaving={isSaving}
           error={actionError}
           onSave={submit}

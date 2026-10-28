@@ -12,7 +12,6 @@
 |---|---|---|---|
 | GET | 기본 경로 | 본인 매장 전체 시술 목록 (비활성 포함, ID 내림차순) | 200 |
 | GET | `?status=ACTIVE` | 신규 빈자리에서 선택 가능한 활성 시술만 조회 | 200 |
-| GET | `/categories` | 선택 가능한 CATEGORY 목록 (이름 오름차순) | 200 |
 | GET | `/{treatmentId}` | 본인 매장 시술 단건 | 200 |
 | POST | 기본 경로 | 시술 등록 | 201 |
 | PUT | `/{treatmentId}` | 기본 정보 전체 수정 | 200 |
@@ -27,7 +26,6 @@
   "regularPrice": 50000,
   "price": 40000,
   "lastMinutePrice": 30000,
-  "categoryId": 1,
   "durationMinutes": 60,
   "conditions": {
     "treatmentType": "MODEL",
@@ -40,7 +38,7 @@
 - 시술명: 공백만 입력 불가, 최대 100자. 앞뒤 공백을 제거해 저장한다.
 - 설명: 선택, 최대 2,000자.
 - 정상가: 양의 정수, 100원 단위. 기존 가격 계산의 Integer 범위에 맞춰 최대 2,147,483,600원.
-- 카테고리: CATEGORY에 존재하는 ID 필수. 매장 카테고리와 독립적으로 선택한다.
+- 카테고리: 모든 시술은 소속 매장의 `SHOP.CATEGORY_ID`를 따른다. 시술별 카테고리 입력·저장 및 카테고리 목록 API는 제공하지 않는다.
 - 소요 시간: 30~9,990분, 30분 배수.
 - 신규 시술: `conditions`를 생략하면 기본 유형은 NORMAL이며, `conditions.treatmentType`에 MODEL을 지정하면 MODEL로 등록한다. 상태는 ACTIVE다. 판매가와 초임박가는 필수 입력이며 요청한 값으로 저장한다.
 - 등록·수정 모두 양의 정수, 100원 단위, 초임박가 ≤ 판매가 ≤ 정상가를 검사한다. 같은 가격이면 할인 없음.
@@ -76,16 +74,15 @@
 - 스키마 및 공통 인증·예외·설정 파일 변경은 없다.
 
 시술 응답 필드: `treatmentId`, `shopId`, `name`, `description`, `regularPrice`, `price`, `lastMinutePrice`,
-`categoryId`, `categoryName`, `durationMinutes`, `status`, `treatmentType`,
+`durationMinutes`, `status`, `treatmentType`,
 `modelCondition`, `photoNotice`, `imageUrl`, `createdAt`, `updatedAt`.
 시각은 `+09:00` 오프셋이다.
-카테고리 응답 항목: `categoryId`, `name`.
 
 ## 오류
 
 | 코드 | 상태 | 조건 |
 |---|---|---|
-| COMMON_400 | 400 | 입력 검증 실패, 없는 카테고리, 잘못된 상태 |
+| COMMON_400 | 400 | 입력 검증 실패, 잘못된 상태 |
 | VACANCY_007 | 400 | 판매가·초임박가가 양의 100원 단위가 아니거나 판매가가 정상가 초과 |
 | VACANCY_008 | 400 | 초임박가가 판매가 초과 |
 | COMMON_401 | 401 | 비로그인 |
@@ -97,7 +94,7 @@
 - 화면: `/owner/menus`. 시연용 브라우저 메모리 메뉴 대신 서버 응답을 사용한다.
 - 화면 → `useTreatmentStore` → `treatmentApi` → `axiosInstance` 순서로 요청한다.
 - 인증은 기존 공통 방식을 사용한다. 실제 로그인 연동 전 로컬 확인은 B-01의 `X-Test-User: OWNER_1` 헤더를 요청에 부여하는 개발 도구를 사용한다. 운영에서는 테스트 헤더 인증이 동작하지 않는다.
-- OWNER_1의 SHOP_ID=1 매장과 CATEGORY 초기 데이터가 있어야 한다. 초기 데이터가 없으면 매장 없음/카테고리 없음 안내가 표시된다.
+- OWNER_1의 SHOP_ID=1 매장과 해당 매장의 CATEGORY 초기 데이터가 있어야 한다.
 - 공통 인증·CORS·라우터 파일을 수정하거나 개별 임시 인증 방식을 추가하지 않았다.
 - 다른 사장님 페이지의 빈자리·예약 데이터는 기존 시연용 구현이다. 해당 업무 API 연동은 각 담당 이슈 범위다.
 
@@ -106,13 +103,25 @@
 A-06은 기존 목적·참여 조건·촬영 안내 컬럼을 사용하므로 추가 스키마 변경과 마이그레이션은 없다.
 
 새 DB는 `docs/erd/01_schema_ddl.sql`을 사용한다.
-기존 Oracle 21c XE에는 아래 SQL 파일을 적용해야 한다.
+UNNIE-111부터 시술별 카테고리를 제거하고 매장 카테고리만 사용한다.
 
-`docs/erd/migrations/UNNIE-32-treatment-category.sql`
+- 과거 `UNNIE-32-treatment-category.sql`을 적용한 Oracle DB는 애플리케이션 중지 후
+  `docs/erd/migrations/UNNIE-111-remove-treatment-category.sql`을 1회 적용하고 새 버전을 배포한다.
+- `TREATMENT.CATEGORY_ID`가 없는 DB와 최신 전체 DDL로 만든 DB에는 제거 SQL을 실행하지 않는다.
+- 과거 UNNIE-32 파일은 배포 이력으로 보존하며 새로 적용하지 않는다.
+- 제거 SQL은 시술 카테고리 FK와 컬럼만 삭제한다. 매장 카테고리와 시술·예약 행은 유지한다.
+  매장과 다르게 지정했던 시술별 카테고리 값은 사라지므로 적용 전 백업·대상 스키마 확인이 필요하다.
+- Oracle DDL은 자동 커밋된다. Oracle 21c XE에서 실제 적용 결과는 별도 검증이 필요하다.
 
-SQL은 CATEGORY_ID를 추가하고 기존 시술을 소속 매장의 카테고리로 채운 뒤 NOT NULL과 FK를 적용한다.
-카테고리 마스터는 기존 CATEGORY를 공유하고 선택값은 시술별로 저장한다.
-Oracle에서 실제 적용한 결과는 별도 검증이 필요하다.
+## 검증 결과 (UNNIE-111, 2026-10-28)
+
+- `backend/`: `gradlew.bat --no-daemon classes test` 성공.
+- 마이그레이션 테스트 추가 후 `gradlew.bat --no-daemon test --tests com.ucamp.app.domain.treatment.TreatmentCategoryMigrationTest --tests com.ucamp.app.domain.treatment.TreatmentIntegrationTest` 성공. 총 40개, 실패 0개.
+- 제거 SQL을 H2 Oracle 모드에서 실행하여 컬럼 제거와 기존 시술·예약 가격·예약금·매장 카테고리 보존을 확인했다. 실제 Oracle 적용은 미검증이다.
+- `gradlew.bat --no-daemon bootRun --args=--spring.profiles.active=category-smoke`에 임시 H2 Oracle 모드 URL, 로컬 이미지 저장소, 초기 데이터 로딩, 스케줄러 비활성화, 포트 18080을 환경변수로 전달해 `validate` 기동 성공. 개인 로컬 설정은 사용하지 않았다.
+- Gradle 검증 프로세스에만 `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=C:/UCAMP/Final/thankunnie/backend/build/socket-temp`를 지정했다.
+- `frontend/`: `npm run lint`, `npm run build` 성공.
+- Edge 브라우저에서 모의 API를 사용해 신규 시술 등록·수정 성공, 카테고리 입력란 제거, 저장 요청의 `categoryId` 제외, 카테고리 목록 API 미호출을 확인했다. 브라우저와 실제 백엔드를 연결한 통합 검증은 별도로 수행하지 않았다.
 
 ## A-06 초기 구현 당시 검증 결과
 

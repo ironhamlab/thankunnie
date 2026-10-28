@@ -26,7 +26,6 @@ import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 
 import com.ucamp.app.domain.shop.entity.Shop;
-import com.ucamp.app.domain.shop.entity.ShopCategory;
 import com.ucamp.app.domain.treatment.dto.request.TreatmentSaveRequest;
 import com.ucamp.app.domain.treatment.dto.request.TreatmentConditionsRequest;
 import com.ucamp.app.domain.vacancy.policy.SalePrices;
@@ -49,10 +48,6 @@ public class Treatment extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "SHOP_ID", nullable = false)
     private Shop shop;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CATEGORY_ID", nullable = false)
-    private ShopCategory category;
 
     @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "STAFF_ID")
@@ -100,24 +95,23 @@ public class Treatment extends BaseTimeEntity {
     @Column(name = "STATUS", nullable = false, length = 10)
     private TreatmentStatus status;
 
-    public static Treatment create(Shop shop, ShopCategory category, TreatmentSaveRequest request) {
+    public static Treatment create(Shop shop, TreatmentSaveRequest request) {
         Treatment treatment = new Treatment();
         treatment.shop = shop;
 
         treatment.treatmentType = TreatmentType.NORMAL;
         treatment.status = TreatmentStatus.ACTIVE;
-        treatment.updateMenu(category, request);
+        treatment.updateMenu(request);
         return treatment;
     }
 
-    public void updateMenu(ShopCategory category, TreatmentSaveRequest request) {
+    public void updateMenu(TreatmentSaveRequest request) {
         new SalePrices(request.price(), request.lastMinutePrice()).validateFor(request.regularPrice());
         if (request.conditions() != null) {
             updateConditions(request.conditions());
         }
         this.price = request.price();
         this.lastMinutePrice = request.lastMinutePrice();
-        this.category = category;
         this.name = request.name().strip();
         this.description = request.description();
         this.regularPrice = request.regularPrice();

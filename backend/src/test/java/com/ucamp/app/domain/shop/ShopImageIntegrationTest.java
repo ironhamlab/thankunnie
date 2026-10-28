@@ -210,9 +210,9 @@ class ShopImageIntegrationTest {
 
     private void createTreatment() {
         jdbc.update("""
-                INSERT INTO TREATMENT (TREATMENT_ID, SHOP_ID, CATEGORY_ID, NAME, REGULAR_PRICE, PRICE,
+                INSERT INTO TREATMENT (TREATMENT_ID, SHOP_ID, NAME, REGULAR_PRICE, PRICE,
                     LAST_MINUTE_PRICE, DURATION_MINUTES, TREATMENT_TYPE, STATUS, CREATED_AT, UPDATED_AT)
-                VALUES (9701, 1, 9701, '이미지 테스트', 30000, 20000, 10000, 30, 'NORMAL', 'ACTIVE', ?, ?)
+                VALUES (9701, 1, '이미지 테스트', 30000, 20000, 10000, 30, 'NORMAL', 'ACTIVE', ?, ?)
                 """, LocalDateTime.now(clock), LocalDateTime.now(clock));
     }
 
