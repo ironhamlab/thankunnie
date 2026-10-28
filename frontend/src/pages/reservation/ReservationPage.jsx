@@ -34,7 +34,6 @@ export default function ReservationPage() {
   const [time, setTime] = useState('');
   const [month, setMonth] = useState(Number(today.slice(5, 7)) - 1);
   const [year, setYear] = useState(Number(today.slice(0, 4)));
-  const [request, setRequest] = useState('');
   const [mode, setMode] = useState('normal');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -72,7 +71,6 @@ export default function ReservationPage() {
       const reservation = await createReservation({
         treatmentId: service.treatmentId,
         startsAt: toKstDateTime(date, time.padStart(5, '0')),
-        customerRequest: request.trim() || null,
       });
       // 새로고침해도 결제 화면이 서버에서 예약을 다시 불러올 수 있도록 예약 번호를 주소에 남긴다
       navigate(`${ROUTES.CHECKOUT}?reservationId=${reservation.reservationId}`);
@@ -280,15 +278,6 @@ export default function ReservationPage() {
               <dd>{money(service.original * 0.8)}</dd>
             </div>
           </dl>
-          <label className={styles.request}>
-            원장님께 남길 요청사항 (선택)
-            <textarea
-              rows="3"
-              maxLength={1000}
-              value={request}
-              onChange={(e) => setRequest(e.target.value)}
-            />
-          </label>
           {!service.treatmentId && <Notice>시연용 시술이라 실제 예약을 요청할 수 없습니다.</Notice>}
           {error && (
             <Alert as="p" tone="error" role="alert">

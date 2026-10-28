@@ -72,6 +72,7 @@ export default function CheckoutPage() {
   const [now, setNow] = useState(Date.now);
   const [policy, setPolicy] = useState(false);
   const [demo, setDemo] = useState(false);
+  const [request, setRequest] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -108,7 +109,7 @@ export default function CheckoutPage() {
     return <LoadFailed error={loadError} onRetry={() => loadReservation('my', reservationId)} />;
   }
 
-  const { summary, holdExpiresAt, customerPhone, customerRequest } = detail;
+  const { summary, holdExpiresAt, customerPhone } = detail;
   // 시간 선택 화면은 아직 시연용 시술 주소(/reserve/nail 등)를 쓰므로 서버 시술 번호로 되돌아갈 주소를 찾는다
   const service = SERVICES.find((s) => s.treatmentId === summary.treatmentId);
   const reserveLink = service ? generatePath(ROUTES.RESERVE, { id: service.id }) : ROUTES.HOME;
@@ -136,7 +137,8 @@ export default function CheckoutPage() {
       setError('필수 약관과 모의 결제 확인에 동의해 주세요.');
       return;
     }
-    // 결제 요청(아임포트)과 결제 확인(POST /api/v1/payments/verify)은 결제 담당 작업에서 연결한다
+    // 결제 요청(아임포트)과 결제 확인(POST /api/v1/payments/verify)은 결제 담당 작업에서 연결한다.
+    // 요청사항은 결제 확인 요청에 customerRequest 로 함께 보낸다 (docs/api/reservations.md)
     setError('결제 연결은 준비 중입니다.');
   };
 
@@ -191,8 +193,14 @@ export default function CheckoutPage() {
                   <small>예약 확정 및 매장 안내 알림톡 수신 번호</small>
                 </label>
                 <label className="b-span-two">
-                  원장님께 남길 요청사항
-                  <textarea rows="3" value={customerRequest ?? '없음'} readOnly />
+                  원장님께 남길 요청사항 (선택)
+                  <textarea
+                    rows="3"
+                    maxLength={1000}
+                    value={request}
+                    onChange={(e) => setRequest(e.target.value)}
+                  />
+                  <small>결제가 완료되면 예약과 함께 저장됩니다. ({request.length}/1000)</small>
                 </label>
               </div>
             </Panel>
