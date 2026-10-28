@@ -160,6 +160,73 @@ class AvailabilityServiceTest {
         assertThat(result).startsWith(at(10, 0)).endsWith(at(21, 0));
     }
 
+    @Test
+    @DisplayName("isAvailable 은 영업시간 안의 빈 시각이면 true 다")
+    void isAvailable_freeTime_returnsTrue() {
+        assertThat(service.isAvailable(SHOP_ID, at(14, 0), ONE_HOUR)).isTrue();
+    }
+
+    @Test
+    @DisplayName("isAvailable 은 시간을 잡은 예약과 겹치면 false, 만료된 점유는 무시한다")
+    void isAvailable_reservations_followOccupyingRule() {
+        given(reservationRepository.findActiveOverlapping(eq(SHOP_ID), any(), any()))
+                .willReturn(List.of(reservation(14, 0, ReservationStatus.CANCEL_PENDING),
+                        reservation(16, 0, ReservationStatus.HOLD)));
+
+        assertThat(service.isAvailable(SHOP_ID, at(14, 30), ONE_HOUR)).isFalse();
+        assertThat(service.isAvailable(SHOP_ID, at(16, 0), ONE_HOUR)).isTrue();
+    }
+
+    @Test
+    @DisplayName("isAvailable 은 영업시간 밖이나 닫기와 겹치면 false 다")
+    void isAvailable_outsideOpenTimeOrClosed_returnsFalse() {
+        given(shopScheduleExceptionRepository.findOverlapping(eq(SHOP_ID), any(), any()))
+                .willReturn(List.of(ShopScheduleException.builder()
+                        .shopId(SHOP_ID)
+                        .exceptionType(ScheduleExceptionType.CLOSE)
+                        .startsAt(at(12, 0))
+                        .endsAt(at(13, 0))
+                        .build()));
+
+        assertThat(service.isAvailable(SHOP_ID, at(19, 30), ONE_HOUR)).isFalse();
+        assertThat(service.isAvailable(SHOP_ID, at(12, 30), ONE_HOUR)).isFalse();
+        assertThat(service.isAvailable(SHOP_ID, at(13, 0), ONE_HOUR)).isTrue();
+    }
+
+    @Test
+    @DisplayName("isAvailable 은 클릭 마감이 지났거나 30분 단위가 아니거나 60일을 넘으면 DB 조회 없이 false 다")
+    void isAvailable_notBookableTime_returnsFalseWithoutQuery() {
+        assertThat(service.isAvailable(SHOP_ID, NOW.plusMinutes(20), ONE_HOUR)).isFalse();
+        assertThat(service.isAvailable(SHOP_ID, at(14, 10), ONE_HOUR)).isFalse();
+        assertThat(service.isAvailable(SHOP_ID, NOW.toLocalDate().plusDays(60).atTime(14, 0), ONE_HOUR)).isFalse();
+        verifyNoInteractions(shopScheduleExceptionRepository, reservationRepository);
+    }
+
+    @Test
+    @DisplayName("isAvailable 과 validateAvailable 은 같은 시각에 같은 판단을 한다")
+    void isAvailable_matchesValidateAvailable() {
+        given(reservationRepository.findActiveOverlapping(eq(SHOP_ID), any(), any()))
+                .willReturn(List.of(reservation(14, 0, ReservationStatus.CONFIRMED)));
+
+        for (int hour = 9; hour <= 20; hour++) {
+            for (int minute : new int[] {0, 30}) {
+                LocalDateTime startsAt = at(hour, minute);
+                boolean validated = isValid(startsAt);
+                assertThat(service.isAvailable(SHOP_ID, startsAt, ONE_HOUR)).as(startsAt.toString())
+                        .isEqualTo(validated);
+            }
+        }
+    }
+
+    private boolean isValid(LocalDateTime startsAt) {
+        try {
+            service.validateAvailable(SHOP_ID, startsAt, ONE_HOUR);
+            return true;
+        } catch (BusinessException e) {
+            return false;
+        }
+    }
+
     private static LocalDateTime at(int hour, int minute) {
         return DATE.atTime(hour, minute);
     }
