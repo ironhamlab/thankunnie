@@ -3,6 +3,7 @@ package com.ucamp.app.domain.reservation.service;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import com.ucamp.app.common.lock.UserLock;
 import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.reservation.dto.request.ReservationCreateRequest;
 import com.ucamp.app.domain.reservation.dto.response.ReservationCreateResponse;
+import com.ucamp.app.domain.notification.event.ReservationConfirmedEvent;
 import com.ucamp.app.domain.reservation.entity.Reservation;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.treatment.entity.Treatment;
@@ -40,16 +42,18 @@ public class ReservationService {
     private final ShopLock shopLock;
     private final UserLock userLock;
     private final Clock clock;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ReservationService(ReservationRepository reservationRepository,
             TreatmentRepository treatmentRepository, AvailabilityService availabilityService,
-            ShopLock shopLock, UserLock userLock, Clock clock) {
+            ShopLock shopLock, UserLock userLock, Clock clock, ApplicationEventPublisher eventPublisher) {
         this.reservationRepository = reservationRepository;
         this.treatmentRepository = treatmentRepository;
         this.availabilityService = availabilityService;
         this.shopLock = shopLock;
         this.userLock = userLock;
         this.clock = clock;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -112,6 +116,7 @@ public class ReservationService {
      * 결제 검증을 마친 결제 도메인이 같은 트랜잭션에서 호출해 점유를 예약 완료로 확정한다 (D-05).
      * 예약 행을 잠근 뒤 검사하므로 중복 확정·확정과 만료가 겹쳐도 한 번만 반영된다 (D-06).
      * 시간 점유는 이미 HOLD 가 잡고 있어 매장 잠금과 가용 시간 재검사는 하지 않는다.
+     * 확정이 끝나면 고객 안내 문자를 위해 이벤트를 발행한다. 리스너는 커밋 뒤에 실행되고, 실패해도 확정은 되돌리지 않는다.
      *
      * @param userId        결제한 고객 ID
      * @param reservationId 확정할 예약 ID
@@ -133,6 +138,7 @@ public class ReservationService {
         // 점유가 유효하면 결제 마감(시작 15분 전) 전이지만, 정책 기준을 한 곳에서 확인하도록 함께 검사한다
         SalePolicy.validatePayable(reservation.getStartsAt(), now);
         reservation.confirm(paidAmount, now);
+        eventPublisher.publishEvent(new ReservationConfirmedEvent(reservationId, paidAmount));
         return reservation;
     }
 

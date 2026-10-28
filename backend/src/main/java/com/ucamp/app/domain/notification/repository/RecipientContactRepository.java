@@ -88,6 +88,17 @@ public class RecipientContactRepository {
      * @return 예약이 있으면 정보. 없거나 ID가 없으면 empty
      */
     public Optional<CancelSmsInfo> findCancelSmsInfo(Long reservationId) {
+        return findReservationSmsInfo(reservationId);
+    }
+
+    /**
+     * 예약 확정 문자에 넣을 고객 전화번호·매장 이름·예약 시작 시각을 읽는다.
+     * 취소 문자와 같은 값을 쓴다.
+     *
+     * @param reservationId 확정된 예약 ID
+     * @return 예약이 있으면 정보. 없거나 ID가 없으면 empty
+     */
+    public Optional<CancelSmsInfo> findReservationSmsInfo(Long reservationId) {
         if (reservationId == null) {
             return Optional.empty();
         }

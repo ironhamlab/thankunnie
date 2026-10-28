@@ -70,6 +70,8 @@ class RecipientContactRepositoryTest {
 
         assertThat(recipientContactRepository.findCancelSmsInfo(100L))
                 .contains(new CancelSmsInfo("010-1111-1111", "매장1", startsAt));
+        assertThat(recipientContactRepository.findReservationSmsInfo(100L))
+                .contains(new CancelSmsInfo("010-1111-1111", "매장1", startsAt));
     }
 
     @Test
