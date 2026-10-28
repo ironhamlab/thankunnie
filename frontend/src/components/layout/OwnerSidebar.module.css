@@ -1,0 +1,99 @@
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  background: white;
+  border-right: 1px solid var(--color-border);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.ownerBrand {
+  display: flex;
+  flex-direction: column;
+  padding-left: 8px;
+}
+.ownerBrand strong {
+  color: var(--color-primary);
+  font-size: 22px;
+}
+.ownerBrand small {
+  color: var(--color-text-secondary);
+}
+.ownerShop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+}
+.ownerShop img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+.ownerShop small {
+  display: block;
+}
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sidebar nav a,
+.sidebarBottom a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+}
+.sidebar a:global(.active) {
+  background: #f8e5ef;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+.sidebarBottom {
+  margin-top: auto;
+  font-size: 12px;
+}
+.sidebarBottom small {
+  display: block;
+  color: var(--color-text-muted);
+  margin-top: 16px;
+  text-align: center;
+}
+@media (max-width: 900px) {
+  .sidebar {
+    position: static;
+    height: auto;
+    padding: 16px 24px;
+    gap: 16px;
+  }
+  .sidebar nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .sidebar .ownerShop,
+  .sidebar .sidebarBottom,
+  .sidebar > :global(.b-button) {
+    display: none;
+  }
+  .ownerBrand {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+}
+@media (max-width: 540px) {
+  .sidebar nav a {
+    padding: 8px;
+    font-size: 12px;
+  }
+}

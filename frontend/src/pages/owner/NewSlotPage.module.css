@@ -1,0 +1,197 @@
+.newSlotPage > :global(.b-title-row) {
+  margin-bottom: 24px;
+  align-items: flex-end;
+}
+.newSlotPage > :global(.b-title-row) > div:first-child {
+  flex: 1;
+  min-width: 220px;
+}
+.newSlotPage :global(.b-columns) {
+  grid-template-columns: minmax(0, 2fr) minmax(270px, 1fr);
+  gap: 24px;
+}
+.newSlotPage :global(.b-title-row) p {
+  font-size: 13px;
+}
+.newSlotScenarios {
+  padding: 8px;
+  font-size: 11px;
+  align-items: center;
+}
+.newSlotScenarios :global(.is-selected) {
+  background: var(--color-primary);
+  color: white;
+}
+.newSlotScenarios strong {
+  margin-right: 6px;
+  font-size: 11px;
+}
+.stepNumber {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  background: #f8e5ef;
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  margin-right: 6px;
+  font-size: 15px;
+}
+.newSlotPage :global(.b-panel-heading) {
+  flex-wrap: wrap;
+}
+.newSlotPage :global(.b-panel-heading) > :global(.b-help) {
+  margin-top: 0 !important;
+  margin-left: auto;
+}
+.newSlotPage h2:global(.b-panel-heading) {
+  justify-content: flex-start;
+  gap: 6px;
+}
+.serviceSelection {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.serviceOption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.serviceOption:global(.is-selected) {
+  border: 2px solid var(--color-primary);
+  padding: 17px;
+  background: #fffafd;
+}
+.serviceOption input {
+  accent-color: var(--color-primary);
+  padding: 0;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.serviceOption > span {
+  flex: 1;
+  min-width: 0;
+}
+.serviceOption small {
+  display: block;
+  color: var(--color-text-secondary);
+  margin-top: 6px;
+}
+.serviceOption > strong {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.slotDateFields label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 11px;
+  min-width: 0;
+}
+.slotDateFields input {
+  width: 100%;
+  font-size: 12px;
+}
+.slotDateFields small {
+  color: var(--color-text-muted);
+}
+.slotDateFields input[readonly] {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+.timeRecommendations {
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+.selectedOutline {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: #fff3f8;
+}
+.slotValidation {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 22px;
+  font-size: 13px;
+}
+.slotValidation > span {
+  display: grid;
+  place-items: center;
+  background: #00b48b;
+  color: white;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  font-size: 20px;
+}
+.slotValidation:global(.b-error) > span {
+  background: #db2e56;
+}
+.slotValidation p {
+  font-size: 12px;
+  margin-top: 6px;
+}
+.slotSummary {
+  position: sticky;
+  top: 20px;
+  gap: 20px;
+}
+.slotSummary :global(.b-panel):first-child {
+  border-top: 5px solid var(--color-primary);
+}
+.slotSummary :global(.b-details) {
+  margin-top: 16px;
+}
+.slotSummary :global(.b-details) > div {
+  font-size: 12px;
+}
+.slotSummary :global(.b-panel):last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.slotSummary :global(.b-panel):last-child :global(.b-help) {
+  margin-top: 0 !important;
+}
+@media (max-width: 1100px) {
+  .newSlotPage :global(.b-columns) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .slotSummary {
+    position: static;
+  }
+}
+@media (max-width: 540px) {
+  .serviceOption {
+    gap: 8px;
+    padding: 14px;
+    flex-wrap: wrap;
+  }
+  .serviceOption:global(.is-selected) {
+    padding: 13px;
+  }
+  .serviceOption > strong {
+    margin-left: 26px;
+  }
+  .serviceOption > span {
+    flex-basis: calc(100% - 40px);
+  }
+  .slotDateFields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .slotSummary :global(.b-row) {
+    flex-wrap: wrap;
+  }
+}

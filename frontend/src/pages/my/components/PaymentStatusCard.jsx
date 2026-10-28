@@ -1,4 +1,5 @@
 import { PAYMENT_STATUS, formatDateTime, getPayment, money } from '@/utils/demoData';
+import styles from './PaymentStatusCard.module.css';
 
 const buildTimeline = (booking, payment) => {
   const cancellation = booking.cancellation;
@@ -40,11 +41,11 @@ export default function PaymentStatusCard({ booking }) {
     : 0;
 
   return (
-    <div className="b-pay-card">
-      <div className="b-pay-head">
+    <div className={styles.payCard}>
+      <div className={styles.payHead}>
         <div>
           <small className="b-muted">예약금결제 #{payment.depositPaymentId}</small>
-          <strong className="b-pay-method">{payment.method}</strong>
+          <strong className={styles.payMethod}>{payment.method}</strong>
         </div>
         <span className={`b-pay-status is-${status.tone}`}>
           {payment.status === 'REFUND_PENDING' && (
@@ -54,7 +55,7 @@ export default function PaymentStatusCard({ booking }) {
         </span>
       </div>
 
-      <div className="b-pay-stats">
+      <div className={styles.payStats}>
         <div>
           <span>결제한 예약금</span>
           <strong>{money(payment.amount)}</strong>
@@ -69,18 +70,18 @@ export default function PaymentStatusCard({ booking }) {
         </div>
       </div>
 
-      <div className="b-pay-meter" role="img" aria-label={`예약금 중 ${refundRate}% 환불`}>
+      <div className={styles.payMeter} role="img" aria-label={`예약금 중 ${refundRate}% 환불`}>
         <span style={{ width: `${refundRate}%` }} />
       </div>
-      <div className="b-pay-meter-legend">
+      <div className={styles.payMeterLegend}>
         <span>환불 {refundRate}%</span>
         <span>결제 유지 {100 - refundRate}%</span>
       </div>
 
-      <dl className="b-details b-pay-meta">
+      <dl className={`b-details ${styles.payMeta}`}>
         <div>
           <dt>결제 번호 (imp_uid)</dt>
-          <dd className="b-pay-mono">{payment.impUid}</dd>
+          <dd className={styles.payMono}>{payment.impUid}</dd>
         </div>
         <div>
           <dt>결제 승인</dt>
@@ -100,10 +101,10 @@ export default function PaymentStatusCard({ booking }) {
         )}
       </dl>
 
-      <ol className="b-pay-timeline">
+      <ol className={styles.payTimeline}>
         {timeline.map((step) => (
           <li key={step.key} className={`is-${step.state}`}>
-            <span className="b-pay-dot" aria-hidden="true" />
+            <span className={styles.payDot} aria-hidden="true" />
             <div>
               <strong>{step.label}</strong>
               <small>{step.state === 'current' ? '처리 중…' : formatDateTime(step.at)}</small>

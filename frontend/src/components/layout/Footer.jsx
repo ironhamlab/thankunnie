@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Dialog from '@/components/common/Dialog';
 import { ROUTES } from '@/constants/routes';
+import styles from './Footer.module.css';
 
 const FOOTER_NOTICES = ['이용약관', '개인정보처리방침', '고객센터', '입점 문의'];
 
@@ -24,7 +25,7 @@ export default function Footer() {
               않습니다.
             </p>
           </div>
-          <div className="b-footer-links">
+          <div className={styles.footerLinks}>
             {FOOTER_NOTICES.map((label) => (
               <button key={label} onClick={() => setNotice(label)}>
                 {label}

@@ -4,6 +4,7 @@ import { ROUTES } from '@/constants/routes';
 import { SERVICES, finish } from '@/utils/demoData';
 import { useDesignStore } from '@/store/useDesignStore';
 import BookingBreakdown from '@/pages/reservation/components/BookingBreakdown';
+import styles from './BookingResultPage.module.css';
 
 const scenarios = [
   ['success', '예약 성공 상태 (기본)'],
@@ -35,11 +36,11 @@ export default function BookingResultPage() {
   }[scenario];
   const bookingStatusLabel = booking.status === 'cancelled' ? '고객 취소' : '예약 확정';
   return (
-    <div className="b-container b-page b-result-page">
+    <div className={`b-container b-page ${styles.resultPage}`}>
       <div className="b-notice b-demo-disclaimer">
         본 화면은 MVP 모의 결제 환경입니다. 실제 신용카드 과금 및 금융 승인이 발생하지 않습니다.
       </div>
-      <section className="b-panel b-pad b-row b-result-controls">
+      <section className={`b-panel b-pad b-row ${styles.resultControls}`}>
         <strong>시연용 화면 상태 컨트롤:</strong>
         <div className="b-options">
           {scenarios.map(([value, label]) => (
@@ -54,16 +55,16 @@ export default function BookingResultPage() {
           ))}
         </div>
       </section>
-      <section className={'b-panel b-result-card ' + (!success ? 'b-result-problem' : '')}>
-        <header className="b-result-header">
-          <div className="b-result-icon">{success ? '✓' : '!'}</div>
+      <section className={`b-panel ${styles.resultCard} ` + (!success ? styles.resultProblem : '')}>
+        <header className={styles.resultHeader}>
+          <div className={styles.resultIcon}>{success ? '✓' : '!'}</div>
           <h1>{title}</h1>
           <p>
             {success
               ? '매장 방문 시 확정된 예약 시간 5분 전까지 도착해 주세요.'
               : '실제 과금은 발생하지 않았습니다. 다른 빈자리나 시간을 확인해 주세요.'}
           </p>
-          <div className="b-flex b-result-badges">
+          <div className={`b-flex ${styles.resultBadges}`}>
             <span className="b-badge">
               {success ? '예약 상태: ' + bookingStatusLabel : '시연 오류 미리보기'}
             </span>
@@ -75,7 +76,7 @@ export default function BookingResultPage() {
         </header>
         {success ? (
           <>
-            <div className="b-notice b-result-reservation">
+            <div className={`b-notice ${styles.resultReservation}`}>
               <div className="b-row">
                 <small>예약 번호</small>
                 <strong>{booking.id}</strong>
@@ -120,7 +121,7 @@ export default function BookingResultPage() {
             <p>이 컨트롤은 결과 화면의 상태만 변경합니다. 기존 확정 예약은 취소되지 않습니다.</p>
           </div>
         )}
-        <div className="b-flex b-result-actions">
+        <div className={`b-flex ${styles.resultActions}`}>
           <Link className="b-button b-primary" to={ROUTES.BOOKINGS}>
             내 예약 상세 보기
           </Link>
@@ -130,13 +131,13 @@ export default function BookingResultPage() {
         </div>
       </section>
       {success && (
-        <section className="b-result-notification">
+        <section className={styles.resultNotification}>
           <div className="b-row">
             <h3>카카오 알림톡 자동 발송 내역</h3>
             <small className="b-pink">● 실제 발송 없는 시연</small>
           </div>
           <div className="b-panel b-pad b-flex">
-            <span className="b-talk">TALK</span>
+            <span className={styles.talk}>TALK</span>
             <div>
               <strong>[땡잡은 언니] 예약 확정 안내</strong>
               <p>

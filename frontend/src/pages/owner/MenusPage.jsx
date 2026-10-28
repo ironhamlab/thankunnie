@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useTreatmentStore } from '@/store/useTreatmentStore';
 import { money } from '@/utils/demoData';
 import TreatmentForm from '@/pages/owner/components/TreatmentForm';
-import './MenusPage.css';
 
 export default function MenusPage() {
   const treatments = useTreatmentStore((state) => state.treatments);

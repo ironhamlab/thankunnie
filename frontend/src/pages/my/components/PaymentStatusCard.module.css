@@ -1,0 +1,146 @@
+.payCard {
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 20px;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.payHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.payHead > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.payMethod {
+  font-size: 15px;
+}
+.payStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.payStats > div {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.payStats > div:global(.is-refund) {
+  background: var(--b-pay-paid-bg);
+}
+.payStats span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+.payStats strong {
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+.payStats > div:global(.is-refund) strong {
+  color: var(--b-pay-paid);
+}
+.payMeter {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  overflow: hidden;
+}
+.payMeter > span {
+  display: block;
+  height: 100%;
+  background: var(--b-pay-paid);
+  border-radius: var(--radius-pill);
+  transition: width 0.6s ease;
+}
+.payMeterLegend {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -10px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.payMeta > div {
+  padding: 9px 0;
+}
+.payMono {
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+.payTimeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.payTimeline li {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 0 0 16px;
+}
+.payTimeline li:last-child {
+  padding-bottom: 0;
+}
+.payTimeline li:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 16px;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-border);
+}
+.payTimeline li:global(.is-done):not(:last-child)::before {
+  background: var(--b-pay-paid);
+}
+.payDot {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: white;
+}
+.payTimeline li:global(.is-done) .payDot {
+  border-color: var(--b-pay-paid);
+  background: var(--b-pay-paid);
+}
+.payTimeline li:global(.is-current) .payDot {
+  border-color: var(--b-pay-pending);
+  box-shadow: 0 0 0 4px var(--b-pay-pending-bg);
+}
+.payTimeline li > div {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+.payTimeline li:global(.is-todo) strong {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+.payTimeline small {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+@media (max-width: 540px) {
+  .payStats {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .payMeter > span {
+    transition: none;
+  }
+}

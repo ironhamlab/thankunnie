@@ -1,0 +1,17 @@
+.ownerBookingsGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+.ownerBookingsGrid table {
+  min-width: 680px;
+}
+.ownerBookingsGrid :global(.b-notice) {
+  margin: 20px 0;
+}
+@media (max-width: 1200px) {
+  .ownerBookingsGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

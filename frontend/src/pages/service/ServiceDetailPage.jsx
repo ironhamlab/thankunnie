@@ -6,6 +6,7 @@ import { useDesignStore } from '@/store/useDesignStore';
 import Asset from '@/components/common/Asset';
 import Dialog from '@/components/common/Dialog';
 import getServiceShop from '@/utils/getServiceShop';
+import styles from './ServiceDetailPage.module.css';
 
 export default function ServiceDetailPage() {
   const { id } = useParams();
@@ -51,11 +52,11 @@ export default function ServiceDetailPage() {
     }
   };
   return (
-    <div className="b-container b-page b-detail-page">
+    <div className={`b-container b-page ${styles.detailPage}`}>
       <div className="b-demo-disclaimer b-notice">
         본 화면은 MVP 모의 결제 환경이며 실제 금융 결제가 발생하지 않습니다.
       </div>
-      <nav aria-label="현재 위치" className="b-detail-breadcrumb">
+      <nav aria-label="현재 위치" className={styles.detailBreadcrumb}>
         <Link to={ROUTES.HOME}>⌂ 홈</Link>
         <span>›</span>
         <span>{service.category}</span>
@@ -65,8 +66,8 @@ export default function ServiceDetailPage() {
         </strong>
       </nav>
       <div className="b-columns">
-        <div className="b-stack b-detail-content">
-          <section className="b-detail-photo">
+        <div className={`b-stack ${styles.detailContent}`}>
+          <section className={styles.detailPhoto}>
             <Asset
               name={ownShop ? '12-2061-0.png' : service.image}
               alt={name + ' 매장 대표 사진'}
@@ -75,9 +76,9 @@ export default function ServiceDetailPage() {
               <i />
               {service.urgency}
             </span>
-            <span className="b-detail-location">{service.location}</span>
+            <span className={styles.detailLocation}>{service.location}</span>
             <button
-              className="b-favorite"
+              className={styles.favorite}
               aria-label={favorites.includes(id) ? '찜 해제' : '매장 찜하기'}
               aria-pressed={favorites.includes(id)}
               onClick={() => toggleFavorite(id)}
@@ -102,7 +103,7 @@ export default function ServiceDetailPage() {
               </button>
             </div>
             <small className="b-muted">매장 소개</small>
-            <div className="b-notice b-detail-intro">
+            <div className={`b-notice ${styles.detailIntro}`}>
               {ownShop
                 ? shop.description
                 : service.shop +
@@ -120,14 +121,14 @@ export default function ServiceDetailPage() {
                 {service.description ||
                   '맞춤 케어 및 상담을 포함한 시술입니다. 자세한 시술 범위는 방문 전 매장에 확인해 주세요.'}
               </p>
-              <div className="b-flex b-service-benefits">
+              <div className={`b-flex ${styles.serviceBenefits}`}>
                 <span>✓ 오프라인 결제</span>
                 <span>✓ 맞춤 상담 제공</span>
                 <span>✓ 프리미엄 케어</span>
               </div>
             </div>
           </section>
-          <section className="b-panel b-pad b-detail-slot">
+          <section className={`b-panel b-pad ${styles.detailSlot}`}>
             <div className="b-row b-panel-heading">
               <h3>선택한 빈자리 슬롯</h3>
               <span className="b-badge">노쇼 방지 예약금 20%</span>
@@ -145,14 +146,14 @@ export default function ServiceDetailPage() {
               <span className="b-badge">잔여 수량: 1자리</span>
             </div>
           </section>
-          <section className="b-notice b-detail-policies">
+          <section className={`b-notice ${styles.detailPolicies}`}>
             <h3>취소·환불 규정 및 예약 유의사항</h3>
             <p>① 할인율, 예약금 비율, 임시 확보 시간은 MVP 시연 정책입니다.</p>
             <p>② 시술 시작 2시간 전까지 취소 시 전액, 임박 취소 시 50% 모의 환불됩니다.</p>
             <p>③ 실제 카드 청구·환불은 발생하지 않습니다. 예약 시간보다 5분 먼저 도착해 주세요.</p>
           </section>
         </div>
-        <aside className="b-stack b-detail-aside">
+        <aside className={`b-stack ${styles.detailAside}`}>
           <div className="b-hold-bar b-row">
             <strong>빈자리 실시간 선점 대기</strong>
             <span>

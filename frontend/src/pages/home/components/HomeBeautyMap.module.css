@@ -1,0 +1,239 @@
+.homeMapHeading {
+  margin-bottom: 10px;
+}
+.homeMapSection {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.homeMapHeading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 25px;
+  flex-wrap: wrap;
+}
+.homeMapHeading h2 {
+  font-size: 18px;
+}
+.homeMapHeading > span {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+.homeMapHeading > button {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+.homeBeautyMap {
+  position: relative;
+  flex: 1;
+  min-height: 380px;
+  overflow: hidden;
+  background-color: #dbe7ff;
+  background-image:
+    linear-gradient(#8e6f750d 1px, transparent 1px),
+    linear-gradient(90deg, #8e6f750d 1px, transparent 1px);
+  background-size: 24px 24px;
+  border: 1px solid #c4d7fc;
+  border-radius: 24px;
+  padding: 16px;
+}
+.homeMapToolbar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  align-items: center;
+}
+.homeMapToolbar > span,
+.homeMapToolbar > div {
+  background: #fffffff0;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  box-shadow: 0 1px 3px #0001;
+  padding: 6px 10px;
+  font-size: 10px;
+}
+.homeMapToolbar > div {
+  display: flex;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.homeMapToolbar button {
+  border: 0;
+  border-radius: var(--radius-xl);
+  background: none;
+  padding: 3px 8px;
+  font-size: 10px;
+}
+.homeMapToolbar button[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: white;
+}
+.homeMapRoads {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.6;
+}
+.homeMapRoads i {
+  display: block;
+  position: absolute;
+  background: #ffffff88;
+}
+.homeMapRoads i:nth-child(1) {
+  width: 120%;
+  height: 28px;
+  top: 33%;
+  left: -10%;
+  transform: rotate(-12deg);
+}
+.homeMapRoads i:nth-child(2) {
+  width: 32px;
+  height: 110%;
+  top: -5%;
+  right: 33%;
+  transform: rotate(8deg);
+}
+.homeMapRoads i:nth-child(3) {
+  width: 144px;
+  height: 112px;
+  border-radius: var(--radius-lg);
+  bottom: 40px;
+  left: 40px;
+  border: 1px solid white;
+}
+.homeMapRoads i:nth-child(4) {
+  width: 112px;
+  height: 96px;
+  border-radius: var(--radius-lg);
+  top: 48px;
+  right: 48px;
+  border: 1px solid white;
+}
+.homeMapPin {
+  position: absolute;
+  z-index: 2;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-xl);
+  padding: 6px 10px;
+  background: white;
+  font-size: 11px !important;
+  font-weight: 700;
+  box-shadow: 0 2px 5px #0002;
+}
+.homeMapPin::after {
+  content: '';
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background: inherit;
+  border-right: inherit;
+  border-bottom: inherit;
+  bottom: -6px;
+  left: 48%;
+  transform: rotate(45deg);
+}
+.homeMapPin:global(.is-active) {
+  background: var(--color-primary);
+  color: #fff;
+}
+.homeMapLandmark {
+  position: absolute;
+  bottom: 34%;
+  left: 29%;
+  background: #ffffffc9;
+  border-radius: var(--radius-xl);
+  padding: 3px 8px;
+  font-size: 10px;
+}
+.homeMapDisclaimer {
+  position: absolute;
+  bottom: 94px;
+  left: 20px;
+  font-size: 10px;
+  color: #5a6070;
+}
+.homeMapPreview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  padding: 12px;
+  background: #fffffff2;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 6px #0001;
+}
+.homeStoreIcon {
+  display: grid;
+  place-items: center;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.homeMapPreview > div {
+  min-width: 0;
+  flex: 1;
+  font-size: 12px;
+}
+.homeMapPreview > div > span {
+  margin-left: 6px;
+  color: var(--color-primary);
+  background: #ffebf0;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+.homeMapPreview p {
+  font-size: 10px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  margin-top: 4px;
+}
+.homeMapPreview :global(.b-button) {
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 7px 10px;
+}
+@media (max-width: 767px) {
+  .homeMapHeading h2 {
+    font-size: 16px;
+  }
+  .homeMapHeading {
+    gap: 6px;
+  }
+  .homeMapHeading > span {
+    font-size: 9px;
+  }
+  .homeMapToolbar {
+    flex-wrap: wrap;
+  }
+  .homeMapPreview {
+    gap: 7px;
+    padding: 10px;
+  }
+  .homeMapPreview > div > span {
+    display: block;
+    margin: 2px 0 0;
+    width: fit-content;
+  }
+  .homeMapPreview .homeStoreIcon {
+    display: none;
+  }
+}

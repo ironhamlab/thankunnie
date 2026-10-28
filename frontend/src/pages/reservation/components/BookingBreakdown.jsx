@@ -1,9 +1,12 @@
 import { money } from '@/utils/demoData';
+import styles from './BookingBreakdown.module.css';
 
 export default function BookingBreakdown({ service, booking, compact = false }) {
   const discount = Math.round((1 - booking.price / service.original) * 100);
   return (
-    <section className={'b-panel b-pad b-settlement ' + (compact ? 'b-settlement-compact' : '')}>
+    <section
+      className={`b-panel b-pad ${styles.settlement} ` + (compact ? 'b-settlement-compact' : '')}
+    >
       <div className="b-row">
         <h2>결제 및 정산 요약</h2>
         <span className="b-badge">타임세일 할인 {discount}% 적용</span>

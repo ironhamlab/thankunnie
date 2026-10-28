@@ -4,6 +4,7 @@ import { ROUTES } from '@/constants/routes';
 import { DEMO_DATE, finish, money, validateSlot } from '@/utils/demoData';
 import { useDesignStore } from '@/store/useDesignStore';
 import useSlotTreatments from '@/hooks/useSlotTreatments';
+import styles from './NewSlotPage.module.css';
 
 export default function NewSlotPage() {
   const { menus, status, error: loadError, refreshMenus } = useSlotTreatments();
@@ -45,7 +46,7 @@ export default function NewSlotPage() {
     }
   };
   return (
-    <div className="b-new-slot-page">
+    <div className={styles.newSlotPage}>
       <Link className="b-back" to={ROUTES.OWNER_SLOTS}>
         ← 빈자리 관리 목록으로 돌아가기
       </Link>
@@ -59,7 +60,7 @@ export default function NewSlotPage() {
             등록합니다.
           </p>
         </div>
-        <div className="b-panel b-options b-new-slot-scenarios">
+        <div className={`b-panel b-options ${styles.newSlotScenarios}`}>
           <strong>검사 시뮬레이션:</strong>
           <button
             className={scenario === 'normal' ? 'is-selected' : ''}
@@ -80,20 +81,22 @@ export default function NewSlotPage() {
           <section className="b-panel b-pad">
             <div className="b-row b-panel-heading">
               <h2>
-                <span className="b-step-number">1</span> 시술 메뉴 선택
+                <span className={styles.stepNumber}>1</span> 시술 메뉴 선택
               </h2>
               <Link className="b-pink b-help" to={ROUTES.OWNER_MENUS}>
                 ⊕ 신규 시술 등록하러 가기
               </Link>
             </div>
-            <fieldset className="b-service-selection">
+            <fieldset className={styles.serviceSelection}>
               <legend className="b-visually-hidden">빈자리에 연결할 시술</legend>
               {menus
                 .filter((m) => m.active)
                 .map((m) => (
                   <label
                     key={m.id}
-                    className={'b-service-option ' + (serviceId === m.id ? 'is-selected' : '')}
+                    className={
+                      `${styles.serviceOption} ` + (serviceId === m.id ? 'is-selected' : '')
+                    }
                   >
                     <input
                       type="radio"
@@ -140,9 +143,9 @@ export default function NewSlotPage() {
           </section>
           <section className="b-panel b-pad">
             <h2 className="b-panel-heading">
-              <span className="b-step-number">2</span> 일정 및 시간대 설정
+              <span className={styles.stepNumber}>2</span> 일정 및 시간대 설정
             </h2>
-            <div className="b-three-grid b-slot-date-fields">
+            <div className={`b-three-grid ${styles.slotDateFields}`}>
               <label>
                 시술 날짜
                 <input
@@ -180,13 +183,13 @@ export default function NewSlotPage() {
                 <small>선택 시술 기준 {menu?.duration || 0}분 자동 계산</small>
               </label>
             </div>
-            <div className="b-flex b-time-recommendations">
+            <div className={`b-flex ${styles.timeRecommendations}`}>
               <small>추천 빈 슬롯:</small>
               {['14:00', '16:30', '19:00'].map((value) => (
                 <button
                   type="button"
                   key={value}
-                  className={'b-button b-small ' + (time === value ? 'b-selected-outline' : '')}
+                  className={'b-button b-small ' + (time === value ? styles.selectedOutline : '')}
                   onClick={() => {
                     setTime(value);
                     setError('');
@@ -199,7 +202,9 @@ export default function NewSlotPage() {
             </div>
           </section>
           <div
-            className={conflict ? 'b-slot-validation b-error' : 'b-slot-validation b-success'}
+            className={
+              conflict ? `${styles.slotValidation} b-error` : `${styles.slotValidation} b-success`
+            }
             role="status"
           >
             <span>{conflict ? '!' : '✓'}</span>
@@ -214,7 +219,7 @@ export default function NewSlotPage() {
             </div>
           </div>
         </div>
-        <aside className="b-stack b-slot-summary">
+        <aside className={`b-stack ${styles.slotSummary}`}>
           <section className="b-panel b-pad">
             <div className="b-row b-panel-heading">
               <h2>♧ 타임세일 자동 정산 미리보기</h2>

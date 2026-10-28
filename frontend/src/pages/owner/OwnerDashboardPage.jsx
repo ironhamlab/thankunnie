@@ -4,6 +4,7 @@ import { ROUTES } from '@/constants/routes';
 import { useDesignStore } from '@/store/useDesignStore';
 import Asset from '@/components/common/Asset';
 import Dialog from '@/components/common/Dialog';
+import styles from './OwnerDashboardPage.module.css';
 
 const cards = [
   [
@@ -45,7 +46,7 @@ export default function OwnerDashboardPage() {
         본 화면은 땡잡은 언니 MVP 사장님 통합 운영 센터입니다. 예약 데이터 및 빈자리 등록은 시연
         상태로 연결되어 있습니다.
       </div>
-      <section className="b-panel b-pad b-row b-profile">
+      <section className={`b-panel b-pad b-row ${styles.profile}`}>
         <div className="b-flex">
           <Asset name="32-767-0.png" alt="살롱 드 르네 대표 사진" className="b-thumb" />
           <div>
@@ -91,11 +92,11 @@ export default function OwnerDashboardPage() {
         ))}
       </div>
       <h2>핵심 운영 기능 바로가기</h2>
-      <div className="b-three-grid b-dashboard-cards">
+      <div className={`b-three-grid ${styles.dashboardCards}`}>
         {cards.map(([to, title, description, icon]) => (
           <Link key={to} to={to} className="b-panel b-pad">
             <Asset name={icon} />
-            <span className="b-card-arrow">→</span>
+            <span className={styles.cardArrow}>→</span>
             <h2>{title}</h2>
             <p>{description}</p>
           </Link>

@@ -4,6 +4,7 @@ import { ROUTES } from '@/constants/routes';
 import { SERVICES, finish, money } from '@/utils/demoData';
 import { useDesignStore } from '@/store/useDesignStore';
 import Asset from '@/components/common/Asset';
+import styles from './CheckoutPage.module.css';
 
 export default function CheckoutPage() {
   const hold = useDesignStore((s) => s.hold);
@@ -123,7 +124,7 @@ export default function CheckoutPage() {
             </section>
             <section className="b-panel b-pad">
               <h2 className="b-panel-heading">3. 필수 약관 및 취소 정책 동의</h2>
-              <label className="b-check">
+              <label className={styles.check}>
                 <input
                   type="checkbox"
                   checked={policy}
@@ -137,7 +138,7 @@ export default function CheckoutPage() {
                   </small>
                 </span>
               </label>
-              <label className="b-check">
+              <label className={styles.check}>
                 <input type="checkbox" checked={demo} onChange={(e) => setDemo(e.target.checked)} />
                 <span>
                   <strong>[필수] MVP 모의 결제 확인</strong>
@@ -151,7 +152,7 @@ export default function CheckoutPage() {
             <section className="b-panel b-pad">
               <h2 className="b-panel-heading">4. 모의 결제 시연 패널</h2>
               <p className="b-help">다양한 테스트 시나리오를 실행해볼 수 있습니다.</p>
-              <div className="b-options b-scenarios">
+              <div className={`b-options ${styles.scenarios}`}>
                 {[
                   ['success', '성공 케이스 진행'],
                   ['failure', '결제 실패 오류 시연'],
@@ -169,7 +170,7 @@ export default function CheckoutPage() {
               </div>
               <div className="b-notice">
                 <strong>선택된 결제 수단 · 모의 안전 결제</strong>
-                <div className="b-payment-method">
+                <div className={styles.paymentMethod}>
                   <span>언니</span>
                   <div>
                     <strong>테스트 결제용 가상 수단 (모의 간편결제)</strong>

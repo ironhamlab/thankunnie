@@ -1,12 +1,13 @@
+// 전역 스타일은 컴포넌트의 모듈 CSS보다 먼저 불러온다. 나중에 불러오면 같은 우선순위의 전역 규칙이 모듈 규칙을 덮어쓴다.
+import '@/assets/styles/global.css';
+import '@/assets/styles/design.css';
+import '@/assets/styles/remaining-screens.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from '@/App';
 import { configureAuth } from '@/api/axiosInstance';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getDevTestUser } from '@/utils/devTestUser';
-import '@/assets/styles/global.css';
-import '@/assets/styles/design.css';
-import '@/assets/styles/remaining-screens.css';
 
 // axiosInstance 가 store 를 직접 참조하지 않도록 인증 연동 함수를 주입한다.
 configureAuth({

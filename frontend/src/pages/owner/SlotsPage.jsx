@@ -5,6 +5,7 @@ import { useDesignStore } from '@/store/useDesignStore';
 import { DEMO_DATE, STATUS, finish, money, resolveSlotMenu } from '@/utils/demoData';
 import Dialog from '@/components/common/Dialog';
 import useSlotTreatments from '@/hooks/useSlotTreatments';
+import styles from './SlotsPage.module.css';
 
 export default function SlotsPage() {
   const slots = useDesignStore((s) => s.slots);
@@ -90,7 +91,7 @@ export default function SlotsPage() {
           실제 결제와 자동 재공개는 백엔드 연결 후 제공됩니다. 현재 데모 상태만 변경됩니다.
         </small>
       </div>
-      <div className="b-panel b-pad b-slot-filters">
+      <div className={`b-panel b-pad ${styles.slotFilters}`}>
         <label>
           일정 선택
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />

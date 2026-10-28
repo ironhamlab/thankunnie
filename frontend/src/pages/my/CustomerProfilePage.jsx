@@ -5,6 +5,7 @@ import { DEMO_DATE, SERVICES, money } from '@/utils/demoData';
 import { useDesignStore } from '@/store/useDesignStore';
 import Asset from '@/components/common/Asset';
 import Dialog from '@/components/common/Dialog';
+import styles from './CustomerProfilePage.module.css';
 
 const tabs = [
   '내 예약 내역',
@@ -43,15 +44,15 @@ export default function CustomerProfilePage() {
     }
   };
   return (
-    <div className="b-container b-page b-profile-page">
-      <div className="b-notice b-profile-ribbon">
+    <div className={`b-container b-page ${styles.profilePage}`}>
+      <div className={`b-notice ${styles.profileRibbon}`}>
         <strong>MVP 모의 결제 데모:</strong> 본 마이페이지에서 표시되는 내역은 가상 시뮬레이션
         데이터입니다.
       </div>
-      <section className="b-panel b-pad b-customer-summary">
+      <section className={`b-panel b-pad ${styles.customerSummary}`}>
         <div className="b-row">
           <div className="b-flex">
-            <div className="b-customer-avatar">
+            <div className={styles.customerAvatar}>
               언니<span>★</span>
             </div>
             <div>
@@ -75,12 +76,12 @@ export default function CustomerProfilePage() {
             >
               프로필 수정
             </button>
-            <button className="b-button b-share-button" onClick={share}>
+            <button className={`b-button ${styles.shareButton}`} onClick={share}>
               초대코드 공유
             </button>
           </div>
         </div>
-        <div className="b-stat-grid b-profile-stats">
+        <div className={`b-stat-grid ${styles.profileStats}`}>
           {[
             ['방문 예정 예약', upcoming.length, '건'],
             ['주니어 모델 신청', 1, '건'],
@@ -98,7 +99,7 @@ export default function CustomerProfilePage() {
         </div>
       </section>
       {nearest && (
-        <section className="b-panel b-pad b-nearest">
+        <section className={`b-panel b-pad ${styles.nearest}`}>
           <div>
             <div className="b-flex">
               <span className="b-badge">
@@ -109,7 +110,7 @@ export default function CustomerProfilePage() {
             </div>
             <h2>{nearestService.shop}</h2>
             <p>{nearestService.name} | 담당 디자이너 자동 배정</p>
-            <div className="b-flex b-nearest-prices">
+            <div className={`b-flex ${styles.nearestPrices}`}>
               <span>
                 모의 결제 예약금: <strong>{money(nearest.deposit)} 완료</strong>
               </span>
@@ -131,7 +132,7 @@ export default function CustomerProfilePage() {
           </div>
         </section>
       )}
-      <nav className="b-panel b-profile-tabs" aria-label="마이페이지 메뉴">
+      <nav className={`b-panel ${styles.profileTabs}`} aria-label="마이페이지 메뉴">
         {tabs.map((label) => (
           <button
             key={label}
@@ -143,7 +144,7 @@ export default function CustomerProfilePage() {
           </button>
         ))}
       </nav>
-      <section aria-label={tab} className="b-profile-tab-panel">
+      <section aria-label={tab} className={styles.profileTabPanel}>
         <div className="b-row b-panel-heading">
           <h2>{tab === tabs[0] ? '예약 목록' : tab}</h2>
           <small className="b-muted">가상 데이터 시연</small>
@@ -155,7 +156,7 @@ export default function CustomerProfilePage() {
                 {customerBookings.map((b) => {
                   const s = SERVICES.find((item) => item.id === b.serviceId);
                   return (
-                    <article className="b-panel b-pad b-profile-booking b-row" key={b.id}>
+                    <article className={`b-panel b-pad ${styles.profileBooking} b-row`} key={b.id}>
                       <div className="b-flex">
                         <Asset name="8-8-0.png" alt="예약 매장 대표 이미지" className="b-thumb" />
                         <div>
@@ -173,7 +174,7 @@ export default function CustomerProfilePage() {
                           </p>
                         </div>
                       </div>
-                      <div className="b-stack b-profile-booking-actions">
+                      <div className={`b-stack ${styles.profileBookingActions}`}>
                         <Link className="b-button b-primary" to={ROUTES.BOOKINGS}>
                           상세 영수증
                         </Link>
@@ -186,7 +187,7 @@ export default function CustomerProfilePage() {
                     </article>
                   );
                 })}
-                <article className="b-panel b-pad b-profile-booking b-row">
+                <article className={`b-panel b-pad ${styles.profileBooking} b-row`}>
                   <div className="b-flex">
                     <Asset name="8-3-2.png" alt="속눈썹 케어 시술" className="b-thumb" />
                     <div>
@@ -196,7 +197,7 @@ export default function CustomerProfilePage() {
                       <p>결제 총액: 24,000원 (타임세일 특가) · 과거 이용 예시</p>
                     </div>
                   </div>
-                  <div className="b-stack b-profile-booking-actions">
+                  <div className={`b-stack ${styles.profileBookingActions}`}>
                     <button className="b-button b-soft" onClick={() => setDialog('review')}>
                       리뷰 작성
                     </button>
@@ -272,7 +273,7 @@ export default function CustomerProfilePage() {
                 onChange={(e) => saveProfile({ alerts: e.target.checked })}
               />
             </label>
-            <label className="b-alert-condition">
+            <label className={styles.alertCondition}>
               원하는 시술·지역·시간
               <input
                 maxLength={100}
@@ -346,7 +347,7 @@ export default function CustomerProfilePage() {
                 setNotice('프로필을 저장했습니다.');
               }}
             >
-              <label className="b-alert-condition">
+              <label className={styles.alertCondition}>
                 닉네임
                 <input
                   autoFocus
@@ -374,7 +375,7 @@ export default function CustomerProfilePage() {
                 setNotice('리뷰를 데모로 저장했습니다. 실제 게시되지 않습니다.');
               }}
             >
-              <label className="b-alert-condition">
+              <label className={styles.alertCondition}>
                 시술은 어떠셨나요?
                 <textarea required rows="4" maxLength={500} />
               </label>

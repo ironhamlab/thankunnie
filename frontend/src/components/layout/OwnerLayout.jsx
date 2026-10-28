@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useDesignStore } from '@/store/useDesignStore';
 import OwnerSidebar from './OwnerSidebar';
+import styles from './OwnerLayout.module.css';
 
 /**
  * 사장님 센터 레이아웃: 사이드바 + 상단 매장 정보 + 본문
@@ -13,10 +14,10 @@ export default function OwnerLayout() {
 
   return (
     <div className="beauty-app">
-      <div className="b-owner">
+      <div className={styles.owner}>
         <OwnerSidebar />
         <div className="b-owner-body">
-          <header className="b-owner-header">
+          <header className={styles.ownerHeader}>
             <div className="b-flex">
               <strong>{shop.name}</strong>
               <span className="b-badge">파트너 가맹점</span>
@@ -28,7 +29,7 @@ export default function OwnerLayout() {
               <span className="b-account">● [테스트] 사장님 계정 (살롱 드 르네)</span>
             </div>
           </header>
-          <main className="b-owner-main" key={location.pathname}>
+          <main className={styles.ownerMain} key={location.pathname}>
             <Suspense
               fallback={
                 <div className="b-empty" role="status">

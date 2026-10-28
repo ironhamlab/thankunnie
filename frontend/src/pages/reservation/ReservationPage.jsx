@@ -3,6 +3,7 @@ import { generatePath, Link, useNavigate, useParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { DEMO_DATE, SERVICES, finish, minutes, money, overlaps } from '@/utils/demoData';
 import { useDesignStore } from '@/store/useDesignStore';
+import styles from './ReservationPage.module.css';
 
 const dayLabel = (isClosed, isDemoDate) => {
   if (isClosed) {
@@ -80,7 +81,7 @@ export default function ReservationPage() {
       <Link className="b-back" to={ROUTES.HOME}>
         ← 매장·시술 목록으로 돌아가기
       </Link>
-      <section className="b-hero b-reserve-hero">
+      <section className={`b-hero ${styles.reserveHero}`}>
         <div>
           <span className="b-badge">일반 예약 모드 (원하는 시간에 맞춤 예약)</span>
           <h1>예약 날짜와 시간을 선택해 주세요</h1>
@@ -98,7 +99,7 @@ export default function ReservationPage() {
       </section>
       <div className="b-columns">
         <div className="b-stack">
-          <div className="b-panel b-steps">
+          <div className={`b-panel ${styles.steps}`}>
             {['1. 시술 확인', '2. 날짜·시간 선택', '3. 임시 확보 (5분)', '4. 예약금 결제'].map(
               (step, i) => (
                 <span key={step} className={i === 1 ? 'is-current' : ''}>
@@ -122,7 +123,7 @@ export default function ReservationPage() {
                 </button>
               </div>
             </div>
-            <div className="b-calendar" role="group" aria-label="예약 날짜">
+            <div className={styles.calendar} role="group" aria-label="예약 날짜">
               {['일', '월', '화', '수', '목', '금', '토'].map((d) => (
                 <small key={d}>{d}</small>
               ))}
@@ -169,7 +170,7 @@ export default function ReservationPage() {
               실시간 충돌 검증 룰 적용 중 · 시술 종료 시각은 {duration}분 뒤로 자동 계산됩니다.
             </div>
             {['오전 (10:00 ~ 12:00)', '오후 (12:00 ~ 20:00)'].map((label, group) => (
-              <div key={label} className="b-time-group">
+              <div key={label} className={styles.timeGroup}>
                 <p>{label}</p>
                 <div className="b-time-grid">
                   {Array.from({ length: group ? 16 : 4 }, (_, i) => {

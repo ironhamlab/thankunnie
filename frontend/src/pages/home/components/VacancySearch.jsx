@@ -6,6 +6,7 @@ import Asset from '@/components/common/Asset';
 import ServiceCard from '@/pages/home/components/ServiceCard';
 import VacancyMap from '@/pages/home/components/VacancyMap';
 import './VacancySearch.css';
+import styles from './VacancySearch.module.css';
 
 const categories = ['전체', '네일', '헤어', '속눈썹', '피부관리', '왁싱'];
 const regions = ['강남/서초', '홍대/연남', '성수/건대', '잠실/송파', '판교/분당'];
@@ -14,8 +15,8 @@ const sorts = ['임박 빈자리 우선순', '할인율순', '빠른 시작순']
 const URGENCY_RANK = { '초임박 특가': 0, '임박 특가': 1, '일반 빈자리': 2 };
 function Filter({ label, options, value, onChange, segmented = false }) {
   return (
-    <div className={'b-filter-group ' + (segmented ? 'b-segmented' : '')}>
-      <span className="b-filter-label">{label}</span>
+    <div className={`${styles.filterGroup} ` + (segmented ? styles.segmented : '')}>
+      <span className={styles.filterLabel}>{label}</span>
       <div className="b-options">
         {options.map((option) => (
           <button
@@ -93,7 +94,7 @@ export default function VacancySearch() {
     resetSearch('');
   };
   return (
-    <div className="b-container b-home">
+    <div className={`b-container ${styles.home}`}>
       <section className="b-hero">
         <div>
           <div className="b-eyebrow">
@@ -105,25 +106,25 @@ export default function VacancySearch() {
           </h1>
           <p>원하는 날짜와 지역의 빈자리를 찾고, 오늘의 할인 자리는 타임세일로 모아보세요.</p>
         </div>
-        <span className="b-demo-note">
+        <span className={styles.demoNote}>
           <Asset name="8-3-7.svg" />※ 본 화면의 할인율, 예약금, 잔여 시간은{' '}
           <strong>MVP 모의 정책</strong> 예시 데이터입니다
         </span>
       </section>
-      <section className="b-filters b-panel" aria-label="빈자리 검색 필터">
+      <section className={`${styles.filters} b-panel`} aria-label="빈자리 검색 필터">
         <Filter
           label="예약 종류"
           options={['전체', '타임세일']}
           value={saleOnly ? '타임세일' : '전체'}
           onChange={(value) => updateOption('sale', value === '타임세일' ? '1' : '')}
         />
-        <p className="b-vacancy-description">
+        <p className={styles.vacancyDescription}>
           {saleOnly
             ? '오늘 시작하는 할인 빈자리만 보여드려요.'
             : '정상가와 할인가를 포함한 모든 날짜의 빈자리를 보여드려요.'}
         </p>
-        <div className="b-filter-group b-date-filter">
-          <span className="b-filter-label">날짜</span>
+        <div className={`${styles.filterGroup} ${styles.dateFilter}`}>
+          <span className={styles.filterLabel}>날짜</span>
           <div className="b-options">
             <button
               aria-pressed={day === null}
@@ -151,7 +152,7 @@ export default function VacancySearch() {
                 {index === 0 && ' ●'}
               </button>
             ))}
-            <label className="b-more-date">
+            <label className={styles.moreDate}>
               + 31일 보기
               <input
                 type="date"
@@ -170,16 +171,16 @@ export default function VacancySearch() {
             </label>
           </div>
         </div>
-        <div className="b-row b-filter-line">
+        <div className={`b-row ${styles.filterLine}`}>
           <Filter label="시술 분야" options={categories} value={category} onChange={setCategory} />
           <Filter label="주요 지역" options={regions} value={region} onChange={setRegion} />
         </div>
-        <div className="b-row b-filter-line">
+        <div className={`b-row ${styles.filterLine}`}>
           <Filter label="시작 시간" options={times} value={time} onChange={setTime} segmented />
           <Filter label="정렬" options={sorts} value={sort} onChange={setSort} segmented />
         </div>
       </section>
-      <div className="b-row b-results-heading">
+      <div className={`b-row ${styles.resultsHeading}`}>
         <h2>
           예약 가능한 빈자리 <span className="b-badge">{results.length}건</span>
         </h2>
@@ -192,7 +193,7 @@ export default function VacancySearch() {
         />
       </div>
       {mode === '로딩 상태' ? (
-        <div className="b-card-grid" aria-busy="true" aria-label="빈자리 불러오는 중">
+        <div className={styles.cardGrid} aria-busy="true" aria-label="빈자리 불러오는 중">
           {[1, 2, 3].map((id) => (
             <div key={id} className="b-skeleton" />
           ))}
@@ -207,7 +208,7 @@ export default function VacancySearch() {
         </div>
       ) : results.length ? (
         <div className={mapView ? 'b-vacancy-map-layout' : ''}>
-          <div className="b-card-grid">
+          <div className={styles.cardGrid}>
             {results.map((s) => (
               <ServiceCard key={s.id} service={s} />
             ))}

@@ -7,6 +7,7 @@ import { formatReservationTime } from '@/utils/reservationFormat';
 import { todayKst } from '@/utils/scheduleDate';
 import ReservationDetailPanel from '@/components/reservation/ReservationDetailPanel';
 import ReservationPagination from '@/components/reservation/ReservationPagination';
+import styles from './OwnerBookingsPage.module.css';
 
 // 상태를 고르지 않으면 서버가 점유 만료(EXPIRED)를 뺀 전체를 준다
 const STATUS_FILTERS = [
@@ -130,7 +131,7 @@ export default function OwnerBookingsPage() {
         </div>
       </div>
 
-      <div className="b-owner-bookings-grid">
+      <div className={styles.ownerBookingsGrid}>
         <section className="b-panel b-table-panel">
           <div className="b-row b-pad">
             <h2>예약 목록</h2>

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import styles from './Dialog.module.css';
 
 export default function Dialog({ title, onClose, children }) {
   const ref = useRef(null);
@@ -14,7 +15,7 @@ export default function Dialog({ title, onClose, children }) {
   return (
     <dialog
       ref={ref}
-      className="b-native-dialog"
+      className={styles.nativeDialog}
       onCancel={(e) => {
         e.preventDefault();
         onClose();

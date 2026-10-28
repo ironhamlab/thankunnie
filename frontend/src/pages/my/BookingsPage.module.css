@@ -1,0 +1,34 @@
+.paySummary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 8px 0 24px;
+}
+.paySummary > div {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.paySummary span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+.paySummary strong {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+:global(.b-pay-status).isCompact {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+@media (max-width: 900px) {
+  .paySummary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 540px) {
+  .paySummary strong {
+    font-size: 17px;
+  }
+}

@@ -1,0 +1,72 @@
+.reserveHero {
+  margin-bottom: 24px;
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 16px;
+  gap: 12px;
+  font-size: 11px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+.steps span {
+  padding: 8px 0;
+  border-bottom: 3px solid var(--color-surface-blue);
+}
+.steps :global(.is-current) {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  font-weight: 700;
+}
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  text-align: center;
+  gap: 6px;
+}
+.calendar > small {
+  color: var(--color-text-muted);
+  padding-bottom: 12px;
+}
+.calendar button {
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: white;
+  padding: 8px;
+  min-height: 52px;
+  font-size: 14px;
+}
+.calendar button small {
+  display: block;
+  font-size: 10px;
+  color: var(--color-primary);
+}
+.calendar button:disabled {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+.calendar button:global(.is-selected) {
+  background: #ff3589;
+  color: white;
+  border-color: #ff3589;
+}
+.calendar button:global(.is-selected) small {
+  color: white;
+}
+.timeGroup {
+  margin-top: 24px;
+}
+.timeGroup > p {
+  font-size: 12px;
+  margin-bottom: 8px;
+  color: var(--color-text-secondary);
+}
+@media (max-width: 540px) {
+  .calendar {
+    gap: 3px;
+  }
+  .calendar button {
+    padding: 6px 2px;
+  }
+}

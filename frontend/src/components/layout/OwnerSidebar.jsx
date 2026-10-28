@@ -2,6 +2,7 @@ import { Link, NavLink } from 'react-router-dom';
 import Asset from '@/components/common/Asset';
 import { ROUTES } from '@/constants/routes';
 import { useDesignStore } from '@/store/useDesignStore';
+import styles from './OwnerSidebar.module.css';
 
 const NAVIGATION = [
   [ROUTES.OWNER_SHOP, '매장 정보', '12-1798-6.svg'],
@@ -18,12 +19,12 @@ export default function OwnerSidebar() {
   const shop = useDesignStore((s) => s.shop);
 
   return (
-    <aside className="b-sidebar">
-      <Link to={ROUTES.OWNER} className="b-owner-brand">
+    <aside className={styles.sidebar}>
+      <Link to={ROUTES.OWNER} className={styles.ownerBrand}>
         <strong>땡잡은 언니</strong>
         <small>사장님 센터</small>
       </Link>
-      <div className="b-owner-shop">
+      <div className={styles.ownerShop}>
         <Asset name="12-1798-0.png" alt="매장 대표 이미지" />
         <div>
           <strong>{shop.name}</strong>
@@ -41,7 +42,7 @@ export default function OwnerSidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="b-sidebar-bottom">
+      <div className={styles.sidebarBottom}>
         <NavLink to={ROUTES.OWNER} end>
           마이페이지
         </NavLink>

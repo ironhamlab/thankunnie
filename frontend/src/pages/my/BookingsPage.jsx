@@ -10,6 +10,7 @@ import getServiceShop from '@/utils/getServiceShop';
 import PaymentStatusCard from '@/pages/my/components/PaymentStatusCard';
 import RefundPolicyCard from '@/pages/my/components/RefundPolicyCard';
 import './BookingsPage.css';
+import styles from './BookingsPage.module.css';
 
 function BookingsSummary({ bookings }) {
   const payments = bookings.map(getPayment);
@@ -20,7 +21,7 @@ function BookingsSummary({ bookings }) {
     ['환불 처리 중', `${payments.filter((p) => p.status === 'REFUND_PENDING').length}건`],
   ];
   return (
-    <div className="b-pay-summary">
+    <div className={styles.paySummary}>
       {stats.map(([label, value]) => (
         <div key={label} className="b-panel">
           <span>{label}</span>
@@ -105,7 +106,7 @@ export default function BookingsPage() {
               >
                 <div className="b-flex">
                   <span className="b-badge">{STATUS[b.status]}</span>
-                  <span className={`b-pay-status is-${paymentStatus.tone} is-compact`}>
+                  <span className={`b-pay-status is-${paymentStatus.tone} ${styles.isCompact}`}>
                     {paymentStatus.label}
                   </span>
                 </div>

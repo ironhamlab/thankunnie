@@ -1,0 +1,38 @@
+.dashboardCards > * {
+  min-height: 170px;
+  text-align: left;
+  color: var(--color-text);
+  position: relative;
+}
+.dashboardCards h2 {
+  margin-top: 22px;
+  margin-bottom: 6px;
+  font-size: 16px;
+}
+.dashboardCards p {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.cardArrow {
+  position: absolute;
+  right: 24px;
+  top: 24px;
+  color: var(--color-text-secondary);
+}
+.profile {
+  flex-wrap: wrap;
+}
+.profile h2 {
+  margin-bottom: 6px;
+}
+.profile p {
+  font-size: 12px;
+  margin-bottom: 10px;
+  color: var(--color-text-secondary);
+}
+.dashboardCards > a:nth-child(3) > img {
+  background: var(--color-primary);
+  padding: 10px;
+  box-sizing: content-box;
+  border-radius: 10px;
+}
