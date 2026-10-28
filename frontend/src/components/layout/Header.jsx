@@ -50,6 +50,7 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const [read, setRead] = useState(false);
   const [tab, setTab] = useState('전체');
+  const unreadCount = read ? 0 : NOTIFICATIONS.length;
   const popoverRef = useRef(null);
   useEffect(() => {
     if (!open) return;
@@ -118,13 +119,13 @@ export default function Header() {
             <div ref={popoverRef}>
               <button
                 className={styles.notificationButton}
-                aria-label="알림"
+                aria-label={unreadCount > 0 ? `알림, 읽지 않은 알림 ${unreadCount}개` : '알림'}
                 aria-expanded={open}
                 aria-controls="header-notifications"
                 onClick={() => setOpen(!open)}
               >
                 <NotificationIcon />
-                {!read && <b>2</b>}
+                {unreadCount > 0 && <b>{unreadCount}</b>}
               </button>
               {open && (
                 <section
@@ -133,7 +134,7 @@ export default function Header() {
                   aria-label="실시간 알림"
                 >
                   <div className={styles.notificationsTitle}>
-                    <strong>♧ 실시간 알림 {read ? 0 : 2}</strong>
+                    <strong>♧ 실시간 알림 {unreadCount}</strong>
                     <div>
                       <button onClick={() => setRead(true)}>
                         {read ? '읽음 완료' : '모두 읽음'}
@@ -184,13 +185,13 @@ export default function Header() {
 
       <nav className={styles.mobileNav} aria-label="모바일 고객 메뉴">
         <Link to={`${ROUTES.HOME}?view=list`} aria-current={current('search')}>
-          <span>⌖</span>빈자리 탐색
+          <span aria-hidden="true">⌖</span>빈자리 탐색
         </Link>
         <Link to={`${ROUTES.HOME}?sale=1`} aria-current={current('sale')}>
-          <span>ϟ</span>타임세일
+          <span aria-hidden="true">ϟ</span>타임세일
         </Link>
         <Link to={ROUTES.MY_RESERVATIONS} aria-current={current('reservations')}>
-          <span>▦</span>내 예약
+          <span aria-hidden="true">▦</span>내 예약
         </Link>
       </nav>
     </>

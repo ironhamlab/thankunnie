@@ -16,6 +16,8 @@
   --color-surface-blue: #e7eeff;
   --color-border: rgba(226, 189, 195, 0.4);
   --color-border-strong: #e2bdc3;
+  --color-white: #ffffff;
+  --color-surface-glass: rgba(255, 255, 255, 0.95); /* 고정 헤더·메뉴 막대의 반투명 흰 배경 */
 
   /* 상태 */
   --color-success: #008970;
@@ -37,6 +39,10 @@
   --radius-lg: 16px;
   --radius-xl: 20px;
   --radius-pill: 999px;
+
+  /* 그림자 */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.07);
+  --shadow-popover: 0 15px 40px rgba(38, 49, 67, 0.2); /* 알림 창처럼 떠 있는 상자 */
 
   /* 간격 */
   --spacing-sm: 8px;
