@@ -175,7 +175,7 @@ export default function CustomerCancelPage() {
                 예약 유지
               </Button>
               <Button
-                variant="danger"
+                variant="primary"
                 type="button"
                 disabled={!isAgreed || submitting}
                 onClick={() => submit(quote.refundAmount)}
@@ -212,7 +212,7 @@ export default function CustomerCancelPage() {
                 예약 유지
               </Button>
               <Button
-                variant="danger"
+                variant="primary"
                 type="button"
                 disabled={submitting}
                 onClick={() => submit(changedQuote.after)}
