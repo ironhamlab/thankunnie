@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { generatePath, Link, useNavigate, useParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { GRACE_CANCEL_MESSAGE, REFUND_RATE_TIERS } from '@/constants/cancelPolicy';
 import { useReservationStore } from '@/store/useReservationStore';
@@ -15,6 +15,11 @@ import styles from './CustomerCancelPage.module.css';
 
 // 실행 시점 재계산 금액이 화면 견적과 달라 재확인이 필요한 오류 (자정 경계·10분 경과, 다른 취소가 무료 취소를 먼저 사용)
 const QUOTE_CHANGED_CODES = ['CANCEL_007', 'CANCEL_005'];
+// 이미 취소가 접수된 예약은 결과 화면에서 진행 상황을 본다
+const CANCEL_STARTED_STATUSES = ['CANCEL_PENDING', 'CANCELLED'];
+
+const resultPath = (reservationId) =>
+  generatePath(ROUTES.MY_RESERVATION_CANCEL_RESULT, { reservationId });
 
 /**
  * 고객 취소 확인 (E-F1). 서버 환불 견적(예상 환불액·무료 취소 적용 여부·남은 횟수)을 보여주고 취소를 실행한다.
@@ -22,6 +27,7 @@ const QUOTE_CHANGED_CODES = ['CANCEL_007', 'CANCEL_005'];
  */
 export default function CustomerCancelPage() {
   const { reservationId } = useParams();
+  const navigate = useNavigate();
   const loadReservation = useReservationStore((state) => state.loadReservation);
   const detail = useReservationStore((state) => state.detail);
   const detailStatus = useReservationStore((state) => state.detailStatus);
@@ -36,7 +42,6 @@ export default function CustomerCancelPage() {
   const [isAgreed, setIsAgreed] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [changedQuote, setChangedQuote] = useState(null);
-  const [result, setResult] = useState(null);
 
   useEffect(() => {
     loadReservation('my', reservationId);
@@ -51,9 +56,9 @@ export default function CustomerCancelPage() {
   const submit = async (expectedRefundAmount) => {
     setSubmitError(null);
     try {
-      const cancelResult = await cancelByCustomer(reservationId, expectedRefundAmount);
-      setChangedQuote(null);
-      setResult(cancelResult);
+      await cancelByCustomer(reservationId, expectedRefundAmount);
+      // 뒤로 가기로 취소 확인 화면에 돌아와 다시 제출하지 않도록 기록을 바꾼다
+      navigate(resultPath(reservationId), { replace: true });
     } catch (error) {
       if (QUOTE_CHANGED_CODES.includes(error.code)) {
         const latest = await loadQuote(reservationId);
@@ -68,25 +73,6 @@ export default function CustomerCancelPage() {
       loadReservation('my', reservationId);
     }
   };
-
-  if (result) {
-    const isCompleted = result.cancelStatus === 'COMPLETED';
-    return (
-      <div className="b-container b-page">
-        <Panel padded className={`b-stack ${styles.panel}`}>
-          <h1>{isCompleted ? '예약이 취소되었어요' : '환불 결과를 확인하고 있어요'}</h1>
-          <Alert as="p" tone={isCompleted ? 'success' : undefined} role="status">
-            {isCompleted
-              ? `${formatMoney(result.refundAmount)} 환불이 완료되었습니다.`
-              : '확인될 때까지 예약은 취소 처리 중으로 남습니다.'}
-          </Alert>
-          <Button as={Link} variant="primary" wide to={ROUTES.MY_RESERVATIONS}>
-            내 예약으로
-          </Button>
-        </Panel>
-      </div>
-    );
-  }
 
   const isLoading = detailStatus === 'loading' || quoteStatus === 'loading';
   const summary = isDetailReady ? detail.summary : null;
@@ -112,8 +98,17 @@ export default function CustomerCancelPage() {
 
         {summary && !summary.cancellable && (
           <Notice>
-            <p>확정된 예약만 시술 시작 전까지 취소할 수 있어요.</p>
+            <p>
+              {CANCEL_STARTED_STATUSES.includes(summary.status)
+                ? '이미 취소가 접수된 예약이에요.'
+                : '확정된 예약만 시술 시작 전까지 취소할 수 있어요.'}
+            </p>
           </Notice>
+        )}
+        {summary && CANCEL_STARTED_STATUSES.includes(summary.status) && (
+          <Button as={Link} variant="primary" to={resultPath(reservationId)}>
+            취소 진행 상황 보기
+          </Button>
         )}
         {summary?.cancellable && quoteStatus === 'failed' && (
           <Alert as="p" tone="error" role="alert">
