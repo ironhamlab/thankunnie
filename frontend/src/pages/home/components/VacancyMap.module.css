@@ -100,3 +100,12 @@
   display: flex;
   justify-content: center;
 }
+/* 카카오맵 오버레이 안의 핀은 오버레이 위치를 따르므로 절대 배치를 풀어준다 */
+.kakaoPin {
+  position: static;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.root .detail {
+  z-index: 2;
+}
