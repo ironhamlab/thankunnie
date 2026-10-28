@@ -1,5 +1,6 @@
 package com.ucamp.app.domain.auth.dto.request;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -19,6 +20,11 @@ public record AuthCustomerSignupRequest(
         @NotBlank @Size(max = 50) String name,
         @NotBlank @Pattern(regexp = AuthInputRules.MOBILE_PHONE, message = AuthInputRules.MOBILE_PHONE_MESSAGE)
         String phone) {
+
+    @AssertTrue(message = AuthInputRules.PASSWORD_BYTES_MESSAGE)
+    public boolean isPasswordWithinBytes() {
+        return AuthInputRules.isPasswordWithinBytes(password);
+    }
 
     @Override
     public String toString() {

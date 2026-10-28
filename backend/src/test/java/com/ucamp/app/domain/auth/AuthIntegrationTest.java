@@ -128,6 +128,25 @@ class AuthIntegrationTest {
     }
 
     @Test
+    @DisplayName("BCrypt 한도(72바이트)를 넘는 비밀번호는 가입 400, 로그인 401 (500 아님)")
+    void password_overBcryptLimit_rejectedWithoutServerError() throws Exception {
+        String longPassword = "가".repeat(25);   // 25자라 길이 제한은 통과하지만 75바이트
+
+        mvc.perform(post("/api/v1/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"loginId":"unnie06","password":"%s","name":"김언니","phone":"01012345678"}
+                                """.formatted(longPassword)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("COMMON_400"));
+
+        signupCustomer("unnie07").andExpect(status().isCreated());
+        login("/api/v1/auth/login", "unnie07", longPassword)
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("AUTH_002"));
+    }
+
+    @Test
     @DisplayName("비활성 회원은 비밀번호가 맞아도 403 AUTH_003")
     void loginCustomer_inactive_returnsForbidden() throws Exception {
         signupCustomer("unnie04").andExpect(status().isCreated());

@@ -1,5 +1,6 @@
 package com.ucamp.app.domain.auth.service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -34,6 +35,10 @@ import com.ucamp.app.domain.user.repository.AppUserRepository;
 @Transactional(readOnly = true)
 public class AuthService {
 
+    // BCrypt 가 처리할 수 있는 비밀번호 최대 길이 (UTF-8). 가입에서도 같은 기준으로 막는다
+    private static final int BCRYPT_MAX_PASSWORD_BYTES = 72;
+    private static final String DUMMY_PASSWORD = "dummy-password-for-unknown-login-id";
+
     private final AppUserRepository appUserRepository;
     private final ShopAccountRepository shopAccountRepository;
     private final ShopCategoryRepository shopCategoryRepository;
@@ -50,7 +55,7 @@ public class AuthService {
         this.shopCategoryRepository = shopCategoryRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtProvider = jwtProvider;
-        this.dummyPasswordHash = passwordEncoder.encode("dummy-password-for-unknown-login-id");
+        this.dummyPasswordHash = passwordEncoder.encode(DUMMY_PASSWORD);
     }
 
     /** 고객으로 가입하고 바로 로그인한다. */
@@ -129,10 +134,13 @@ public class AuthService {
                 .toList();
     }
 
-    // 계정이 없어도 같은 비용의 BCrypt 비교를 한 번 수행해 응답 시간으로 아이디 존재 여부가 드러나지 않게 한다
+    // 계정이 없어도 같은 비용의 BCrypt 비교를 한 번 수행해 응답 시간으로 아이디 존재 여부가 드러나지 않게 한다.
+    // 72바이트를 넘는 입력은 BCrypt 가 예외(500)를 던지므로 비교하지 않고 실패로 본다. 가입에서 막아 그런 계정은 없다
     private boolean matchesPassword(String rawPassword, String passwordHash) {
-        if (passwordHash == null) {
-            passwordEncoder.matches(rawPassword, dummyPasswordHash);
+        boolean comparable = passwordHash != null
+                && rawPassword.getBytes(StandardCharsets.UTF_8).length <= BCRYPT_MAX_PASSWORD_BYTES;
+        if (!comparable) {
+            passwordEncoder.matches(DUMMY_PASSWORD, dummyPasswordHash);
             return false;
         }
         return passwordEncoder.matches(rawPassword, passwordHash);
