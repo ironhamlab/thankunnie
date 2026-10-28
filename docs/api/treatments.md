@@ -105,7 +105,9 @@ A-06은 기존 목적·참여 조건·촬영 안내 컬럼을 사용하므로 �
 새 DB는 `docs/erd/01_schema_ddl.sql`을 사용한다.
 UNNIE-111부터 시술별 카테고리를 제거하고 매장 카테고리만 사용한다.
 
-- 과거 `UNNIE-32-treatment-category.sql`을 적용한 Oracle DB는 애플리케이션 중지 후
+- `TREATMENT.CATEGORY_ID`가 존재하는 모든 Oracle DB가 제거 대상이다.
+  과거 `UNNIE-32-treatment-category.sql`을 적용한 DB뿐 아니라 해당 컬럼이 포함된 변경 전 전체 DDL로 만든 DB도 포함한다.
+  대상 DB는 애플리케이션 중지 후
   `docs/erd/migrations/UNNIE-111-remove-treatment-category.sql`을 1회 적용하고 새 버전을 배포한다.
 - `TREATMENT.CATEGORY_ID`가 없는 DB와 최신 전체 DDL로 만든 DB에는 제거 SQL을 실행하지 않는다.
 - 과거 UNNIE-32 파일은 배포 이력으로 보존하며 새로 적용하지 않는다.
