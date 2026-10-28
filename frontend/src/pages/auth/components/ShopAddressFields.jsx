@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { canGeocode, geocodeAddress } from '@/utils/geocodeAddress';
 import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
@@ -20,8 +20,11 @@ export default function ShopAddressFields({ value, onChange, errors }) {
   const [isManual, setIsManual] = useState(!canGeocode());
   const [checkStatus, setCheckStatus] = useState('idle'); // 'idle' | 'loading' | 'succeeded' | 'failed'
   const [checkError, setCheckError] = useState('');
+  // 주소 확인 요청 번호. 응답이 오기 전에 주소를 고치거나 다시 확인하면 이전 응답을 버린다
+  const checkRequestIdRef = useRef(0);
 
   const handleAddressChange = (event) => {
+    checkRequestIdRef.current += 1;
     // 확인한 뒤 주소를 고치면 이전 좌표가 남지 않도록 위치를 비운다 (직접 입력 중에는 유지)
     onChange(
       isManual
@@ -37,16 +40,24 @@ export default function ShopAddressFields({ value, onChange, errors }) {
       setCheckError('주소를 입력해 주세요.');
       return;
     }
+    const requestId = checkRequestIdRef.current + 1;
+    checkRequestIdRef.current = requestId;
     setCheckStatus('loading');
     setCheckError('');
     try {
       const located = await geocodeAddress(value.address.trim());
+      if (checkRequestIdRef.current !== requestId) {
+        return;
+      }
       onChange(located);
       setCheckStatus('succeeded');
       if (!located.regionCode) {
         setIsManual(true);
       }
     } catch (error) {
+      if (checkRequestIdRef.current !== requestId) {
+        return;
+      }
       setCheckStatus('failed');
       setCheckError(error.message);
     }
