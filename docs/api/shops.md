@@ -87,7 +87,25 @@
 - S3 삭제와 정리 기록용 DB가 동시에 실패하면 자동 재시도를 보장할 수 없다. `매장 이미지 정리 작업 기록 실패, 수동 정리 필요` 오류 로그의 scope·파일명을 기준으로 복구해야 한다. 기록 전 프로세스가 강제 종료된 경우도 이 재시도 기능의 보장 범위 밖이다. 전체 S3 버킷을 임의로 훑어 삭제하는 기능은 추가하지 않았다.
 - 테스트는 실제 H2 제약 위반으로 JPA 커밋을 실패시켜 기존 URL 유지·새 S3 객체 삭제를 확인한다. S3도 삭제 실패하도록 만들었을 때 별도 트랜잭션 기록·후속 재시도까지 검증한다. S3는 Mock이며 실제 AWS 장애를 재현한 것은 아니다.
 
-신규 스키마의 `SHOP_IMAGE_CLEANUP` 테이블·시퀀스·인덱스는 `docs/erd/01_schema_ddl.sql`에 정의되어 있다. 이 객체가 없는 기존 Oracle DB는 애플리케이션 배포 전에 해당 정의를 적용해야 하며, 적용 SQL과 순서는 관련 PR 본문에 기록한다. 기존 SHOP 데이터 변경·삭제는 없다. H2 테스트는 신규 스키마에서 이미지 정리 기능을 검증하며 Oracle 실DB 확인은 별도로 필요하다.
+신규 스키마의 `SHOP_IMAGE_CLEANUP` 테이블·시퀀스·인덱스는 `docs/erd/01_schema_ddl.sql`에 정의되어 있다. 기존 Oracle DB에는 애플리케이션 배포 전에 아래 순서로 적용한다. 현재 스키마의 `USER_TABLES`, `USER_SEQUENCES`, `USER_INDEXES`에서 각 객체의 존재 여부를 확인하고, **이미 있는 객체의 CREATE 문은 실행하지 않는다.** 테이블 → 시퀀스 → 인덱스 순서로 필요한 문장만 실행한다. 정의는 기준 DDL과 동일하다.
+
+```sql
+CREATE TABLE SHOP_IMAGE_CLEANUP (
+    CLEANUP_ID      NUMBER(19)          NOT NULL,
+    STORAGE_SCOPE   VARCHAR2(512 CHAR)   NOT NULL,
+    FILE_NAME       VARCHAR2(40 CHAR)    NOT NULL,
+    ATTEMPT_COUNT   NUMBER(10)          DEFAULT 0 NOT NULL,
+    NEXT_ATTEMPT_AT TIMESTAMP(3)        NOT NULL,
+    CREATED_AT      TIMESTAMP(3)        NOT NULL,
+    UPDATED_AT      TIMESTAMP(3)        NOT NULL,
+    CONSTRAINT PK_SHOP_IMAGE_CLEANUP PRIMARY KEY (CLEANUP_ID),
+    CONSTRAINT UK_SHOP_IMAGE_CLEANUP_OBJECT UNIQUE (STORAGE_SCOPE, FILE_NAME)
+);
+CREATE SEQUENCE SEQ_SHOP_IMAGE_CLEANUP START WITH 1000 INCREMENT BY 1;
+CREATE INDEX IDX_SHOP_IMG_CLEANUP_DUE ON SHOP_IMAGE_CLEANUP (STORAGE_SCOPE, NEXT_ATTEMPT_AT);
+```
+
+기존 SHOP 데이터 변경·삭제는 없다. H2 테스트는 신규 스키마에서 이미지 정리 기능을 검증하며 Oracle 실DB 확인은 별도로 필요하다.
 
 ### 로컬 파일 저장소 및 전환 주의사항
 

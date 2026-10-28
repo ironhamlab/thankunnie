@@ -103,8 +103,14 @@
 A-06은 기존 목적·참여 조건·촬영 안내 컬럼을 사용하므로 추가 스키마 변경과 마이그레이션은 없다.
 
 새 DB는 `docs/erd/01_schema_ddl.sql`을 사용하며 `TREATMENT.CATEGORY_ID`를 생성하지 않는다.
-기존 Oracle DB에 이 컬럼과 `FK_TREATMENT_CATEGORY`가 있으면 배포 전에 제약과 컬럼을 제거해야 한다.
-적용 SQL과 순서는 관련 PR 본문에 기록하며, 컬럼이 없는 DB에는 실행하지 않는다.
+기존 Oracle DB에서 `TREATMENT.CATEGORY_ID`가 있으면 기존 버전 인스턴스를 모두 중지한 유지보수 시간에 아래 순서로 제거하고, 새 버전을 기동한다. 기존 버전의 Treatment 매핑을 사용하는 조회·등록·수정이 실행되는 동안에는 컬럼을 제거하지 않는다. `UNNIE-32-treatment-category.sql`을 적용한 DB와 해당 컬럼을 포함한 이전 전체 DDL로 생성한 DB가 모두 대상이다.
+
+1. 대상 스키마의 `USER_TAB_COLUMNS`에서 `TREATMENT.CATEGORY_ID`, `USER_CONSTRAINTS`에서 `FK_TREATMENT_CATEGORY` 존재 여부를 확인한다.
+2. 제약이 존재하면 `ALTER TABLE TREATMENT DROP CONSTRAINT FK_TREATMENT_CATEGORY;`를 실행한다.
+3. 컬럼이 존재하면 `ALTER TABLE TREATMENT DROP COLUMN CATEGORY_ID;`를 실행한다.
+4. 두 객체가 제거된 것을 확인한 뒤 새 버전을 기동한다. 컬럼과 제약이 없는 DB에서는 제거 SQL을 실행하지 않는다.
+
+Oracle DDL은 자동 커밋되므로 실행 전 대상 스키마와 백업을 확인한다.
 매장 카테고리는 `SHOP.CATEGORY_ID`를 계속 사용한다. Oracle에서 실제 적용한 결과는 별도 검증이 필요하다.
 
 ## A-06 초기 구현 당시 검증 결과
