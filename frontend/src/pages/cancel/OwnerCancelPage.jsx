@@ -302,7 +302,7 @@ export default function OwnerCancelPage() {
               <Button as={Link} to={ROUTES.OWNER_BOOKINGS}>
                 돌아가기
               </Button>
-              <Button variant="danger" type="submit" disabled={!isFormValid || submitting}>
+              <Button variant="primary" type="submit" disabled={!isFormValid || submitting}>
                 예약 취소하기
               </Button>
             </div>
@@ -338,7 +338,7 @@ export default function OwnerCancelPage() {
               <Button type="button" onClick={() => setIsConfirmOpen(false)}>
                 아니요
               </Button>
-              <Button variant="danger" type="button" disabled={submitting} onClick={submit}>
+              <Button variant="primary" type="button" disabled={submitting} onClick={submit}>
                 {submitting ? '취소하는 중…' : '취소 확정'}
               </Button>
             </div>

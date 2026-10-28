@@ -62,12 +62,20 @@
 }
 .actions {
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
-.actions button:disabled {
+/* 링크 버튼과 일반 버튼이 같은 크기로 보이도록 맞춘다 (공통 b-danger 의 위 여백도 없앤다) */
+.actions > * {
+  width: 100%;
+  min-height: 46px;
+  margin: 0;
+  font-size: 13px;
+}
+.actions > :disabled {
   opacity: 0.45;
   cursor: not-allowed;
+  filter: none;
 }
 @media (max-width: 540px) {
   .choices,
