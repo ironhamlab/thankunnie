@@ -2,8 +2,10 @@ package com.ucamp.app.domain.notification.service;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +39,11 @@ public class NotificationDispatchService {
 
     private static final int FAIL_REASON_MAX_LENGTH = 500;
 
+    /** 이미 끝난 발송. 이 상태면 문자를 다시 보내지 않는다. */
+    private static final Set<NotificationDispatchStatus> DO_NOT_RESEND = EnumSet.of(
+            NotificationDispatchStatus.SENT,
+            NotificationDispatchStatus.UNKNOWN);
+
     private final NotificationEventRepository notificationEventRepository;
     private final NotificationDispatchRepository notificationDispatchRepository;
     private final SubscriptionMatchService subscriptionMatchService;
@@ -68,7 +75,8 @@ public class NotificationDispatchService {
 
         int created = 0;
         for (Long userId : userIds) {
-            // 같은 이벤트·회원이 이미 있으면 건너뛴다. 그 조합은 DB에서도 한 줄만 허용한다.
+            // 같은 이벤트·회원이 이미 있으면 건너뛴다.
+            // SENT·UNKNOWN·FAILED 등 상태와 관계없이 한 줄만 둔다. DB UNIQUE 도 같다.
             if (notificationDispatchRepository.existsByEventIdAndUserId(event.getId(), userId)) {
                 continue;
             }
@@ -148,42 +156,64 @@ public class NotificationDispatchService {
     /**
      * 재검사를 통과한 작업에 문자를 보내고 결과를 저장한다.
      * 성공은 SENT, 실패는 FAILED, 응답이 애매하면 UNKNOWN 이다. 실패·불명을 성공으로 바꾸지 않는다.
+     * 같은 이벤트·회원에 이미 SENT 또는 UNKNOWN 이 있으면 문자를 다시 보내지 않는다.
      *
      * @param job 선점했고 재검사를 통과한 발송 대기 작업
      */
     @Transactional
     public void sendClaimedJob(NotificationDispatch job) {
-        if (job == null || job.getStatus() != NotificationDispatchStatus.PROCESSING) {
+        if (job == null || job.getId() == null) {
             return;
         }
 
-        NotificationEvent event = notificationEventRepository.findById(job.getEventId()).orElse(null);
+        // 메모리 값만 믿지 않고 DB 최신 상태를 본다.
+        NotificationDispatch latest = notificationDispatchRepository.findById(job.getId()).orElse(null);
+        if (latest == null) {
+            return;
+        }
+        // 같은 이벤트·회원에 이미 SENT 또는 UNKNOWN 이면 문자를 다시 보내지 않는다.
+        if (alreadySentOrUnknown(latest.getEventId(), latest.getUserId())) {
+            log.info("문자 재발송 생략(이미 SENT/UNKNOWN) dispatchId={}, userId={}, eventId={}, status={}",
+                    latest.getId(), latest.getUserId(), latest.getEventId(), latest.getStatus());
+            return;
+        }
+        if (latest.getStatus() != NotificationDispatchStatus.PROCESSING) {
+            return;
+        }
+
+        NotificationEvent event = notificationEventRepository.findById(latest.getEventId()).orElse(null);
         if (event == null) {
             String reason = "알림 이벤트를 찾을 수 없습니다.";
-            job.markFailed(reason);
-            notificationDispatchRepository.save(job);
+            latest.markFailed(reason);
+            notificationDispatchRepository.save(latest);
             log.warn("문자 발송 실패 dispatchId={}, userId={}, reason={}",
-                    job.getId(), job.getUserId(), reason);
+                    latest.getId(), latest.getUserId(), reason);
             return;
         }
 
-        Optional<String> phone = recipientContactRepository.findPhoneByUserId(job.getUserId());
+        Optional<String> phone = recipientContactRepository.findPhoneByUserId(latest.getUserId());
         if (phone.isEmpty() || !StringUtils.hasText(phone.get())) {
             String reason = "회원 전화번호가 없습니다.";
-            job.markFailed(reason);
-            notificationDispatchRepository.save(job);
+            latest.markFailed(reason);
+            notificationDispatchRepository.save(latest);
             log.warn("문자 발송 실패 dispatchId={}, userId={}, reason={}",
-                    job.getId(), job.getUserId(), reason);
+                    latest.getId(), latest.getUserId(), reason);
             return;
         }
 
         String messageBody = buildMessage(event);
         log.info("문자 발송 시작 dispatchId={}, userId={}, eventId={}, to={}",
-                job.getId(), job.getUserId(), event.getId(), maskPhone(phone.get()));
+                latest.getId(), latest.getUserId(), event.getId(), maskPhone(phone.get()));
         SmsSendResult result = solapiSmsClient.send(phone.get(), messageBody);
-        applySendResult(job, result);
-        notificationDispatchRepository.save(job);
-        logSendResult(job, result);
+        applySendResult(latest, result);
+        notificationDispatchRepository.save(latest);
+        logSendResult(latest, result);
+    }
+
+    // 같은 이벤트·회원에 성공(SENT) 또는 결과 불명(UNKNOWN)이 있으면 true. 이 둘은 재발송하지 않는다.
+    private boolean alreadySentOrUnknown(Long eventId, Long userId) {
+        return notificationDispatchRepository.existsByEventIdAndUserIdAndStatusIn(
+                eventId, userId, DO_NOT_RESEND);
     }
 
     private String buildMessage(NotificationEvent event) {

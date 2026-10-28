@@ -3,6 +3,8 @@ package com.ucamp.app.domain.notification.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -388,6 +390,57 @@ class NotificationDispatchServiceTest {
         notificationDispatchService.sendClaimedJob(job);
 
         assertThat(job.getStatus()).isEqualTo(NotificationDispatchStatus.PENDING);
+        verify(solapiSmsClient, times(0)).send(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("이미 SENT 이면 문자를 다시 보내지 않는다")
+    void sendClaimedJob_alreadySent_doesNotResend() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        notificationSubscriptionRepository.save(store(USER_ID));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+
+        notificationDispatchService.sendClaimedJob(job);
+        notificationDispatchService.sendClaimedJob(job);
+
+        NotificationDispatch saved = notificationDispatchRepository.findById(job.getId()).orElseThrow();
+        assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.SENT);
+        verify(solapiSmsClient, times(1)).send(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("이미 UNKNOWN 이면 문자를 다시 보내지 않는다")
+    void sendClaimedJob_alreadyUnknown_doesNotResend() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        notificationSubscriptionRepository.save(store(USER_ID));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+        given(solapiSmsClient.send(anyString(), anyString()))
+                .willReturn(SmsSendResult.unknown("응답 없음"));
+
+        notificationDispatchService.sendClaimedJob(job);
+        notificationDispatchService.sendClaimedJob(job);
+
+        NotificationDispatch saved = notificationDispatchRepository.findById(job.getId()).orElseThrow();
+        assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.UNKNOWN);
+        verify(solapiSmsClient, times(1)).send(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("같은 이벤트·회원에 SENT 가 있으면 대기 작업을 새로 만들지 않는다")
+    void createDispatchJobs_alreadySent_skipsUser() {
+        NotificationEvent event = notificationEventRepository.saveAndFlush(event(1L));
+        NotificationDispatch existing = notificationDispatchRepository.saveAndFlush(
+                NotificationDispatch.builder().eventId(event.getId()).userId(USER_ID).build());
+        existing.markSent();
+        notificationDispatchRepository.saveAndFlush(existing);
+        notificationSubscriptionRepository.save(store(USER_ID));
+
+        Optional<Integer> created = notificationDispatchService.createDispatchJobs();
+
+        assertThat(created).contains(0);
+        assertThat(notificationDispatchRepository.count()).isEqualTo(1);
+        assertThat(notificationDispatchRepository.findById(existing.getId()).orElseThrow().getStatus())
+                .isEqualTo(NotificationDispatchStatus.SENT);
     }
 
     private NotificationDispatch claimedJob(long exceptionId, long userId) {

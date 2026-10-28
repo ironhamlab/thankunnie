@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -105,6 +106,27 @@ class NotificationDispatchRepositoryTest {
         NotificationDispatch found = notificationDispatchRepository.findById(saved.getId()).orElseThrow();
         assertThat(found.getStatus()).isEqualTo(NotificationDispatchStatus.UNKNOWN);
         assertThat(found.getFailReason()).isEqualTo("문자 API 응답 시간 초과");
+    }
+
+    @Test
+    @DisplayName("같은 이벤트·회원에 SENT 또는 UNKNOWN 이 있는지 확인할 수 있다")
+    void existsByEventIdAndUserIdAndStatusIn_sentOrUnknown() {
+        long eventId = saveEvent(1L).getId();
+        NotificationDispatch saved = notificationDispatchRepository.saveAndFlush(dispatch(eventId, USER_ID));
+
+        assertThat(notificationDispatchRepository.existsByEventIdAndUserIdAndStatusIn(
+                eventId, USER_ID, EnumSet.of(NotificationDispatchStatus.SENT, NotificationDispatchStatus.UNKNOWN)))
+                .isFalse();
+
+        saved.markSent();
+        notificationDispatchRepository.saveAndFlush(saved);
+
+        assertThat(notificationDispatchRepository.existsByEventIdAndUserIdAndStatusIn(
+                eventId, USER_ID, EnumSet.of(NotificationDispatchStatus.SENT, NotificationDispatchStatus.UNKNOWN)))
+                .isTrue();
+        assertThat(notificationDispatchRepository.existsByEventIdAndUserIdAndStatusIn(
+                eventId, OTHER_USER_ID, EnumSet.of(NotificationDispatchStatus.SENT, NotificationDispatchStatus.UNKNOWN)))
+                .isFalse();
     }
 
     @Test
