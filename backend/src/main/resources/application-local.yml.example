@@ -12,6 +12,9 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        # JDBC 로 시각을 저장·조회할 때 한국 시간 기준으로 맞춘다 (PC 시간대가 달라도 동일하게 동작)
+        jdbc:
+          time_zone: Asia/Seoul
   h2:
     console:
       enabled: true
