@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
-import { generatePath, Link, useNavigate, useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { generatePath, Link, useParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { SERVICES, finish, money, serviceDate } from '@/utils/demoData';
+import { SERVICES, finish, money } from '@/utils/demoData';
+import { addDays, todayKst } from '@/utils/scheduleDate';
 import { useDesignStore } from '@/store/useDesignStore';
+import useReserve from '@/hooks/useReserve';
 import Asset from '@/components/common/Asset';
 import Dialog from '@/components/common/Dialog';
 import getServiceShop from '@/utils/getServiceShop';
@@ -18,18 +20,10 @@ export default function ServiceDetailPage() {
   const { id } = useParams();
   const service = SERVICES.find((item) => item.id === id);
   const shop = useDesignStore((s) => s.shop);
-  const hold = useDesignStore((s) => s.hold);
-  const createHold = useDesignStore((s) => s.createHold);
   const favorites = useDesignStore((s) => s.favorites);
   const toggleFavorite = useDesignStore((s) => s.toggleFavorite);
-  const navigate = useNavigate();
-  const [error, setError] = useState('');
+  const { reserve, loading, error } = useReserve();
   const [address, setAddress] = useState(false);
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
   if (!service)
     return (
       <EmptyState>
@@ -37,26 +31,10 @@ export default function ServiceDetailPage() {
         <Link to={ROUTES.HOME}>빈자리 목록으로</Link>
       </EmptyState>
     );
-  const date = serviceDate(service);
+  // 시연용 빈자리(오늘·내일·모레)를 실제 날짜로 바꿔 서버에 예약한다
+  const date = addDays(todayKst(), service.day);
   const ownShop = service.id === 'nail';
   const { name, address: shopAddress } = getServiceShop(service, shop);
-  const remaining =
-    hold?.serviceId === id ? Math.max(0, Math.ceil((hold.expiresAt - now) / 1000)) : 300;
-  const reserve = () => {
-    setError('');
-    try {
-      const reusable =
-        hold?.serviceId === id &&
-        hold.date === date &&
-        hold.time === service.time &&
-        !hold.general &&
-        hold.expiresAt > Date.now();
-      if (!reusable) createHold(id, date, service.time);
-      navigate(ROUTES.CHECKOUT);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
   return (
     <div className={`b-container b-page ${styles.root}`}>
       <Notice className="b-demo-disclaimer">
@@ -158,10 +136,7 @@ export default function ServiceDetailPage() {
         <aside className={`b-stack ${styles.aside}`}>
           <div className="b-hold-bar b-row">
             <strong>빈자리 실시간 선점 대기</strong>
-            <span>
-              ◷ {String(Math.floor(remaining / 60)).padStart(2, '0')}:
-              {String(remaining % 60).padStart(2, '0')}
-            </span>
+            <span>◷ 05:00</span>
           </div>
           <Panel as="section" padded className="b-summary">
             <div>
@@ -198,11 +173,19 @@ export default function ServiceDetailPage() {
             {error && (
               <Alert tone="error" role="alert">
                 {error}
-                <p>이미 예약된 시연 슬롯은 아래 날짜·시간 선택에서 다른 일정을 선택해 주세요.</p>
+                <p>아래 날짜·시간 선택에서 다른 일정을 선택해 주세요.</p>
               </Alert>
             )}
-            <Button variant="primary" wide onClick={reserve}>
-              ⚡ 이 빈자리 예약하기 ({money(service.price)})
+            {!service.treatmentId && (
+              <Notice>시연용 시술이라 실제 예약을 요청할 수 없습니다.</Notice>
+            )}
+            <Button
+              variant="primary"
+              wide
+              disabled={loading || !service.treatmentId}
+              onClick={() => reserve(service.treatmentId, date, service.time)}
+            >
+              {loading ? '예약 확인 중…' : `⚡ 이 빈자리 예약하기 (${money(service.price)})`}
             </Button>
             <Button as={Link} wide to={generatePath(ROUTES.RESERVE, { id })}>
               원하는 날짜·시간 선택

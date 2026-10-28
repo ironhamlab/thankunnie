@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { generatePath, Link, useNavigate, useParams } from 'react-router-dom';
+import { generatePath, Link, useParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { SERVICES, finish, minutes, money, overlaps } from '@/utils/demoData';
-import { todayKst, toKstDateTime } from '@/utils/scheduleDate';
+import { todayKst } from '@/utils/scheduleDate';
 import { useDesignStore } from '@/store/useDesignStore';
-import { useReservationStore } from '@/store/useReservationStore';
+import useReserve from '@/hooks/useReserve';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
@@ -26,9 +26,8 @@ const nowKstTime = () =>
 export default function ReservationPage() {
   const { id } = useParams();
   const service = SERVICES.find((item) => item.id === id);
-  const navigate = useNavigate();
   const bookings = useDesignStore((s) => s.bookings);
-  const createReservation = useReservationStore((s) => s.createReservation);
+  const { reserve, loading, error: reserveError } = useReserve();
   const today = todayKst();
   const [date, setDate] = useState(today);
   const [time, setTime] = useState('');
@@ -36,7 +35,6 @@ export default function ReservationPage() {
   const [year, setYear] = useState(Number(today.slice(0, 4)));
   const [mode, setMode] = useState('normal');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   if (!service)
     return (
       <EmptyState>
@@ -66,18 +64,7 @@ export default function ReservationPage() {
       setError('선택한 시간은 다른 예약과 겹치거나 시술 시간이 부족합니다.');
       return;
     }
-    setLoading(true);
-    try {
-      const reservation = await createReservation({
-        treatmentId: service.treatmentId,
-        startsAt: toKstDateTime(date, time.padStart(5, '0')),
-      });
-      // 새로고침해도 결제 화면이 서버에서 예약을 다시 불러올 수 있도록 예약 번호를 주소에 남긴다
-      navigate(`${ROUTES.CHECKOUT}?reservationId=${reservation.reservationId}`);
-    } catch (err) {
-      setError(err.message);
-      setLoading(false);
-    }
+    await reserve(service.treatmentId, date, time);
   };
   const changeMonth = (delta) => {
     const next = new Date(year, month + delta, 1);
@@ -279,9 +266,9 @@ export default function ReservationPage() {
             </div>
           </dl>
           {!service.treatmentId && <Notice>시연용 시술이라 실제 예약을 요청할 수 없습니다.</Notice>}
-          {error && (
+          {(error || reserveError) && (
             <Alert as="p" tone="error" role="alert">
-              {error}
+              {error || reserveError}
             </Alert>
           )}
           <Button
