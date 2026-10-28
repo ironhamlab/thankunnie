@@ -23,7 +23,7 @@
   max-width: calc(100% - 70px);
   padding: 8px 10px;
   background: white;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 11px;
 }
 .b-vacancy-map .b-map-detail .b-button {

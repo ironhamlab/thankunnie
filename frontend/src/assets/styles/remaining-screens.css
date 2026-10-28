@@ -17,7 +17,7 @@
 }
 .b-final-price {
   font-size: 24px;
-  color: var(--b-primary);
+  color: var(--color-primary);
 }
 .b-detail-page {
   padding-top: 18px;
@@ -36,12 +36,12 @@
   flex-wrap: wrap;
   gap: 10px;
   font-size: 11px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
   margin-bottom: 22px;
 }
 .b-detail-photo {
   position: relative;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   aspect-ratio: 1.6;
 }
@@ -58,7 +58,7 @@
   font-size: 11px;
   color: white;
   background: #111c2d88;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 4px 10px;
 }
 .b-favorite {
@@ -70,7 +70,7 @@
   border: 0;
   border-radius: 50%;
   background: #ffffffec;
-  color: var(--b-primary);
+  color: var(--color-primary);
   font-size: 22px !important;
 }
 .b-detail-content {
@@ -98,8 +98,8 @@
   font-size: 11px;
 }
 .b-service-benefits span {
-  background: var(--b-surface);
-  color: var(--b-secondary);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   border-radius: 4px;
   padding: 2px 8px;
 }
@@ -120,7 +120,7 @@
 }
 .b-detail-policies h3 {
   margin-bottom: 12px;
-  color: var(--b-primary);
+  color: var(--color-primary);
 }
 .b-detail-aside {
   position: sticky;
@@ -134,9 +134,9 @@
 }
 .b-detail-aside .b-hold-bar {
   border: 1px solid #ffbad5;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px;
-  color: var(--b-primary);
+  color: var(--color-primary);
   font-size: 12px;
 }
 .b-detail-aside .b-notice > .b-row {
@@ -161,7 +161,7 @@
 }
 .b-settlement .b-details > div:last-child {
   padding-bottom: 16px;
-  border-top: 1px dashed var(--b-border);
+  border-top: 1px dashed var(--color-border);
 }
 .b-settlement .b-two-grid > div {
   padding: 16px;
@@ -192,7 +192,7 @@
   font-size: 12px;
 }
 .b-result-controls .is-selected {
-  background: var(--b-primary);
+  background: var(--color-primary);
   color: white;
 }
 .b-result-card {
@@ -214,7 +214,7 @@
   width: 72px;
   height: 72px;
   margin: 0 auto 20px;
-  color: var(--b-primary);
+  color: var(--color-primary);
   background: #ffd8e8;
   border: 6px solid #fff0f6;
   border-radius: 50%;
@@ -227,7 +227,7 @@
 }
 .b-result-header p {
   font-size: 13px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-result-badges {
   justify-content: center;
@@ -248,7 +248,7 @@
 }
 .b-result-reservation .b-two-grid > div > small {
   display: block;
-  color: var(--b-muted);
+  color: var(--color-text-muted);
   margin-bottom: 5px;
 }
 .b-result-reservation .b-two-grid p {
@@ -277,7 +277,7 @@
   max-width: 760px;
   margin: 32px auto 0;
   padding-top: 28px;
-  border-top: 1px solid var(--b-border);
+  border-top: 1px solid var(--color-border);
 }
 .b-result-notification > .b-row {
   margin-bottom: 16px;
@@ -287,14 +287,14 @@
 }
 .b-result-notification p {
   margin-top: 5px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-talk {
   display: grid;
   place-items: center;
   width: 42px;
   height: 42px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: #fee500;
   color: #271d00;
   font-size: 10px;
@@ -326,7 +326,7 @@
 }
 .b-customer-summary p {
   font-size: 11px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
   margin-top: 8px;
 }
 .b-customer-summary .b-flex .b-flex {
@@ -341,7 +341,7 @@
   flex-shrink: 0;
   background: #ffdfeb;
   border: 5px solid #fff1f6;
-  color: var(--b-primary);
+  color: var(--color-primary);
   border-radius: 50%;
   font-size: 20px;
   font-weight: 800;
@@ -352,20 +352,20 @@
   bottom: -5px;
   right: -4px;
   border-radius: 50%;
-  background: var(--b-primary);
+  background: var(--color-primary);
   color: white;
   font-size: 13px;
   padding: 4px;
   border: 2px solid white;
 }
 .b-share-button {
-  background: var(--b-pink);
-  color: var(--b-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 .b-profile-stats {
   margin-top: 26px;
   padding-top: 22px;
-  border-top: 1px solid var(--b-border);
+  border-top: 1px solid var(--color-border);
 }
 .b-profile-stats > div {
   text-align: center;
@@ -397,7 +397,7 @@
 }
 .b-nearest p {
   font-size: 12px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-nearest > div {
   min-width: 0;
@@ -411,7 +411,7 @@
 }
 .b-nearest-prices span {
   background: #ffffffbb;
-  border: 1px solid var(--b-border);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 4px 10px;
 }
@@ -426,12 +426,12 @@
   border: 0;
   border-radius: 6px;
   background: white;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
   padding: 12px 5px;
   font-size: 12px;
 }
 .b-profile-tabs button.is-selected {
-  background: var(--b-primary);
+  background: var(--color-primary);
   color: white;
   font-weight: 700;
 }
@@ -459,7 +459,7 @@
 }
 .b-profile-booking p {
   font-size: 12px;
-  color: var(--b-muted);
+  color: var(--color-text-muted);
   line-height: 1.7;
 }
 .b-profile-booking-actions {
@@ -478,7 +478,7 @@
 .b-profile-page > .b-preview p {
   font-size: 11px;
   margin-top: 5px;
-  color: var(--b-muted);
+  color: var(--color-text-muted);
 }
 .b-profile-page > .b-success {
   margin-top: 20px;
@@ -504,7 +504,7 @@
   align-items: center;
 }
 .b-new-slot-scenarios .is-selected {
-  background: var(--b-primary);
+  background: var(--color-primary);
   color: white;
 }
 .b-new-slot-scenarios strong {
@@ -517,8 +517,8 @@
   width: 30px;
   height: 30px;
   background: #f8e5ef;
-  border-radius: 8px;
-  color: var(--b-primary);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
   margin-right: 6px;
   font-size: 15px;
 }
@@ -547,17 +547,17 @@
   align-items: center;
   gap: 12px;
   padding: 18px;
-  border: 1px solid var(--b-border);
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   cursor: pointer;
 }
 .b-service-option.is-selected {
-  border: 2px solid var(--b-primary);
+  border: 2px solid var(--color-primary);
   padding: 17px;
   background: #fffafd;
 }
 .b-service-option input {
-  accent-color: var(--b-primary);
+  accent-color: var(--color-primary);
   padding: 0;
   width: 18px;
   height: 18px;
@@ -569,7 +569,7 @@
 }
 .b-service-option small {
   display: block;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
   margin-top: 6px;
 }
 .b-service-option > strong {
@@ -588,10 +588,10 @@
   font-size: 12px;
 }
 .b-slot-date-fields small {
-  color: var(--b-muted);
+  color: var(--color-text-muted);
 }
 .b-slot-date-fields input[readonly] {
-  color: var(--b-primary);
+  color: var(--color-primary);
   font-weight: 700;
 }
 .b-time-recommendations {
@@ -599,8 +599,8 @@
   flex-wrap: wrap;
 }
 .b-selected-outline {
-  color: var(--b-primary);
-  border-color: var(--b-primary);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
   background: #fff3f8;
 }
 .b-slot-validation {
@@ -634,7 +634,7 @@
   gap: 20px;
 }
 .b-slot-summary .b-panel:first-child {
-  border-top: 5px solid var(--b-primary);
+  border-top: 5px solid var(--color-primary);
 }
 .b-slot-summary .b-details {
   margin-top: 16px;

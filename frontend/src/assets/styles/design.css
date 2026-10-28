@@ -1,17 +1,8 @@
 .beauty-app {
-  --b-primary: #b70052;
-  --b-text: #111c2d;
-  --b-secondary: #5a4045;
-  --b-muted: #8e6f75;
-  --b-border: rgba(226, 189, 195, 0.4);
-  --b-bg: #f9f9ff;
-  --b-surface: #f0f3ff;
-  --b-blue: #e7eeff;
-  --b-pink: #ffd9df;
-  color: var(--b-text);
-  background: var(--b-bg);
+  color: var(--color-text);
+  background: var(--color-background);
   min-height: 100vh;
-  font-family: 'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif;
+  font-family: var(--font-body);
   line-height: 1.5;
   font-size: 14px;
 }
@@ -65,20 +56,20 @@
 }
 .beauty-app em {
   font-style: normal;
-  color: var(--b-primary);
+  color: var(--color-primary);
 }
 .beauty-app input,
 .beauty-app textarea,
 .beauty-app select {
-  color: var(--b-text);
+  color: var(--color-text);
   background: white;
-  border: 1px solid var(--b-border);
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   min-width: 0;
 }
 .beauty-app input[readonly] {
-  background: var(--b-surface);
+  background: var(--color-surface);
 }
 .beauty-app textarea {
   resize: vertical;
@@ -120,8 +111,8 @@
 }
 .b-panel {
   background: white;
-  border: 1px solid var(--b-border);
-  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   box-shadow: 0 2px 5px #b7005205;
 }
 .b-pad {
@@ -130,7 +121,7 @@
 .b-panel-heading {
   padding-bottom: 16px;
   margin-bottom: 18px !important;
-  border-bottom: 1px solid var(--b-border);
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -141,20 +132,20 @@
   justify-content: center;
   align-items: center;
   gap: 6px;
-  border: 1px solid var(--b-border);
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 10px 16px;
   background: white;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
   font-weight: 700;
   font-size: 12px;
   text-align: center;
 }
 .beauty-app a.b-primary,
 .b-primary {
-  background: var(--b-primary);
+  background: var(--color-primary);
   color: white;
-  border-color: var(--b-primary);
+  border-color: var(--color-primary);
 }
 .b-button:hover {
   filter: brightness(0.96);
@@ -164,57 +155,57 @@
   font-size: 12px;
 }
 .b-soft {
-  background: var(--b-blue);
+  background: var(--color-surface-blue);
   border-color: transparent;
 }
 .b-wide {
   width: 100%;
 }
 .b-danger {
-  color: var(--b-primary);
-  border-color: var(--b-primary);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
   margin-top: 24px;
 }
 .b-pink {
-  color: var(--b-primary) !important;
+  color: var(--color-primary) !important;
 }
 .b-amber {
-  color: #954500;
+  color: var(--color-warning);
 }
 .b-muted {
-  color: var(--b-muted);
+  color: var(--color-text-muted);
 }
 .b-green-text {
-  color: #008970;
+  color: var(--color-success);
 }
 .b-badge {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 11px;
-  color: var(--b-primary);
-  background: var(--b-pink);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
   white-space: nowrap;
   font-weight: 600;
   vertical-align: middle;
 }
 .b-neutral {
-  color: var(--b-secondary);
-  background: var(--b-blue);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-blue);
 }
 .b-green {
-  color: #008970;
-  background: #eafff6;
+  color: var(--color-success);
+  background: var(--color-success-bg);
   border: 1px solid #a7f3d0;
 }
 .b-notice {
   border: 1px solid #e4e5f2;
-  background: var(--b-surface);
+  background: var(--color-surface);
   padding: 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 13px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-notice p {
   margin-top: 5px;
@@ -223,20 +214,20 @@
   background: #fff5f8;
   border: 1px solid #ffc0d8;
   padding: 16px;
-  border-radius: 12px;
-  color: var(--b-secondary);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
   font-size: 12px;
 }
 .b-highlight h3 {
-  color: var(--b-primary);
+  color: var(--color-primary);
   margin-bottom: 10px;
 }
 .b-success {
-  background: #eafff6;
+  background: var(--color-success-bg);
   color: #007b62;
   border: 1px solid #a7f3d0;
   padding: 14px 18px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 .b-error {
   color: #c21b46;
@@ -252,7 +243,7 @@
 }
 .b-empty p {
   margin: 12px 0 20px;
-  color: var(--b-muted);
+  color: var(--color-text-muted);
 }
 .b-page {
   padding-top: 32px;
@@ -262,7 +253,7 @@
 .b-back {
   display: inline-block;
   margin-bottom: 26px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
   font-size: 12px;
 }
 .b-center {
@@ -271,7 +262,7 @@
   margin: 14px 0;
 }
 .b-help {
-  color: var(--b-muted);
+  color: var(--color-text-muted);
   font-size: 11px;
   margin-top: 16px !important;
 }
@@ -284,7 +275,7 @@
 }
 .b-header {
   background: #ffffffed;
-  border-bottom: 1px solid var(--b-border);
+  border-bottom: 1px solid var(--color-border);
   box-shadow: 0 1px 2px #00000005;
 }
 .b-nav {
@@ -294,7 +285,7 @@
   gap: 36px;
 }
 .beauty-app .b-brand {
-  color: var(--b-primary);
+  color: var(--color-primary);
   font-size: 20px;
   font-weight: 800;
   letter-spacing: -0.5px;
@@ -304,9 +295,9 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: -0.25px;
-  background: var(--b-pink);
+  background: var(--color-primary-soft);
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   margin-left: 10px;
   vertical-align: middle;
 }
@@ -318,9 +309,9 @@
 }
 .b-search input {
   width: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 9px 45px 9px 17px;
-  background: var(--b-surface);
+  background: var(--color-surface);
   box-shadow: inset 0 2px 4px #0000000d;
 }
 .b-search button {
@@ -331,7 +322,7 @@
   border-radius: 50%;
   width: 32px;
   height: 32px;
-  background: var(--b-primary);
+  background: var(--color-primary);
   display: grid;
   place-items: center;
 }
@@ -347,21 +338,21 @@
   font-weight: 600;
 }
 .b-nav nav a.active {
-  color: var(--b-primary);
-  border-bottom: 2px solid var(--b-primary);
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
 }
 .b-nav .b-reservation-link {
-  background: var(--b-blue);
+  background: var(--color-surface-blue);
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   display: flex;
   align-items: center;
   gap: 6px;
 }
 .b-reservation-link b {
   color: white;
-  background: var(--b-primary);
-  border-radius: 999px;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
   padding: 0 6px;
   font-size: 10px;
 }
@@ -370,10 +361,10 @@
   align-items: center;
   gap: 5px;
   padding: 7px 12px;
-  border: 1px solid var(--b-border);
-  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
   font-size: 12px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
   white-space: nowrap;
 }
 .b-account i {
@@ -383,13 +374,13 @@
   border-radius: 50%;
 }
 .b-footer {
-  background: var(--b-surface);
-  border-top: 1px solid var(--b-border);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
   padding: 32px 0;
 }
 .b-footer p {
   font-size: 13px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
   margin-top: 4px;
 }
 .b-footer-links {
@@ -403,7 +394,7 @@
   background: none;
   border: 0;
   padding: 0;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
   font-size: 11px;
   font-weight: 600;
 }
@@ -434,17 +425,17 @@
   justify-content: space-between;
   gap: 24px;
   padding: 25px;
-  border: 1px solid var(--b-border);
-  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   background:
     radial-gradient(circle at 100% 0, #ffd9df99, transparent 28%),
-    linear-gradient(110deg, #ffd9df66, #fff 52%, #f0f3ff);
+    linear-gradient(110deg, #ffd9df66, #fff 52%, var(--color-surface));
 }
 .b-eyebrow {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--b-primary);
+  color: var(--color-primary);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.275px;
@@ -459,7 +450,7 @@
 }
 .b-hero p {
   font-size: 14px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-demo-note {
   display: inline-flex;
@@ -468,12 +459,12 @@
   white-space: nowrap;
   background: #ffffffcc;
   padding: 9px 14px;
-  border: 1px solid var(--b-border);
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   font-size: 11px;
 }
 .b-demo-note strong {
-  color: var(--b-primary);
+  color: var(--color-primary);
 }
 .b-filters {
   padding: 20px;
@@ -494,7 +485,7 @@
   display: inline-flex;
   align-items: center;
   min-width: 64px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
   font-weight: 600;
 }
 .b-options {
@@ -506,12 +497,12 @@
   border: 0;
   border-radius: 6px;
   padding: 4px 10px;
-  background: var(--b-surface);
+  background: var(--color-surface);
   font-size: 12px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-options button.is-selected {
-  background: var(--b-pink);
+  background: var(--color-primary-soft);
   color: #400012;
   font-weight: 700;
 }
@@ -522,18 +513,18 @@
   gap: 8px;
 }
 .b-date-filter button {
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 6px 14px;
-  background: var(--b-blue);
+  background: var(--color-surface-blue);
 }
 .b-date-filter button.is-selected {
   color: white;
-  background: var(--b-primary);
+  background: var(--color-primary);
 }
 .b-more-date {
   position: relative;
-  border: 1px solid var(--b-border);
-  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
   padding: 5px 10px;
   font-size: 11px;
   cursor: pointer;
@@ -551,12 +542,12 @@
   flex-wrap: wrap;
 }
 .b-filter-line:last-child {
-  border-top: 1px solid var(--b-border);
+  border-top: 1px solid var(--color-border);
   padding-bottom: 0;
 }
 .b-segmented .b-options {
   gap: 0;
-  background: var(--b-blue);
+  background: var(--color-surface-blue);
   border-radius: 10px;
   padding: 3px;
 }
@@ -566,7 +557,7 @@
 }
 .b-segmented .b-options button.is-selected {
   background: white;
-  color: var(--b-primary);
+  color: var(--color-primary);
 }
 .b-results-heading {
   padding: 4px;
@@ -584,8 +575,8 @@
   gap: 24px;
 }
 .b-service-card {
-  border: 1px solid var(--b-border);
-  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   background: white;
   box-shadow: 0 1px 2px #0000000d;
@@ -601,7 +592,7 @@
   position: relative;
   aspect-ratio: 1.6;
   overflow: hidden;
-  background: var(--b-blue);
+  background: var(--color-surface-blue);
 }
 .b-service-photo > img {
   width: 100%;
@@ -616,15 +607,15 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 4px 10px;
   font-size: 11px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
   background: #ffffffe6;
   backdrop-filter: blur(2px);
 }
 .b-urgency.b-sale {
-  color: var(--b-primary);
+  color: var(--color-primary);
   font-weight: 800;
 }
 .b-urgency i {
@@ -634,7 +625,7 @@
   background: currentColor;
 }
 .b-urgency.b-soon {
-  color: #954500;
+  color: var(--color-warning);
 }
 .b-start-tag {
   position: absolute;
@@ -654,7 +645,7 @@
 }
 .b-service-meta {
   font-size: 13px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
   gap: 8px;
 }
 .b-service-meta small {
@@ -662,7 +653,7 @@
   align-items: center;
   gap: 2px;
   font-size: 11px;
-  color: var(--b-muted);
+  color: var(--color-text-muted);
 }
 .b-service-body h3 {
   font-size: 18px;
@@ -676,12 +667,12 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  background: var(--b-blue);
+  background: var(--color-surface-blue);
   border-radius: 4px;
   padding: 2px 8px;
 }
 .b-price-row {
-  border-top: 1px solid var(--b-border);
+  border-top: 1px solid var(--color-border);
   padding-top: 12px;
   margin-top: 16px;
   gap: 12px;
@@ -699,9 +690,9 @@
 .b-preview {
   margin-top: 24px;
   padding: 20px 16px;
-  background: var(--b-surface);
-  border: 1px solid var(--b-border);
-  border-radius: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   font-size: 12px;
   gap: 12px;
   flex-wrap: wrap;
@@ -711,7 +702,7 @@
 }
 .b-preview .b-options .is-selected {
   color: white;
-  background: var(--b-primary);
+  background: var(--color-primary);
 }
 .b-home > .b-help {
   display: flex;
@@ -721,8 +712,13 @@
 }
 .b-skeleton {
   min-height: 430px;
-  border-radius: 16px;
-  background: linear-gradient(100deg, #e7eeff 30%, #fff 50%, #e7eeff 70%);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    100deg,
+    var(--color-surface-blue) 30%,
+    #fff 50%,
+    var(--color-surface-blue) 70%
+  );
   background-size: 200% 100%;
   animation: b-shimmer 1.5s infinite;
 }
@@ -757,13 +753,13 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid var(--b-border);
+  border-bottom: 1px solid var(--color-border);
 }
 .b-details > div:last-child {
   border-bottom: 0;
 }
 .b-details dt {
-  color: var(--b-muted);
+  color: var(--color-text-muted);
 }
 .b-details dd {
   margin: 0;
@@ -784,15 +780,15 @@
   gap: 12px;
   font-size: 11px;
   text-align: center;
-  color: var(--b-muted);
+  color: var(--color-text-muted);
 }
 .b-steps span {
   padding: 8px 0;
-  border-bottom: 3px solid var(--b-blue);
+  border-bottom: 3px solid var(--color-surface-blue);
 }
 .b-steps .is-current {
-  color: var(--b-primary);
-  border-color: var(--b-primary);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
   font-weight: 700;
 }
 .b-calendar {
@@ -802,12 +798,12 @@
   gap: 6px;
 }
 .b-calendar > small {
-  color: var(--b-muted);
+  color: var(--color-text-muted);
   padding-bottom: 12px;
 }
 .b-calendar button {
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: white;
   padding: 8px;
   min-height: 52px;
@@ -816,11 +812,11 @@
 .b-calendar button small {
   display: block;
   font-size: 10px;
-  color: var(--b-primary);
+  color: var(--color-primary);
 }
 .b-calendar button:disabled {
-  background: var(--b-surface);
-  color: var(--b-muted);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
 }
 .b-calendar button.is-selected,
 .b-time-grid button.is-selected {
@@ -832,8 +828,8 @@
   color: white;
 }
 .b-panel-heading > .b-flex button {
-  border: 1px solid var(--b-border);
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   background: white;
 }
 .b-time-group {
@@ -842,7 +838,7 @@
 .b-time-group > p {
   font-size: 12px;
   margin-bottom: 8px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-time-grid {
   display: grid;
@@ -850,15 +846,15 @@
   gap: 8px;
 }
 .b-time-grid button {
-  border: 1px solid var(--b-border);
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 9px 4px;
   background: white;
   font-size: 12px;
 }
 .b-time-grid button:disabled {
-  background: var(--b-surface);
-  color: var(--b-muted);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
   text-decoration: line-through;
 }
 .b-hold-bar {
@@ -866,15 +862,15 @@
   border-bottom: 1px solid #ffbbd6;
   padding: 12px 0;
   font-size: 12px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-hold-bar strong {
-  color: var(--b-primary);
+  color: var(--color-primary);
 }
 .b-hold-bar button {
   background: none;
   border: 0;
-  color: var(--b-primary);
+  color: var(--color-primary);
   font-size: 11px;
 }
 .b-booking-service {
@@ -893,7 +889,7 @@
   width: 100px;
   height: 100px;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 .b-form-grid {
   display: grid;
@@ -905,14 +901,14 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  color: var(--b-text);
+  color: var(--color-text);
   font-size: 12px;
   font-weight: 600;
   min-width: 0;
 }
 .b-form-grid label small {
   font-weight: 400;
-  color: var(--b-muted);
+  color: var(--color-text-muted);
 }
 .b-span-two {
   grid-column: 1 / -1;
@@ -922,19 +918,19 @@
   align-items: flex-start;
   gap: 12px;
   padding: 16px;
-  border: 1px solid var(--b-border);
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   margin-top: 12px;
   font-size: 12px;
 }
 .b-check input {
-  accent-color: var(--b-primary);
+  accent-color: var(--color-primary);
   margin-top: 4px;
 }
 .b-check small {
   display: block;
   margin-top: 6px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-scenarios {
   margin: 16px 0;
@@ -942,7 +938,7 @@
 .b-scenarios button {
   flex: 1;
   padding: 12px 8px;
-  border: 1px solid var(--b-border);
+  border: 1px solid var(--color-border);
 }
 .b-payment-method {
   display: flex;
@@ -950,19 +946,19 @@
   align-items: center;
   padding: 16px;
   background: white;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   margin-top: 12px;
   font-size: 12px;
 }
 .b-payment-method > span {
   border-radius: 50%;
-  background: var(--b-primary);
+  background: var(--color-primary);
   color: white;
   padding: 10px;
   font-weight: 700;
 }
 .b-payment-method p {
-  color: var(--b-muted);
+  color: var(--color-text-muted);
   font-size: 11px;
 }
 .b-tabs {
@@ -970,10 +966,10 @@
 }
 .b-tabs button {
   padding: 12px 18px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 .b-tabs button.is-selected {
-  background: var(--b-primary);
+  background: var(--color-primary);
   color: white;
 }
 .b-bookings-grid {
@@ -985,14 +981,14 @@
 .b-booking-card {
   text-align: left;
   padding: 22px;
-  color: var(--b-text);
+  color: var(--color-text);
   display: flex;
   flex-direction: column;
   gap: 16px;
   border-left: 5px solid transparent;
 }
 .b-booking-card.is-active {
-  border-color: var(--b-primary);
+  border-color: var(--color-primary);
 }
 .b-booking-card .b-thumb {
   width: 70px;
@@ -1011,11 +1007,11 @@
 }
 .b-native-dialog {
   padding: 0;
-  border: 1px solid #e2bdc3;
-  border-radius: 16px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
   width: min(600px, calc(100vw - 32px));
   max-height: 90vh;
-  color: #111c2d;
+  color: var(--color-text);
   box-shadow: 0 20px 80px #111c2d33;
 }
 .b-native-dialog::backdrop {
@@ -1038,7 +1034,7 @@
   top: 0;
   height: 100vh;
   background: white;
-  border-right: 1px solid var(--b-border);
+  border-right: 1px solid var(--color-border);
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
@@ -1050,27 +1046,27 @@
   padding-left: 8px;
 }
 .b-owner-brand strong {
-  color: var(--b-primary);
+  color: var(--color-primary);
   font-size: 22px;
 }
 .b-owner-brand small {
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-owner-shop {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--b-surface);
-  border: 1px solid var(--b-border);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 12px;
 }
 .b-owner-shop img {
   width: 40px;
   height: 40px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 .b-owner-shop small {
   display: block;
@@ -1086,12 +1082,12 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-radius: 12px;
-  color: var(--b-secondary);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
 }
 .b-sidebar a.active {
   background: #f8e5ef;
-  color: var(--b-primary);
+  color: var(--color-primary);
   font-weight: 700;
 }
 .b-sidebar-bottom {
@@ -1100,14 +1096,14 @@
 }
 .b-sidebar-bottom small {
   display: block;
-  color: var(--b-muted);
+  color: var(--color-text-muted);
   margin-top: 16px;
   text-align: center;
 }
 .b-owner-header {
   min-height: 64px;
   background: white;
-  border-bottom: 1px solid var(--b-border);
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1115,7 +1111,7 @@
   padding: 16px 32px;
 }
 .b-owner-header .b-account {
-  background: var(--b-surface);
+  background: var(--color-surface);
 }
 .b-owner-main {
   padding: 32px;
@@ -1149,7 +1145,7 @@
   width: 100%;
   aspect-ratio: 1.4;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   margin: 16px 0;
   display: block;
 }
@@ -1170,7 +1166,7 @@
 .beauty-app th {
   background: #f6f7ff;
   padding: 16px 20px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -1181,7 +1177,7 @@
 }
 .beauty-app td small {
   display: block;
-  color: var(--b-muted);
+  color: var(--color-text-muted);
   margin-top: 6px;
 }
 .beauty-app tr.is-active {
@@ -1191,7 +1187,7 @@
   background: #f9faff;
   padding: 16px;
   font-size: 12px;
-  color: var(--b-muted);
+  color: var(--color-text-muted);
 }
 .b-slot-filters {
   display: flex;
@@ -1225,14 +1221,14 @@
   margin: 8px 0;
 }
 .b-stat-grid h2 small {
-  color: var(--b-text);
+  color: var(--color-text);
   font-size: 14px;
   margin-left: 5px;
 }
 .b-dashboard-cards > * {
   min-height: 170px;
   text-align: left;
-  color: var(--b-text);
+  color: var(--color-text);
   position: relative;
 }
 .b-dashboard-cards h2 {
@@ -1242,13 +1238,13 @@
 }
 .b-dashboard-cards p {
   font-size: 12px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-card-arrow {
   position: absolute;
   right: 24px;
   top: 24px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-toggle-row {
   display: flex;
@@ -1256,7 +1252,7 @@
   align-items: center;
   gap: 24px;
   padding: 20px 0;
-  border-bottom: 1px solid var(--b-border);
+  border-bottom: 1px solid var(--color-border);
   font-size: 13px;
 }
 .b-toggle-row:last-child {
@@ -1264,7 +1260,7 @@
   padding-bottom: 0;
 }
 .b-toggle-row p {
-  color: var(--b-muted);
+  color: var(--color-text-muted);
   font-size: 12px;
   margin-top: 5px;
 }
@@ -1272,7 +1268,7 @@
   appearance: none;
   width: 42px;
   height: 24px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: #d7deec;
   position: relative;
   padding: 0;
@@ -1292,7 +1288,7 @@
   transition: left 0.15s;
 }
 .b-toggle-row input:checked {
-  background: var(--b-primary);
+  background: var(--color-primary);
 }
 .b-toggle-row input:checked::after {
   left: 21px;
@@ -1306,13 +1302,13 @@
 .b-profile p {
   font-size: 12px;
   margin-bottom: 10px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-explore-hero {
   display: grid;
   grid-template-columns: 1fr 1fr;
   background: #ffe9f0;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   margin-top: 24px;
   overflow: hidden;
 }
@@ -1325,7 +1321,7 @@
 }
 .b-explore-hero p {
   margin-bottom: 20px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-explore-hero > img {
   width: 100%;
@@ -1337,7 +1333,7 @@
 }
 .b-category-tabs button {
   padding: 10px 20px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 .b-explore-grid {
   display: grid;
@@ -1355,7 +1351,7 @@
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid var(--b-border);
+  border-top: 1px solid var(--color-border);
   padding: 18px 0;
   gap: 12px;
 }
@@ -1369,7 +1365,7 @@
   text-align: left;
   border: 0;
   background: transparent;
-  color: var(--b-text);
+  color: var(--color-text);
   padding: 0;
   gap: 16px;
   align-items: center;
@@ -1378,7 +1374,7 @@
   width: 110px;
   height: 110px;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 .b-explore-select h3 {
   font-size: 16px;
@@ -1397,11 +1393,11 @@
 }
 .b-map {
   height: 700px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   position: sticky;
   top: 20px;
-  border: 1px solid var(--b-border);
+  border: 1px solid var(--color-border);
   background: #ecf0ec;
 }
 .b-map-canvas {
@@ -1421,16 +1417,16 @@
 }
 .b-map-pin {
   position: absolute;
-  border: 1px solid var(--b-primary);
-  border-radius: 999px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-pill);
   padding: 8px 14px;
   background: white;
-  color: var(--b-primary);
+  color: var(--color-primary);
   font-weight: 700;
   box-shadow: 0 2px 10px #111c2d22;
 }
 .b-map-pin.is-selected {
-  background: var(--b-primary);
+  background: var(--color-primary);
   color: white;
 }
 .b-pin-0 {
@@ -1456,8 +1452,8 @@
   display: flex;
   flex-direction: column;
   background: white;
-  border: 1px solid var(--b-border);
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 .b-map-tools button {
@@ -1486,7 +1482,7 @@
 }
 .b-map-detail p {
   margin-bottom: 16px;
-  color: var(--b-muted);
+  color: var(--color-text-muted);
   font-size: 12px;
 }
 @media (max-width: 1200px) {
@@ -1763,7 +1759,7 @@
   background:
     radial-gradient(circle at 100% 0, #f4e4f7, transparent 60%),
     linear-gradient(120deg, #ffdee7, #f2f4ff 60%, #ffe7ef);
-  border: 1px solid var(--b-border);
+  border: 1px solid var(--color-border);
 }
 .b-promo-grid .b-explore-hero > div {
   padding: 32px;
@@ -1783,7 +1779,7 @@
   text-align: left;
   display: flex;
   flex-direction: column;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
   font-size: 11px;
   gap: 8px;
 }
@@ -1792,14 +1788,14 @@
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 .b-theme-cards strong {
   font-size: 12px;
 }
 .b-theme-cards span {
   margin-top: auto;
-  color: var(--b-primary);
+  color: var(--color-primary);
   padding-top: 24px;
 }
 .b-exploration .b-explore-grid {
@@ -1822,7 +1818,7 @@
   min-width: 0;
 }
 .b-explore-cards article.is-active {
-  border-color: var(--b-primary);
+  border-color: var(--color-primary);
   box-shadow: 0 2px 4px #b700521a;
 }
 .b-explore-cards .b-explore-select {
@@ -1847,14 +1843,14 @@
 }
 .b-explore-price {
   margin-top: 12px;
-  border-top: 1px solid var(--b-border);
+  border-top: 1px solid var(--color-border);
   padding-top: 12px;
   flex-wrap: wrap;
   gap: 8px;
 }
 .b-explore-price del {
   font-size: 11px;
-  color: var(--b-muted);
+  color: var(--color-text-muted);
 }
 .b-explore-price strong {
   display: inline-block;
@@ -1865,10 +1861,10 @@
   width: 70px;
   height: 70px;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 .b-classic {
-  --b-primary: #ff2b85;
+  --color-primary: #ff2b85;
 }
 .b-classic .b-explore-hero {
   display: grid;
@@ -2064,7 +2060,7 @@
   top: 333px;
 }
 .b-dashboard-cards > a:nth-child(3) > img {
-  background: var(--b-primary);
+  background: var(--color-primary);
   padding: 10px;
   box-sizing: content-box;
   border-radius: 10px;

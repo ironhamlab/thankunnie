@@ -1,12 +1,12 @@
 /* 내 예약: 예약금 결제·환불 현황, 환불 정책, 취소 확인 */
 .beauty-app {
-  --b-pay-paid: #008970;
-  --b-pay-paid-bg: #eafff6;
-  --b-pay-pending: #954500;
-  --b-pay-pending-bg: #fff4e5;
-  --b-pay-partial: #3442b8;
-  --b-pay-partial-bg: #e7eeff;
-  --b-pay-refunded: #5a4045;
+  --b-pay-paid: var(--color-success);
+  --b-pay-paid-bg: var(--color-success-bg);
+  --b-pay-pending: var(--color-warning);
+  --b-pay-pending-bg: var(--color-warning-bg);
+  --b-pay-partial: var(--color-info);
+  --b-pay-partial-bg: var(--color-surface-blue);
+  --b-pay-refunded: var(--color-text-secondary);
   --b-pay-refunded-bg: #f3eef0;
 }
 
@@ -24,7 +24,7 @@
   gap: 4px;
 }
 .b-pay-summary span {
-  color: var(--b-muted);
+  color: var(--color-text-muted);
   font-size: 12px;
 }
 .b-pay-summary strong {
@@ -38,7 +38,7 @@
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
@@ -80,7 +80,7 @@
 /* 결제 카드 */
 .b-pay-card,
 .b-refund-card {
-  border: 1px solid var(--b-border);
+  border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: 20px;
   background: white;
@@ -108,8 +108,8 @@
   gap: 10px;
 }
 .b-pay-stats > div {
-  background: var(--b-surface);
-  border-radius: 12px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
@@ -119,7 +119,7 @@
   background: var(--b-pay-paid-bg);
 }
 .b-pay-stats span {
-  color: var(--b-muted);
+  color: var(--color-text-muted);
   font-size: 11px;
 }
 .b-pay-stats strong {
@@ -131,15 +131,15 @@
 }
 .b-pay-meter {
   height: 8px;
-  border-radius: 999px;
-  background: var(--b-pink);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
   overflow: hidden;
 }
 .b-pay-meter > span {
   display: block;
   height: 100%;
   background: var(--b-pay-paid);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   transition: width 0.6s ease;
 }
 .b-pay-meter-legend {
@@ -147,7 +147,7 @@
   justify-content: space-between;
   margin-top: -10px;
   font-size: 11px;
-  color: var(--b-muted);
+  color: var(--color-text-muted);
 }
 .b-pay-meta > div {
   padding: 9px 0;
@@ -182,7 +182,7 @@
   top: 16px;
   bottom: 0;
   width: 2px;
-  background: var(--b-border);
+  background: var(--color-border);
 }
 .b-pay-timeline li.is-done:not(:last-child)::before {
   background: var(--b-pay-paid);
@@ -193,7 +193,7 @@
   height: 14px;
   margin-top: 2px;
   border-radius: 50%;
-  border: 2px solid var(--b-border);
+  border: 2px solid var(--color-border);
   background: white;
 }
 .b-pay-timeline li.is-done .b-pay-dot {
@@ -210,11 +210,11 @@
   font-size: 13px;
 }
 .b-pay-timeline li.is-todo strong {
-  color: var(--b-muted);
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 .b-pay-timeline small {
-  color: var(--b-muted);
+  color: var(--color-text-muted);
   font-size: 11px;
 }
 
@@ -229,13 +229,13 @@
 }
 .b-refund-tiers li {
   position: relative;
-  border: 1px solid var(--b-border);
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-refund-tiers li span {
   font-size: 11px;
@@ -245,25 +245,25 @@
   font-variant-numeric: tabular-nums;
 }
 .b-refund-tiers li.is-current {
-  border: 2px solid var(--b-primary);
+  border: 2px solid var(--color-primary);
   background: #fff5f8;
-  color: var(--b-text);
+  color: var(--color-text);
 }
 .b-refund-tiers li em {
   position: absolute;
   top: -9px;
   right: 10px;
   padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--b-primary);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
   color: white;
   font-size: 10px;
   font-style: normal;
   font-weight: 700;
 }
 .b-refund-result {
-  background: var(--b-surface);
-  border-radius: 12px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -281,7 +281,7 @@
 .b-refund-split {
   display: flex;
   height: 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   overflow: hidden;
   background: white;
 }
@@ -289,7 +289,7 @@
   background: var(--b-pay-paid);
 }
 .b-refund-split .is-kept {
-  background: #e2bdc3;
+  background: var(--color-border-strong);
 }
 .b-refund-breakdown {
   margin: 0;
@@ -301,7 +301,7 @@
   padding: 4px 0;
 }
 .b-refund-breakdown dt {
-  color: var(--b-muted);
+  color: var(--color-text-muted);
 }
 .b-refund-breakdown dd {
   margin: 0;
@@ -323,8 +323,8 @@
   flex-direction: column;
   gap: 2px;
   padding: 14px 16px;
-  border-radius: 12px;
-  background: var(--b-surface);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 .b-cancel-amount {
   text-align: center;
@@ -337,7 +337,7 @@
 }
 .b-cancel-amount span {
   font-size: 12px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-cancel-amount strong {
   font-size: 30px;
@@ -345,14 +345,14 @@
   font-variant-numeric: tabular-nums;
 }
 .b-cancel-amount small {
-  color: var(--b-muted);
+  color: var(--color-text-muted);
   font-size: 11px;
 }
 .b-cancel-amount.is-zero {
   background: #fff1f4;
 }
 .b-cancel-amount.is-zero strong {
-  color: var(--b-primary);
+  color: var(--color-primary);
 }
 .b-cancel-reasons {
   border: 0;
@@ -371,27 +371,27 @@
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  border: 1px solid var(--b-border);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   font-size: 12px;
   cursor: pointer;
 }
 .b-cancel-reasons label.is-selected {
-  border-color: var(--b-primary);
+  border-color: var(--color-primary);
   background: #fff5f8;
 }
 .b-cancel-reasons input {
-  accent-color: var(--b-primary);
+  accent-color: var(--color-primary);
 }
 .b-cancel-agree {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: var(--b-secondary);
+  color: var(--color-text-secondary);
 }
 .b-cancel-agree input {
-  accent-color: var(--b-primary);
+  accent-color: var(--color-primary);
 }
 .b-cancel-actions {
   display: grid;
