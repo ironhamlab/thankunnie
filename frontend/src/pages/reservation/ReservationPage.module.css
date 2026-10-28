@@ -70,3 +70,13 @@
     padding: 6px 2px;
   }
 }
+.request {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.request textarea {
+  font-weight: 400;
+}

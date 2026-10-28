@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { generatePath, Link, useNavigate, useParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { DEMO_DATE, SERVICES, finish, minutes, money, overlaps } from '@/utils/demoData';
+import { SERVICES, finish, minutes, money, overlaps } from '@/utils/demoData';
+import { todayKst, toKstDateTime } from '@/utils/scheduleDate';
 import { useDesignStore } from '@/store/useDesignStore';
+import { useReservationStore } from '@/store/useReservationStore';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
@@ -11,23 +13,28 @@ import EmptyState from '@/components/common/EmptyState';
 import Alert from '@/components/common/Alert';
 import styles from './ReservationPage.module.css';
 
-const dayLabel = (isClosed, isDemoDate) => {
-  if (isClosed) {
-    return '휴무';
-  }
-  return isDemoDate ? '시연일' : '•';
-};
+const dayLabel = (isClosed) => (isClosed ? '휴무' : '•');
+
+// 한국 시간 기준 지금 시각(HH:mm). 오늘 날짜에서 이미 지난 시간은 고를 수 없게 한다
+const nowKstTime = () =>
+  new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Seoul',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date());
 
 export default function ReservationPage() {
   const { id } = useParams();
   const service = SERVICES.find((item) => item.id === id);
   const navigate = useNavigate();
   const bookings = useDesignStore((s) => s.bookings);
-  const createHold = useDesignStore((s) => s.createHold);
-  const [date, setDate] = useState('2025-10-22');
-  const [time, setTime] = useState('14:00');
-  const [month, setMonth] = useState(9);
-  const [year, setYear] = useState(2025);
+  const createReservation = useReservationStore((s) => s.createReservation);
+  const today = todayKst();
+  const [date, setDate] = useState(today);
+  const [time, setTime] = useState('');
+  const [month, setMonth] = useState(Number(today.slice(5, 7)) - 1);
+  const [year, setYear] = useState(Number(today.slice(0, 4)));
+  const [request, setRequest] = useState('');
   const [mode, setMode] = useState('normal');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,6 +48,7 @@ export default function ReservationPage() {
   const duration = 90;
   const blocked = (value) =>
     mode === 'soldout' ||
+    (date === today && value.padStart(5, '0') <= nowKstTime()) ||
     minutes(value) + duration > 1200 ||
     bookings.some(
       (b) =>
@@ -61,11 +69,15 @@ export default function ReservationPage() {
     }
     setLoading(true);
     try {
-      createHold(id, date, time, true);
-      navigate(ROUTES.CHECKOUT);
+      const reservation = await createReservation({
+        treatmentId: service.treatmentId,
+        startsAt: toKstDateTime(date, time.padStart(5, '0')),
+        customerRequest: request.trim() || null,
+      });
+      // 새로고침해도 결제 화면이 서버에서 예약을 다시 불러올 수 있도록 예약 번호를 주소에 남긴다
+      navigate(`${ROUTES.CHECKOUT}?reservationId=${reservation.reservationId}`);
     } catch (err) {
       setError(err.message);
-    } finally {
       setLoading(false);
     }
   };
@@ -142,7 +154,7 @@ export default function ReservationPage() {
                   '-' +
                   String(day).padStart(2, '0');
                 const closed = new Date(year, month, day).getDay() === 0;
-                const past = value < '2025-10-22';
+                const past = value < today;
                 return (
                   <button
                     key={value}
@@ -158,13 +170,13 @@ export default function ReservationPage() {
                     }}
                   >
                     {day}
-                    <small>{dayLabel(closed, value === DEMO_DATE)}</small>
+                    <small>{dayLabel(closed)}</small>
                   </button>
                 );
               })}
             </div>
             <p className="b-help">
-              선택한 날짜: <strong className="b-pink">{date}</strong> · 시연 기준 2025년 10월
+              선택한 날짜: <strong className="b-pink">{date}</strong>
             </p>
           </Panel>
           <Panel as="section" padded>
@@ -268,6 +280,16 @@ export default function ReservationPage() {
               <dd>{money(service.original * 0.8)}</dd>
             </div>
           </dl>
+          <label className={styles.request}>
+            원장님께 남길 요청사항 (선택)
+            <textarea
+              rows="3"
+              maxLength={1000}
+              value={request}
+              onChange={(e) => setRequest(e.target.value)}
+            />
+          </label>
+          {!service.treatmentId && <Notice>시연용 시술이라 실제 예약을 요청할 수 없습니다.</Notice>}
           {error && (
             <Alert as="p" tone="error" role="alert">
               {error}
@@ -276,7 +298,9 @@ export default function ReservationPage() {
           <Button
             variant="primary"
             wide
-            disabled={loading || mode === 'loading' || !time || mode === 'soldout'}
+            disabled={
+              loading || mode === 'loading' || !time || mode === 'soldout' || !service.treatmentId
+            }
             onClick={handleNext}
           >
             {loading || mode === 'loading' ? '실시간 검증 중…' : '다음 (예약 가능 여부 확인)'}
@@ -290,7 +314,7 @@ export default function ReservationPage() {
           className="b-pink"
           to={generatePath(ROUTES.RESERVE, { id })}
           onClick={() => {
-            setDate(DEMO_DATE);
+            setDate(today);
             setTime(service.time);
           }}
         >

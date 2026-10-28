@@ -62,6 +62,15 @@ export const useReservationStore = create((set, get) => ({
     }
   },
 
+  // 예약 생성은 화면마다 따로 진행 상태를 보여주므로 결과만 돌려주고 store 상태는 바꾸지 않는다.
+  createReservation: async (request) => {
+    try {
+      return await reservationApi.createReservation(request);
+    } catch (error) {
+      throw toError(error);
+    }
+  },
+
   clearDetail: () =>
     set((state) => ({
       detail: null,

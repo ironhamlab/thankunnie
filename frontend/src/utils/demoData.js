@@ -22,9 +22,11 @@ const depositPayment = ({
   approvedAt,
   refundedAt,
 });
+// treatmentId: 실제 서버 시술 번호(docs/erd/02_init_data_dml.sql). 없는 시술은 예약 요청을 보낼 수 없는 시연용이다.
 export const SERVICES = [
   {
     id: 'nail',
+    treatmentId: 1,
     name: '젤 네일 원컬러 + 케어',
     shop: '살롱 드 르네',
     location: '강남역 도보 3분',
@@ -45,6 +47,7 @@ export const SERVICES = [
   },
   {
     id: 'hair',
+    treatmentId: 3,
     name: '시그니처 컷 & 두피 스케일링',
     shop: '헤어룸 바이 민',
     location: '홍대입구역 9번출구',
@@ -103,6 +106,7 @@ export const SERVICES = [
   },
   {
     id: 'art',
+    treatmentId: 2,
     name: '이달의 아트 (Design of Month)',
     shop: '글로우 네일',
     location: '판교역 1번출구',
@@ -123,6 +127,7 @@ export const SERVICES = [
   },
   {
     id: 'clinic',
+    treatmentId: 4,
     name: '뿌리염색 & 클리닉',
     shop: '리프레쉬 헤어',
     location: '잠실새내역 도보 5분',
