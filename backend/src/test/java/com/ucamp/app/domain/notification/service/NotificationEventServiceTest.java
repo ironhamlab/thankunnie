@@ -109,6 +109,23 @@ class NotificationEventServiceTest {
     }
 
     @Test
+    @DisplayName("같은 매장·시작 시각 OPEN이 여러 개여도 임박 이벤트는 한 번만 만든다")
+    void createImminentEvents_duplicateOpenStartsAt_createsOnce() {
+        LocalDateTime startsAt = NOW.plusHours(5);
+        openSlot(1L, startsAt, startsAt.plusHours(2));
+        openSlot(2L, startsAt, startsAt.plusHours(3));
+
+        int created = notificationEventService.createImminentEvents(NOW);
+
+        assertThat(created).isEqualTo(1);
+        assertThat(notificationEventRepository.count()).isEqualTo(1);
+        NotificationEvent event = notificationEventRepository.findAll().get(0);
+        assertThat(event.getEventType()).isEqualTo(NotificationEventType.IMMINENT);
+        assertThat(event.getExceptionId()).isEqualTo(1L);
+        assertThat(event.getSlotStartsAt()).isEqualTo(startsAt);
+    }
+
+    @Test
     @DisplayName("임박 구간 전, CLOSE 로 덮인 빈자리, 접수 마감된 빈자리, 비활성 매장은 임박 이벤트 대상이 아니다")
     void createImminentEvents_notSellable_createsNothing() {
         openSlot(1L, NOW.plusHours(8).plusMinutes(30), NOW.plusHours(10));
@@ -172,6 +189,23 @@ class NotificationEventServiceTest {
 
         assertThat(secondRun).isZero();
         assertThat(notificationEventRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("같은 매장·시작 시각 OPEN이 여러 개여도 초임박 이벤트는 한 번만 만든다")
+    void createLastMinuteEvents_duplicateOpenStartsAt_createsOnce() {
+        LocalDateTime startsAt = NOW.plusHours(2);
+        openSlot(1L, startsAt, startsAt.plusHours(2));
+        openSlot(2L, startsAt, startsAt.plusHours(3));
+
+        int created = notificationEventService.createLastMinuteEvents(NOW);
+
+        assertThat(created).isEqualTo(1);
+        assertThat(notificationEventRepository.count()).isEqualTo(1);
+        NotificationEvent event = notificationEventRepository.findAll().get(0);
+        assertThat(event.getEventType()).isEqualTo(NotificationEventType.LAST_MINUTE);
+        assertThat(event.getExceptionId()).isEqualTo(1L);
+        assertThat(event.getSlotStartsAt()).isEqualTo(startsAt);
     }
 
     @Test

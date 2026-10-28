@@ -2,7 +2,10 @@ package com.ucamp.app.domain.notification.service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -42,7 +45,9 @@ public class NotificationEventService {
     @Transactional
     public int createImminentEvents(LocalDateTime now) {
         // 조회가 이미 임박 이벤트가 없는 빈자리만 돌려준다. 예약 ID는 없다.
-        List<VacancySlot> slots = vacancySlotRepository.findImminentWithoutEvent(now);
+        // 같은 매장·시작 시각 OPEN이 여러 개면 UK에 맞춰 하나만 남긴다.
+        List<VacancySlot> slots = distinctByShopAndStartsAt(
+                vacancySlotRepository.findImminentWithoutEvent(now));
 
         for (VacancySlot slot : slots) {
             NotificationEvent event = NotificationEvent.builder()
@@ -67,7 +72,9 @@ public class NotificationEventService {
     @Transactional
     public int createLastMinuteEvents(LocalDateTime now) {
         // 조회가 이미 초임박 이벤트가 없는 빈자리만 돌려준다. 예약 ID는 없다.
-        List<VacancySlot> slots = vacancySlotRepository.findLastMinuteWithoutEvent(now);
+        // 같은 매장·시작 시각 OPEN이 여러 개면 UK에 맞춰 하나만 남긴다.
+        List<VacancySlot> slots = distinctByShopAndStartsAt(
+                vacancySlotRepository.findLastMinuteWithoutEvent(now));
 
         for (VacancySlot slot : slots) {
             NotificationEvent event = NotificationEvent.builder()
@@ -80,6 +87,21 @@ public class NotificationEventService {
             notificationEventRepository.save(event);
         }
         return slots.size();
+    }
+
+    /**
+     * 같은 매장·같은 시작 시각은 이벤트 UK가 하나라서, 조회에 여러 OPEN이 와도 첫 행만 남긴다.
+     * 조회가 EXCEPTION_ID 오름차순이라 보통 번호가 작은 OPEN이 남는다.
+     */
+    private static List<VacancySlot> distinctByShopAndStartsAt(List<VacancySlot> slots) {
+        Map<ShopStartsAt, VacancySlot> unique = new LinkedHashMap<>();
+        for (VacancySlot slot : slots) {
+            unique.putIfAbsent(new ShopStartsAt(slot.shopId(), slot.startsAt()), slot);
+        }
+        return new ArrayList<>(unique.values());
+    }
+
+    private record ShopStartsAt(Long shopId, LocalDateTime startsAt) {
     }
 
     /**
