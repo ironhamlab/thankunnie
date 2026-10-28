@@ -18,7 +18,11 @@ import com.ucamp.app.config.SecurityConfig;
 @WebMvcTest(controllers = AuthTestController.class)
 @Import({SecurityConfig.class, AuthTestController.class})
 @ActiveProfiles("prod")
-@TestPropertySource(properties = "app.cors.allowed-origins=http://localhost:5173")
+// prod 는 JWT_SECRET 이 없으면 기동하지 않으므로 테스트 전용 더미 키를 넣는다
+@TestPropertySource(properties = {
+        "app.cors.allowed-origins=http://localhost:5173",
+        "app.jwt.secret=CHANGE_ME-test-only-jwt-secret-000000"
+})
 class StubAuthFilterProdProfileTest {
 
     @Autowired
