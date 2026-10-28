@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -62,7 +63,70 @@ class NotificationDispatchRepositoryTest {
         assertThat(saved.getEventId()).isEqualTo(eventId);
         assertThat(saved.getUserId()).isEqualTo(USER_ID);
         assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.PENDING);
+        assertThat(saved.getFailReason()).isNull();
         assertThat(saved.getCreatedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("발송 완료로 바꾸면 SENT 이고 실패 사유는 비운다")
+    void markSent_clearsFailReason() {
+        NotificationDispatch saved = notificationDispatchRepository.saveAndFlush(dispatch(saveEvent(1L).getId(), USER_ID));
+        saved.markFailed("잠깐 실패");
+        notificationDispatchRepository.saveAndFlush(saved);
+
+        saved.markSent();
+        notificationDispatchRepository.saveAndFlush(saved);
+
+        NotificationDispatch found = notificationDispatchRepository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getStatus()).isEqualTo(NotificationDispatchStatus.SENT);
+        assertThat(found.getFailReason()).isNull();
+    }
+
+    @Test
+    @DisplayName("발송 실패로 바꾸면 FAILED 와 오류 사유를 남긴다")
+    void markFailed_savesFailReason() {
+        NotificationDispatch saved = notificationDispatchRepository.saveAndFlush(dispatch(saveEvent(1L).getId(), USER_ID));
+
+        saved.markFailed("수신번호 형식 오류");
+        notificationDispatchRepository.saveAndFlush(saved);
+
+        NotificationDispatch found = notificationDispatchRepository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getStatus()).isEqualTo(NotificationDispatchStatus.FAILED);
+        assertThat(found.getFailReason()).isEqualTo("수신번호 형식 오류");
+    }
+
+    @Test
+    @DisplayName("결과 불명으로 바꾸면 UNKNOWN 과 확인이 필요한 사유를 남긴다")
+    void markUnknown_savesFailReason() {
+        NotificationDispatch saved = notificationDispatchRepository.saveAndFlush(dispatch(saveEvent(1L).getId(), USER_ID));
+
+        saved.markUnknown("문자 API 응답 시간 초과");
+        notificationDispatchRepository.saveAndFlush(saved);
+
+        NotificationDispatch found = notificationDispatchRepository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getStatus()).isEqualTo(NotificationDispatchStatus.UNKNOWN);
+        assertThat(found.getFailReason()).isEqualTo("문자 API 응답 시간 초과");
+    }
+
+    @Test
+    @DisplayName("같은 이벤트·회원에 SENT 또는 UNKNOWN 이 있는지 확인할 수 있다")
+    void existsByEventIdAndUserIdAndStatusIn_sentOrUnknown() {
+        long eventId = saveEvent(1L).getId();
+        NotificationDispatch saved = notificationDispatchRepository.saveAndFlush(dispatch(eventId, USER_ID));
+
+        assertThat(notificationDispatchRepository.existsByEventIdAndUserIdAndStatusIn(
+                eventId, USER_ID, EnumSet.of(NotificationDispatchStatus.SENT, NotificationDispatchStatus.UNKNOWN)))
+                .isFalse();
+
+        saved.markSent();
+        notificationDispatchRepository.saveAndFlush(saved);
+
+        assertThat(notificationDispatchRepository.existsByEventIdAndUserIdAndStatusIn(
+                eventId, USER_ID, EnumSet.of(NotificationDispatchStatus.SENT, NotificationDispatchStatus.UNKNOWN)))
+                .isTrue();
+        assertThat(notificationDispatchRepository.existsByEventIdAndUserIdAndStatusIn(
+                eventId, OTHER_USER_ID, EnumSet.of(NotificationDispatchStatus.SENT, NotificationDispatchStatus.UNKNOWN)))
+                .isFalse();
     }
 
     @Test

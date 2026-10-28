@@ -80,6 +80,22 @@ public class AvailabilityService {
         }
     }
 
+    /**
+     * 고객이 지금 이 시각에 시술을 예약할 수 있는지 판단한다 (F: 알림 재공개·임박 판단용).
+     * validateAvailable 과 같은 기준(클릭 마감·30분 단위·60일 + 영업시간·열기 안 + 닫기·예약과 안 겹침)이고,
+     * 예외 대신 true/false 로 알려준다. 매장을 잠그지 않으므로 판단 직후 다른 예약이 들어올 수 있다.
+     */
+    public boolean isAvailable(Long shopId, LocalDateTime startsAt, int durationMinutes) {
+        requirePositive(durationMinutes);
+        LocalDateTime now = LocalDateTime.now(clock);
+        if (!SalePolicy.isBookable(startsAt, now)) {
+            return false;
+        }
+        TimeRange range = new TimeRange(startsAt, startsAt.plusMinutes(durationMinutes));
+        Schedule schedule = loadSchedule(shopId, range.start(), range.end(), now);
+        return AvailabilityCalculator.isFree(range, schedule.openRanges(), schedule.blockedRanges());
+    }
+
     // 시술 데이터가 잘못돼 0분 이하가 오면 구간을 만들 수 없어 500 이 되므로 업무 오류로 바꾼다
     private static void requirePositive(int durationMinutes) {
         if (durationMinutes <= 0) {

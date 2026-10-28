@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.notification.repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,6 +25,18 @@ public interface NotificationDispatchRepository extends JpaRepository<Notificati
      * @return 이미 있으면 true
      */
     boolean existsByEventIdAndUserId(Long eventId, Long userId);
+
+    /**
+     * 같은 이벤트·회원에 지정한 상태(예: SENT, UNKNOWN) 줄이 있는지 확인한다.
+     * 이미 성공했거나 결과 불명이면 다시 보내지 않을 때 쓴다.
+     *
+     * @param eventId  알림 이벤트 ID
+     * @param userId   회원 ID
+     * @param statuses 찾을 상태들
+     * @return 하나라도 있으면 true
+     */
+    boolean existsByEventIdAndUserIdAndStatusIn(
+            Long eventId, Long userId, Collection<NotificationDispatchStatus> statuses);
 
     /**
      * 해당 상태의 작업 중 ID가 가장 작은 하나를 조회한다.

@@ -8,6 +8,8 @@ import java.time.temporal.ChronoUnit;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import com.ucamp.app.domain.notification.entity.SubscriptionType;
 
 /**
@@ -20,12 +22,31 @@ import com.ucamp.app.domain.notification.entity.SubscriptionType;
  * @param startTime        알림 희망 시작 시각
  * @param endTime          알림 희망 종료 시각
  */
+@Schema(
+        name = "NotificationSubscriptionCreateRequest",
+        example = """
+                {
+                  "subscriptionType": "STORE",
+                  "shopId": 1,
+                  "categoryId": null,
+                  "regionCode": null,
+                  "startTime": "2026-10-28T10:00:00+09:00",
+                  "endTime": "2026-10-30T22:00:00+09:00"
+                }
+                """)
 public record NotificationSubscriptionCreateRequest(
+        @Schema(description = "STORE 또는 CATEGORY_REGION", example = "STORE")
         @NotNull SubscriptionType subscriptionType,
+        @Schema(description = "매장 ID. STORE 일 때만", example = "1", nullable = true)
         Long shopId,
+        @Schema(description = "카테고리 ID. CATEGORY_REGION 일 때만", nullable = true)
         Long categoryId,
+        @Schema(description = "지역코드. CATEGORY_REGION 일 때만", nullable = true)
         @Size(max = 20) String regionCode,
+        @Schema(description = "알림 희망 시작", example = "2026-10-28T10:00:00+09:00")
         @NotNull OffsetDateTime startTime,
+        @Schema(description = "알림 희망 종료. 시작보다 뒤이고 아직 지나지 않아야 함",
+                example = "2026-10-30T22:00:00+09:00")
         @NotNull OffsetDateTime endTime) {
 
     private static final ZoneId ZONE_SEOUL = ZoneId.of("Asia/Seoul");
