@@ -15,6 +15,49 @@ import styles from './CheckoutPage.module.css';
 const EXPIRED_MESSAGE = '임시 확보 시간이 만료되었습니다. 시간을 다시 선택해 주세요.';
 
 /**
+ * 예약을 불러오지 못했을 때 안내. 다시 불러와도 결과가 같은 경우(없는 예약·남의 예약, 로그인 필요)는
+ * 다시 불러오기 대신 갈 곳을 보여준다.
+ */
+function LoadFailed({ error, onRetry }) {
+  if (error.code === 'COMMON_404' || error.code === 'COMMON_403') {
+    return (
+      <EmptyState className="b-container">
+        <h1>예약을 찾을 수 없습니다</h1>
+        <p>이미 만료됐거나 잘못된 주소일 수 있어요.</p>
+        <div className="b-flex b-center">
+          <Button as={Link} variant="primary" to={ROUTES.HOME}>
+            빈자리 탐색
+          </Button>
+          <Button as={Link} to={ROUTES.MY_RESERVATIONS}>
+            내 예약 보기
+          </Button>
+        </div>
+      </EmptyState>
+    );
+  }
+  if (error.code === 'COMMON_401') {
+    return (
+      <EmptyState className="b-container">
+        <h1>로그인이 필요합니다</h1>
+        <p>예약 정보는 예약한 고객 계정으로 로그인해야 볼 수 있어요.</p>
+        <Button as={Link} variant="primary" to={ROUTES.LOGIN}>
+          로그인
+        </Button>
+      </EmptyState>
+    );
+  }
+  return (
+    <EmptyState className="b-container">
+      <h1>예약 정보를 불러오지 못했습니다</h1>
+      <Alert as="p" tone="error" role="alert">
+        {error.message}
+      </Alert>
+      <Button onClick={onRetry}>다시 불러오기</Button>
+    </EmptyState>
+  );
+}
+
+/**
  * 예약금 결제 화면. 주소의 reservationId 로 서버에서 점유(HOLD) 중인 예약을 불러온다.
  * 남은 시간·금액은 서버 값(holdExpiresAt, appliedPrice, deposit)으로 보여준다.
  */
@@ -62,15 +105,7 @@ export default function CheckoutPage() {
     );
   }
   if (status === 'failed') {
-    return (
-      <EmptyState className="b-container">
-        <h1>예약 정보를 불러오지 못했습니다</h1>
-        <Alert as="p" tone="error" role="alert">
-          {loadError.message}
-        </Alert>
-        <Button onClick={() => loadReservation('my', reservationId)}>다시 불러오기</Button>
-      </EmptyState>
-    );
+    return <LoadFailed error={loadError} onRetry={() => loadReservation('my', reservationId)} />;
   }
 
   const { summary, holdExpiresAt, customerPhone, customerRequest } = detail;
