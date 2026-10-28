@@ -26,6 +26,15 @@
   border-radius: 8px;
   font-size: 11px;
 }
+/* 카카오맵 오버레이 안의 핀은 오버레이 위치를 따르므로 절대 배치를 풀어준다 */
+.b-kakao-pin {
+  position: static;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.b-vacancy-map .b-map-detail {
+  z-index: 2;
+}
 .b-vacancy-map .b-map-detail .b-button {
   margin-top: 16px;
   display: flex;

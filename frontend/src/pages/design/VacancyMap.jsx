@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { generatePath, Link } from 'react-router-dom';
+import KakaoMap from '@/components/map/KakaoMap';
 import { DESIGN_ROUTES as R } from '@/constants/designRoutes';
 import MapArtwork from './MapArtwork';
 import Asset from './Asset';
@@ -14,13 +15,62 @@ const PIN_POSITIONS = {
   clinic: [61, 80],
 };
 const DEFAULT_PIN_POSITION = [50, 50];
+// 아래쪽 상세 패널에 핀이 가리지 않도록 범위를 맞출 때 아래 여백을 넓게 둔다
+const MAP_BOUNDS_PADDING = { top: 60, right: 70, bottom: 200, left: 50 };
 
 export default function VacancyMap({ services }) {
   const [selectedId, setSelectedId] = useState(null);
-  const [zoom, setZoom] = useState(1);
   const selected = services.find((service) => service.id === selectedId) || services[0];
+  // 좌표가 있는 빈자리만 카카오맵에 표시한다
+  const markers = useMemo(
+    () =>
+      services
+        .filter((service) => service.lat != null && service.lng != null)
+        .map((service) => ({
+          id: service.id,
+          lat: service.lat,
+          lng: service.lng,
+          label: money(service.price),
+          ariaLabel: `${service.shop} ${money(service.price)}`,
+        })),
+    [services],
+  );
   return (
-    <section className="b-map b-vacancy-map" aria-label="빈자리 예시 지도">
+    <section className="b-map b-vacancy-map" aria-label="빈자리 지도">
+      <KakaoMap
+        markers={markers}
+        selectedId={selected.id}
+        onSelect={setSelectedId}
+        markerClassName="b-map-pin b-kakao-pin"
+        boundsPadding={MAP_BOUNDS_PADDING}
+        fallback={
+          <ExampleMap services={services} selectedId={selected.id} onSelect={setSelectedId} />
+        }
+      />
+      <div className="b-map-detail b-panel">
+        <div className="b-flex">
+          <Asset name={selected.image} className="b-map-thumb" alt={selected.shop} />
+          <div>
+            <h2>{selected.shop}</h2>
+            <p>
+              {selected.location} · {selected.time}
+            </p>
+            <strong>{money(selected.price)}</strong>
+          </div>
+        </div>
+        <Link className="b-button b-primary" to={generatePath(R.DETAIL, { id: selected.id })}>
+          선택한 빈자리 확인
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+// 카카오맵 키가 없거나 SDK를 불러오지 못할 때 보여주는 예시 지도
+function ExampleMap({ services, selectedId, onSelect }) {
+  const [zoom, setZoom] = useState(1);
+  return (
+    <>
       <div className="b-map-canvas" style={{ transform: `scale(${zoom})` }}>
         <MapArtwork />
         {services.map((service) => {
@@ -30,14 +80,14 @@ export default function VacancyMap({ services }) {
           return (
             <button
               key={service.id}
-              className={`b-map-pin ${selected.id === service.id ? 'is-selected' : ''}`}
+              className={`b-map-pin ${selectedId === service.id ? 'is-selected' : ''}`}
               style={{
                 left: `${left}%`,
                 top: `${top}%`,
               }}
               aria-label={`${service.shop} ${money(service.price)}`}
-              aria-pressed={selected.id === service.id}
-              onClick={() => setSelectedId(service.id)}
+              aria-pressed={selectedId === service.id}
+              onClick={() => onSelect(service.id)}
             >
               {money(service.price)}
             </button>
@@ -61,21 +111,6 @@ export default function VacancyMap({ services }) {
           −
         </button>
       </div>
-      <div className="b-map-detail b-panel">
-        <div className="b-flex">
-          <Asset name={selected.image} className="b-map-thumb" alt={selected.shop} />
-          <div>
-            <h2>{selected.shop}</h2>
-            <p>
-              {selected.location} · {selected.time}
-            </p>
-            <strong>{money(selected.price)}</strong>
-          </div>
-        </div>
-        <Link className="b-button b-primary" to={generatePath(R.DETAIL, { id: selected.id })}>
-          선택한 빈자리 확인
-        </Link>
-      </div>
-    </section>
+    </>
   );
 }
