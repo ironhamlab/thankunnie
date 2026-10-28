@@ -40,6 +40,11 @@ app:
   cors:
     # 쉼표로 여러 Origin 지정 가능
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  jwt:
+    # HS256 서명 키(32바이트 이상). 기본값은 로컬·테스트 전용 더미이며, prod 는 JWT_SECRET 이 없으면 기동하지 않는다
+    secret: ${JWT_SECRET:CHANGE_ME-local-dev-only-jwt-secret-0000}
+    # ISO-8601 기간. 리프레시 토큰 없이 하루 유지한다
+    access-token-validity: ${JWT_ACCESS_TOKEN_VALIDITY:PT24H}
 
 iamport:
   base-url: https://api.iamport.kr

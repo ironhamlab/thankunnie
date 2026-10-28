@@ -31,6 +31,10 @@ app:
     directory: ${user.home}/.thankunnie/shop-images
   cors:
     allowed-origins: http://localhost:5173
+  jwt:
+    # 생략하면 application.yml 의 로컬 전용 더미 키를 쓴다. 바꾸려면 32바이트 이상으로 직접 입력
+    # secret: CHANGE_ME
+    access-token-validity: PT24H
   scheduling:
     # 임박 알림 감지·이미지 삭제 실패 재시도 등 주기 작업. 생략하면 true
     enabled: true
