@@ -47,6 +47,7 @@ class ShopPersistenceTest {
                 VALUES (9001, 9001, 'CHANGE_ME', 'CHANGE_ME', '기존 매장', '11680',
                     '서울', 37.5, 127.0, '02-000-0000', 'ACTIVE', ?, ?)
                 """, LocalDateTime.of(2026, 10, 23, 12, 0), LocalDateTime.of(2026, 10, 23, 12, 0));
+        jdbc.update("UPDATE SHOP SET IMAGE_URL = '/existing-image.png' WHERE SHOP_ID = 9001");
         AuthUser owner = new AuthUser(9001L, UserRole.OWNER, 9001L);
         ShopUpdateRequest request = new ShopUpdateRequest(9001L, "변경 매장", "11680", "변경 주소", "2층",
                 new BigDecimal("37.1234567"), new BigDecimal("127.1234567"), "02-000-0000",
@@ -62,6 +63,7 @@ class ShopPersistenceTest {
         assertThat(result.latitude()).isEqualByComparingTo("37.1234567");
         assertThat(result.longitude()).isEqualByComparingTo("127.1234567");
         assertThat(result.notice()).isEqualTo("공지");
+        assertThat(result.imageUrl()).isEqualTo("/existing-image.png");
         assertThat(jdbc.queryForObject("SELECT LOGIN_ID FROM SHOP WHERE SHOP_ID = 9001", String.class))
                 .isEqualTo("CHANGE_ME");
         assertThat(jdbc.queryForObject("SELECT PASSWORD_HASH FROM SHOP WHERE SHOP_ID = 9001", String.class))

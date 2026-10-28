@@ -10,11 +10,11 @@ import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.domain.cancel.dto.response.CancelResultResponse;
 import com.ucamp.app.domain.cancel.entity.ReservationCancel;
-import com.ucamp.app.domain.cancel.repository.CancelReservationRepository;
-import com.ucamp.app.domain.cancel.repository.CancelScheduleExceptionRepository;
 import com.ucamp.app.domain.cancel.repository.ReservationCancelRepository;
 import com.ucamp.app.domain.notification.event.SlotReopenedEvent;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
+import com.ucamp.app.domain.reservation.repository.ReservationRepository;
+import com.ucamp.app.domain.schedule.repository.ShopScheduleExceptionRepository;
 
 /**
  * 결제 취소 결과 반영 (E-06·E-07). 결제 취소(PG 호출)가 끝난 뒤 별도 트랜잭션으로 취소·예약 상태를 바꾼다.
@@ -24,18 +24,18 @@ import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 public class CancelResultService {
 
     private final ReservationCancelRepository reservationCancelRepository;
-    private final CancelReservationRepository cancelReservationRepository;
-    private final CancelScheduleExceptionRepository cancelScheduleExceptionRepository;
+    private final ReservationRepository reservationRepository;
+    private final ShopScheduleExceptionRepository shopScheduleExceptionRepository;
     private final GraceCancelUsageService graceCancelUsageService;
     private final ApplicationEventPublisher eventPublisher;
 
     public CancelResultService(ReservationCancelRepository reservationCancelRepository,
-            CancelReservationRepository cancelReservationRepository,
-            CancelScheduleExceptionRepository cancelScheduleExceptionRepository,
+            ReservationRepository reservationRepository,
+            ShopScheduleExceptionRepository shopScheduleExceptionRepository,
             GraceCancelUsageService graceCancelUsageService, ApplicationEventPublisher eventPublisher) {
         this.reservationCancelRepository = reservationCancelRepository;
-        this.cancelReservationRepository = cancelReservationRepository;
-        this.cancelScheduleExceptionRepository = cancelScheduleExceptionRepository;
+        this.reservationRepository = reservationRepository;
+        this.shopScheduleExceptionRepository = shopScheduleExceptionRepository;
         this.graceCancelUsageService = graceCancelUsageService;
         this.eventPublisher = eventPublisher;
     }
@@ -50,7 +50,7 @@ public class CancelResultService {
         ReservationCancel cancel = find(cancelId);
         cancel.complete(null, now);
         changeReservationStatus(cancel, ReservationStatus.CANCELLED, now);
-        if (!cancelScheduleExceptionRepository.existsByReservationId(cancel.getReservationId())) {
+        if (!shopScheduleExceptionRepository.existsByReservationId(cancel.getReservationId())) {
             eventPublisher.publishEvent(new SlotReopenedEvent(cancel.getReservationId()));
         }
         return CancelResultResponse.of(cancel, ReservationStatus.CANCELLED);
@@ -65,7 +65,7 @@ public class CancelResultService {
         ReservationCancel cancel = find(cancelId);
         cancel.fail();
         graceCancelUsageService.release(cancelId);
-        cancelScheduleExceptionRepository.deleteByReservationId(cancel.getReservationId());
+        shopScheduleExceptionRepository.deleteByReservationId(cancel.getReservationId());
         changeReservationStatus(cancel, ReservationStatus.CONFIRMED, now);
     }
 
@@ -86,7 +86,7 @@ public class CancelResultService {
 
     // 취소 접수에서 CANCEL_PENDING 으로 바꿔 두었으므로, 다른 상태면 데이터가 어긋난 것이다
     private void changeReservationStatus(ReservationCancel cancel, ReservationStatus to, LocalDateTime now) {
-        int changed = cancelReservationRepository.changeStatus(cancel.getReservationId(),
+        int changed = reservationRepository.changeStatus(cancel.getReservationId(),
                 ReservationStatus.CANCEL_PENDING, to, now);
         if (changed == 0) {
             throw new IllegalStateException("예약 " + cancel.getReservationId() + " 이 취소 처리 중 상태가 아닙니다");

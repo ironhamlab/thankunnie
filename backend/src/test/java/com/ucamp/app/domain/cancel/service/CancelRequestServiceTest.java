@@ -26,8 +26,8 @@ import com.ucamp.app.domain.cancel.dto.request.OwnerCancelRequest;
 import com.ucamp.app.domain.cancel.entity.CancelStatus;
 import com.ucamp.app.domain.cancel.entity.CancelType;
 import com.ucamp.app.domain.cancel.entity.ReservationCancel;
-import com.ucamp.app.domain.cancel.repository.CancelScheduleExceptionRepository;
 import com.ucamp.app.domain.cancel.repository.ReservationCancelRepository;
+import com.ucamp.app.domain.schedule.repository.ShopScheduleExceptionRepository;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -52,7 +52,7 @@ class CancelRequestServiceTest {
     private ReservationCancelRepository reservationCancelRepository;
 
     @Autowired
-    private CancelScheduleExceptionRepository cancelScheduleExceptionRepository;
+    private ShopScheduleExceptionRepository shopScheduleExceptionRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -160,7 +160,7 @@ class CancelRequestServiceTest {
         assertThat(cancel.getCancelType()).isEqualTo(CancelType.SHOP_FAULT);
         assertThat(cancel.getUserId()).isEqualTo(CancelFixture.CUSTOMER_ID);
         assertThat(graceCancelUsageService.isUsed(CancelFixture.CUSTOMER_ID, NOW.toLocalDate())).isFalse();
-        assertThat(cancelScheduleExceptionRepository.existsByReservationId(100L)).isTrue();
+        assertThat(shopScheduleExceptionRepository.existsByReservationId(100L)).isTrue();
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*) FROM SHOP_SCHEDULE_EXCEPTION
                 WHERE RESERVATION_ID = 100 AND SHOP_ID = 1 AND EXCEPTION_TYPE = 'CLOSE'
@@ -177,7 +177,7 @@ class CancelRequestServiceTest {
                 new OwnerCancelRequest(CancelType.SHOP_FAULT, null, false, null), NOW);
 
         assertThat(accepted.closed()).isFalse();
-        assertThat(cancelScheduleExceptionRepository.existsByReservationId(100L)).isFalse();
+        assertThat(shopScheduleExceptionRepository.existsByReservationId(100L)).isFalse();
     }
 
     @Test

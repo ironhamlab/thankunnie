@@ -1,0 +1,99 @@
+.root {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  background: white;
+  border-right: 1px solid var(--color-border);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.brand {
+  display: flex;
+  flex-direction: column;
+  padding-left: 8px;
+}
+.brand strong {
+  color: var(--color-primary);
+  font-size: 22px;
+}
+.brand small {
+  color: var(--color-text-secondary);
+}
+.shop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+}
+.shop img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+.shop small {
+  display: block;
+}
+.root nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.root nav a,
+.bottom a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+}
+.root a:global(.active) {
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+.bottom {
+  margin-top: auto;
+  font-size: 12px;
+}
+.bottom small {
+  display: block;
+  color: var(--color-text-muted);
+  margin-top: 16px;
+  text-align: center;
+}
+@media (max-width: 900px) {
+  .root {
+    position: static;
+    height: auto;
+    padding: 16px 24px;
+    gap: 16px;
+  }
+  .root nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .root .shop,
+  .root .bottom,
+  .root > :global(.b-button) {
+    display: none;
+  }
+  .brand {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+}
+@media (max-width: 540px) {
+  .root nav a {
+    padding: 8px;
+    font-size: 12px;
+  }
+}

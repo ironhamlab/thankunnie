@@ -23,12 +23,12 @@ import com.ucamp.app.domain.cancel.dto.response.CancelResultResponse;
 import com.ucamp.app.domain.cancel.entity.CancelStatus;
 import com.ucamp.app.domain.cancel.entity.CancelType;
 import com.ucamp.app.domain.cancel.entity.ReservationCancel;
-import com.ucamp.app.domain.cancel.repository.CancelScheduleExceptionRepository;
 import com.ucamp.app.domain.cancel.repository.ReservationCancelRepository;
 import com.ucamp.app.domain.notification.event.SlotReopenedEvent;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
 import com.ucamp.app.domain.schedule.entity.ShopScheduleException;
+import com.ucamp.app.domain.schedule.repository.ShopScheduleExceptionRepository;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -50,7 +50,7 @@ class CancelResultServiceTest {
     private ReservationCancelRepository reservationCancelRepository;
 
     @Autowired
-    private CancelScheduleExceptionRepository cancelScheduleExceptionRepository;
+    private ShopScheduleExceptionRepository shopScheduleExceptionRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -112,7 +112,7 @@ class CancelResultServiceTest {
 
         cancelResultService.fail(cancel.getId(), NOW.plusSeconds(3));
 
-        assertThat(cancelScheduleExceptionRepository.existsByReservationId(100L)).isFalse();
+        assertThat(shopScheduleExceptionRepository.existsByReservationId(100L)).isFalse();
         assertThat(applicationEvents.stream(SlotReopenedEvent.class)).isEmpty();
     }
 
@@ -148,7 +148,7 @@ class CancelResultServiceTest {
     }
 
     private void saveClose() {
-        cancelScheduleExceptionRepository.save(ShopScheduleException.builder()
+        shopScheduleExceptionRepository.save(ShopScheduleException.builder()
                 .shopId(CancelFixture.SHOP_ID)
                 .reservationId(100L)
                 .exceptionType(ScheduleExceptionType.CLOSE)
