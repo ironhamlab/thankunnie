@@ -106,11 +106,8 @@
 A-06은 기존 목적·참여 조건·촬영 안내 컬럼을 사용하므로 추가 스키마 변경과 마이그레이션은 없다.
 
 새 DB는 `docs/erd/01_schema_ddl.sql`을 사용한다.
-기존 Oracle 21c XE에는 아래 SQL 파일을 적용해야 한다.
-
-`docs/erd/migrations/UNNIE-32-treatment-category.sql`
-
-SQL은 CATEGORY_ID를 추가하고 기존 시술을 소속 매장의 카테고리로 채운 뒤 NOT NULL과 FK를 적용한다.
+기존 Oracle 21c XE의 `TREATMENT.CATEGORY_ID`가 없는 스키마에는 컬럼 추가, 기존 시술 값 채우기,
+NOT NULL 및 FK 적용이 필요하다. 적용 SQL과 순서는 관련 PR 본문에 기록한다.
 카테고리 마스터는 기존 CATEGORY를 공유하고 선택값은 시술별로 저장한다.
 Oracle에서 실제 적용한 결과는 별도 검증이 필요하다.
 
