@@ -1,8 +1,8 @@
 # A-01 메인 노출 기준 및 탐색 API 계약
 
-상태: **C 확정 계약 반영 · 실제 API 및 화면 연결은 담당자 구현 필요** · 갱신일: 2026-10-28 · 관련 이슈: UNNIE-121
+상태: **C 확정 계약 및 프런트 목록·지도 연결 반영 · 백엔드 통합 확인 필요** · 갱신일: 2026-10-28 · 관련 이슈: UNNIE-121
 
-메인 목록은 [C 빈자리 탐색·지도 API 계약](C-01-vacancy-search.md)을 사용한다. 기존 `/api/v1/items`와 8개 필드 제안은 아래 계약으로 대체한다. 이 문서 변경은 서버 응답 또는 화면 연결 구현 완료를 의미하지 않는다.
+메인 목록은 [C 빈자리 탐색·지도 API 계약](C-01-vacancy-search.md)을 사용한다. 기존 `/api/v1/items`와 8개 필드 제안은 아래 계약으로 대체한다. 프런트 구현 범위와 남은 연동 작업은 마지막 절을 참조한다.
 
 ## 1. 담당 범위
 
@@ -11,7 +11,7 @@
 | A-03 | 주소 선택·변경 시 좌표 변환 후 매장 프로필 저장 요청에 포함 |
 | C 백엔드 | 탐색 조회·응답 DTO에 매장명, 가격, 좌표 포함. B의 가용 시간·가격 정책 재사용 |
 | C 프런트 | 현재 홈·검색 화면 API 연결, 카드 필드 매핑, 지도 마커 연결 |
-| UNNIE-121 | 기존 A-01 문서를 C 계약에 맞추고 매장 좌표 저장부터 목록·지도까지 전달 규칙 명시 |
+| UNNIE-121 | A-01 계약 정리 및 현재 홈·검색의 실제 API 호출·응답 처리·지도 연결 |
 
 메인 전용 API를 추가하지 않는다. 서버의 필터·정렬·페이지 결과를 그대로 표시한다. 현재 브랜치에서 제거된 과거 MainPage·useMainStore 구조를 복원하지 않는다.
 
@@ -94,7 +94,7 @@ GET /api/v1/explore/vacancies?closingWithinHours=24&sort=START_ASC&page=0&size=6
 ## 5. 카드·지도 연결 규칙
 
 - 업무 API 호출은 컴포넌트 → Zustand store 액션 → api 모듈 → axiosInstance를 거친다.
-- 현재 VacancyMap은 데모 service.lat/lng, service.shop, service.price를 사용한다. 실제 C 응답 연결 시 latitude/longitude, shopName, salePrice를 화면에 매핑해야 한다.
+- VacancyMap은 C 응답의 latitude/longitude, shopName, salePrice를 사용한다. 기존 데모 service.lat/lng 필드는 사용하지 않는다.
 - KakaoMap의 마커 입력은 `{ id, lat, lng, label, ariaLabel }`이다. 좌표는 `lat: item.latitude`, `lng: item.longitude`로 전달한다. 위도 0·경도 0도 유효하므로 truthy 검사로 제외하지 않는다.
 - 홈 목록의 보조 지도는 vacancyId로 빈자리를 구분한다. 별도 /map 화면의 매장당 마커 1개·최저가 표시는 C-02 GET /api/v1/explore/shops를 사용한다. 두 화면의 마커 집계 기준을 혼용하지 않는다.
 - 목록이 비면 빈 결과 안내를 표시하며 선택 카드의 속성을 읽지 않는다. 실패를 빈 결과로 표시하지 않고 재시도 동작을 제공한다.
@@ -115,3 +115,7 @@ GET /api/v1/explore/vacancies?closingWithinHours=24&sort=START_ASC&page=0&size=6
 - [ ] 로딩·빈 목록·오류·재시도와 지도 SDK 실패 시 목록 대체 표시를 확인한다.
 
 과거 문서에 기록된 MainPage·useMainStore·frontend/MAIN-INTEGRATION.md 및 관련 테스트 파일은 현재 브랜치에서 제거되어 있다. 과거 실행 기록을 현재 구현의 검증 결과로 사용하지 않는다.
+
+## UNNIE-121 프런트 구현
+
+현재 홈의 오늘·마감 임박 영역과 검색 목록은 exploreApi → useExploreStore로 C-01을 호출한다. VacancyMap은 응답 latitude/longitude를 마커 lat/lng로 매핑한다. 데모 목록·고정 핀을 사용하지 않으며 오류·빈 결과·재시도·페이지 이동을 처리한다. 백엔드 C-01 구현은 feature/be/38-vacancy-search-api에 있으므로 해당 구현 통합이 필요하다. A-03 주소 검색·저장 화면 연결과 C-03 상세 연결은 이번 프런트 목록 작업에 포함하지 않는다.

@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { generatePath, Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { SERVICES, money } from '@/utils/demoData';
-import Asset from '@/components/common/Asset';
+import { todayKst } from '@/utils/scheduleDate';
+import VacancyResults from './components/VacancyResults';
 import Dialog from '@/components/common/Dialog';
 import VacancySearch from '@/pages/home/components/VacancySearch';
-import HomeBeautyMap from '@/pages/home/components/HomeBeautyMap';
+
 import Button from '@/components/common/Button';
 import '@/assets/styles/home-redesign.css';
 import styles from './HomePage.module.css';
@@ -19,10 +19,25 @@ const CATEGORIES = [
     badge: '재료비 지원',
     model: true,
   },
-  { title: '네일', text: '젤원컬러, 이달의아트, 패디', icon: 'brush', badge: '18개 샵 오픈' },
-  { title: '헤어', text: '커트, 두피스케일링, 염색', icon: 'content_cut', badge: '12개 샵 오픈' },
-  { title: '속눈썹', text: '속눈썹 펌, 블랙틴팅, 연장', icon: 'visibility', badge: '9개 샵 오픈' },
-  { title: '피부관리', text: '수분 진정 퀵 페이셜, 윤곽', icon: 'spa', badge: '15개 샵 오픈' },
+  { title: '네일', text: '젤원컬러, 이달의아트, 패디', icon: 'brush', badge: '네일 빈자리 찾기' },
+  {
+    title: '헤어',
+    text: '커트, 두피스케일링, 염색',
+    icon: 'content_cut',
+    badge: '헤어 빈자리 찾기',
+  },
+  {
+    title: '속눈썹',
+    text: '속눈썹 펌, 블랙틴팅, 연장',
+    icon: 'visibility',
+    badge: '속눈썹 빈자리 찾기',
+  },
+  {
+    title: '피부관리',
+    text: '수분 진정 퀵 페이셜, 윤곽',
+    icon: 'spa',
+    badge: '피부관리 빈자리 찾기',
+  },
 ];
 const SLIDES = [
   {
@@ -33,7 +48,7 @@ const SLIDES = [
     end: '를 찾아보세요',
     description:
       '원하는 날짜와 지역의 빈자리를 찾고, 오늘의 할인 자리는 타임세일로 최대 40% 모아보세요.',
-    badge: '오늘의 빈자리 32개 오픈',
+    badge: '오늘 예약 가능한 빈자리',
   },
   {
     tag: '신규 혜택',
@@ -54,26 +69,26 @@ const SLIDES = [
     badge: '취소 빈자리 모아보기',
   },
 ];
-const RECOMMENDATIONS = ['nail', 'facial', 'hair'].map((id) => SERVICES.find((s) => s.id === id));
-const DEMO_REMAINING = { nail: '00:39:42', facial: '01:09:18', hair: '02:08:45' };
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const [params] = useSearchParams();
   const [slideIndex, setSlideIndex] = useState(0);
   const [modelOpen, setModelOpen] = useState(false);
   const [category, setCategory] = useState('전체');
   const slide = SLIDES[slideIndex];
   if (params.has('view') || params.has('sale') || params.has('search')) return <VacancySearch />;
-  const results =
-    category === '전체' || category === '오늘 임박'
-      ? RECOMMENDATIONS
-      : SERVICES.filter((s) => s.category === category);
+  const today = todayKst();
   const chooseCategory = (item) => {
     if (item.model) {
       setModelOpen(true);
       return;
     }
     setCategory(item.title);
+    if (!item.sale) {
+      navigate(`${ROUTES.HOME}?view=list&search=${encodeURIComponent(item.title)}`);
+      return;
+    }
     document.getElementById('home-deals').scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   return (
@@ -103,8 +118,8 @@ export default function HomePage() {
           <aside className={styles.demo}>
             <b>ⓘ</b>
             <p>
-              <strong>※ MVP 모의 데모:</strong> 본 화면의 데이터는 실시간 결제 없는
-              시뮬레이션입니다.
+              <strong>예약 안내:</strong> 목록의 가격과 예약 가능 여부는 예약 시점에 다시
+              확인합니다.
             </p>
           </aside>
         </div>
@@ -158,14 +173,21 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-        <HomeBeautyMap services={RECOMMENDATIONS} />
+        <div>
+          <h2>오늘의 빈자리 지도</h2>
+          <VacancyResults
+            sectionKey="home-today"
+            params={{ startDate: today, endDate: today, sort: 'START_ASC', size: 6 }}
+            mapView
+          />
+        </div>
       </section>
       <section id="home-deals" className="home-deals">
         <div className={styles.sectionHeading}>
           <div>
             <h2>
               {category === '전체' || category === '오늘 임박'
-                ? '오늘의 실시간 타임세일 & 빈자리'
+                ? '24시간 내 마감하는 빈자리'
                 : `${category} 예약 가능한 빈자리`}{' '}
               <em>◷</em>
             </h2>
@@ -173,55 +195,10 @@ export default function HomePage() {
           </div>
           <Link to={`${ROUTES.HOME}?view=list`}>전체보기 ›</Link>
         </div>
-        <div className={styles.dealGrid}>
-          {results.map((service) => (
-            <article className={styles.dealCard} key={service.id}>
-              <div className={styles.dealPhoto}>
-                <Asset name={service.image} alt={`${service.shop} ${service.category} 시술`} />
-                <span
-                  className={`${styles.urgency} ${service.urgency !== '초임박 특가' ? styles.isSoon : ''}`}
-                >
-                  ● {service.urgency}
-                </span>
-                {DEMO_REMAINING[service.id] && (
-                  <span className={styles.countdown}>
-                    <span>◷ 마감 임박</span>
-                    <b>{DEMO_REMAINING[service.id]}</b>
-                  </span>
-                )}
-              </div>
-              <div className={styles.dealBody}>
-                <div className={styles.dealMeta}>
-                  <strong>{service.shop}</strong>
-                  <span>⌖ {service.location}</span>
-                </div>
-                <h3>{service.name}</h3>
-                <p className={styles.dealTime}>
-                  ⌛ {service.duration}분 소요 <span>·</span>{' '}
-                  <strong>
-                    {['오늘', '내일', '모레'][service.day]} {service.time}
-                  </strong>
-                </p>
-                <div className={styles.dealPrice}>
-                  <div>
-                    {service.discount > 0 && <del>{money(service.original)}</del>}
-                    <div>
-                      {service.discount > 0 && <em>{service.discount}%</em>}{' '}
-                      <b>{money(service.price)}</b>
-                    </div>
-                  </div>
-                  <Button
-                    as={Link}
-                    variant="primary"
-                    to={generatePath(ROUTES.SERVICE_DETAIL, { id: service.id })}
-                  >
-                    빈자리 확인
-                  </Button>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
+        <VacancyResults
+          sectionKey="home-closing"
+          params={{ closingWithinHours: 24, sort: 'START_ASC', size: 6 }}
+        />
       </section>
       {modelOpen && (
         <Dialog title="시술 모델 모집" onClose={() => setModelOpen(false)}>
