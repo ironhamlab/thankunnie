@@ -71,16 +71,30 @@ export default function CancelResultPage({ viewer }) {
   const detailError = useReservationStore((state) => state.detailError);
   const storedResult = useCancelStore((state) => state.lastResult);
   const [pollCount, setPollCount] = useState(0);
+  // 취소 전 화면에서 불러둔 상세(CONFIRMED)가 남아 있을 수 있으므로, 이 화면에서 새로 조회한 뒤에만 상세로 판정한다.
+  // 그 전까지는 직전 실행 결과(lastResult)로 먼저 그린다
+  const [isDetailFresh, setIsDetailFresh] = useState(false);
 
   // 다른 화면에서 보던 예약 상세·취소 결과가 남아 있을 수 있으므로 주소의 예약 것만 쓴다
   const detail =
-    String(storedDetail?.summary.reservationId) === reservationId ? storedDetail : null;
+    isDetailFresh && String(storedDetail?.summary.reservationId) === reservationId
+      ? storedDetail
+      : null;
   const lastResult = String(storedResult?.reservationId) === reservationId ? storedResult : null;
   const phase = resolvePhase(detail, lastResult);
   const isPolling = phase === 'pending' && pollCount < MAX_POLL_COUNT;
 
   useEffect(() => {
-    loadReservation(scope, reservationId);
+    let isActive = true;
+    setIsDetailFresh(false);
+    loadReservation(scope, reservationId).then(() => {
+      if (isActive) {
+        setIsDetailFresh(true);
+      }
+    });
+    return () => {
+      isActive = false;
+    };
   }, [loadReservation, scope, reservationId]);
 
   useEffect(() => {
