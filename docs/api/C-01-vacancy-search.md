@@ -1,8 +1,14 @@
-# C-01 빈자리 탐색 API 계약
+# C 빈자리 탐색·지도 API 계약
 
 상태: **C 결정 완료 · 구현 대기** · 작성일: 2026-10-28
 
-고객이 빈자리를 찾아보는(목록·지도) 탐색 기능의 요청·응답 형식을 정한다. A-01·A-02에서 제안한 `/api/v1/items` 임시 계약을 실제 스키마(`docs/erd/01_schema_ddl.sql`)와 B의 빈자리 공통 규칙(`domain/vacancy`)에 맞춰 구체화했다. 결정 내용은 6장에 정리했다.
+고객이 빈자리를 찾아보고(목록·지도) 고르는(빈자리 상세) 탐색 기능의 요청·응답 형식과 지도 메인 화면 흐름을 정한다. A-01·A-02에서 제안한 `/api/v1/items` 임시 계약을 실제 스키마(`docs/erd/01_schema_ddl.sql`)와 B의 빈자리 공통 규칙(`domain/vacancy`)에 맞춰 구체화했다.
+
+| API | 용도 | 장 |
+| --- | --- | --- |
+| C-01 `GET /api/v1/explore/vacancies` | 빈자리 목록 (홈·검색·지도 패널 공용) | 3장 |
+| C-02 `GET /api/v1/explore/shops` | 지도 마커용 매장별 요약 (위치 + 최저가) | 4장 |
+| C-03 `GET /api/v1/explore/vacancies/{treatmentId}` | 빈자리 상세 (선택한 시각의 가격·예약 가능 여부) | 5장 |
 
 ## 1. 담당 구분
 
@@ -10,10 +16,11 @@
 | --- | --- | --- |
 | 시간대 열기·닫기(빈자리 등록), 영업시간 | B | `domain/schedule` |
 | 가용 시간·가격 구간 계산 규칙, 가용 시간 조회 API | B | `domain/vacancy` (B-05, B-06) |
-| **빈자리 탐색 목록 API** (홈·검색·지도 공용) | **C** | 신규 `domain/explore`. B 규칙을 읽기 전용으로 재사용하고 B 코드는 수정하지 않는다 |
-| **메인·검색·지도 화면의 실제 API 연결과 마무리** | **C** | A가 만든 화면에 연결 |
-| 상세 화면 | A | C는 매장 위치 지도만 추가한다 (4장) |
-| 예약 점유·결제 | D | 상세의 "예약하기" 이후 |
+| **빈자리 탐색 API (C-01·C-02·C-03)** | **C** | 신규 `domain/explore`. B 규칙을 읽기 전용으로 재사용하고 B 코드는 수정하지 않는다 |
+| **지도 메인 화면** (전체 매장 위치·가격 마커 → 매장 빈자리 → 빈자리 상세) | **C** | 6장 |
+| **메인·검색 화면의 실제 API 연결과 마무리** | **C** | A가 만든 화면에 연결 |
+| 매장 상세 화면 | A | A 구현·연결이 끝난 뒤 C가 매장 위치 지도를 추가한다 (7장) |
+| 예약 점유·결제 | D | 빈자리 상세의 "예약하기" 이후 |
 
 - B 규칙 변경(예: 상세 시간 선택을 OPEN 시각으로 제한)이 필요하면 C가 직접 고치지 않고 B 담당에게 요청한다.
 - 메인 전용 API는 만들지 않는다. 메인의 "오늘", "마감 임박" 영역도 C-01을 파라미터 조합으로 호출한다 (A-01 원칙 유지).
@@ -48,8 +55,9 @@
 | --- | --- | --- | --- |
 | `startDate` | `yyyy-MM-dd` | 오늘(KST) | 시작 날짜 (포함) |
 | `endDate` | `yyyy-MM-dd` | `startDate` + 6일 | 종료 날짜 (포함). `startDate <= endDate`, 최대 60일 이내 |
-| `regionCode` | string, 여러 개 (최대 10개) | 전체 | `SHOP.REGION_CODE`(시군구 5자리). `regionCode=11680&regionCode=11650`처럼 반복. 화면 지역 묶음과의 대응은 6장 |
+| `regionCode` | string, 여러 개 (최대 10개) | 전체 | `SHOP.REGION_CODE`(시군구 5자리). `regionCode=11680&regionCode=11650`처럼 반복. 화면 지역 묶음과의 대응은 9장 |
 | `categoryId` | number | 전체 | `TREATMENT.CATEGORY_ID` |
+| `shopId` | number | 전체 | 한 매장의 빈자리만. 지도에서 매장 마커를 눌렀을 때 사용 |
 | `timeOfDay` | `MORNING`·`AFTERNOON`·`EVENING` | 전체 | 시작 시각 기준 09~12시 / 12~18시 / 18시 이후 |
 | `closingWithinHours` | number (1~72) | 없음 | 예약 마감(시작 20분 전)이 지금부터 N시간 안인 빈자리만. 메인 "마감 임박" 영역용 |
 | `priceTier` | `IMMINENT`·`LAST_MINUTE` | 전체 | 해당 가격 구간 이상만. 홈 "임박 특가만 보기"는 `IMMINENT` |
@@ -71,13 +79,6 @@ GET /api/v1/explore/vacancies?closingWithinHours=24&sort=START_ASC&size=6
 GET /api/v1/explore/vacancies?startDate=2026-10-29&regionCode=11680&regionCode=11650&categoryId=1&timeOfDay=AFTERNOON&sort=DISCOUNT_DESC
 GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&minLng=127.00&maxLng=127.06&size=50
 ```
-
-### 지도 화면 호출 방식
-
-- 지도를 처음 열 때와 이동·확대·축소가 끝났을 때(카카오맵 `idle` 이벤트) 현재 화면 범위로 다시 조회한다.
-- 연속 이동 중 요청이 몰리지 않도록 300ms 정도 기다렸다가 마지막 범위로만 조회하고, 늦게 도착한 이전 응답은 버린다.
-- 지도 범위 조회에서는 범위 맞추기(`setBounds`)를 하지 않는다. 사용자가 옮긴 화면이 다시 움직이지 않게 하기 위함이다.
-- 화면 안 빈자리가 `size`보다 많으면 `hasNext=true`이며, 지도에는 "확대하면 더 보여요" 안내를 표시한다.
 
 ### 성공 응답 예시
 
@@ -145,17 +146,119 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 
 시각은 모두 `+09:00` 오프셋을 포함한다. 금액은 원 단위 정수다.
 
-## 4. 상세 화면 연계 (A 담당 화면에 C 지도 추가)
+## 4. C-02 지도 매장 요약
 
-상세 화면(`pages/service/ServiceDetailPage.jsx`)과 상세 데이터 조회는 A 담당이다. C는 이 화면에 **매장 위치 지도**만 추가한다.
+| 항목 | 값 |
+| --- | --- |
+| Method | GET |
+| Path | `/api/v1/explore/shops` |
+| 인증 | 불필요 |
+| 응답 | `ApiResponse<ExploreShopMapResponse>` |
 
-- 공통 지도 컴포넌트 `components/map/KakaoMap`에 매장 좌표 마커 1개를 넘겨 표시한다. 지도 아래에 매장 주소를 함께 보여준다.
-- 지도에 필요한 값은 매장의 `latitude`, `longitude`, `address`(+`addressDetail`), `shopName`이다. 상세 데이터를 어떤 API로 받든 이 네 값이 응답에 들어 있어야 한다 (A 담당에게 요청할 사항).
-- 실제 API 연결 전까지는 데모 데이터(`utils/demoData.js`의 `lat`, `lng`)로 표시한다.
-- 카카오맵 키가 없거나 SDK를 불러오지 못하면 지도 영역 대신 주소 문구만 보여준다.
-- 목록 카드의 상세 이동 경로·전달 값은 A 담당의 상세 화면 계약을 따른다. 목록 응답의 `treatmentId`, `startsAt`, `shopId`로 이동 정보를 만들 수 있다.
+한 매장에 빈자리가 여러 개여도 좌표가 같아 마커가 겹치므로, 지도에는 **매장당 마커 1개**를 띄우고 그 매장 빈자리의 최저 판매가를 표시한다.
 
-## 5. 기존 문서·화면과의 대응
+- 요청 파라미터는 C-01과 같다(`startDate`·`endDate`·`regionCode`·`categoryId`·`timeOfDay`·`closingWithinHours`·`priceTier`·`keyword`·지도 범위). `shopId`·`sort`·`page`·`size`는 받지 않는다.
+- 조건에 맞는 빈자리가 1건 이상인 매장만 돌려준다. 순서는 가장 빠른 시작 시각, 매장 ID 순이다.
+- 한 번에 최대 200개 매장을 돌려주고, 더 있으면 `hasMore=true`다. 지도에는 "확대하면 더 보여요"를 표시한다.
+
+```json
+{
+  "success": true,
+  "data": {
+    "shops": [
+      {
+        "shopId": 1,
+        "shopName": "언니네 네일",
+        "regionCode": "11680",
+        "address": "서울특별시 강남구 테헤란로 1",
+        "latitude": 37.4979,
+        "longitude": 127.0276,
+        "imageUrl": null,
+        "vacancyCount": 7,
+        "minSalePrice": 18000,
+        "maxDiscountRate": 14,
+        "earliestStartsAt": "2026-11-06T20:00:00+09:00"
+      }
+    ],
+    "hasMore": false
+  },
+  "error": null,
+  "timestamp": "2026-11-06T10:00:00+09:00"
+}
+```
+
+| 필드 | 설명 | 화면 사용처 |
+| --- | --- | --- |
+| `shopId`, `shopName`, `address`, `regionCode` | 매장 | 마커 선택 시 패널 제목 |
+| `latitude`, `longitude` | 매장 좌표 | 마커 위치 |
+| `imageUrl` | 매장 이미지, 없으면 null | 패널 썸네일 |
+| `vacancyCount` | 조건에 맞는 빈자리 수 | "빈자리 7개" |
+| `minSalePrice` | 빈자리 중 최저 판매가 | 마커 라벨 "18,000원~" |
+| `maxDiscountRate` | 빈자리 중 최대 할인율 | 마커 강조(할인 배지) |
+| `earliestStartsAt` | 가장 빠른 시작 시각 (+09:00) | "오늘 20:00부터" |
+
+## 5. C-03 빈자리 상세
+
+| 항목 | 값 |
+| --- | --- |
+| Method | GET |
+| Path | `/api/v1/explore/vacancies/{treatmentId}?startsAt=2026-11-06T20:00:00` |
+| 인증 | 불필요 |
+| 응답 | `ApiResponse<ExploreVacancyDetailResponse>` |
+
+- 지도 메인 화면에서 빈자리를 고르면 호출한다. `vacancyId`(`{treatmentId}-{yyyyMMddHHmm}`)에서 `treatmentId`와 `startsAt`을 얻는다.
+- C-01 응답 필드 전체에 아래 필드를 더한다. 가격·예약 가능 여부는 **조회 시점에 다시 계산**한다 (목록 값을 넘겨받지 않는다).
+
+| 추가 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| `bookable` | boolean | 지금 이 시각을 예약할 수 있는지 |
+| `notBookableReason` | string, null 가능 | `BOOKING_CLOSED`(마감), `NOT_AVAILABLE`(다른 예약·닫힘 등으로 시작 불가). `bookable=true`면 null |
+| `treatmentDescription` | string, null 가능 | 시술 설명 |
+| `modelCondition` | string, null 가능 | 모델 시술 조건 (`MODEL`일 때) |
+| `preparationNotes`, `photoNotice` | string, null 가능 | 준비 사항, 촬영 안내 |
+| `addressDetail`, `phone` | string | 상세 주소, 매장 연락처 |
+| `shopDescription`, `shopNotice` | string, null 가능 | 매장 소개, 공지 |
+| `balanceAmount` | number | 현장 결제 잔금 = 판매가 − 예약금 |
+
+- 다른 시각을 고르려면 `GET /api/v1/available-times?shopId={shopId}&date={date}&durationMinutes={durationMinutes}`(B)로 시작 가능 시각을 받고, 고른 시각으로 C-03을 다시 호출한다.
+- 이미 지났거나 마감된 시각이라도 200으로 응답하고 `bookable=false`로 알린다. 화면은 "예약 마감" 안내와 다른 시간 선택을 보여준다.
+
+| HTTP | 코드 | 상황 |
+| --- | --- | --- |
+| 400 | `COMMON_400` | `startsAt` 누락·형식 오류 |
+| 400 | `VACANCY_004` | `startsAt`이 30분 단위가 아님 |
+| 400 | `VACANCY_003` | 오늘부터 60일 범위 밖 |
+| 404 | `TREATMENT_001` | 시술이 없거나 비활성, 매장이 비활성 |
+
+## 6. 지도 메인 화면 (C, `/map`)
+
+전체 매장의 위치와 가격을 지도에서 보고, 매장 → 빈자리 → 빈자리 상세까지 한 화면에서 이어 보는 C 담당 화면이다. 공통 지도 컴포넌트 `components/map/KakaoMap`(UNNIE-36)을 쓴다.
+
+```text
+지도 열기 / 이동·확대·축소 끝(idle)
+  → C-02 매장 요약 (현재 화면 범위 + 필터)  → 매장마다 "최저가~" 마커
+마커 클릭
+  → C-01 빈자리 목록 (shopId + 같은 필터, START_ASC)  → 옆 패널(모바일은 아래 시트)에 매장 빈자리 카드
+빈자리 카드 클릭
+  → C-03 빈자리 상세  → 가격·예약금·예약 가능 여부·시술/매장 안내, 다른 시간 선택(available-times)
+"예약하기"
+  → D 예약 점유 화면으로 이동 (treatmentId, startsAt 전달)
+```
+
+- 필터(날짜·지역·카테고리·시간대·임박 특가·검색어)는 화면 위쪽에 두고, 바꾸면 C-02를 다시 조회한다. 열려 있던 매장 패널은 닫는다.
+- 지도 범위 조회: 이동이 끝나고 300ms 기다린 뒤 마지막 범위로만 조회하고, 늦게 도착한 이전 응답은 버린다. 범위 조회 결과로 지도 범위를 다시 맞추지(`setBounds`) 않는다.
+- 처음 열 때 화면 범위는 브라우저 위치 권한 없이 기본 위치(강남역)에서 시작한다. 내 위치 이동은 추후 기능이다.
+- 카카오맵 키가 없거나 SDK를 불러오지 못하면 지도 대신 C-01 목록을 보여준다.
+
+## 7. 매장 상세 화면 위치 지도 (A 담당 화면에 C 추가)
+
+매장 상세 화면과 상세 데이터 조회는 A 담당이다. A가 구현·연결을 마친 뒤 C가 **매장 위치 지도**를 마지막에 추가한다.
+
+- `KakaoMap`에 매장 좌표 마커 1개를 넘겨 표시하고, 지도 아래에 매장 주소를 보여준다.
+- 필요한 값은 매장의 `latitude`, `longitude`, `address`(+`addressDetail`), `shopName`이다. A의 상세 응답에 이 값이 있어야 한다 (A 담당에게 요청할 사항).
+- 카카오맵 키가 없거나 SDK를 불러오지 못하면 지도 대신 주소 문구만 보여준다.
+
+## 8. 기존 문서·화면과의 대응
 
 | A-01·A-02 / 데모 화면 | 이 계약 |
 | --- | --- |
@@ -165,16 +268,16 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 | `applicationClosesAt` | `bookingClosesAt` |
 | `availableOnly=true` | 항상 예약 가능한 것만 반환하므로 파라미터 없음 |
 | `price` / `originalPrice` | `salePrice` / `regularPrice` |
-| `status` (AVAILABLE 등) | 목록에는 없음 (예약 가능한 것만 반환) |
-| 데모 `region` ('강남/서초' 등) | `regionCode` 여러 개로 변환 (6장) |
+| `status` (AVAILABLE 등) | 목록에는 없음 (예약 가능한 것만 반환). 빈자리 상세의 `bookable` |
+| 데모 `region` ('강남/서초' 등) | `regionCode` 여러 개로 변환 (9장) |
 | 데모 `urgency` ('초임박 특가' 등) | `priceTier` |
 | 데모 `lat`, `lng` | `latitude`, `longitude` |
 
-## 6. 결정 사항 (2026-10-28)
+## 9. 결정 사항 (2026-10-28)
 
 1. **빈자리의 범위**: 사장님이 연 시간대(OPEN) 안의 시각만 목록에 노출한다. 서비스 취지(사장님이 등록한 타임세일 빈자리), 알림 이벤트(`NOTIFICATION_EVENT`가 OPEN 행 기준)와 맞고 결과 수가 과도하게 늘지 않는다.
-   - 남은 확인: 상세의 시간 선택(`available-times`, B)은 영업시간까지 포함한다. 상세에서 목록에 없던 시간을 고를 수 있게 둘지는 A·B 담당과 정한다.
-2. **경로·패키지**: API는 `/api/v1/explore/vacancies`, 백엔드 코드는 `domain/explore`. 경로를 화면(메인·index) 이름이 아니라 기능(탐색)과 데이터(빈자리) 이름으로 지어, B의 빈자리 관리 API와 섞이지 않게 한다. 메인·검색·지도 화면이 모두 같은 API를 조건만 바꿔 호출한다. 프런트의 메인 화면 경로는 기존대로 `/`(`ROUTES.HOME`)이다.
+   - 남은 확인: 빈자리 상세의 시간 선택(`available-times`, B)은 영업시간까지 포함한다. 목록에 없던 시간을 고를 수 있게 둘지는 B 담당과 정한다.
+2. **경로·패키지**: API는 `/api/v1/explore/...`, 백엔드 코드는 `domain/explore`. 경로를 화면(메인·index) 이름이 아니라 기능(탐색)과 데이터(빈자리) 이름으로 지어, B의 빈자리 관리 API와 섞이지 않게 한다. 메인·검색·지도 화면이 모두 같은 API를 조건만 바꿔 호출한다. 프런트의 메인 화면 경로는 기존대로 `/`(`ROUTES.HOME`)이다.
 3. **지역 필터**: API는 `regionCode`(시군구 5자리)를 여러 개 받고, 화면의 지역 묶음은 프런트 상수(`constants/regions.js`)로 코드 목록에 대응시킨다. 지역 묶음을 바꿔도 서버 수정이 필요 없다.
 
    | 화면 지역 묶음 | `regionCode` |
@@ -186,5 +289,8 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
    | 판교/분당 | `41135` 성남시 분당구 |
 
    매장의 `REGION_CODE`는 매장 등록(A-03) 때 카카오 주소 검색 결과의 법정동 코드 앞 5자리로 채운다. 알림의 지역 구독(`NOTIFICATION_SUBSCRIPTION.REGION_CODE`)도 같은 코드를 쓴다.
-4. **지도 범위 조회**: 지도를 움직일 때마다 화면 범위 안의 빈자리만 다시 불러온다 (`minLat`·`maxLat`·`minLng`·`maxLng`, 3장 "지도 화면 호출 방식").
+4. **지도 범위 조회**: 지도를 움직일 때마다 화면 범위 안만 다시 불러온다 (`minLat`·`maxLat`·`minLng`·`maxLng`, 6장).
 5. **이미지 우선순위**: 시술 이미지 → 매장 이미지 → null.
+6. **지도 마커**: 매장당 마커 1개, 라벨은 최저 판매가 (C-02).
+7. **지도 메인 화면 경로**: 새 경로 `/map`(`ROUTES.MAP`). 공통 파일인 `constants/routes.js`·`AppRouter.jsx`에 경로를 추가하므로 해당 PR은 프런트 파트장 리뷰를 받는다. 홈의 기존 지도 보기(`/?view=map`)는 목록 화면의 보조 보기로 유지한다.
+8. **구현 브랜치**: C-01·C-02는 `feature/be/38-vacancy-search-api`, C-03은 `feature/be/39-vacancy-detail-api`.
