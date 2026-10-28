@@ -39,6 +39,18 @@ function getActiveMenu({ pathname, search }) {
 }
 
 /**
+ * 마이페이지 아이콘(사람 모양). 알림 아이콘과 같은 선 굵기로 맞추고, 색은 글자색을 따른다.
+ */
+function ProfileIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
+    </svg>
+  );
+}
+
+/**
  * 고객 화면 공통 헤더. 휴대폰 폭에서는 아래 메뉴 막대도 함께 보여준다.
  */
 export default function Header() {
@@ -172,8 +184,13 @@ export default function Header() {
                 </section>
               )}
             </div>
-            <Link to={ROUTES.PROFILE} aria-label="마이페이지" aria-current={current('profile')}>
-              ◎
+            <Link
+              to={ROUTES.PROFILE}
+              className={styles.profileLink}
+              aria-label="마이페이지"
+              aria-current={current('profile')}
+            >
+              <ProfileIcon />
             </Link>
           </div>
         </div>
@@ -192,7 +209,10 @@ export default function Header() {
           <span>▦</span>내 예약
         </Link>
         <Link to={ROUTES.PROFILE} aria-current={current('profile')}>
-          <span>◎</span>마이
+          <span>
+            <ProfileIcon />
+          </span>
+          마이
         </Link>
       </nav>
       {modelOpen && (

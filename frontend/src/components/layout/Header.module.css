@@ -96,6 +96,15 @@
   background: none;
   border-radius: 50%;
 }
+.profileLink {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--color-text-secondary);
+}
+.profileLink svg,
 .notificationButton svg {
   width: 21px;
   height: 21px;
@@ -230,6 +239,10 @@
   }
   .mobileNav span {
     font-size: 20px;
+  }
+  .mobileNav span svg {
+    width: 20px;
+    height: 20px;
   }
   .mobileNav a[aria-current='page'] {
     color: var(--color-primary);
