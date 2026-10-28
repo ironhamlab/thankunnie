@@ -39,12 +39,15 @@ import com.ucamp.app.domain.notification.repository.ShopCategoryRegionRepository
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
 import com.ucamp.app.domain.notification.service.NotificationDispatchService;
 import com.ucamp.app.domain.notification.service.SubscriptionMatchService;
+import com.ucamp.app.domain.vacancy.repository.ShopStatusQueryRepository;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({NotificationDispatchScheduler.class, NotificationDispatchService.class, SubscriptionMatchService.class,
         ShopCategoryRegionRepository.class, VacancySlotRepository.class, RecipientContactRepository.class,
-        FakeSolapiSmsClientConfig.class, NotificationDispatchSchedulerTest.FixedClock.class})
+        AvailabilityService.class, ShopStatusQueryRepository.class, FakeSolapiSmsClientConfig.class,
+        NotificationDispatchSchedulerTest.FixedClock.class})
 @ActiveProfiles("test")
 class NotificationDispatchSchedulerTest {
 
@@ -230,12 +233,14 @@ class NotificationDispatchSchedulerTest {
     }
 
     private NotificationEvent saveEvent(long exceptionId, long shopId) {
+        // 유니크가 매장+종류+시작 시각이라, 같은 매장에 여러 소식을 넣을 때 시작 시각을 다르게 둔다.
+        LocalDateTime startsAt = SLOT_START.plusHours(exceptionId - 1);
         return notificationEventRepository.saveAndFlush(NotificationEvent.builder()
                 .eventType(NotificationEventType.IMMINENT)
                 .exceptionId(exceptionId)
                 .shopId(shopId)
-                .slotStartsAt(SLOT_START)
-                .slotEndsAt(SLOT_START.plusHours(1))
+                .slotStartsAt(startsAt)
+                .slotEndsAt(startsAt.plusHours(1))
                 .build());
     }
 

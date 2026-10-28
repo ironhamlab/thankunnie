@@ -30,7 +30,11 @@
   margin-bottom: 10px;
   color: var(--color-text-secondary);
 }
-.cards > a:nth-child(3) > img {
+.cards > a > svg {
+  color: var(--color-primary);
+}
+.cards > a:nth-child(3) > svg {
+  color: var(--color-white);
   background: var(--color-primary);
   padding: 10px;
   box-sizing: content-box;
