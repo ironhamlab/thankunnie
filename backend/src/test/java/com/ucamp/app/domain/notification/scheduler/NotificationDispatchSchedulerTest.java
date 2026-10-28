@@ -39,13 +39,14 @@ import com.ucamp.app.domain.notification.repository.ShopCategoryRegionRepository
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
 import com.ucamp.app.domain.notification.service.NotificationDispatchService;
 import com.ucamp.app.domain.notification.service.SubscriptionMatchService;
+import com.ucamp.app.domain.vacancy.repository.ShopStatusQueryRepository;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({NotificationDispatchScheduler.class, NotificationDispatchService.class, SubscriptionMatchService.class,
         ShopCategoryRegionRepository.class, VacancySlotRepository.class, RecipientContactRepository.class,
-        AvailabilityService.class, FakeSolapiSmsClientConfig.class,
+        AvailabilityService.class, ShopStatusQueryRepository.class, FakeSolapiSmsClientConfig.class,
         NotificationDispatchSchedulerTest.FixedClock.class})
 @ActiveProfiles("test")
 class NotificationDispatchSchedulerTest {

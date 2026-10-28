@@ -43,13 +43,14 @@ import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepo
 import com.ucamp.app.domain.notification.repository.RecipientContactRepository;
 import com.ucamp.app.domain.notification.repository.ShopCategoryRegionRepository;
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
+import com.ucamp.app.domain.vacancy.repository.ShopStatusQueryRepository;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({NotificationDispatchService.class, SubscriptionMatchService.class, ShopCategoryRegionRepository.class,
         VacancySlotRepository.class, RecipientContactRepository.class, AvailabilityService.class,
-        NotificationDispatchServiceTest.FixedClock.class})
+        ShopStatusQueryRepository.class, NotificationDispatchServiceTest.FixedClock.class})
 @ActiveProfiles("test")
 class NotificationDispatchServiceTest {
 
@@ -334,6 +335,24 @@ class NotificationDispatchServiceTest {
         NotificationFixture.exception(jdbcTemplate, 2L, SHOP_ID, 500L, "CLOSE", startsAt, startsAt.plusHours(1));
         notificationSubscriptionRepository.save(storeUntil(USER_ID, NOW.plusHours(5)));
         NotificationDispatch job = claimedReopenedJob(startsAt);
+
+        boolean canSend = notificationDispatchService.recheckClaimedJob(job);
+
+        assertThat(canSend).isFalse();
+        assertThat(job.getStatus()).isEqualTo(NotificationDispatchStatus.SKIPPED);
+    }
+
+    @Test
+    @DisplayName("매장이 비활성이면 재공개 작업은 끝으로 두고 보내지 않는다")
+    void recheckClaimedJob_reopenedInactiveShop_skips() {
+        LocalDateTime startsAt = NOW.plusHours(3);
+        openSlot(1L, NOW.plusHours(2), NOW.plusHours(6));
+        NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
+        NotificationFixture.reservation(jdbcTemplate, 500L, USER_ID, 100L, "CANCELLED",
+                startsAt, startsAt.plusHours(1), startsAt.minusHours(1));
+        notificationSubscriptionRepository.save(storeUntil(USER_ID, NOW.plusHours(5)));
+        NotificationDispatch job = claimedReopenedJob(startsAt);
+        jdbcTemplate.update("UPDATE SHOP SET STATUS = 'INACTIVE' WHERE SHOP_ID = ?", SHOP_ID);
 
         boolean canSend = notificationDispatchService.recheckClaimedJob(job);
 

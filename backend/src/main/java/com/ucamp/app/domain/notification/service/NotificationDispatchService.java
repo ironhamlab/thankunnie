@@ -28,6 +28,7 @@ import com.ucamp.app.domain.notification.repository.NotificationDispatchReposito
 import com.ucamp.app.domain.notification.repository.NotificationEventRepository;
 import com.ucamp.app.domain.notification.repository.RecipientContactRepository;
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
+import com.ucamp.app.domain.vacancy.repository.ShopStatusQueryRepository;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 /**
@@ -59,6 +60,7 @@ public class NotificationDispatchService {
     private final RecipientContactRepository recipientContactRepository;
     private final SolapiSmsClient solapiSmsClient;
     private final Clock clock;
+    private final ShopStatusQueryRepository shopStatusQueryRepository;
 
     /**
      * PENDING 이벤트 하나를 고른다. 맞는 회원마다 대기 작업을 넣고 그 이벤트를 PROCESSED로 바꾼다.
@@ -285,6 +287,9 @@ public class NotificationDispatchService {
     // 재공개는 화면과 같은 isAvailable 로 본다. 임박·초임박은 당분간 OPEN 기준을 유지한다.
     private boolean slotStillSellable(NotificationEvent event) {
         if (event.getEventType() == NotificationEventType.REOPENED) {
+            if (!shopStatusQueryRepository.isActive(event.getShopId())) {
+                return false;
+            }
             int durationMinutes = (int) Duration.between(event.getSlotStartsAt(), event.getSlotEndsAt()).toMinutes();
             if (durationMinutes <= 0) {
                 return false;
