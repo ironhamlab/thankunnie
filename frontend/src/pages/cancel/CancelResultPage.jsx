@@ -20,13 +20,17 @@ const VIEWER = {
   customer: {
     scope: 'my',
     listPath: ROUTES.MY_RESERVATIONS,
-    listLabel: '내 예약으로',
+    listLabel: '예약 목록으로',
+    homePath: ROUTES.HOME,
+    homeLabel: '메인으로',
     cancelRoute: ROUTES.MY_RESERVATION_CANCEL,
   },
   owner: {
     scope: 'owner',
     listPath: ROUTES.OWNER_BOOKINGS,
     listLabel: '예약 현황으로',
+    homePath: ROUTES.OWNER,
+    homeLabel: '대시보드로',
     cancelRoute: ROUTES.OWNER_RESERVATION_CANCEL,
   },
 };
@@ -60,7 +64,7 @@ function resolvePhase(detail, lastResult) {
  */
 export default function CancelResultPage({ viewer }) {
   const { reservationId } = useParams();
-  const { scope, listPath, listLabel, cancelRoute } = VIEWER[viewer];
+  const { scope, listPath, listLabel, homePath, homeLabel, cancelRoute } = VIEWER[viewer];
   const loadReservation = useReservationStore((state) => state.loadReservation);
   const storedDetail = useReservationStore((state) => state.detail);
   const detailStatus = useReservationStore((state) => state.detailStatus);
@@ -119,7 +123,12 @@ export default function CancelResultPage({ viewer }) {
 
         {phase === 'completed' && (
           <>
-            <h1>예약이 취소되었어요</h1>
+            <div className={styles.done}>
+              <span className={styles.check} aria-hidden="true">
+                ✓
+              </span>
+              <h1>취소가 완료되었습니다</h1>
+            </div>
             <div className={styles.amount}>
               <span>환불 금액</span>
               <strong>{formatMoney(refundAmount)}</strong>
@@ -194,9 +203,14 @@ export default function CancelResultPage({ viewer }) {
 
         {detail && <CancelTargetSummary summary={detail.summary} />}
 
-        <Button as={Link} wide to={listPath}>
-          {listLabel}
-        </Button>
+        <div className={styles.actions}>
+          <Button as={Link} variant="primary" to={listPath}>
+            {listLabel}
+          </Button>
+          <Button as={Link} to={homePath}>
+            {homeLabel}
+          </Button>
+        </div>
       </Panel>
     </Wrapper>
   );

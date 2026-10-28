@@ -25,3 +25,31 @@
   color: var(--color-text-muted);
   font-size: 11px;
 }
+.done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.check {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--b-pay-paid-bg);
+  color: var(--b-pay-paid);
+  font-size: 26px;
+  font-weight: 700;
+}
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+@media (max-width: 540px) {
+  .actions {
+    grid-template-columns: 1fr;
+  }
+}
