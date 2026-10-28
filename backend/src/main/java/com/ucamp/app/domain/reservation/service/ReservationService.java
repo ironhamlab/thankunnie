@@ -57,7 +57,7 @@ public class ReservationService {
      * 회원 → 매장 순으로 잠근 뒤 가용 시간과 본인 예약 겹침을 다시 검사하고 저장한다.
      *
      * @param loginUser 로그인한 고객
-     * @param request   시술 ID, 시작 일시, 요청사항
+     * @param request   시술 ID, 시작 일시
      * @return 생성된 점유 예약
      * @throws BusinessException 고객이 아니면 FORBIDDEN,
      *                           30분 단위가 아니면 VACANCY_INVALID_TIME_UNIT,
@@ -103,7 +103,6 @@ public class ReservationService {
                 .appliedPrice(quote.salePrice())
                 .deposit(quote.depositAmount())
                 .holdExpiresAt(SalePolicy.holdExpiresAt(now))
-                .customerRequest(request.customerRequest())
                 .build();
         return ReservationCreateResponse.from(reservationRepository.save(reservation));
     }

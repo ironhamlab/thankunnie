@@ -38,7 +38,7 @@ public class ReservationController {
      * 예약을 생성(점유)한다. 고객만 호출할 수 있다.
      *
      * @param loginUser 로그인한 고객
-     * @param request   시술 ID, 시작 일시(30분 단위), 요청사항
+     * @param request   시술 ID, 시작 일시(30분 단위)
      * @return 201 과 생성된 예약 (적용 판매가, 예약금, 점유 만료 일시 포함)
      */
     @Operation(summary = "예약 생성(점유)",

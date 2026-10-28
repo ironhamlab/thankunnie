@@ -78,7 +78,7 @@ public class Reservation extends BaseTimeEntity {
 
     @Builder
     private Reservation(Long userId, Long treatmentId, LocalDateTime startsAt, LocalDateTime endsAt,
-            Integer appliedPrice, Integer deposit, LocalDateTime holdExpiresAt, String customerRequest) {
+            Integer appliedPrice, Integer deposit, LocalDateTime holdExpiresAt) {
         this.userId = userId;
         this.treatmentId = treatmentId;
         this.status = ReservationStatus.HOLD;
@@ -87,7 +87,6 @@ public class Reservation extends BaseTimeEntity {
         this.appliedPrice = appliedPrice;
         this.deposit = deposit;
         this.holdExpiresAt = holdExpiresAt;
-        this.customerRequest = customerRequest;
     }
 
     /**
@@ -96,8 +95,8 @@ public class Reservation extends BaseTimeEntity {
      *
      * @param paidAmount 결제사에서 확인한 실제 결제 금액
      * @param now             확정 시각 (예약 행 잠금 뒤 읽은 현재 시각)
-     * @param customerRequest 결제 화면에서 입력한 고객 요청사항. null 이면 기존 값을 유지하고,
-     *                        앞뒤 공백을 제거해 저장하며 공백뿐이면 비운다
+     * @param customerRequest 결제 화면에서 입력한 고객 요청사항. 앞뒤 공백을 제거해 저장하고,
+     *                        null 이거나 공백뿐이면 저장하지 않는다(null)
      * @throws BusinessException validateConfirmable 과 같은 조건이거나 요청사항이 최대 길이를 넘으면 INVALID_INPUT.
      *                           예외가 나면 상태와 요청사항은 바뀌지 않는다
      */
@@ -110,9 +109,7 @@ public class Reservation extends BaseTimeEntity {
         }
         this.status = ReservationStatus.CONFIRMED;
         this.confirmedAt = now;
-        if (request != null) {
-            this.customerRequest = request.isEmpty() ? null : request;
-        }
+        this.customerRequest = request == null || request.isEmpty() ? null : request;
     }
 
     /**

@@ -83,16 +83,16 @@ class ReservationTest {
     }
 
     @Test
-    @DisplayName("요청사항이 null 이면 예약 생성 때 받은 값을 유지하고, 공백뿐이면 비운다")
-    void confirm_nullOrBlankRequest_keepsOrClears() {
-        Reservation kept = hold(NOW.plusMinutes(5), "생성 때 요청");
-        Reservation cleared = hold(NOW.plusMinutes(5), "생성 때 요청");
+    @DisplayName("요청사항이 null 이거나 공백뿐이면 저장하지 않는다")
+    void confirm_nullOrBlankRequest_savesNull() {
+        Reservation nullRequest = hold(NOW.plusMinutes(5));
+        Reservation blankRequest = hold(NOW.plusMinutes(5));
 
-        kept.confirm(DEPOSIT, NOW, null);
-        cleared.confirm(DEPOSIT, NOW, "   ");
+        nullRequest.confirm(DEPOSIT, NOW, null);
+        blankRequest.confirm(DEPOSIT, NOW, "   ");
 
-        assertThat(kept.getCustomerRequest()).isEqualTo("생성 때 요청");
-        assertThat(cleared.getCustomerRequest()).isNull();
+        assertThat(nullRequest.getCustomerRequest()).isNull();
+        assertThat(blankRequest.getCustomerRequest()).isNull();
     }
 
     @Test
@@ -115,10 +115,6 @@ class ReservationTest {
     }
 
     private static Reservation hold(LocalDateTime holdExpiresAt) {
-        return hold(holdExpiresAt, null);
-    }
-
-    private static Reservation hold(LocalDateTime holdExpiresAt, String customerRequest) {
         return Reservation.builder()
                 .userId(1L)
                 .treatmentId(1L)
@@ -127,7 +123,6 @@ class ReservationTest {
                 .appliedPrice(30_000)
                 .deposit(DEPOSIT)
                 .holdExpiresAt(holdExpiresAt)
-                .customerRequest(customerRequest)
                 .build();
     }
 
