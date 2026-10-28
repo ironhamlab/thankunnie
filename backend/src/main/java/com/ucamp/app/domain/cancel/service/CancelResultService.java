@@ -11,6 +11,7 @@ import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.domain.cancel.dto.response.CancelResultResponse;
 import com.ucamp.app.domain.cancel.entity.ReservationCancel;
 import com.ucamp.app.domain.cancel.repository.ReservationCancelRepository;
+import com.ucamp.app.domain.notification.event.CancelCompletedEvent;
 import com.ucamp.app.domain.notification.event.SlotReopenedEvent;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
@@ -43,6 +44,7 @@ public class CancelResultService {
     /**
      * 결제 취소 성공(또는 환불액 0원). 취소 완료, 예약 취소 완료 (CNL-21, REO-03).
      * 취소하며 닫지 않았으면 그 시간은 계산에서 자동으로 다시 열리므로 재공개 이벤트를 발행한다 (REO-01·06).
+     * 고객 취소 안내 문자를 위해 취소 완료 이벤트도 발행한다.
      * 알림 쪽 리스너는 이 트랜잭션이 커밋된 뒤 실행되고, 실패해도 취소는 되돌리지 않는다.
      */
     @Transactional
@@ -53,6 +55,8 @@ public class CancelResultService {
         if (!shopScheduleExceptionRepository.existsByReservationId(cancel.getReservationId())) {
             eventPublisher.publishEvent(new SlotReopenedEvent(cancel.getReservationId()));
         }
+        eventPublisher.publishEvent(new CancelCompletedEvent(
+                cancel.getReservationId(), cancel.getRefundAmount(), cancel.getCancelType()));
         return CancelResultResponse.of(cancel, ReservationStatus.CANCELLED);
     }
 

@@ -2,6 +2,8 @@ package com.ucamp.app.domain.notification.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.LocalDateTime;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.ucamp.app.domain.notification.NotificationFixture;
+import com.ucamp.app.domain.notification.repository.RecipientContactRepository.CancelSmsInfo;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -55,5 +58,23 @@ class RecipientContactRepositoryTest {
     @DisplayName("없는 매장이면 매장 이름이 없다")
     void findShopNameById_missingShop_isEmpty() {
         assertThat(recipientContactRepository.findShopNameById(999L)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("예약 ID로 취소 문자에 넣을 고객 번호·매장 이름·예약 시작 시각을 읽는다")
+    void findCancelSmsInfo_existingReservation_returnsInfo() {
+        LocalDateTime startsAt = LocalDateTime.of(2026, 11, 2, 10, 0);
+        NotificationFixture.treatment(jdbcTemplate, 20L, 1L, "NORMAL");
+        NotificationFixture.reservation(jdbcTemplate, 100L, 1L, 20L, "CANCELLED",
+                startsAt, startsAt.plusHours(1), startsAt.minusDays(1));
+
+        assertThat(recipientContactRepository.findCancelSmsInfo(100L))
+                .contains(new CancelSmsInfo("010-1111-1111", "매장1", startsAt));
+    }
+
+    @Test
+    @DisplayName("없는 예약이면 취소 문자 정보가 없다")
+    void findCancelSmsInfo_missingReservation_isEmpty() {
+        assertThat(recipientContactRepository.findCancelSmsInfo(999L)).isEmpty();
     }
 }
