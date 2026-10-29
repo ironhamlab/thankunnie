@@ -75,6 +75,7 @@ export default function CheckoutPage() {
   const detail = useReservationStore((s) => s.detail);
   const status = useReservationStore((s) => s.detailStatus);
   const loadError = useReservationStore((s) => s.detailError);
+  const clockOffset = useReservationStore((s) => s.detailClockOffset);
   const [now, setNow] = useState(Date.now);
   const [policy, setPolicy] = useState(false);
   const [demo, setDemo] = useState(false);
@@ -83,9 +84,11 @@ export default function CheckoutPage() {
   const [headerHeight, setHeaderHeight] = useState(0);
   const [showExpiredDialog, setShowExpiredDialog] = useState(false);
 
+  // 기기 시계가 서버와 달라도 서버가 만료로 보는 순간에 맞춰 세도록, 응답 때 잰 차이만큼 보정한 서버 기준 현재 시각
+  const serverNow = now + clockOffset;
   // 화면을 보는 중에 점유(HOLD) 시간이 끝난 순간. 처음부터 만료 상태로 열린 예약은 해당하지 않는다
   const holdEndedWhileOpen =
-    detail?.summary?.status === 'HOLD' && now >= new Date(detail.holdExpiresAt).getTime();
+    detail?.summary?.status === 'HOLD' && serverNow >= new Date(detail.holdExpiresAt).getTime();
 
   useEffect(() => {
     if (reservationId) {
@@ -99,7 +102,7 @@ export default function CheckoutPage() {
     return () => window.clearInterval(timer);
   }, []);
 
-  // 만료 순간 한 번 안내 팝업을 띄우고, 남은 시간은 이 기기 시계로 센 값이므로 서버 예약 상태를 다시 받는다.
+  // 만료 순간 한 번 안내 팝업을 띄우고, 서버 예약 상태와 서버 시각을 다시 받는다.
   // 페이지를 자동으로 옮기지 않는다 (결제창 진행 중일 수 있고, 입력한 요청사항이 사라진다)
   useEffect(() => {
     if (holdEndedWhileOpen) {
@@ -183,7 +186,7 @@ export default function CheckoutPage() {
 
   const remaining =
     summary.status === 'HOLD'
-      ? Math.max(0, Math.ceil((new Date(holdExpiresAt).getTime() - now) / 1000))
+      ? Math.max(0, Math.ceil((new Date(holdExpiresAt).getTime() - serverNow) / 1000))
       : 0;
   const expired = remaining === 0;
   const warning = !expired && remaining <= WARNING_SECONDS;
@@ -357,7 +360,8 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {showExpiredDialog && (
+      {/* 다시 받은 서버 시각으로 아직 점유 중이면(남은 시간 재계산) 만료 팝업을 닫은 것으로 본다 */}
+      {showExpiredDialog && expired && (
         <Dialog title="빈자리 확보가 풀렸어요" onClose={() => setShowExpiredDialog(false)}>
           <p>
             결제 제한 시간 5분이 지나 잡아 둔 시간이 풀렸어요. 결제는 진행되지 않았어요. 같은 시간이

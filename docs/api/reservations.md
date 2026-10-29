@@ -102,7 +102,8 @@
   "confirmedAt": null,
   "reservedAt": "2026-10-28T16:11:15+09:00",
   "payment": null,
-  "cancel": null
+  "cancel": null,
+  "serverTime": "2026-10-28T16:12:40.120+09:00"
 }
 ```
 
@@ -112,6 +113,7 @@
 | `summary.cancellable` | 취소 버튼 표시 여부. 확정 상태이고 시작 전이면 true. 실제 취소 가능 판단은 취소 API가 한다 |
 | `payment` | 최근 예약금 결제. `status`(READY, PAID, FAILED, UNKNOWN, REFUND_PENDING, PART_REFUNDED, REFUNDED), `amount`, `refundedAmount`, `approvedAt`, `refundedAt`. 결제 전이면 null |
 | `cancel` | 취소. `cancelType`(CUSTOMER, SHOP_FAULT, CUSTOMER_REQUEST), `status`, `policyRefundAmount`, `refundAmount`, `requestedAt`, `completedAt`. 취소 전이면 null |
+| `serverTime` | 응답을 만든 서버 시각. 화면은 기기 시각과의 차이를 보정해 `holdExpiresAt`까지 남은 시간을 센다 |
 
 ## 예약 상태
 
@@ -179,6 +181,7 @@
   - 빈 시간 표시는 아직 시연용 계산이다. 실제로 비어 있지 않은 시간은 서버가 거절한다.
 - `/checkout?reservationId={번호}`: 내 예약 상세 API로 예약을 불러와 매장·시술·시각·금액·예약금·잔금을 표시한다.
   - 남은 시간은 `holdExpiresAt` 기준이며 새로고침해도 유지된다. 만료되면 결제 버튼 대신 시간 다시 선택하기를 보여준다.
+  - 기기 시계가 서버와 달라도 남은 시간이 서버 기준이 되도록, 응답의 `serverTime`과 기기 시각의 차이만큼 보정해 센다.
   - CONFIRMED면 내 예약으로, 없는·남의 예약이면 빈자리 탐색·내 예약으로, 비로그인이면 로그인으로 안내한다.
 - 로컬 확인은 개발용 테스트 계정 전환(`CUSTOMER_1` 등, `Authorization: Bearer {테스트 사용자}`)을 사용한다.
 
