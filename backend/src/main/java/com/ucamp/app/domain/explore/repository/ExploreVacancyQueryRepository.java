@@ -33,7 +33,7 @@ public interface ExploreVacancyQueryRepository extends Repository<ShopScheduleEx
             join Shop s on s.shopId = e.shopId
             join ShopAccount a on a.shopId = s.shopId
             join Treatment t on t.shop = s
-            join t.category c
+            join ShopCategory c on c.categoryId = s.categoryId
             where e.exceptionType = \
             """
             + OPEN
