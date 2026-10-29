@@ -6,13 +6,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.persistence.EntityManager;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
@@ -24,7 +25,7 @@ import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 // 매장 2: 취소 처리 중 4(11/7). 재판매 건은 테스트마다 추가한다
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({ReservationDashboardRepository.class, TimeConfig.class})
+@Import(TimeConfig.class)
 @ActiveProfiles("test")
 @TestPropertySource(properties = "spring.sql.init.data-locations=classpath:init-data.sql")
 class ReservationDashboardRepositoryTest {
@@ -37,7 +38,7 @@ class ReservationDashboardRepositoryTest {
     private ReservationDashboardRepository reservationDashboardRepository;
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private EntityManager entityManager;
 
     @Test
     @DisplayName("이번 달 확정 건수·예상 매출과 오늘 확정·남은 확정 건수를 센다")
@@ -129,14 +130,26 @@ class ReservationDashboardRepositoryTest {
 
     private void insertReservation(Long id, Long treatmentId, String status, String startsAt, String endsAt,
             int appliedPrice, String createdAt) {
-        jdbcTemplate.update("""
+        LocalDateTime created = time(createdAt);
+        entityManager.createNativeQuery("""
                 INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT,
                                          APPLIED_PRICE, DEPOSIT, HOLD_EXPIRES_AT, CREATED_AT, UPDATED_AT)
-                VALUES (?, 2, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                id, treatmentId, status, LocalDateTime.parse(startsAt.replace(' ', 'T')),
-                LocalDateTime.parse(endsAt.replace(' ', 'T')), appliedPrice, Math.min(appliedPrice, 20000),
-                LocalDateTime.parse(createdAt.replace(' ', 'T')).plusMinutes(5),
-                LocalDateTime.parse(createdAt.replace(' ', 'T')), LocalDateTime.parse(createdAt.replace(' ', 'T')));
+                VALUES (:id, 2, :treatmentId, :status, :startsAt, :endsAt, :appliedPrice, :deposit,
+                        :holdExpiresAt, :createdAt, :createdAt)
+                """)
+                .setParameter("id", id)
+                .setParameter("treatmentId", treatmentId)
+                .setParameter("status", status)
+                .setParameter("startsAt", time(startsAt))
+                .setParameter("endsAt", time(endsAt))
+                .setParameter("appliedPrice", appliedPrice)
+                .setParameter("deposit", Math.min(appliedPrice, 20000))
+                .setParameter("holdExpiresAt", created.plusMinutes(5))
+                .setParameter("createdAt", created)
+                .executeUpdate();
+    }
+
+    private static LocalDateTime time(String value) {
+        return LocalDateTime.parse(value.replace(' ', 'T'));
     }
 }
