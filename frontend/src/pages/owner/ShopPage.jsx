@@ -87,6 +87,14 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
     <div className="b-stack">
       <h1>매장 관리</h1>
       <Panel padded>
+        <h2>매장 대표 이미지</h2>
+        <p>
+          아래에서 새 사진을 선택하면 대표 이미지가 바로 교체됩니다. 매장 정보 저장과 별도로
+          적용됩니다.
+        </p>
+        <OwnerImageEditor imageUrl={shop.imageUrl} isSaving={isBusy} onSave={onImage} />
+      </Panel>
+      <Panel padded>
         <form onSubmit={submit} className="b-stack">
           <fieldset disabled={isBusy} className="b-form-grid">
             {FIELDS.map(([name, label, maxLength]) => (
@@ -168,14 +176,6 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
             </Button>
           </div>
         </form>
-      </Panel>
-      <Panel padded>
-        <h2>매장 대표 이미지</h2>
-        <p>
-          아래에서 새 사진을 선택하면 대표 이미지가 바로 교체됩니다. 매장 정보 저장과 별도로
-          적용됩니다.
-        </p>
-        <OwnerImageEditor imageUrl={shop.imageUrl} isSaving={isBusy} onSave={onImage} />
       </Panel>
     </div>
   );
