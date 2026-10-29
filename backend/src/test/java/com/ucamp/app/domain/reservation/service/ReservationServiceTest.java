@@ -25,6 +25,7 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.ucamp.app.common.auth.AuthUser;
@@ -34,6 +35,7 @@ import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.lock.ShopLock;
 import com.ucamp.app.common.lock.UserLock;
 import com.ucamp.app.common.policy.BookingPolicy;
+import com.ucamp.app.domain.notification.event.ReservationConfirmedEvent;
 import com.ucamp.app.domain.reservation.dto.request.ReservationCreateRequest;
 import com.ucamp.app.domain.reservation.dto.response.ReservationCreateResponse;
 import com.ucamp.app.domain.reservation.entity.Reservation;
@@ -70,13 +72,17 @@ class ReservationServiceTest {
     @Mock
     private UserLock userLock;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private ReservationService reservationService;
 
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(NOW.atZone(BookingPolicy.ZONE).toInstant(), BookingPolicy.ZONE);
         reservationService = new ReservationService(
-                reservationRepository, treatmentRepository, availabilityService, shopLock, userLock, clock);
+                reservationRepository, treatmentRepository, availabilityService, shopLock, userLock, clock,
+                eventPublisher);
     }
 
     @Test
@@ -208,7 +214,8 @@ class ReservationServiceTest {
         given(clock.instant()).willReturn(
                 NOW.atZone(BookingPolicy.ZONE).toInstant(), afterLock.atZone(BookingPolicy.ZONE).toInstant());
         ReservationService service = new ReservationService(
-                reservationRepository, treatmentRepository, availabilityService, shopLock, userLock, clock);
+                reservationRepository, treatmentRepository, availabilityService, shopLock, userLock, clock,
+                eventPublisher);
         givenTreatment(TreatmentStatus.ACTIVE);
         given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
 
@@ -242,7 +249,8 @@ class ReservationServiceTest {
         // 09:10 에 09:30 시작을 클릭하면 시작까지 20분이라 마감이다
         LocalDateTime now = NOW.plusMinutes(10);
         ReservationService service = new ReservationService(reservationRepository, treatmentRepository,
-                availabilityService, shopLock, userLock, Clock.fixed(now.atZone(BookingPolicy.ZONE).toInstant(), BookingPolicy.ZONE));
+                availabilityService, shopLock, userLock,
+                Clock.fixed(now.atZone(BookingPolicy.ZONE).toInstant(), BookingPolicy.ZONE), eventPublisher);
 
         assertErrorCode(() -> service.createReservation(CUSTOMER, request(NOW.plusMinutes(30), null)),
                 ErrorCode.VACANCY_BOOKING_CLOSED);
@@ -265,6 +273,7 @@ class ReservationServiceTest {
 
         assertThat(confirmed.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
         assertThat(confirmed.getConfirmedAt()).isEqualTo(NOW);
+        verify(eventPublisher).publishEvent(new ReservationConfirmedEvent(RESERVATION_ID));
     }
 
     @Test
@@ -298,6 +307,7 @@ class ReservationServiceTest {
         assertErrorCode(() -> reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000),
                 ErrorCode.VACANCY_PAYMENT_CLOSED);
         assertThat(hold.getStatus()).isEqualTo(ReservationStatus.HOLD);
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
