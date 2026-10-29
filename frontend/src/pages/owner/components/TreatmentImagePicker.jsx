@@ -19,6 +19,10 @@ export default function TreatmentImagePicker({ file, disabled, onChange }) {
   }, [file]);
   return (
     <div className="b-stack b-span-two">
+      {preview && (
+        <img src={preview} className={styles.preview} alt="등록할 시술 이미지 미리보기" />
+      )}
+      {!preview && <RepresentativeImage className={styles.preview} name="시술" />}
       <ImageFileInput
         disabled={disabled}
         hasImage={Boolean(file)}
@@ -35,10 +39,6 @@ export default function TreatmentImagePicker({ file, disabled, onChange }) {
           onChange(selected);
         }}
       />
-      {preview && (
-        <img src={preview} className={styles.preview} alt="등록할 시술 이미지 미리보기" />
-      )}
-      {!preview && <RepresentativeImage className={styles.preview} name="시술" />}
       {file && (
         <Button type="button" disabled={disabled} onClick={() => onChange(null)}>
           이미지 선택 취소
