@@ -5,3 +5,45 @@
   object-fit: contain;
   border-radius: var(--radius-md);
 }
+
+.uploadBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--color-primary-faint);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+}
+
+.uploadCopy {
+  display: grid;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.uploadHint {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.fileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.uploadBox > button {
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .uploadBox {
+    align-items: stretch;
+    flex-direction: column;
+    padding: var(--spacing-md);
+  }
+}

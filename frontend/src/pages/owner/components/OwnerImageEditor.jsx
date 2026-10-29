@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Button from '@/components/common/Button';
 import Alert from '@/components/common/Alert';
+import ImageFileInput from './ImageFileInput';
 import styles from './OwnerImageEditor.module.css';
 
 export default function OwnerImageEditor({ imageUrl, isSaving, onSave }) {
@@ -36,19 +37,7 @@ export default function OwnerImageEditor({ imageUrl, isSaving, onSave }) {
       ) : (
         <p>등록된 대표 이미지가 없습니다.</p>
       )}
-      <label>
-        대표 이미지 업로드·교체 (JPEG·PNG, 최대 5MB)
-        <input
-          type="file"
-          accept="image/jpeg,image/png"
-          disabled={isSaving}
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = '';
-            if (file) save(file);
-          }}
-        />
-      </label>
+      <ImageFileInput disabled={isSaving} hasImage={Boolean(imageUrl)} onSelect={save} />
       <Button type="button" disabled={isSaving || !imageUrl} onClick={() => save(null)}>
         이미지 삭제
       </Button>

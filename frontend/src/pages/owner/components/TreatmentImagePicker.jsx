@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Button from '@/components/common/Button';
 import Alert from '@/components/common/Alert';
+import ImageFileInput from './ImageFileInput';
 import styles from './OwnerImageEditor.module.css';
 
 export default function TreatmentImagePicker({ file, disabled, onChange }) {
@@ -17,28 +18,22 @@ export default function TreatmentImagePicker({ file, disabled, onChange }) {
   }, [file]);
   return (
     <div className="b-stack b-span-two">
-      <label>
-        시술 대표 이미지 (선택 · JPEG·PNG, 최대 5MB)
-        <input
-          type="file"
-          accept="image/jpeg,image/png"
-          disabled={disabled}
-          onChange={(event) => {
-            const selected = event.target.files?.[0];
-            event.target.value = '';
-            if (!selected) return;
-            if (
-              !['image/jpeg', 'image/png'].includes(selected.type) ||
-              selected.size > 5 * 1024 * 1024
-            ) {
-              setError('JPEG 또는 PNG 이미지를 5MB 이하로 선택해 주세요.');
-              return;
-            }
-            setError('');
-            onChange(selected);
-          }}
-        />
-      </label>
+      <ImageFileInput
+        disabled={disabled}
+        hasImage={Boolean(file)}
+        fileName={file?.name}
+        onSelect={(selected) => {
+          if (
+            !['image/jpeg', 'image/png'].includes(selected.type) ||
+            selected.size > 5 * 1024 * 1024
+          ) {
+            setError('JPEG 또는 PNG 이미지를 5MB 이하로 선택해 주세요.');
+            return;
+          }
+          setError('');
+          onChange(selected);
+        }}
+      />
       {preview && (
         <img src={preview} className={styles.preview} alt="등록할 시술 이미지 미리보기" />
       )}
