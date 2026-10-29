@@ -1,9 +1,18 @@
 import { useState } from 'react';
 import Dialog from '@/components/common/Dialog';
 import Button from '@/components/common/Button';
+import OwnerImageEditor from './OwnerImageEditor';
 import styles from './TreatmentForm.module.css';
 
-export default function TreatmentForm({ treatment, isSaving, error, onSave, onClose }) {
+export default function TreatmentForm({
+  treatment,
+  imageUrl,
+  onImageSave,
+  isSaving,
+  error,
+  onSave,
+  onClose,
+}) {
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -72,6 +81,10 @@ export default function TreatmentForm({ treatment, isSaving, error, onSave, onCl
 
   return (
     <Dialog title={treatment ? '시술 메뉴 수정' : '신규 시술 등록'} onClose={onClose}>
+      {treatment && (
+        <OwnerImageEditor imageUrl={imageUrl} isSaving={isSaving} onSave={onImageSave} />
+      )}
+      {!treatment && <p>시술을 저장한 뒤 수정 화면에서 대표 이미지를 등록할 수 있습니다.</p>}
       <form onSubmit={submit} className="b-form-grid">
         <fieldset disabled={isSaving} className={`${styles.fields} b-span-two`}>
           <label className="b-span-two">

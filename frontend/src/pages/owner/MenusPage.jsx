@@ -17,6 +17,7 @@ export default function MenusPage() {
   const load = useTreatmentStore((state) => state.loadTreatments);
   const save = useTreatmentStore((state) => state.saveTreatment);
   const changeStatus = useTreatmentStore((state) => state.changeTreatmentStatus);
+  const saveImage = useTreatmentStore((state) => state.saveImage);
   const [edit, setEdit] = useState(null);
   const [notice, setNotice] = useState('');
   const [actionError, setActionError] = useState(null);
@@ -108,13 +109,11 @@ export default function MenusPage() {
                 <table>
                   <thead>
                     <tr>
-                      {['시술명', '설명', '소요 시간', '정상가', '상태', '관리'].map(
-                        (heading) => (
-                          <th key={heading} scope="col">
-                            {heading}
-                          </th>
-                        ),
-                      )}
+                      {['시술명', '설명', '소요 시간', '정상가', '상태', '관리'].map((heading) => (
+                        <th key={heading} scope="col">
+                          {heading}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -160,6 +159,10 @@ export default function MenusPage() {
       {edit && (
         <TreatmentForm
           treatment={edit.treatment}
+          imageUrl={
+            treatments.find((item) => item.treatmentId === edit.treatment?.treatmentId)?.imageUrl
+          }
+          onImageSave={(file) => saveImage(edit.treatment.treatmentId, file)}
           isSaving={isSaving}
           error={actionError}
           onSave={submit}
