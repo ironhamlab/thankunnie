@@ -5,7 +5,6 @@ package com.ucamp.app.domain.notification.event;
  * 결제 전 점유(HOLD) 단계에서는 발행하지 않는다.
  *
  * @param reservationId 확정된 예약 ID
- * @param paidAmount    결제사에서 확인한 결제 금액
  */
-public record ReservationConfirmedEvent(Long reservationId, Integer paidAmount) {
+public record ReservationConfirmedEvent(Long reservationId) {
 }

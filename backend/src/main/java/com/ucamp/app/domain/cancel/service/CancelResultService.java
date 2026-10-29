@@ -55,8 +55,7 @@ public class CancelResultService {
         if (!shopScheduleExceptionRepository.existsByReservationId(cancel.getReservationId())) {
             eventPublisher.publishEvent(new SlotReopenedEvent(cancel.getReservationId()));
         }
-        eventPublisher.publishEvent(new CancelCompletedEvent(
-                cancel.getReservationId(), cancel.getRefundAmount(), cancel.getCancelType()));
+        eventPublisher.publishEvent(new CancelCompletedEvent(cancel.getReservationId(), cancel.getCancelType()));
         return CancelResultResponse.of(cancel, ReservationStatus.CANCELLED);
     }
 

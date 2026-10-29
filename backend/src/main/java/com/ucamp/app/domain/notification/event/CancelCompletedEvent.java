@@ -7,8 +7,7 @@ import com.ucamp.app.domain.cancel.entity.CancelType;
  * 고객 직접 취소·사장님 취소·0원 환불 취소 모두 여기를 지난다.
  *
  * @param reservationId 취소된 예약 ID
- * @param refundAmount  환불 금액
  * @param cancelType    누가 취소했는지. 문자 문구를 고를 때 쓴다
  */
-public record CancelCompletedEvent(Long reservationId, Integer refundAmount, CancelType cancelType) {
+public record CancelCompletedEvent(Long reservationId, CancelType cancelType) {
 }

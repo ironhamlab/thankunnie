@@ -273,7 +273,7 @@ class ReservationServiceTest {
 
         assertThat(confirmed.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
         assertThat(confirmed.getConfirmedAt()).isEqualTo(NOW);
-        verify(eventPublisher).publishEvent(new ReservationConfirmedEvent(RESERVATION_ID, 20_000));
+        verify(eventPublisher).publishEvent(new ReservationConfirmedEvent(RESERVATION_ID));
     }
 
     @Test

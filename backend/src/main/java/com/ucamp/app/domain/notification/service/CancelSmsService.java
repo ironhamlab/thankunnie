@@ -1,7 +1,6 @@
 package com.ucamp.app.domain.notification.service;
 
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -33,10 +32,9 @@ public class CancelSmsService {
 
     /**
      * @param reservationId 취소된 예약 ID
-     * @param refundAmount  환불 금액
      * @param cancelType    고객 취소와 사장님 취소의 문구를 나눈다
      */
-    public void send(Long reservationId, Integer refundAmount, CancelType cancelType) {
+    public void send(Long reservationId, CancelType cancelType) {
         Optional<CancelSmsInfo> found = recipientContactRepository.findCancelSmsInfo(reservationId);
         if (found.isEmpty()) {
             log.warn("취소 문자 생략: 예약 정보 없음 reservationId={}", reservationId);
@@ -48,7 +46,7 @@ public class CancelSmsService {
             return;
         }
 
-        SmsSendResult result = solapiSmsClient.send(info.phone(), buildMessage(info, refundAmount, cancelType));
+        SmsSendResult result = solapiSmsClient.send(info.phone(), buildMessage(info, cancelType));
         if (result.status() == SmsSendStatus.SUCCESS) {
             log.info("취소 문자 발송 성공 reservationId={}, providerMessageId={}",
                     reservationId, result.providerMessageId());
@@ -58,14 +56,14 @@ public class CancelSmsService {
         }
     }
 
-    // 고객 취소: [땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 취소되었습니다. 환불 금액: 20,000원
-    // 사장님 취소: [땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 매장 사정으로 취소되었습니다. 환불 금액: 20,000원
-    String buildMessage(CancelSmsInfo info, Integer refundAmount, CancelType cancelType) {
+    // 고객 취소: [땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 취소되었습니다.
+    // 사장님 취소: [땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 매장 사정으로 취소되었습니다.
+    String buildMessage(CancelSmsInfo info, CancelType cancelType) {
         String sentence = ownerCancelled(cancelType)
                 ? "예약이 매장 사정으로 취소되었습니다."
                 : "예약이 취소되었습니다.";
         return "[땡잡은 언니] " + info.shopName() + " " + info.startsAt().format(STARTS_AT_TEXT)
-                + " " + sentence + " 환불 금액: " + String.format(Locale.KOREA, "%,d", refundAmount) + "원";
+                + " " + sentence;
     }
 
     // 사장님이 직접 취소한 경우(매장 사유, 고객 요청 대리 취소)만 매장 사정 문구를 쓴다

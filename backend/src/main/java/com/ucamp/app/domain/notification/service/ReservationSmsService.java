@@ -1,7 +1,6 @@
 package com.ucamp.app.domain.notification.service;
 
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -32,9 +31,8 @@ public class ReservationSmsService {
 
     /**
      * @param reservationId 확정된 예약 ID
-     * @param paidAmount    결제 금액
      */
-    public void send(Long reservationId, Integer paidAmount) {
+    public void send(Long reservationId) {
         Optional<CancelSmsInfo> found = recipientContactRepository.findReservationSmsInfo(reservationId);
         if (found.isEmpty()) {
             log.warn("예약 확정 문자 생략: 예약 정보 없음 reservationId={}", reservationId);
@@ -46,7 +44,7 @@ public class ReservationSmsService {
             return;
         }
 
-        SmsSendResult result = solapiSmsClient.send(info.phone(), buildMessage(info, paidAmount));
+        SmsSendResult result = solapiSmsClient.send(info.phone(), buildMessage(info));
         if (result.status() == SmsSendStatus.SUCCESS) {
             log.info("예약 확정 문자 발송 성공 reservationId={}, providerMessageId={}",
                     reservationId, result.providerMessageId());
@@ -56,9 +54,9 @@ public class ReservationSmsService {
         }
     }
 
-    // 예: [땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 확정되었습니다. 결제 금액: 20,000원
-    String buildMessage(CancelSmsInfo info, Integer paidAmount) {
+    // 예: [땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 확정되었습니다.
+    String buildMessage(CancelSmsInfo info) {
         return "[땡잡은 언니] " + info.shopName() + " " + info.startsAt().format(STARTS_AT_TEXT)
-                + " 예약이 확정되었습니다. 결제 금액: " + String.format(Locale.KOREA, "%,d", paidAmount) + "원";
+                + " 예약이 확정되었습니다.";
     }
 }

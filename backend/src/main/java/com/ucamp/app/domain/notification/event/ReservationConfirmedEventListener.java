@@ -22,7 +22,7 @@ public class ReservationConfirmedEventListener {
     @TransactionalEventListener
     public void handle(ReservationConfirmedEvent event) {
         try {
-            reservationSmsService.send(event.reservationId(), event.paidAmount());
+            reservationSmsService.send(event.reservationId());
         } catch (RuntimeException e) {
             // 이미 커밋된 확정 응답이 문자 오류로 실패하지 않게 기록만 한다
             log.error("예약 확정 문자 발송 중 오류 reservationId={}", event.reservationId(), e);

@@ -41,16 +41,16 @@ class CancelSmsServiceTest {
     }
 
     @Test
-    @DisplayName("고객이 직접 취소하면 매장·예약 시각·환불 금액이 담긴 문자를 보낸다")
+    @DisplayName("고객이 직접 취소하면 매장·예약 시각이 담긴 문자를 보낸다")
     void send_customerCancel_sendsCustomerMessage() {
         given(recipientContactRepository.findCancelSmsInfo(RESERVATION_ID))
                 .willReturn(Optional.of(new CancelSmsInfo("010-1234-5678", "예쁜네일", STARTS_AT)));
         given(solapiSmsClient.send(any(), any())).willReturn(SmsSendResult.success("G-1"));
 
-        cancelSmsService.send(RESERVATION_ID, 20_000, CancelType.CUSTOMER);
+        cancelSmsService.send(RESERVATION_ID, CancelType.CUSTOMER);
 
         verify(solapiSmsClient).send("010-1234-5678",
-                "[땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 취소되었습니다. 환불 금액: 20,000원");
+                "[땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 취소되었습니다.");
     }
 
     @Test
@@ -60,10 +60,10 @@ class CancelSmsServiceTest {
                 .willReturn(Optional.of(new CancelSmsInfo("010-1234-5678", "예쁜네일", STARTS_AT)));
         given(solapiSmsClient.send(any(), any())).willReturn(SmsSendResult.success("G-1"));
 
-        cancelSmsService.send(RESERVATION_ID, 20_000, CancelType.SHOP_FAULT);
+        cancelSmsService.send(RESERVATION_ID, CancelType.SHOP_FAULT);
 
         verify(solapiSmsClient).send("010-1234-5678",
-                "[땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 매장 사정으로 취소되었습니다. 환불 금액: 20,000원");
+                "[땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 매장 사정으로 취소되었습니다.");
     }
 
     @Test
@@ -73,10 +73,10 @@ class CancelSmsServiceTest {
                 .willReturn(Optional.of(new CancelSmsInfo("010-1234-5678", "예쁜네일", STARTS_AT)));
         given(solapiSmsClient.send(any(), any())).willReturn(SmsSendResult.success("G-1"));
 
-        cancelSmsService.send(RESERVATION_ID, 20_000, CancelType.CUSTOMER_REQUEST);
+        cancelSmsService.send(RESERVATION_ID, CancelType.CUSTOMER_REQUEST);
 
         verify(solapiSmsClient).send("010-1234-5678",
-                "[땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 매장 사정으로 취소되었습니다. 환불 금액: 20,000원");
+                "[땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 매장 사정으로 취소되었습니다.");
     }
 
     @Test
@@ -85,7 +85,7 @@ class CancelSmsServiceTest {
         given(recipientContactRepository.findCancelSmsInfo(RESERVATION_ID))
                 .willReturn(Optional.of(new CancelSmsInfo(null, "예쁜네일", STARTS_AT)));
 
-        cancelSmsService.send(RESERVATION_ID, 20_000, CancelType.CUSTOMER);
+        cancelSmsService.send(RESERVATION_ID, CancelType.CUSTOMER);
 
         verify(solapiSmsClient, never()).send(any(), any());
     }
@@ -95,7 +95,7 @@ class CancelSmsServiceTest {
     void send_noReservation_skips() {
         given(recipientContactRepository.findCancelSmsInfo(RESERVATION_ID)).willReturn(Optional.empty());
 
-        cancelSmsService.send(RESERVATION_ID, 0, CancelType.SHOP_FAULT);
+        cancelSmsService.send(RESERVATION_ID, CancelType.SHOP_FAULT);
 
         verify(solapiSmsClient, never()).send(any(), any());
     }

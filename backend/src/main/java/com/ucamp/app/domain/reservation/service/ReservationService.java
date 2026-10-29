@@ -138,7 +138,7 @@ public class ReservationService {
         // 점유가 유효하면 결제 마감(시작 15분 전) 전이지만, 정책 기준을 한 곳에서 확인하도록 함께 검사한다
         SalePolicy.validatePayable(reservation.getStartsAt(), now);
         reservation.confirm(paidAmount, now);
-        eventPublisher.publishEvent(new ReservationConfirmedEvent(reservationId, paidAmount));
+        eventPublisher.publishEvent(new ReservationConfirmedEvent(reservationId));
         return reservation;
     }
 

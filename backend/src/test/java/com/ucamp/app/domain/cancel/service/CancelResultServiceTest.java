@@ -94,7 +94,7 @@ class CancelResultServiceTest {
         assertThat(applicationEvents.stream(SlotReopenedEvent.class))
                 .containsExactly(new SlotReopenedEvent(100L));
         assertThat(applicationEvents.stream(CancelCompletedEvent.class))
-                .containsExactly(new CancelCompletedEvent(100L, 20_000, CancelType.CUSTOMER));
+                .containsExactly(new CancelCompletedEvent(100L, CancelType.CUSTOMER));
     }
 
     @Test

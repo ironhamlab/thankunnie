@@ -22,7 +22,7 @@ public class CancelCompletedEventListener {
     @TransactionalEventListener
     public void handle(CancelCompletedEvent event) {
         try {
-            cancelSmsService.send(event.reservationId(), event.refundAmount(), event.cancelType());
+            cancelSmsService.send(event.reservationId(), event.cancelType());
         } catch (RuntimeException e) {
             // 이미 커밋된 취소 응답이 문자 오류로 실패하지 않게 기록만 한다
             log.error("취소 문자 발송 중 오류 reservationId={}", event.reservationId(), e);

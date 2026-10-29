@@ -40,16 +40,16 @@ class ReservationSmsServiceTest {
     }
 
     @Test
-    @DisplayName("예약이 확정되면 고객 번호로 매장·예약 시각·결제 금액이 담긴 문자를 보낸다")
+    @DisplayName("예약이 확정되면 고객 번호로 매장·예약 시각이 담긴 문자를 보낸다")
     void send_sendsConfirmedMessage() {
         given(recipientContactRepository.findReservationSmsInfo(RESERVATION_ID))
                 .willReturn(Optional.of(new CancelSmsInfo("010-1234-5678", "예쁜네일", STARTS_AT)));
         given(solapiSmsClient.send(any(), any())).willReturn(SmsSendResult.success("G-1"));
 
-        reservationSmsService.send(RESERVATION_ID, 20_000);
+        reservationSmsService.send(RESERVATION_ID);
 
         verify(solapiSmsClient).send("010-1234-5678",
-                "[땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 확정되었습니다. 결제 금액: 20,000원");
+                "[땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 확정되었습니다.");
     }
 
     @Test
@@ -58,7 +58,7 @@ class ReservationSmsServiceTest {
         given(recipientContactRepository.findReservationSmsInfo(RESERVATION_ID))
                 .willReturn(Optional.of(new CancelSmsInfo(null, "예쁜네일", STARTS_AT)));
 
-        reservationSmsService.send(RESERVATION_ID, 20_000);
+        reservationSmsService.send(RESERVATION_ID);
 
         verify(solapiSmsClient, never()).send(any(), any());
     }
@@ -68,7 +68,7 @@ class ReservationSmsServiceTest {
     void send_noReservation_skips() {
         given(recipientContactRepository.findReservationSmsInfo(RESERVATION_ID)).willReturn(Optional.empty());
 
-        reservationSmsService.send(RESERVATION_ID, 20_000);
+        reservationSmsService.send(RESERVATION_ID);
 
         verify(solapiSmsClient, never()).send(any(), any());
     }
