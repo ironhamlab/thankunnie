@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import FavoriteShopList from '@/components/notification/FavoriteShopList';
 import SubscriptionCreateForm from '@/components/notification/SubscriptionCreateForm';
 import SubscriptionList from '@/components/notification/SubscriptionList';
 import ClockIcon from '@/components/icons/ClockIcon';
@@ -14,8 +15,8 @@ const TABS = [
 
 /**
  * 구독 화면. 네비의 구독으로 들어오며, 프로필 없이 탭만 보여 준다.
- * 찜한 매장 내용은 아직 그리지 않는다.
- * 빈자리 알림 조건에서 카테고리·지역 구독을 등록하고, 내 알림 구독에서 목록을 본다.
+ * 내 알림 구독에서 목록을 보고, 찜한 매장 줄을 펼쳐 업장 알림 시간을 등록한다.
+ * 카테고리·지역 알림 설정에서 시술·지역 구독을 등록한다.
  */
 export default function MyNotificationsPage() {
   const [tab, setTab] = useState('subscriptions');
@@ -37,8 +38,9 @@ export default function MyNotificationsPage() {
           </button>
         ))}
       </div>
-      {tab === 'conditions' && <SubscriptionCreateForm />}
       {tab === 'subscriptions' && <SubscriptionList embedded />}
+      {tab === 'favorites' && <FavoriteShopList />}
+      {tab === 'conditions' && <SubscriptionCreateForm />}
     </div>
   );
 }
