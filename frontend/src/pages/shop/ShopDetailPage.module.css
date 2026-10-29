@@ -1,0 +1,423 @@
+.root {
+  padding-top: 18px;
+}
+.root :global(.b-columns) {
+  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr);
+  gap: 28px;
+}
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin-bottom: 22px;
+}
+/* 메뉴만 보일 때는 오른쪽 예약 요약이 없으므로 한 열로 가운데 둔다 */
+.root :global(.b-columns).single {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 760px;
+  margin: 0 auto;
+}
+.header {
+  overflow: hidden;
+}
+.photo {
+  overflow: hidden;
+  aspect-ratio: 1.7;
+}
+.headerBody {
+  padding: 22px 24px 24px;
+}
+.address {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+/* 예약하기를 넓게, 상세정보는 옆에 작게 둔다 */
+.menu {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.menu button {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.menu li:last-child button {
+  padding: 12px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+.menu button:global(.is-selected) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-faint);
+  box-shadow: 0 0 0 1px var(--color-primary);
+  color: var(--color-primary);
+}
+.steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  text-align: center;
+}
+.steps button {
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+.steps button:not(:disabled):hover {
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+}
+.steps button:disabled {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+.steps .currentStep {
+  background: var(--color-primary);
+  color: var(--color-white);
+  font-weight: 700;
+}
+.selectedTreatment {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-faint);
+  font-size: 13px;
+}
+.selectedTreatment small {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.subheading {
+  font-size: 14px;
+}
+.photo > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.content {
+  gap: 20px;
+}
+.content h1 {
+  font-size: 24px;
+}
+.content h2 {
+  font-size: 16px;
+}
+.content :global(.b-panel-heading) > button {
+  flex-shrink: 0;
+}
+.category {
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+.shopInfo {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 22px;
+  font-size: 13px;
+}
+.shopInfo > div {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+}
+.shopInfo dt {
+  color: var(--color-text-muted);
+}
+.shopInfo dd {
+  margin: 0;
+}
+.shopInfo a {
+  color: inherit;
+}
+.hours {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hours span {
+  display: inline-block;
+  width: 20px;
+  color: var(--color-text-muted);
+}
+.intro {
+  margin: 8px 0 16px;
+  font-size: 13px;
+  line-height: 1.8;
+  white-space: pre-line;
+}
+.shop :global(.b-highlight) p {
+  white-space: pre-line;
+}
+.treatments {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.treatments button {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  text-align: left;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.treatments button:global(.is-selected) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-faint);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+.treatmentName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--color-text);
+}
+.treatmentMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.treatmentMeta del {
+  margin-right: 6px;
+  color: var(--color-text-muted);
+}
+.treatmentMeta strong {
+  font-size: 14px;
+  color: var(--color-primary);
+}
+.help {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.calendar {
+  max-width: 460px;
+  margin: 0 auto 20px;
+}
+.calendarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+.calendarHeader button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-white);
+  font-size: 18px;
+  line-height: 1;
+}
+.calendarHeader button:disabled {
+  opacity: 0.35;
+}
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  text-align: center;
+}
+.weekday {
+  padding: 4px 0;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.weekday:first-child {
+  color: var(--color-primary);
+}
+.calendarGrid button {
+  display: grid;
+  place-content: center;
+  min-height: 46px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  font-size: 13px;
+  line-height: 1.2;
+}
+.calendarGrid button:not(:disabled):hover {
+  border-color: var(--color-border-strong);
+}
+.calendarGrid button:disabled {
+  color: var(--color-border-strong);
+}
+.calendarGrid button small {
+  font-size: 9px;
+  color: var(--color-text-muted);
+}
+.calendarGrid .closedDay {
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+.calendarGrid .today {
+  font-weight: 800;
+  border-color: var(--color-border);
+}
+.calendarGrid button:global(.is-selected) {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+.calendarGrid button:global(.is-selected) small {
+  color: var(--color-white);
+}
+.slotDate {
+  margin-bottom: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  font-size: 14px;
+}
+.tier {
+  margin-left: 6px;
+}
+.slots {
+  margin-bottom: 4px;
+}
+/* 공통 시간 칸(b-time-grid)의 선택 색 대신 앱 기본 색을 쓴다 */
+.slots button:global(.is-selected) {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+.favorite {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.favorite button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-white);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+.favorite button span {
+  font-size: 16px;
+  line-height: 1;
+}
+.favorite button:global(.is-selected) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.favoriteError {
+  max-width: 200px;
+  font-size: 11px;
+  color: var(--color-primary);
+  text-align: right;
+}
+/* 고른 시각 이후 소요 시간 동안 이어지는 칸. 시작으로 고를 수 없는 칸이어도 같은 색으로 보인다 */
+.slots button.inRange,
+.slots button.inRange:disabled {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.empty {
+  padding: 16px 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+.timesError {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+.aside {
+  position: sticky;
+  top: 20px;
+  gap: 16px;
+}
+.aside :global(.b-summary) {
+  position: static;
+  gap: 18px;
+  border-color: var(--color-border-strong);
+  border-top: 3px solid var(--color-primary);
+}
+/* 예약 요약 안의 안내 상자도 파란 공통 안내 대신 화면의 분홍 톤으로 맞춘다 */
+.aside :global(.b-summary) :global(.b-notice) {
+  border-color: var(--color-border-strong);
+  background: var(--color-primary-faint);
+  color: var(--color-text-secondary);
+}
+/* 공통 비활성 버튼은 기본 색을 반투명하게 해 탁한 분홍이 되므로, 연한 기본 색 바탕으로 비활성을 보여준다 */
+.aside :global(.b-summary) :global(.b-primary):disabled {
+  opacity: 1;
+  border-color: var(--color-border-strong);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.aside :global(.b-summary) :global(.b-details) dt {
+  color: var(--color-text-secondary);
+}
+@media (max-width: 1100px) {
+  .root :global(.b-columns) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .aside {
+    position: static;
+  }
+}
+@media (max-width: 540px) {
+  .content h1 {
+    font-size: 21px;
+  }
+  .photo {
+    aspect-ratio: 1.3;
+  }
+  .calendarGrid button {
+    min-height: 40px;
+  }
+}
