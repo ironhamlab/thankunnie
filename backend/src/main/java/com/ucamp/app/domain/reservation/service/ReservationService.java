@@ -61,7 +61,7 @@ public class ReservationService {
      * 회원 → 매장 순으로 잠근 뒤 가용 시간과 본인 예약 겹침을 다시 검사하고 저장한다.
      *
      * @param loginUser 로그인한 고객
-     * @param request   시술 ID, 시작 일시, 요청사항
+     * @param request   시술 ID, 시작 일시
      * @return 생성된 점유 예약
      * @throws BusinessException 고객이 아니면 FORBIDDEN,
      *                           30분 단위가 아니면 VACANCY_INVALID_TIME_UNIT,
@@ -107,7 +107,6 @@ public class ReservationService {
                 .appliedPrice(quote.salePrice())
                 .deposit(quote.depositAmount())
                 .holdExpiresAt(SalePolicy.holdExpiresAt(now))
-                .customerRequest(request.customerRequest())
                 .build();
         return ReservationCreateResponse.from(reservationRepository.save(reservation));
     }
@@ -118,16 +117,19 @@ public class ReservationService {
      * 시간 점유는 이미 HOLD 가 잡고 있어 매장 잠금과 가용 시간 재검사는 하지 않는다.
      * 확정이 끝나면 고객 안내 문자를 위해 이벤트를 발행한다. 리스너는 커밋 뒤에 실행되고, 실패해도 확정은 되돌리지 않는다.
      *
-     * @param userId        결제한 고객 ID
-     * @param reservationId 확정할 예약 ID
-     * @param paidAmount    결제사에서 확인한 실제 결제 금액
+     * @param userId          결제한 고객 ID
+     * @param reservationId   확정할 예약 ID
+     * @param paidAmount      결제사에서 확인한 실제 결제 금액
+     * @param customerRequest 결제 화면에서 입력한 고객 요청사항, 없으면 null (Reservation.confirm 참고)
      * @return 확정된 예약 (결제 기록 저장에 사용)
      * @throws BusinessException 없거나 다른 고객의 예약이면 RESERVATION_NOT_FOUND,
      *                           결제 마감(시작 15분 전)이 지났으면 VACANCY_PAYMENT_CLOSED,
+     *                           요청사항이 1,000자를 넘으면 INVALID_INPUT,
      *                           그 밖의 상태·금액 오류는 Reservation.validateConfirmable 참고
      */
     @Transactional
-    public Reservation confirmReservation(Long userId, Long reservationId, int paidAmount) {
+    public Reservation confirmReservation(Long userId, Long reservationId, int paidAmount,
+            String customerRequest) {
         Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
                 .filter(found -> found.getUserId().equals(userId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
@@ -137,7 +139,7 @@ public class ReservationService {
         reservation.validateConfirmable(paidAmount, now);
         // 점유가 유효하면 결제 마감(시작 15분 전) 전이지만, 정책 기준을 한 곳에서 확인하도록 함께 검사한다
         SalePolicy.validatePayable(reservation.getStartsAt(), now);
-        reservation.confirm(paidAmount, now);
+        reservation.confirm(paidAmount, now, customerRequest);
         eventPublisher.publishEvent(new ReservationConfirmedEvent(reservationId));
         return reservation;
     }

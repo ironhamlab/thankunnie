@@ -173,6 +173,7 @@ class ReservationQueryServiceTest {
 
         assertThat(result.summary().reservationId()).isEqualTo(1L);
         assertThat(result.summary().cancellable()).isTrue();
+        assertThat(result.serverTime()).isEqualTo(TimeUtils.toOffset(NOW));
     }
 
     @Test

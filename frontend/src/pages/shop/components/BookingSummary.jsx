@@ -5,6 +5,7 @@ import Button from '@/components/common/Button';
 import Notice from '@/components/common/Notice';
 import Panel from '@/components/common/Panel';
 import { useVacancyDetailStore } from '@/store/useVacancyDetailStore';
+import useReserve from '@/hooks/useReserve';
 import styles from '../ShopDetailPage.module.css';
 
 const money = (value) => `${value.toLocaleString('ko-KR')}원`;
@@ -18,6 +19,7 @@ export default function BookingSummary({ treatment, date, time }) {
   const error = useVacancyDetailStore((state) => state.error);
   const loadDetail = useVacancyDetailStore((state) => state.loadDetail);
   const clearDetail = useVacancyDetailStore((state) => state.clearDetail);
+  const { reserve, loading, error: reserveError } = useReserve();
   const treatmentId = treatment?.treatmentId;
   const startsAt = time ? `${date}T${time}:00` : null;
 
@@ -103,10 +105,20 @@ export default function BookingSummary({ treatment, date, time }) {
           )}
         </>
       )}
-      <Button variant="primary" wide disabled>
-        예약하기
+      {reserveError && (
+        <Alert tone="error" role="alert">
+          {reserveError}
+        </Alert>
+      )}
+      {/* 조회한 가격이 지금 고른 시술·시각의 것이고 예약 가능할 때만 누를 수 있다. 확정 여부는 서버가 다시 판단한다 */}
+      <Button
+        variant="primary"
+        wide
+        disabled={!current || !detail.bookable || loading}
+        onClick={() => reserve(treatmentId, date, time)}
+      >
+        {loading ? '예약하는 중...' : '예약하기'}
       </Button>
-      <Notice>예약 기능을 준비 중입니다. 현재는 시술과 시간을 확인할 수 있습니다.</Notice>
     </Panel>
   );
 }

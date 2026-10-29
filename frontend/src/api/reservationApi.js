@@ -12,6 +12,8 @@ const toParams = ({ from, to, statuses = [], page = 0, size = 20 }) => {
 };
 
 export const reservationApi = {
+  // 고객이 고른 시술·시작 시각을 5분간 점유(HOLD)하는 예약을 만든다
+  createReservation: (request) => axiosInstance.post('/v1/reservations', request),
   getOwnerReservations: (filters) =>
     axiosInstance.get('/v1/owner/reservations', { params: toParams(filters) }),
   getOwnerReservation: (reservationId) =>

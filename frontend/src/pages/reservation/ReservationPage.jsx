@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { generatePath, Link, useNavigate, useParams } from 'react-router-dom';
+import { generatePath, Link, useParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { DEMO_DATE, SERVICES, finish, minutes, money, overlaps } from '@/utils/demoData';
+import { SERVICES, finish, minutes, money, overlaps } from '@/utils/demoData';
+import { todayKst } from '@/utils/scheduleDate';
 import { useDesignStore } from '@/store/useDesignStore';
+import useReserve from '@/hooks/useReserve';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
@@ -11,26 +13,31 @@ import EmptyState from '@/components/common/EmptyState';
 import Alert from '@/components/common/Alert';
 import styles from './ReservationPage.module.css';
 
-const dayLabel = (isClosed, isDemoDate) => {
-  if (isClosed) {
-    return '휴무';
-  }
-  return isDemoDate ? '시연일' : '•';
-};
+const dayLabel = (isClosed) => (isClosed ? '휴무' : '•');
+
+// 서버 접수 마감(BookingPolicy.BOOKING_DEADLINE): 시작 20분 전(결제 마감 15분 + 점유 5분)까지만 예약할 수 있다
+const BOOKING_DEADLINE_MINUTES = 20;
+
+// 한국 시간 기준 지금 시각(HH:mm). 오늘 날짜에서 접수 마감이 지난 시간은 고를 수 없게 한다
+const nowKstTime = () =>
+  new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Seoul',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date());
 
 export default function ReservationPage() {
   const { id } = useParams();
   const service = SERVICES.find((item) => item.id === id);
-  const navigate = useNavigate();
   const bookings = useDesignStore((s) => s.bookings);
-  const createHold = useDesignStore((s) => s.createHold);
-  const [date, setDate] = useState('2025-10-22');
-  const [time, setTime] = useState('14:00');
-  const [month, setMonth] = useState(9);
-  const [year, setYear] = useState(2025);
+  const { reserve, loading, error: reserveError } = useReserve();
+  const today = todayKst();
+  const [date, setDate] = useState(today);
+  const [time, setTime] = useState('');
+  const [month, setMonth] = useState(Number(today.slice(5, 7)) - 1);
+  const [year, setYear] = useState(Number(today.slice(0, 4)));
   const [mode, setMode] = useState('normal');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   if (!service)
     return (
       <EmptyState>
@@ -41,6 +48,7 @@ export default function ReservationPage() {
   const duration = 90;
   const blocked = (value) =>
     mode === 'soldout' ||
+    (date === today && minutes(value) - BOOKING_DEADLINE_MINUTES <= minutes(nowKstTime())) ||
     minutes(value) + duration > 1200 ||
     bookings.some(
       (b) =>
@@ -59,15 +67,7 @@ export default function ReservationPage() {
       setError('선택한 시간은 다른 예약과 겹치거나 시술 시간이 부족합니다.');
       return;
     }
-    setLoading(true);
-    try {
-      createHold(id, date, time, true);
-      navigate(ROUTES.CHECKOUT);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    await reserve(service.treatmentId, date, time);
   };
   const changeMonth = (delta) => {
     const next = new Date(year, month + delta, 1);
@@ -142,7 +142,7 @@ export default function ReservationPage() {
                   '-' +
                   String(day).padStart(2, '0');
                 const closed = new Date(year, month, day).getDay() === 0;
-                const past = value < '2025-10-22';
+                const past = value < today;
                 return (
                   <button
                     key={value}
@@ -158,13 +158,13 @@ export default function ReservationPage() {
                     }}
                   >
                     {day}
-                    <small>{dayLabel(closed, value === DEMO_DATE)}</small>
+                    <small>{dayLabel(closed)}</small>
                   </button>
                 );
               })}
             </div>
             <p className="b-help">
-              선택한 날짜: <strong className="b-pink">{date}</strong> · 시연 기준 2025년 10월
+              선택한 날짜: <strong className="b-pink">{date}</strong>
             </p>
           </Panel>
           <Panel as="section" padded>
@@ -268,15 +268,18 @@ export default function ReservationPage() {
               <dd>{money(service.original * 0.8)}</dd>
             </div>
           </dl>
-          {error && (
+          {!service.treatmentId && <Notice>시연용 시술이라 실제 예약을 요청할 수 없습니다.</Notice>}
+          {(error || reserveError) && (
             <Alert as="p" tone="error" role="alert">
-              {error}
+              {error || reserveError}
             </Alert>
           )}
           <Button
             variant="primary"
             wide
-            disabled={loading || mode === 'loading' || !time || mode === 'soldout'}
+            disabled={
+              loading || mode === 'loading' || !time || mode === 'soldout' || !service.treatmentId
+            }
             onClick={handleNext}
           >
             {loading || mode === 'loading' ? '실시간 검증 중…' : '다음 (예약 가능 여부 확인)'}
@@ -290,7 +293,7 @@ export default function ReservationPage() {
           className="b-pink"
           to={generatePath(ROUTES.RESERVE, { id })}
           onClick={() => {
-            setDate(DEMO_DATE);
+            setDate(today);
             setTime(service.time);
           }}
         >
