@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTreatmentStore } from '@/store/useTreatmentStore';
 import { money } from '@/utils/demoData';
 import TreatmentForm from '@/pages/owner/components/TreatmentForm';
+import TreatmentThumbnail from './components/TreatmentThumbnail';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
@@ -13,10 +14,13 @@ export default function MenusPage() {
   const treatments = useTreatmentStore((state) => state.treatments);
   const status = useTreatmentStore((state) => state.status);
   const error = useTreatmentStore((state) => state.error);
-  const isSaving = useTreatmentStore((state) => state.mutationStatus === 'loading');
+  const isMutating = useTreatmentStore((state) => state.mutationStatus === 'loading');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSaving = isMutating || isSubmitting;
   const load = useTreatmentStore((state) => state.loadTreatments);
   const save = useTreatmentStore((state) => state.saveTreatment);
   const changeStatus = useTreatmentStore((state) => state.changeTreatmentStatus);
+  const saveImage = useTreatmentStore((state) => state.saveImage);
   const [edit, setEdit] = useState(null);
   const [notice, setNotice] = useState('');
   const [actionError, setActionError] = useState(null);
@@ -30,14 +34,27 @@ export default function MenusPage() {
     setActionError(null);
     setEdit({ treatment });
   };
-  const submit = async (treatmentId, payload) => {
+  const submit = async (treatmentId, payload, imageFile) => {
+    if (isSaving) return;
+    setIsSubmitting(true);
     setActionError(null);
+    let saved;
     try {
-      await save(treatmentId, payload);
+      saved = await save(treatmentId, payload);
+      if (imageFile) await saveImage(saved.treatmentId, imageFile);
       setEdit(null);
       setNotice('시술 메뉴를 저장했습니다.');
     } catch (failure) {
-      setActionError(failure);
+      if (saved) {
+        // 생성된 ID를 유지해 이미지 재시도가 새 시술을 중복 생성하지 않도록 한다.
+        setEdit({ treatment: saved });
+        setActionError({
+          ...failure,
+          message: `시술 정보는 저장됐지만 이미지 등록에 실패했습니다. 다시 저장해 주세요. ${failure.message}`,
+        });
+      } else setActionError(failure);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   const toggle = async (treatment) => {
@@ -108,7 +125,7 @@ export default function MenusPage() {
                 <table>
                   <thead>
                     <tr>
-                      {['시술명', '설명', '소요 시간', '정상가', '상태', '관리'].map(
+                      {['이미지', '시술명', '설명', '소요 시간', '정상가', '상태', '관리'].map(
                         (heading) => (
                           <th key={heading} scope="col">
                             {heading}
@@ -120,6 +137,13 @@ export default function MenusPage() {
                   <tbody>
                     {treatments.map((item) => (
                       <tr key={item.treatmentId}>
+                        <td>
+                          <TreatmentThumbnail
+                            key={item.imageUrl ?? 'default'}
+                            imageUrl={item.imageUrl}
+                            name={item.name}
+                          />
+                        </td>
                         <td>
                           <strong>{item.name}</strong>
                           <small>
@@ -160,6 +184,10 @@ export default function MenusPage() {
       {edit && (
         <TreatmentForm
           treatment={edit.treatment}
+          imageUrl={
+            treatments.find((item) => item.treatmentId === edit.treatment?.treatmentId)?.imageUrl
+          }
+          onImageSave={(file) => saveImage(edit.treatment.treatmentId, file)}
           isSaving={isSaving}
           error={actionError}
           onSave={submit}

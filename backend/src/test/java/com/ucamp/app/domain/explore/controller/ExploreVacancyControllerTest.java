@@ -2,6 +2,7 @@ package com.ucamp.app.domain.explore.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -11,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -33,6 +35,8 @@ import com.ucamp.app.domain.explore.dto.request.ExploreVacancySearchRequest;
 import com.ucamp.app.domain.explore.dto.request.ExploreVacancySort;
 import com.ucamp.app.domain.explore.dto.response.ExploreShopMapResponse;
 import com.ucamp.app.domain.explore.dto.response.ExploreShopResponse;
+import com.ucamp.app.domain.explore.dto.response.ExploreVacancyDetailResponse;
+import com.ucamp.app.domain.explore.service.ExploreVacancyDetailService;
 import com.ucamp.app.domain.explore.service.ExploreVacancyService;
 import com.ucamp.app.domain.vacancy.policy.PriceTier;
 
@@ -49,6 +53,9 @@ class ExploreVacancyControllerTest {
 
     @MockitoBean
     private ExploreVacancyService exploreVacancyService;
+
+    @MockitoBean
+    private ExploreVacancyDetailService exploreVacancyDetailService;
 
     @Test
     @DisplayName("비로그인으로 목록을 조회하면 페이지 응답을 반환하고, 생략한 정렬·페이지는 기본값으로 넘긴다")
@@ -102,6 +109,38 @@ class ExploreVacancyControllerTest {
         mockMvc.perform(get(VACANCIES_URL).param("timeOfDay", "NIGHT")).andExpect(status().isBadRequest());
         mockMvc.perform(get(VACANCIES_URL).param("startDate", "11/06")).andExpect(status().isBadRequest());
         verifyNoInteractions(exploreVacancyService);
+    }
+
+    @Test
+    @DisplayName("빈자리 상세는 비로그인으로 조회하고 시술 ID 와 시작 시각을 넘긴다")
+    void getVacancyDetail_anonymous_returnsDetail() throws Exception {
+        OffsetDateTime startsAt = OffsetDateTime.of(2026, 11, 6, 20, 0, 0, 0, ZoneOffset.ofHours(9));
+        ExploreVacancyDetailResponse detail = new ExploreVacancyDetailResponse("1-202611062000", 1L, "언니네 네일",
+                "11680", "서울특별시 강남구 테헤란로 1", new BigDecimal("37.4979"), new BigDecimal("127.0276"),
+                1L, "젤네일 원컬러", 1L, "네일", "NORMAL", 60, null, startsAt, startsAt.plusHours(1),
+                startsAt.minusMinutes(20), PriceTier.NORMAL, 35000, 30000, 14, 20000, true, null,
+                "기본 원컬러 젤네일", null, null, null, "2층", "02-111-1111", "젤네일·케어 전문", null, 10000);
+        given(exploreVacancyDetailService.getDetail(eq(1L), any())).willReturn(detail);
+
+        mockMvc.perform(get(VACANCIES_URL + "/1").param("startsAt", "2026-11-06T20:00:00"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.vacancyId").value("1-202611062000"))
+                .andExpect(jsonPath("$.data.bookable").value(true))
+                .andExpect(jsonPath("$.data.notBookableReason").doesNotExist())
+                .andExpect(jsonPath("$.data.startsAt").value("2026-11-06T20:00:00+09:00"))
+                .andExpect(jsonPath("$.data.balanceAmount").value(10000));
+
+        verify(exploreVacancyDetailService).getDetail(1L, LocalDateTime.of(2026, 11, 6, 20, 0));
+    }
+
+    @Test
+    @DisplayName("빈자리 상세에서 시작 시각이 없거나 형식이 틀리면 400 이다")
+    void getVacancyDetail_invalidStartsAt_returnsBadRequest() throws Exception {
+        mockMvc.perform(get(VACANCIES_URL + "/1")).andExpect(status().isBadRequest());
+        mockMvc.perform(get(VACANCIES_URL + "/1").param("startsAt", "2026-11-06")).andExpect(status().isBadRequest());
+        mockMvc.perform(get(VACANCIES_URL + "/abc").param("startsAt", "2026-11-06T20:00:00"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(exploreVacancyDetailService);
     }
 
     @Test

@@ -14,6 +14,27 @@ export const useTreatmentStore = create((set, get) => ({
   error: null,
   mutationError: null,
   activeTreatments: [],
+  saveImage: async (treatmentId, file) => {
+    set({ mutationStatus: 'loading', mutationError: null });
+    try {
+      const result = file
+        ? await treatmentApi.uploadImage(treatmentId, file)
+        : await treatmentApi.deleteImage(treatmentId);
+      const update = (items) =>
+        items.map((item) =>
+          item.treatmentId === treatmentId ? { ...item, imageUrl: result?.imageUrl ?? null } : item,
+        );
+      set((state) => ({
+        treatments: update(state.treatments),
+        activeTreatments: update(state.activeTreatments),
+        mutationStatus: 'succeeded',
+      }));
+    } catch (error) {
+      const failure = toError(error);
+      set({ mutationStatus: 'failed', mutationError: failure });
+      throw failure;
+    }
+  },
   selectionStatus: 'idle',
   selectionError: null,
 
