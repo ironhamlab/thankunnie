@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.notification.service;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -58,6 +59,6 @@ public class ReservationSmsService {
     // 예: [땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 확정되었습니다. 결제 금액: 20,000원
     String buildMessage(CancelSmsInfo info, Integer paidAmount) {
         return "[땡잡은 언니] " + info.shopName() + " " + info.startsAt().format(STARTS_AT_TEXT)
-                + " 예약이 확정되었습니다. 결제 금액: " + String.format("%,d", paidAmount) + "원";
+                + " 예약이 확정되었습니다. 결제 금액: " + String.format(Locale.KOREA, "%,d", paidAmount) + "원";
     }
 }

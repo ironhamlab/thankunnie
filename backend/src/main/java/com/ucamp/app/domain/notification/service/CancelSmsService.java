@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.notification.service;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -64,7 +65,7 @@ public class CancelSmsService {
                 ? "예약이 매장 사정으로 취소되었습니다."
                 : "예약이 취소되었습니다.";
         return "[땡잡은 언니] " + info.shopName() + " " + info.startsAt().format(STARTS_AT_TEXT)
-                + " " + sentence + " 환불 금액: " + String.format("%,d", refundAmount) + "원";
+                + " " + sentence + " 환불 금액: " + String.format(Locale.KOREA, "%,d", refundAmount) + "원";
     }
 
     // 사장님이 직접 취소한 경우(매장 사유, 고객 요청 대리 취소)만 매장 사정 문구를 쓴다
