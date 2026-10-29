@@ -36,28 +36,23 @@ export function dayLabel(date, today = todayKst()) {
   return offset >= 0 ? RELATIVE_DAYS[offset] : shortDate(date);
 }
 
-/** 빈자리 상세 화면 주소. 같은 시술도 시작 시각마다 가격·예약 가능 여부가 달라 시작 시각을 함께 넘긴다 */
-export function vacancyDetailPath(treatmentId, startsAt) {
-  const query = new URLSearchParams({ startsAt });
-  return `${generatePath(ROUTES.SERVICE_DETAIL, { id: treatmentId })}?${query}`;
-}
-
 /**
- * 매장 페이지 주소. 홈 마감 임박·매장 카드, 검색 목록, 지도가 모두 이 함수로 매장 페이지에 간다.
- * 시술·시작 시각을 넘기면 매장 페이지에서 그 날짜·시간이 골라진 채로 열려야 한다.
- *
- * 고객용 매장 페이지(A)가 아직 없어 지금은 가장 가까운 화면으로 보낸다. 페이지가 생기면 이 함수만 바꾼다.
- * - 시술·시각까지 고른 경우: 그 시술 × 시각의 빈자리 상세
- * - 매장만 고른 경우: 검색 화면에서 그 매장을 펼친 상태
+ * 매장 상세(A, /shops/:shopId) 주소. 홈 마감 임박·매장 카드, 검색 목록, 지도가 모두 이 함수로 매장 상세에 간다.
+ * 시술·시작 시각까지 고른 곳(마감 임박 카드, 시간 버튼)은 그 날짜·시간이 골라진 채로 열리도록 값을 붙인다.
+ * 매장 상세는 아직 주소의 선택 값을 읽지 않아 지금은 매장 상세 첫 화면이 열린다.
  *
  * @param shopId    매장 ID
  * @param selection { date, treatmentId, startsAt } 중 아는 값
  */
 export function shopPagePath(shopId, { date, treatmentId, startsAt } = {}) {
-  if (treatmentId && startsAt) return vacancyDetailPath(treatmentId, startsAt);
-  const query = new URLSearchParams({ view: 'list', shop: shopId });
+  const path = generatePath(ROUTES.SHOP_DETAIL, { shopId });
+  const query = new URLSearchParams();
   if (date) query.set('date', date);
-  return `${ROUTES.HOME}?${query}`;
+  if (treatmentId && startsAt) {
+    query.set('treatmentId', treatmentId);
+    query.set('startsAt', startsAt);
+  }
+  return query.size ? `${path}?${query}` : path;
 }
 
 /** 이미지가 없으면 기본 시술 그림을 쓴다 */
