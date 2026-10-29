@@ -2,26 +2,12 @@ import { generatePath } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { addDays, datePart, timePart, todayKst } from '@/utils/scheduleDate';
 import defaultTreatmentImage from '@/assets/images/default-treatment.svg';
-
-// 화면의 지역 그룹 → 매장 지역 코드. docs/api/C-01-vacancy-search.md 9장 기준
-export const REGION_CODES = {
-  '강남/서초': ['11680', '11650'],
-  '홍대/연남': ['11440'],
-  '성수/건대': ['11200', '11215'],
-  '잠실/송파': ['11710'],
-  '판교/분당': ['41135'],
-};
+import defaultShopImage from '@/assets/images/default-shop.svg';
 
 export const TIME_OF_DAY = {
   '오전 (12시 이전)': 'MORNING',
   '오후 (12~18시)': 'AFTERNOON',
   '저녁 (18시 이후)': 'EVENING',
-};
-
-export const SORTS = {
-  '빠른 시작순': 'START_ASC',
-  할인율순: 'DISCOUNT_DESC',
-  '낮은 가격순': 'PRICE_ASC',
 };
 
 const URGENCY = {
@@ -50,26 +36,53 @@ export function dayLabel(date, today = todayKst()) {
   return offset >= 0 ? RELATIVE_DAYS[offset] : shortDate(date);
 }
 
-/** 오늘부터 days 일의 날짜 선택지. 사흘 안은 '오늘 10.29 (목)' 처럼 함께 표시한다 */
-export function upcomingDays(days, today = todayKst()) {
-  return Array.from({ length: days }, (_, index) => {
-    const date = addDays(today, index);
-    const offset = relativeDay(date, today);
-    return {
-      date,
-      label: offset >= 0 ? `${RELATIVE_DAYS[offset]} ${shortDate(date)}` : shortDate(date),
-    };
-  });
-}
-
 /** 빈자리 상세 화면 주소. 같은 시술도 시작 시각마다 가격·예약 가능 여부가 달라 시작 시각을 함께 넘긴다 */
 export function vacancyDetailPath(treatmentId, startsAt) {
   const query = new URLSearchParams({ startsAt });
   return `${generatePath(ROUTES.SERVICE_DETAIL, { id: treatmentId })}?${query}`;
 }
 
+/**
+ * 매장 페이지 주소. 홈 마감 임박·매장 카드, 검색 목록, 지도가 모두 이 함수로 매장 페이지에 간다.
+ * 시술·시작 시각을 넘기면 매장 페이지에서 그 날짜·시간이 골라진 채로 열려야 한다.
+ *
+ * 고객용 매장 페이지(A)가 아직 없어 지금은 가장 가까운 화면으로 보낸다. 페이지가 생기면 이 함수만 바꾼다.
+ * - 시술·시각까지 고른 경우: 그 시술 × 시각의 빈자리 상세
+ * - 매장만 고른 경우: 검색 화면에서 그 매장을 펼친 상태
+ *
+ * @param shopId    매장 ID
+ * @param selection { date, treatmentId, startsAt } 중 아는 값
+ */
+export function shopPagePath(shopId, { date, treatmentId, startsAt } = {}) {
+  if (treatmentId && startsAt) return vacancyDetailPath(treatmentId, startsAt);
+  const query = new URLSearchParams({ view: 'list', shop: shopId });
+  if (date) query.set('date', date);
+  return `${ROUTES.HOME}?${query}`;
+}
+
 /** 이미지가 없으면 기본 시술 그림을 쓴다 */
 export const vacancyImage = (imageUrl) => imageUrl || defaultTreatmentImage;
+
+/** 이미지가 없으면 기본 매장 그림을 쓴다 */
+export const shopImage = (imageUrl) => imageUrl || defaultShopImage;
+
+/** '서울특별시 강남구 테헤란로 1' 에서 카드에 쓸 동네 '강남구 테헤란로' 만 꺼낸다 */
+export const areaName = (address) => address.split(' ').slice(1, 3).join(' ');
+
+/** 매장 요약(C-02)의 가장 빠른 시작을 '오늘 17:00' 처럼 표시한다 */
+export const earliestLabel = (shop, today = todayKst()) =>
+  `${dayLabel(datePart(shop.earliestStartsAt), today)} ${timePart(shop.earliestStartsAt)}`;
+
+/** 빈자리를 시술별로 묶는다. 시작 시각 순서는 그대로 둔다 */
+export function groupByTreatment(vacancies) {
+  const groups = new Map();
+  vacancies.forEach((vacancy) => {
+    const group = groups.get(vacancy.treatmentId);
+    if (group) group.slots.push(vacancy);
+    else groups.set(vacancy.treatmentId, { ...vacancy, slots: [vacancy] });
+  });
+  return [...groups.values()];
+}
 
 /**
  * 탐색 API(C-01) 빈자리 한 건을 카드·지도 표시용으로 바꾼다. 가격·할인율은 서버 값을 그대로 쓴다.
@@ -95,6 +108,11 @@ export function toVacancyCard(item, today = todayKst()) {
     discount: item.discountRate,
     urgency: URGENCY[item.priceTier] ?? URGENCY.NORMAL,
     image: vacancyImage(item.imageUrl),
-    detailPath: vacancyDetailPath(item.treatmentId, item.startsAt),
+    // 이 시술 · 시각이 골라진 매장 페이지
+    shopPath: shopPagePath(item.shopId, {
+      date: datePart(item.startsAt),
+      treatmentId: item.treatmentId,
+      startsAt: item.startsAt,
+    }),
   };
 }

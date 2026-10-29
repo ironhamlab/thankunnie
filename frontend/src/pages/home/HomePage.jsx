@@ -1,30 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { money } from '@/utils/demoData';
 import { useExploreStore } from '@/store/useExploreStore';
-import { todayKst } from '@/utils/scheduleDate';
-import Dialog from '@/components/common/Dialog';
+import { datePart } from '@/utils/scheduleDate';
+import { shopPagePath } from '@/utils/exploreVacancy';
 import VacancySearch from '@/pages/home/components/VacancySearch';
 import HomeBeautyMap from '@/pages/home/components/HomeBeautyMap';
-import Button from '@/components/common/Button';
+import ImminentCarousel from '@/pages/home/components/ImminentCarousel';
+import ShopCard from '@/pages/home/components/ShopCard';
 import '@/assets/styles/home-redesign.css';
 import styles from './HomePage.module.css';
 
-const CATEGORIES = [
-  { title: '오늘 임박', text: '당일 마감 특가 할인', icon: 'bolt', badge: '최대 40%', sale: true },
-  {
-    title: '시술 모델 모집',
-    text: '무료 & 재료비 실습 모델',
-    icon: 'auto_awesome',
-    badge: '재료비 지원',
-    model: true,
-  },
-  { title: '네일', text: '젤원컬러, 이달의아트, 패디', icon: 'brush', badge: '18개 샵 오픈' },
-  { title: '헤어', text: '커트, 두피스케일링, 염색', icon: 'content_cut', badge: '12개 샵 오픈' },
-  { title: '속눈썹', text: '속눈썹 펌, 블랙틴팅, 연장', icon: 'visibility', badge: '9개 샵 오픈' },
-  { title: '피부관리', text: '수분 진정 퀵 페이셜, 윤곽', icon: 'spa', badge: '15개 샵 오픈' },
-];
 const SLIDES = [
   {
     tag: '실시간 타임세일',
@@ -55,51 +41,46 @@ const SLIDES = [
     badge: '취소 빈자리 모아보기',
   },
 ];
-const ALL = '전체';
-const TODAY_SALE = '오늘 임박';
-// 홈에는 가장 빨리 시작하는 빈자리 몇 개만 보여주고 나머지는 전체보기(검색 화면)로 넘긴다
-const HOME_DEAL_COUNT = 3;
+// 홈 분야 탭에는 가장 빨리 시작하는 매장을 4개씩 3줄까지만 보여주고 나머지는 전체보기(검색 화면)로 넘긴다
+const HOME_SHOP_COUNT = 12;
+const MODEL_LIST_PATH = `${ROUTES.HOME}?view=list&type=MODEL`;
+
+// 검색 화면은 하루씩 보므로, 홈에서 보던 매장의 가장 빠른 빈자리 날짜로 넘겨야 같은 빈자리가 이어서 보인다
+function categoryListPath(categoryId, shop) {
+  const query = new URLSearchParams({ view: 'list', category: categoryId });
+  if (shop) query.set('date', datePart(shop.earliestStartsAt));
+  return `${ROUTES.HOME}?${query}`;
+}
 
 export default function HomePage() {
   const [params] = useSearchParams();
   const [slideIndex, setSlideIndex] = useState(0);
-  const [modelOpen, setModelOpen] = useState(false);
-  const [category, setCategory] = useState(ALL);
+  const navigate = useNavigate();
   const categories = useExploreStore((s) => s.categories);
-  const results = useExploreStore((s) => s.homeVacancies);
-  const homeStatus = useExploreStore((s) => s.homeStatus);
+  const homeShops = useExploreStore((s) => s.homeShops);
+  const homeShopsStatus = useExploreStore((s) => s.homeShopsStatus);
   const loadCategories = useExploreStore((s) => s.loadCategories);
-  const loadHomeVacancies = useExploreStore((s) => s.loadHomeVacancies);
+  const loadHomeShops = useExploreStore((s) => s.loadHomeShops);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const searchMode = params.has('view') || params.has('sale') || params.has('search');
   const slide = SLIDES[slideIndex];
-  const today = todayKst();
-  // 화면의 분야 이름을 DB 카테고리 ID 로 바꾼다. DB 에 없는 분야면 undefined
-  const categoryId = categories.find((item) => item.name === category)?.categoryId;
-  const query = useMemo(() => {
-    if (category === TODAY_SALE) {
-      return { startDate: today, endDate: today, priceTier: 'IMMINENT', size: HOME_DEAL_COUNT };
-    }
-    return { categoryId, size: HOME_DEAL_COUNT };
-  }, [category, categoryId, today]);
-  const unknownCategory = category !== ALL && category !== TODAY_SALE && categoryId === undefined;
+  // 고르기 전에는 첫 번째 분야를 보여준다
+  const category =
+    categories.find((item) => item.categoryId === selectedCategoryId) ?? categories[0];
 
   useEffect(() => {
     if (!searchMode) loadCategories();
   }, [searchMode, loadCategories]);
 
   useEffect(() => {
-    if (!searchMode && !unknownCategory) loadHomeVacancies(query);
-  }, [searchMode, unknownCategory, query, loadHomeVacancies]);
+    if (!searchMode && category) {
+      loadHomeShops({ categoryId: category.categoryId });
+    }
+  }, [searchMode, category, loadHomeShops]);
 
   if (searchMode) return <VacancySearch />;
-  const chooseCategory = (item) => {
-    if (item.model) {
-      setModelOpen(true);
-      return;
-    }
-    setCategory(item.title);
-    document.getElementById('home-deals').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  const showImminent = () =>
+    document.getElementById('home-imminent').scrollIntoView({ behavior: 'smooth', block: 'start' });
   return (
     <div className="b-container home-redesign">
       <section className={styles.banner} aria-label="메인 혜택 배너" aria-roledescription="캐러셀">
@@ -117,9 +98,7 @@ export default function HomePage() {
             <p>{slide.description}</p>
             <button
               className={styles.liveBadge}
-              onClick={() =>
-                slideIndex === 1 ? setModelOpen(true) : chooseCategory(CATEGORIES[0])
-              }
+              onClick={() => (slideIndex === 1 ? navigate(MODEL_LIST_PATH) : showImminent())}
             >
               ● {slide.badge}
             </button>
@@ -156,109 +135,56 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-      <section className={styles.discover} aria-label="시술 분야와 주변 빈자리">
-        <div className={styles.categories}>
-          <h2>어떤 시술을 찾고 계신가요?</h2>
-          <div className={styles.categoryGrid}>
-            {CATEGORIES.map((item) => (
-              <button
-                key={item.title}
-                className={styles.category}
-                aria-pressed={item.model ? undefined : category === item.title}
-                onClick={() => chooseCategory(item)}
-              >
-                <span className={styles.categoryTop}>
-                  <span
-                    className={`${styles.categoryIcon} ${styles.symbol} ${item.sale || item.model ? styles.isFilled : ''}`}
-                    aria-hidden="true"
-                  >
-                    {item.icon}
-                  </span>
-                  <small>{item.badge}</small>
-                </span>
-                <strong>{item.title}</strong>
-                <span className={styles.categoryDescription}>{item.text}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+      <section className={styles.discover} aria-label="오늘 임박 빈자리와 주변 빈자리 지도">
+        <ImminentCarousel />
         <HomeBeautyMap />
       </section>
       <section id="home-deals" className="home-deals">
         <div className={styles.sectionHeading}>
           <div>
             <h2>
-              {category === ALL || category === TODAY_SALE
-                ? '오늘의 실시간 타임세일 & 빈자리'
-                : `${category} 예약 가능한 빈자리`}{' '}
+              {category ? `${category.name} 빈자리 있는 매장` : '분야별 빈자리 있는 매장'}{' '}
               <em>◷</em>
             </h2>
-            <p>예약 취소 및 공실 자리를 실시간 특가로 잡으세요. (결제 시 5분 예약금 임시 확보)</p>
+            <p>오늘부터 7일 안에 빈자리가 있는 매장을 빨리 시작하는 순으로 보여드려요.</p>
           </div>
-          <Link to={`${ROUTES.HOME}?view=list`}>전체보기 ›</Link>
+          {category && (
+            <Link to={categoryListPath(category.categoryId, homeShops[0])}>
+              {category.name} 전체보기 ›
+            </Link>
+          )}
         </div>
-        {homeStatus === 'failed' && (
+        <div className={styles.categoryTabs} role="tablist" aria-label="시술 분야">
+          {categories.map((item) => (
+            <button
+              key={item.categoryId}
+              type="button"
+              role="tab"
+              aria-selected={item.categoryId === category?.categoryId}
+              onClick={() => setSelectedCategoryId(item.categoryId)}
+            >
+              {item.name}
+            </button>
+          ))}
+        </div>
+        {homeShopsStatus === 'failed' && (
           <p className="b-muted" role="alert">
             빈자리를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
           </p>
         )}
-        {homeStatus === 'succeeded' && (unknownCategory || results.length === 0) && (
-          <p className="b-muted">지금 예약 가능한 빈자리가 없어요. 다른 분야를 골라 보세요.</p>
+        {homeShopsStatus === 'succeeded' && homeShops.length === 0 && (
+          <p className="b-muted">지금 빈자리가 있는 매장이 없어요. 다른 분야를 골라 보세요.</p>
         )}
-        <div className={styles.dealGrid}>
-          {(unknownCategory ? [] : results).map((service) => (
-            <article className={styles.dealCard} key={service.id}>
-              <div className={styles.dealPhoto}>
-                <img src={service.image} alt={`${service.shop} ${service.category} 시술`} />
-                <span
-                  className={`${styles.urgency} ${service.urgency !== '초임박 특가' ? styles.isSoon : ''}`}
-                >
-                  ● {service.urgency}
-                </span>
-                {service.urgency === '초임박 특가' && (
-                  <span className={styles.countdown}>
-                    <span>◷ 예약 마감</span>
-                    <b>{service.closesAt}</b>
-                  </span>
-                )}
-              </div>
-              <div className={styles.dealBody}>
-                <div className={styles.dealMeta}>
-                  <strong>{service.shop}</strong>
-                  <span>⌖ {service.location}</span>
-                </div>
-                <h3>{service.name}</h3>
-                <p className={styles.dealTime}>
-                  ⌛ {service.duration}분 소요 <span>·</span>{' '}
-                  <strong>
-                    {service.day} {service.time}
-                  </strong>
-                </p>
-                <div className={styles.dealPrice}>
-                  <div>
-                    {service.discount > 0 && <del>{money(service.original)}</del>}
-                    <div>
-                      {service.discount > 0 && <em>{service.discount}%</em>}{' '}
-                      <b>{money(service.price)}</b>
-                    </div>
-                  </div>
-                  <Button as={Link} variant="primary" to={service.detailPath}>
-                    빈자리 확인
-                  </Button>
-                </div>
-              </div>
-            </article>
+        <div className={styles.shopGrid}>
+          {homeShops.slice(0, HOME_SHOP_COUNT).map((shop) => (
+            <ShopCard
+              key={shop.shopId}
+              shop={shop}
+              to={shopPagePath(shop.shopId, { date: datePart(shop.earliestStartsAt) })}
+            />
           ))}
         </div>
       </section>
-      {modelOpen && (
-        <Dialog title="시술 모델 모집" onClose={() => setModelOpen(false)}>
-          <p>시술 모델 모집 화면은 준비 중입니다. 현재는 메인페이지 UI 시연 환경입니다.</p>
-          <Button variant="primary" onClick={() => setModelOpen(false)}>
-            확인
-          </Button>
-        </Dialog>
-      )}
     </div>
   );
 }

@@ -42,36 +42,6 @@
   color: var(--color-text-secondary);
   font-weight: 600;
 }
-.dateFilter {
-  padding-bottom: 14px;
-}
-.dateFilter :global(.b-options) {
-  gap: 8px;
-}
-.dateFilter button {
-  border-radius: var(--radius-pill);
-  padding: 6px 14px;
-  background: var(--color-surface-blue);
-}
-.dateFilter button:global(.is-selected) {
-  color: white;
-  background: var(--color-primary);
-}
-.moreDate {
-  position: relative;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
-  padding: 5px 10px;
-  font-size: 11px;
-  cursor: pointer;
-}
-.moreDate input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  width: 100%;
-  cursor: pointer;
-}
 .filterLine {
   padding: 8px 0;
   gap: 18px;
@@ -105,11 +75,6 @@
   align-items: center;
   gap: 8px;
 }
-.cardGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-}
 .home > :global(.b-help) {
   display: flex;
   flex-wrap: wrap;
@@ -122,33 +87,16 @@
   }
 }
 @media (max-width: 900px) {
-  .cardGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-  }
   .filterGroup {
     flex-wrap: wrap;
   }
 }
 @media (max-width: 540px) {
-  .cardGrid {
-    grid-template-columns: minmax(0, 1fr);
-  }
   .filters {
     padding: 16px;
   }
   .filterGroup {
     gap: 10px;
-  }
-  .dateFilter :global(.b-options) {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    max-width: 100%;
-    padding-bottom: 5px;
-  }
-  .dateFilter button,
-  .moreDate {
-    white-space: nowrap;
   }
   .resultsHeading {
     flex-wrap: wrap;
@@ -159,21 +107,81 @@
   font-size: 13px;
   margin: 10px 0 22px;
 }
-:global(.b-vacancy-map-layout) .cardGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+/* 시술 분야는 가장 먼저 고르는 조건이라 크게 보여준다 */
+.categoryRow {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
 }
-@media (max-width: 540px) {
-  :global(.b-vacancy-map-layout) .cardGrid {
+.categoryRow button {
+  flex-shrink: 0;
+  min-width: 96px;
+  padding: 12px 24px;
+  border: 1px solid #e2bdc3;
+  border-radius: var(--radius-pill);
+  background: white;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+.categoryRow button[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+.dateRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 0 4px;
+}
+/* 목록 옆에 지도를 붙여 두고 스크롤해도 지도는 따라오게 한다 */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  gap: 24px;
+  align-items: start;
+}
+.mapPane {
+  position: sticky;
+  top: 96px;
+  height: calc(100vh - 140px);
+  max-height: 640px;
+}
+.more {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+@media (max-width: 900px) {
+  .layout {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* 좁은 화면에서는 지도를 목록 위에 짧게 둔다 */
+  .mapPane {
+    order: -1;
+    position: static;
+    height: 300px;
+  }
+  .mapPane > section {
+    min-height: 300px;
+  }
 }
-.clearShop {
-  border: 0;
-  background: none;
-  padding: 0;
-  color: var(--color-primary);
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
+@media (max-width: 540px) {
+  .categoryRow button {
+    min-width: 80px;
+    padding: 10px 18px;
+    font-size: 15px;
+  }
+}
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.rowSkeleton {
+  height: 98px;
 }
