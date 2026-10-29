@@ -1,4 +1,7 @@
 .root {
+  /* 연한 분홍 바탕·테두리는 공통 강조 상자(b-highlight)와 같은 값을 쓴다 */
+  --shop-tint: #fff5f8;
+  --shop-line: #ffc0d8;
   padding-top: 18px;
 }
 .root :global(.b-columns) {
@@ -61,9 +64,9 @@
   color: var(--color-text-secondary);
 }
 .menu button:global(.is-selected) {
-  border-color: #ff3589;
-  background: #fff5f8;
-  box-shadow: 0 0 0 1px #ff3589;
+  border-color: var(--color-primary);
+  background: var(--shop-tint);
+  box-shadow: 0 0 0 1px var(--color-primary);
   color: var(--color-primary);
 }
 .steps {
@@ -86,14 +89,14 @@
   font-size: 13px;
 }
 .steps button:not(:disabled):hover {
-  box-shadow: inset 0 0 0 1px #ffb8d3;
+  box-shadow: inset 0 0 0 1px var(--shop-line);
 }
 .steps button:disabled {
   color: var(--color-text-muted);
   opacity: 0.6;
 }
 .steps .currentStep {
-  background: #ff3589;
+  background: var(--color-primary);
   color: white;
   font-weight: 700;
 }
@@ -103,9 +106,9 @@
   align-items: center;
   gap: 12px;
   padding: 14px 18px;
-  border: 1px solid #ffc0d8;
+  border: 1px solid var(--shop-line);
   border-radius: var(--radius-md);
-  background: #fff5f8;
+  background: var(--shop-tint);
   font-size: 13px;
 }
 .selectedTreatment small {
@@ -203,9 +206,9 @@
   color: var(--color-text-secondary);
 }
 .treatments button:global(.is-selected) {
-  border-color: #ff3589;
-  background: #fff5f8;
-  box-shadow: 0 0 0 1px #ff3589;
+  border-color: var(--color-primary);
+  background: var(--shop-tint);
+  box-shadow: 0 0 0 1px var(--color-primary);
 }
 .treatmentName {
   display: flex;
@@ -280,7 +283,7 @@
   line-height: 1.2;
 }
 .calendarGrid button:not(:disabled):hover {
-  border-color: #ffb8d3;
+  border-color: var(--shop-line);
 }
 .calendarGrid button:disabled {
   color: #c8cad6;
@@ -298,8 +301,8 @@
   border-color: var(--color-border);
 }
 .calendarGrid button:global(.is-selected) {
-  border-color: #ff3589;
-  background: #ff3589;
+  border-color: var(--color-primary);
+  background: var(--color-primary);
   color: white;
 }
 .calendarGrid button:global(.is-selected) small {
@@ -317,12 +320,51 @@
 .slots {
   margin-bottom: 4px;
 }
+/* 공통 시간 칸(b-time-grid)의 선택 색 대신 앱 기본 색을 쓴다 */
+.slots button:global(.is-selected) {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+.favorite {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.favorite button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: white;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+.favorite button span {
+  font-size: 16px;
+  line-height: 1;
+}
+.favorite button:global(.is-selected) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.favoriteError {
+  max-width: 200px;
+  font-size: 11px;
+  color: var(--color-primary);
+  text-align: right;
+}
 /* 고른 시각 이후 소요 시간 동안 이어지는 칸. 시작으로 고를 수 없는 칸이어도 같은 색으로 보인다 */
 .slots button.inRange,
 .slots button.inRange:disabled {
-  border-color: #ff3589;
-  background: #ffd6e6;
-  color: #b70052;
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
   text-decoration: none;
 }
 .empty {
@@ -344,7 +386,24 @@
 .aside :global(.b-summary) {
   position: static;
   gap: 18px;
-  border-color: #ffb8d3;
+  border-color: var(--shop-line);
+  border-top: 3px solid var(--color-primary);
+}
+/* 예약 요약 안의 안내 상자도 파란 공통 안내 대신 화면의 분홍 톤으로 맞춘다 */
+.aside :global(.b-summary) :global(.b-notice) {
+  border-color: var(--shop-line);
+  background: var(--shop-tint);
+  color: var(--color-text-secondary);
+}
+/* 공통 비활성 버튼은 기본 색을 반투명하게 해 탁한 분홍이 되므로, 연한 기본 색 바탕으로 비활성을 보여준다 */
+.aside :global(.b-summary) :global(.b-primary):disabled {
+  opacity: 1;
+  border-color: var(--shop-line);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.aside :global(.b-summary) :global(.b-details) dt {
+  color: var(--color-text-secondary);
 }
 @media (max-width: 1100px) {
   .root :global(.b-columns) {

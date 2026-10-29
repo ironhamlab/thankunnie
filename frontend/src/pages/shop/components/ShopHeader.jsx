@@ -1,5 +1,6 @@
 import Panel from '@/components/common/Panel';
 import RepresentativeImage from '@/pages/owner/components/RepresentativeImage';
+import FavoriteButton from './FavoriteButton';
 import styles from '../ShopDetailPage.module.css';
 
 // 예약하기를 앞에 크게, 상세정보는 옆에 작게 둔다
@@ -23,9 +24,14 @@ export default function ShopHeader({ shop, view, onSelect }) {
         <RepresentativeImage imageUrl={shop.imageUrl} kind="shop" name={shop.shopName} />
       </div>
       <div className={styles.headerBody}>
-        <p className={styles.category}>{shop.categoryName}</p>
-        <h1>{shop.shopName}</h1>
-        <p className={styles.address}>{address}</p>
+        <div className="b-row">
+          <div>
+            <p className={styles.category}>{shop.categoryName}</p>
+            <h1>{shop.shopName}</h1>
+            <p className={styles.address}>{address}</p>
+          </div>
+          <FavoriteButton shopId={shop.shopId} />
+        </div>
         <ul className={styles.menu} aria-label="매장 메뉴">
           {MENUS.map(({ key, title }) => (
             <li key={key}>
