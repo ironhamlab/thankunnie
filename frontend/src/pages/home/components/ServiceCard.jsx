@@ -1,18 +1,17 @@
-import { generatePath, Link } from 'react-router-dom';
-import { ROUTES } from '@/constants/routes';
+import { Link } from 'react-router-dom';
 import { money } from '@/utils/demoData';
-import Asset from '@/components/common/Asset';
-import TimerIcon from '@/components/icons/TimerIcon';
 import ClockIcon from '@/components/icons/ClockIcon';
 import LocationIcon from '@/components/icons/LocationIcon';
 import styles from './ServiceCard.module.css';
 
+/**
+ * 빈자리 카드. service 는 탐색 API 응답을 toVacancyCard 로 바꾼 값이다.
+ */
 export default function ServiceCard({ service }) {
-  const day = ['오늘', '내일', '모레'][service.day];
   return (
     <article className={styles.root}>
       <div className={styles.photo}>
-        <Asset name={service.image} alt={service.shop + ' ' + service.category + ' 시술'} />
+        <img src={service.image} alt={service.shop + ' ' + service.category + ' 시술'} />
         <span
           className={
             'b-urgency ' +
@@ -25,12 +24,8 @@ export default function ServiceCard({ service }) {
         </span>
         {service.discount > 0 && (
           <span className={styles.startTag}>
-            {service.id === 'nail' ? (
-              <TimerIcon size={16} className={styles.timerIcon} />
-            ) : (
-              <ClockIcon size={16} />
-            )}
-            {service.id === 'nail' ? '40분 뒤 시작!' : day + ' ' + service.time + ' 시작'}
+            <ClockIcon size={16} />
+            {service.day + ' ' + service.time + ' 시작'}
           </span>
         )}
       </div>
@@ -49,7 +44,7 @@ export default function ServiceCard({ service }) {
             {service.duration}분 소요
           </span>
           <strong className={service.discount ? 'b-pink' : ''}>
-            {day} {service.time}
+            {service.day} {service.time}
           </strong>
         </div>
         <div className={`b-row ${styles.priceRow}`}>
@@ -68,7 +63,7 @@ export default function ServiceCard({ service }) {
           </div>
           <Link
             className={'b-button b-small ' + (service.discount ? 'b-primary' : 'b-soft')}
-            to={generatePath(ROUTES.SERVICE_DETAIL, { id: service.id })}
+            to={service.detailPath}
           >
             빈자리 확인
           </Link>

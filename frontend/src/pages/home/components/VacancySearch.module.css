@@ -168,3 +168,12 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.clearShop {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--color-primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

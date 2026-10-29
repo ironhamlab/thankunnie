@@ -1,22 +1,54 @@
-import { useState } from 'react';
-import { generatePath, Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { money } from '@/utils/demoData';
+import { useExploreStore } from '@/store/useExploreStore';
+import { dayLabel } from '@/utils/exploreVacancy';
+import { datePart, timePart } from '@/utils/scheduleDate';
+import KakaoMap from '@/components/map/KakaoMap';
 import Button from '@/components/common/Button';
 import styles from './HomeBeautyMap.module.css';
 
-export default function HomeBeautyMap({ services }) {
-  const [selectedId, setSelectedId] = useState(services[0].id);
+// 위쪽 도구 막대·오른쪽 확대 버튼·아래쪽 미리보기에 핀이 가리지 않게 범위를 맞출 때 여백을 넓게 둔다. 핀 글자가 길어 좌우도 띄운다
+const MAP_BOUNDS_PADDING = { top: 100, right: 130, bottom: 130, left: 110 };
+
+/**
+ * 홈 지도. 빈자리가 있는 매장마다 핀 하나(최저 판매가)를 찍는다 (C-02, 오늘부터 7일).
+ */
+export default function HomeBeautyMap() {
+  const shops = useExploreStore((s) => s.shops);
+  const shopsStatus = useExploreStore((s) => s.shopsStatus);
+  const loadShops = useExploreStore((s) => s.loadShops);
+  const [selectedId, setSelectedId] = useState(null);
   const [saleOnly, setSaleOnly] = useState(false);
-  const selected = services.find((service) => service.id === selectedId);
+  const selected = shops.find((shop) => shop.shopId === selectedId) || shops[0];
+
+  useEffect(() => {
+    loadShops({ priceTier: saleOnly ? 'IMMINENT' : undefined });
+  }, [saleOnly, loadShops]);
+
+  const markers = useMemo(
+    () =>
+      shops.map((shop) => ({
+        id: shop.shopId,
+        lat: shop.latitude,
+        lng: shop.longitude,
+        label:
+          shop.maxDiscountRate > 0
+            ? `${money(shop.minSalePrice)} (${shop.maxDiscountRate}%↓)`
+            : money(shop.minSalePrice),
+        ariaLabel: `${shop.shopName} ${money(shop.minSalePrice)}부터`,
+      })),
+    [shops],
+  );
   return (
     <div className={styles.section}>
       <div className={styles.heading}>
         <h2>내 주변 실시간 빈자리 지도</h2>
-        <span>● 강남역 부근</span>
+        <span>● 빈자리 있는 매장 {shops.length}곳</span>
         <button
           onClick={() => {
-            setSelectedId(services[0].id);
+            setSelectedId(null);
             setSaleOnly(false);
           }}
         >
@@ -24,8 +56,20 @@ export default function HomeBeautyMap({ services }) {
         </button>
       </div>
       <div className={styles.root}>
+        <KakaoMap
+          markers={markers}
+          selectedId={selected?.shopId}
+          onSelect={setSelectedId}
+          markerClassName={`${styles.pin} ${styles.kakaoPin}`}
+          boundsPadding={MAP_BOUNDS_PADDING}
+          fallback={
+            <small className={styles.disclaimer}>
+              지도를 불러오지 못했어요 · 목록에서 확인해 주세요
+            </small>
+          }
+        />
         <div className={styles.toolbar}>
-          <span>⌖ 강남역 11번 출구 도보 500m 이내</span>
+          <span>⌖ 오늘부터 7일 안의 빈자리</span>
           <div>
             <button aria-pressed={!saleOnly} onClick={() => setSaleOnly(false)}>
               전체
@@ -35,46 +79,41 @@ export default function HomeBeautyMap({ services }) {
             </button>
           </div>
         </div>
-        <div className={styles.roads} aria-hidden="true">
-          <i />
-          <i />
-          <i />
-          <i />
-        </div>
-        {services
-          .filter((service) => !saleOnly || service.discount > 0)
-          .map((service) => (
-            <button
-              className={`${styles.pin} home-pin-${service.id} ${selectedId === service.id ? 'is-active' : ''}`}
-              aria-pressed={selectedId === service.id}
-              key={service.id}
-              onClick={() => setSelectedId(service.id)}
-            >
-              {selectedId === service.id
-                ? `ϟ ${money(service.price)} (${service.discount}%↓)`
-                : `${service.shop.split(' ')[0]} ${money(service.price)}`}
-            </button>
-          ))}
-        <span className={styles.landmark}>벨루아 뷰티</span>
-        <small className={styles.disclaimer}>예시 지도 · 실제 위치와 다를 수 있어요</small>
         <div className={styles.preview}>
           <span className={styles.storeIcon} aria-hidden="true">
             ▤
           </span>
-          <div>
-            <strong>{selected.shop}</strong>
-            <span>오늘 {selected.time}</span>
-            <p>
-              {selected.location} · {selected.name}
-            </p>
-          </div>
-          <Button
-            as={Link}
-            variant="primary"
-            to={generatePath(ROUTES.SERVICE_DETAIL, { id: selected.id })}
-          >
-            빈자리 보기
-          </Button>
+          {selected ? (
+            <>
+              <div>
+                <strong>{selected.shopName}</strong>
+                <span>
+                  {dayLabel(datePart(selected.earliestStartsAt))}{' '}
+                  {timePart(selected.earliestStartsAt)}부터
+                </span>
+                <p>
+                  {selected.address} · 빈자리 {selected.vacancyCount}개
+                </p>
+              </div>
+              <Button
+                as={Link}
+                variant="primary"
+                to={`${ROUTES.HOME}?view=list&shop=${selected.shopId}`}
+              >
+                빈자리 보기
+              </Button>
+            </>
+          ) : (
+            <div>
+              <strong>
+                {shopsStatus === 'loading'
+                  ? '빈자리를 찾는 중이에요'
+                  : shopsStatus === 'failed'
+                    ? '빈자리를 불러오지 못했어요'
+                    : '지금 열린 빈자리가 없어요'}
+              </strong>
+            </div>
+          )}
         </div>
       </div>
     </div>

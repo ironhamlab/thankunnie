@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { generatePath, Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { SERVICES, money } from '@/utils/demoData';
-import Asset from '@/components/common/Asset';
+import { money } from '@/utils/demoData';
+import { useExploreStore } from '@/store/useExploreStore';
+import { todayKst } from '@/utils/scheduleDate';
 import Dialog from '@/components/common/Dialog';
 import VacancySearch from '@/pages/home/components/VacancySearch';
 import HomeBeautyMap from '@/pages/home/components/HomeBeautyMap';
@@ -54,20 +55,43 @@ const SLIDES = [
     badge: '취소 빈자리 모아보기',
   },
 ];
-const RECOMMENDATIONS = ['nail', 'facial', 'hair'].map((id) => SERVICES.find((s) => s.id === id));
-const DEMO_REMAINING = { nail: '00:39:42', facial: '01:09:18', hair: '02:08:45' };
+const ALL = '전체';
+const TODAY_SALE = '오늘 임박';
+// 홈에는 가장 빨리 시작하는 빈자리 몇 개만 보여주고 나머지는 전체보기(검색 화면)로 넘긴다
+const HOME_DEAL_COUNT = 3;
 
 export default function HomePage() {
   const [params] = useSearchParams();
   const [slideIndex, setSlideIndex] = useState(0);
   const [modelOpen, setModelOpen] = useState(false);
-  const [category, setCategory] = useState('전체');
+  const [category, setCategory] = useState(ALL);
+  const categories = useExploreStore((s) => s.categories);
+  const results = useExploreStore((s) => s.homeVacancies);
+  const homeStatus = useExploreStore((s) => s.homeStatus);
+  const loadCategories = useExploreStore((s) => s.loadCategories);
+  const loadHomeVacancies = useExploreStore((s) => s.loadHomeVacancies);
+  const searchMode = params.has('view') || params.has('sale') || params.has('search');
   const slide = SLIDES[slideIndex];
-  if (params.has('view') || params.has('sale') || params.has('search')) return <VacancySearch />;
-  const results =
-    category === '전체' || category === '오늘 임박'
-      ? RECOMMENDATIONS
-      : SERVICES.filter((s) => s.category === category);
+  const today = todayKst();
+  // 화면의 분야 이름을 DB 카테고리 ID 로 바꾼다. DB 에 없는 분야면 undefined
+  const categoryId = categories.find((item) => item.name === category)?.categoryId;
+  const query = useMemo(() => {
+    if (category === TODAY_SALE) {
+      return { startDate: today, endDate: today, priceTier: 'IMMINENT', size: HOME_DEAL_COUNT };
+    }
+    return { categoryId, size: HOME_DEAL_COUNT };
+  }, [category, categoryId, today]);
+  const unknownCategory = category !== ALL && category !== TODAY_SALE && categoryId === undefined;
+
+  useEffect(() => {
+    if (!searchMode) loadCategories();
+  }, [searchMode, loadCategories]);
+
+  useEffect(() => {
+    if (!searchMode && !unknownCategory) loadHomeVacancies(query);
+  }, [searchMode, unknownCategory, query, loadHomeVacancies]);
+
+  if (searchMode) return <VacancySearch />;
   const chooseCategory = (item) => {
     if (item.model) {
       setModelOpen(true);
@@ -158,13 +182,13 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-        <HomeBeautyMap services={RECOMMENDATIONS} />
+        <HomeBeautyMap />
       </section>
       <section id="home-deals" className="home-deals">
         <div className={styles.sectionHeading}>
           <div>
             <h2>
-              {category === '전체' || category === '오늘 임박'
+              {category === ALL || category === TODAY_SALE
                 ? '오늘의 실시간 타임세일 & 빈자리'
                 : `${category} 예약 가능한 빈자리`}{' '}
               <em>◷</em>
@@ -173,20 +197,28 @@ export default function HomePage() {
           </div>
           <Link to={`${ROUTES.HOME}?view=list`}>전체보기 ›</Link>
         </div>
+        {homeStatus === 'failed' && (
+          <p className="b-muted" role="alert">
+            빈자리를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
+          </p>
+        )}
+        {homeStatus === 'succeeded' && (unknownCategory || results.length === 0) && (
+          <p className="b-muted">지금 예약 가능한 빈자리가 없어요. 다른 분야를 골라 보세요.</p>
+        )}
         <div className={styles.dealGrid}>
-          {results.map((service) => (
+          {(unknownCategory ? [] : results).map((service) => (
             <article className={styles.dealCard} key={service.id}>
               <div className={styles.dealPhoto}>
-                <Asset name={service.image} alt={`${service.shop} ${service.category} 시술`} />
+                <img src={service.image} alt={`${service.shop} ${service.category} 시술`} />
                 <span
                   className={`${styles.urgency} ${service.urgency !== '초임박 특가' ? styles.isSoon : ''}`}
                 >
                   ● {service.urgency}
                 </span>
-                {DEMO_REMAINING[service.id] && (
+                {service.urgency === '초임박 특가' && (
                   <span className={styles.countdown}>
-                    <span>◷ 마감 임박</span>
-                    <b>{DEMO_REMAINING[service.id]}</b>
+                    <span>◷ 예약 마감</span>
+                    <b>{service.closesAt}</b>
                   </span>
                 )}
               </div>
@@ -199,7 +231,7 @@ export default function HomePage() {
                 <p className={styles.dealTime}>
                   ⌛ {service.duration}분 소요 <span>·</span>{' '}
                   <strong>
-                    {['오늘', '내일', '모레'][service.day]} {service.time}
+                    {service.day} {service.time}
                   </strong>
                 </p>
                 <div className={styles.dealPrice}>
@@ -210,11 +242,7 @@ export default function HomePage() {
                       <b>{money(service.price)}</b>
                     </div>
                   </div>
-                  <Button
-                    as={Link}
-                    variant="primary"
-                    to={generatePath(ROUTES.SERVICE_DETAIL, { id: service.id })}
-                  >
+                  <Button as={Link} variant="primary" to={service.detailPath}>
                     빈자리 확인
                   </Button>
                 </div>
