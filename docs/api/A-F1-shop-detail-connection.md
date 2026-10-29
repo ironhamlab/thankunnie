@@ -30,7 +30,7 @@
 | 시작 가능 시각 | `GET /api/v1/available-times?shopId=&date=&durationMinutes=` (B) | 불필요 |
 | 고른 시각의 가격 | `GET /api/v1/explore/vacancies/{treatmentId}?startsAt=` (C-03) | 불필요 |
 
-호출 경로: 화면 → `useShopDetailStore`·`useServiceDetailStore` → `shopDetailApi`·`serviceDetailApi` → 공통 `axiosInstance`.
+호출 경로: 화면 → `useShopDetailStore`·`useVacancyDetailStore` → `shopDetailApi`·`vacancyDetailApi` → 공통 `axiosInstance`.
 
 ### 매장 상세 `GET /api/v1/explore/shops/{shopId}`
 
@@ -90,3 +90,12 @@ const to = `${generatePath(ROUTES.SHOP_DETAIL, { shopId: vacancy.shopId })}?${qu
 - 시술 목록에는 정상 가격(`regularPrice`)만 표시한다.
 - 시간을 고르면 예약 요약에 C-03 응답 값(정상 가격, 할인 금액·할인율, 최종 금액, 예약금, 잔금)을 그대로 표시한다. 할인은 `salePrice < regularPrice`일 때만 보이고, 가격 구간이 `IMMINENT`·`LAST_MINUTE`이면 "임박"·"초임박 특가" 라벨을 붙인다.
 - 현재 가격 규칙(B-05 `SalePrices`)에서는 시작 8시간 초과 전(`NORMAL`)에도 일반 판매가(`treatment.price`)가 적용되고, 시작 3시간 전부터 초임박 판매가가 적용된다. 따라서 일반 시간에도 사장님이 정한 할인이 요약에 보일 수 있다.
+
+## 찜
+
+- 매장명 오른쪽의 "찜" 버튼은 매장 알림 구독(`NOTIFICATION_SUBSCRIPTION`, `subscriptionType = STORE`)을 등록·해제한다. 마이페이지 알림 조건과 같은 데이터다.
+  - 등록: `POST /api/v1/notifications/subscriptions` (`shopId`, 희망 시간은 오늘 00:00 ~ 60일 뒤 00:00)
+  - 해제: `DELETE /api/v1/notifications/subscriptions/{subscriptionId}`
+  - 상태: `GET /api/v1/notifications/subscriptions`에서 같은 매장의 STORE 구독이 있으면 찜한 상태로 본다.
+- 로그인하지 않았으면 로그인 화면으로 보내고, 로그인 뒤 이 화면으로 돌아온다. 개발 서버 테스트 계정도 로그인으로 본다.
+- 마이페이지 "찜한 매장" 탭은 아직 시연 데이터(`useDesignStore.favorites`)를 쓰므로 이 버튼과 연결되지 않는다.

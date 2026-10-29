@@ -11,7 +11,7 @@ const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const SignupPage = lazy(() => import('@/pages/auth/SignupPage'));
 const ShopSignupPage = lazy(() => import('@/pages/auth/ShopSignupPage'));
 const NotFoundPage = lazy(() => import('@/pages/not-found/NotFoundPage'));
-const ServiceDetailPage = lazy(() => import('@/pages/service/ServiceDetailPage'));
+const LegacyServiceDetailRedirect = lazy(() => import('@/pages/shop/LegacyServiceDetailRedirect'));
 const ShopDetailPage = lazy(() => import('@/pages/shop/ShopDetailPage'));
 const ReservationPage = lazy(() => import('@/pages/reservation/ReservationPage'));
 const CheckoutPage = lazy(() => import('@/pages/reservation/CheckoutPage'));
@@ -50,7 +50,7 @@ export default function AppRouter() {
           <Route path={ROUTES.LOGIN} element={<LoginPage />} />
           <Route path={ROUTES.SIGNUP} element={<SignupPage />} />
           <Route path={ROUTES.SHOP_SIGNUP} element={<ShopSignupPage />} />
-          <Route path={ROUTES.SERVICE_DETAIL} element={<ServiceDetailPage />} />
+          <Route path={ROUTES.SERVICE_DETAIL} element={<LegacyServiceDetailRedirect />} />
           <Route path={ROUTES.SHOP_DETAIL} element={<ShopDetailPage />} />
           <Route path={ROUTES.RESERVE} element={<ReservationPage />} />
           <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />

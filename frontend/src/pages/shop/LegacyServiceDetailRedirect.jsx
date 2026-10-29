@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { generatePath, Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { useServiceDetailStore } from '@/store/useServiceDetailStore';
+import { useVacancyDetailStore } from '@/store/useVacancyDetailStore';
 import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
@@ -10,15 +10,15 @@ import EmptyState from '@/components/common/EmptyState';
  * 이전 시술 상세 주소(/services/:treatmentId?startsAt=...).
  * 빈자리 상세(C-03)로 시술의 매장을 찾은 뒤 같은 시술·날짜·시간을 고른 매장 상세로 이동한다.
  */
-export default function ServiceDetailPage() {
+export default function LegacyServiceDetailRedirect() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const startsAt = params.get('startsAt')?.replace(/\+09:00$/, '');
-  const detail = useServiceDetailStore((state) => state.detail);
-  const status = useServiceDetailStore((state) => state.status);
-  const error = useServiceDetailStore((state) => state.error);
-  const loadDetail = useServiceDetailStore((state) => state.loadDetail);
-  const clearDetail = useServiceDetailStore((state) => state.clearDetail);
+  const detail = useVacancyDetailStore((state) => state.detail);
+  const status = useVacancyDetailStore((state) => state.status);
+  const error = useVacancyDetailStore((state) => state.error);
+  const loadDetail = useVacancyDetailStore((state) => state.loadDetail);
+  const clearDetail = useVacancyDetailStore((state) => state.clearDetail);
   // 서버는 KST LocalDateTime을 받는다. 날짜·예약 정책 검증은 서버가 담당한다.
   const hasSelection =
     /^[1-9]\d*$/.test(id ?? '') && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(startsAt ?? '');

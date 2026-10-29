@@ -4,7 +4,7 @@ import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import Notice from '@/components/common/Notice';
 import Panel from '@/components/common/Panel';
-import { useServiceDetailStore } from '@/store/useServiceDetailStore';
+import { useVacancyDetailStore } from '@/store/useVacancyDetailStore';
 import styles from '../ShopDetailPage.module.css';
 
 const money = (value) => `${value.toLocaleString('ko-KR')}원`;
@@ -13,11 +13,11 @@ const TIER_LABELS = { IMMINENT: '임박', LAST_MINUTE: '초임박 특가' };
 
 /** 고른 시술·시각의 가격과 예약 가능 여부를 빈자리 상세(C-03)로 다시 조회해 보여준다 */
 export default function BookingSummary({ treatment, date, time }) {
-  const detail = useServiceDetailStore((state) => state.detail);
-  const status = useServiceDetailStore((state) => state.status);
-  const error = useServiceDetailStore((state) => state.error);
-  const loadDetail = useServiceDetailStore((state) => state.loadDetail);
-  const clearDetail = useServiceDetailStore((state) => state.clearDetail);
+  const detail = useVacancyDetailStore((state) => state.detail);
+  const status = useVacancyDetailStore((state) => state.status);
+  const error = useVacancyDetailStore((state) => state.error);
+  const loadDetail = useVacancyDetailStore((state) => state.loadDetail);
+  const clearDetail = useVacancyDetailStore((state) => state.clearDetail);
   const treatmentId = treatment?.treatmentId;
   const startsAt = time ? `${date}T${time}:00` : null;
 
