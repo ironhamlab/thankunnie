@@ -1,5 +1,6 @@
 package com.ucamp.app.domain.notification.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,6 +28,15 @@ public class RecipientContactRepository {
             SELECT NAME
             FROM SHOP
             WHERE SHOP_ID = :shopId
+            """;
+
+    private static final String FIND_CANCEL_SMS_INFO = """
+            SELECT u.PHONE, s.NAME AS SHOP_NAME, r.STARTS_AT
+            FROM RESERVATION r
+            JOIN APP_USER u ON u.USER_ID = r.USER_ID
+            JOIN TREATMENT t ON t.TREATMENT_ID = r.TREATMENT_ID
+            JOIN SHOP s ON s.SHOP_ID = t.SHOP_ID
+            WHERE r.RESERVATION_ID = :reservationId
             """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -69,5 +79,49 @@ public class RecipientContactRepository {
             return Optional.empty();
         }
         return Optional.ofNullable(rows.get(0));
+    }
+
+    /**
+     * 취소 문자에 넣을 고객 전화번호·매장 이름·예약 시작 시각을 읽는다.
+     *
+     * @param reservationId 취소된 예약 ID
+     * @return 예약이 있으면 정보. 없거나 ID가 없으면 empty
+     */
+    public Optional<CancelSmsInfo> findCancelSmsInfo(Long reservationId) {
+        return findReservationSmsInfo(reservationId);
+    }
+
+    /**
+     * 예약 확정 문자에 넣을 고객 전화번호·매장 이름·예약 시작 시각을 읽는다.
+     * 취소 문자와 같은 값을 쓴다.
+     *
+     * @param reservationId 확정된 예약 ID
+     * @return 예약이 있으면 정보. 없거나 ID가 없으면 empty
+     */
+    public Optional<CancelSmsInfo> findReservationSmsInfo(Long reservationId) {
+        if (reservationId == null) {
+            return Optional.empty();
+        }
+        List<CancelSmsInfo> rows = jdbcTemplate.query(
+                FIND_CANCEL_SMS_INFO,
+                Map.of("reservationId", reservationId),
+                (rs, rowNum) -> new CancelSmsInfo(
+                        rs.getString("PHONE"),
+                        rs.getString("SHOP_NAME"),
+                        rs.getTimestamp("STARTS_AT").toLocalDateTime()));
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(rows.get(0));
+    }
+
+    /**
+     * 취소 문자에 필요한 값.
+     *
+     * @param phone    고객 전화번호. 없으면 null
+     * @param shopName 매장 이름
+     * @param startsAt 예약 시작 시각
+     */
+    public record CancelSmsInfo(String phone, String shopName, LocalDateTime startsAt) {
     }
 }
