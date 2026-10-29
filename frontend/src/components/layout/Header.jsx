@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
+import { useCurrentRole } from '@/hooks/useCurrentRole';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDesignStore } from '@/store/useDesignStore';
 import SearchIcon from '@/components/icons/SearchIcon';
@@ -50,6 +51,7 @@ export default function Header() {
   const location = useLocation();
   const activeMenu = getActiveMenu(location);
   const token = useAuthStore((s) => s.token);
+  const role = useCurrentRole();
   const clearSession = useAuthStore((s) => s.clearSession);
   const search = useDesignStore((s) => s.search);
   const setSearch = useDesignStore((s) => s.setSearch);
@@ -119,9 +121,12 @@ export default function Header() {
           </nav>
 
           <div className={styles.actions}>
-            <Link to={ROUTES.OWNER} className={styles.ownerLink}>
-              사장님 센터
-            </Link>
+            {/* 사장님 센터는 사장님 계정으로 따로 로그인한다. 로그인한 고객에게는 보여주지 않는다 */}
+            {!role && (
+              <Link to={ROUTES.OWNER} className={styles.ownerLink}>
+                사장님 센터
+              </Link>
+            )}
 
             {token ? (
               <button

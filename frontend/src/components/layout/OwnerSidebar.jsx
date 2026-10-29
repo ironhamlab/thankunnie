@@ -51,7 +51,6 @@ export default function OwnerSidebar() {
         <NavLink to={ROUTES.OWNER} end>
           마이페이지
         </NavLink>
-        <Link to={ROUTES.HOME}>고객 화면으로 전환 →</Link>
         <small>땡잡은 언니 파트너스 · 모의 테스트</small>
       </div>
     </aside>
