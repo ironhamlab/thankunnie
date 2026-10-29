@@ -37,7 +37,6 @@ import com.ucamp.app.domain.explore.dto.request.ExploreVacancySort;
 import com.ucamp.app.domain.explore.dto.response.ExploreShopMapResponse;
 import com.ucamp.app.domain.explore.dto.response.ExploreShopResponse;
 import com.ucamp.app.domain.explore.dto.response.ExploreVacancyResponse;
-import com.ucamp.app.domain.explore.repository.ExploreVacancyQueryRepository;
 import com.ucamp.app.domain.vacancy.policy.PriceTier;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
@@ -45,7 +44,7 @@ import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 // 열린 시간 안 시작 시각은 젤네일 20:00·20:30·21:00, 손 케어 20:00·20:30·21:00·21:30 으로 모두 7건이다.
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({ExploreVacancyService.class, ExploreVacancyQueryRepository.class, AvailabilityService.class,
+@Import({ExploreVacancyService.class, AvailabilityService.class,
         ExploreVacancyServiceTest.FixedClock.class})
 @ActiveProfiles("test")
 @TestPropertySource(properties = "spring.sql.init.data-locations=classpath:init-data.sql")
@@ -184,6 +183,17 @@ class ExploreVacancyServiceTest {
     @DisplayName("검색어의 % 는 와일드카드가 아닌 글자로 찾는다")
     void search_keywordWithPercent_matchesLiterally() {
         assertThat(exploreVacancyService.search(request().keyword("%").build()).totalElements()).isZero();
+    }
+
+    @Test
+    @DisplayName("판매 중지한 시술과 노출 중지한 매장은 빠진다")
+    void search_inactiveTreatmentOrShop_excluded() {
+        jdbcTemplate.update("UPDATE TREATMENT SET STATUS = 'INACTIVE' WHERE TREATMENT_ID = 2");
+        assertThat(exploreVacancyService.search(request().build()).content())
+                .allMatch(item -> item.treatmentId() == 1L).hasSize(3);
+
+        jdbcTemplate.update("UPDATE SHOP SET STATUS = 'INACTIVE' WHERE SHOP_ID = 1");
+        assertThat(exploreVacancyService.search(request().build()).totalElements()).isZero();
     }
 
     @Test

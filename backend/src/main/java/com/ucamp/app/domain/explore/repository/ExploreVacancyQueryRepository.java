@@ -1,121 +1,100 @@
 package com.ucamp.app.domain.explore.repository;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.Repository;
+import org.springframework.data.repository.query.Param;
 
 import com.ucamp.app.domain.explore.repository.ExploreVacancyCondition.MapBounds;
+import com.ucamp.app.domain.schedule.entity.ShopScheduleException;
 
 /**
- * 고객 빈자리 탐색 후보 조회 (C). 매장(A)·시술·시간대 열기(B)는 각 담당 도메인 소유라 엔티티 없이 읽기 전용 SQL 로 본다.
+ * 고객 빈자리 탐색 후보 조회 (C). 매장(A)·시술·시간대 열기(B) 엔티티를 읽기만 하고 고치지 않는다.
  * 조회 기간과 겹치는 OPEN 시간대 × 그 매장의 판매 중인 시술을 돌려준다.
+ * 매장 노출 상태(SHOP.STATUS)는 Shop 엔티티에 없어 같은 테이블을 매핑한 ShopAccount 로 거른다.
  */
-@Repository
-public class ExploreVacancyQueryRepository {
+public interface ExploreVacancyQueryRepository extends Repository<ShopScheduleException, Long> {
 
-    private static final String ACTIVE = "ACTIVE";
-    private static final String OPEN = "OPEN";
+    // JPQL 문자열 안에서는 import가 되지 않아 enum은 패키지 이름까지 적는다.
+    String OPEN = "com.ucamp.app.domain.schedule.entity.ScheduleExceptionType.OPEN";
+    String SHOP_ACTIVE = "com.ucamp.app.domain.auth.entity.ShopAccountStatus.ACTIVE";
+    String TREATMENT_ACTIVE = "com.ucamp.app.domain.treatment.entity.TreatmentStatus.ACTIVE";
 
-    private static final String SELECT_FROM = """
-            SELECT e.STARTS_AT AS OPEN_STARTS_AT, e.ENDS_AT AS OPEN_ENDS_AT,
-                   s.SHOP_ID, s.NAME AS SHOP_NAME, s.REGION_CODE, s.ADDRESS, s.LATITUDE, s.LONGITUDE,
-                   s.IMAGE_URL AS SHOP_IMAGE_URL,
-                   t.TREATMENT_ID, t.NAME AS TREATMENT_NAME, t.CATEGORY_ID, c.NAME AS CATEGORY_NAME,
-                   t.TREATMENT_TYPE, t.DURATION_MINUTES, t.REGULAR_PRICE, t.PRICE, t.LAST_MINUTE_PRICE,
-                   t.IMAGE_URL AS TREATMENT_IMAGE_URL
-            FROM SHOP_SCHEDULE_EXCEPTION e
-            JOIN SHOP s ON s.SHOP_ID = e.SHOP_ID
-            JOIN TREATMENT t ON t.SHOP_ID = s.SHOP_ID
-            JOIN CATEGORY c ON c.CATEGORY_ID = t.CATEGORY_ID
+    String FIND_CANDIDATES = """
+            select new com.ucamp.app.domain.explore.repository.ExploreVacancyCandidate(
+                   e.startsAt, e.endsAt,
+                   s.shopId, s.name, s.regionCode, s.address, s.latitude, s.longitude, s.imageUrl,
+                   t.treatmentId, t.name, c.categoryId, c.name, t.treatmentType, t.durationMinutes,
+                   t.regularPrice, t.price, t.lastMinutePrice, t.imageUrl)
+            from ShopScheduleException e
+            join Shop s on s.shopId = e.shopId
+            join ShopAccount a on a.shopId = s.shopId
+            join Treatment t on t.shop = s
+            join t.category c
+            where e.exceptionType = \
+            """
+            + OPEN
+            + """
+              and a.status = \
+            """
+            + SHOP_ACTIVE
+            + """
+              and t.status = \
+            """
+            + TREATMENT_ACTIVE
+            + """
+              and e.endsAt > :from
+              and e.startsAt < :to
+              and (:allRegions = true or s.regionCode in :regionCodes)
+              and (:categoryId is null or c.categoryId = :categoryId)
+              and (:shopId is null or s.shopId = :shopId)
+              and (:keyword is null
+                   or upper(s.name) like :keyword escape '!'
+                   or upper(t.name) like :keyword escape '!')
+              and (:minLat is null
+                   or (s.latitude between :minLat and :maxLat and s.longitude between :minLng and :maxLng))
+            order by e.startsAt, t.treatmentId
             """;
 
-    private static final String ORDER_BY = " ORDER BY e.STARTS_AT, t.TREATMENT_ID";
-
-    private final NamedParameterJdbcTemplate jdbcTemplate;
-
-    public ExploreVacancyQueryRepository(NamedParameterJdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
-
-    public List<ExploreVacancyCandidate> findCandidates(ExploreVacancyCondition condition) {
-        MapSqlParameterSource params = new MapSqlParameterSource();
-        return jdbcTemplate.query(SELECT_FROM + where(condition, params) + ORDER_BY, params, ROW_MAPPER);
-    }
-
-    private static String where(ExploreVacancyCondition condition, MapSqlParameterSource params) {
-        List<String> conditions = new ArrayList<>(List.of(
-                "e.EXCEPTION_TYPE = :open",
-                "s.STATUS = :active",
-                "t.STATUS = :active",
-                // 시간대가 조회 기간과 겹치면 후보로 본다 (종료 시각 미포함)
-                "e.ENDS_AT > :from",
-                "e.STARTS_AT < :to"));
-        params.addValue("open", OPEN)
-                .addValue("active", ACTIVE)
-                .addValue("from", condition.from())
-                .addValue("to", condition.to());
-        if (!condition.regionCodes().isEmpty()) {
-            conditions.add("s.REGION_CODE IN (:regionCodes)");
-            params.addValue("regionCodes", condition.regionCodes());
-        }
-        if (condition.categoryId() != null) {
-            conditions.add("t.CATEGORY_ID = :categoryId");
-            params.addValue("categoryId", condition.categoryId());
-        }
-        if (condition.shopId() != null) {
-            conditions.add("s.SHOP_ID = :shopId");
-            params.addValue("shopId", condition.shopId());
-        }
-        if (condition.keyword() != null) {
-            conditions.add("(UPPER(s.NAME) LIKE :keyword ESCAPE '\\' OR UPPER(t.NAME) LIKE :keyword ESCAPE '\\')");
-            params.addValue("keyword", "%" + escapeLike(condition.keyword().toUpperCase()) + "%");
-        }
+    /**
+     * 조건에 맞는 탐색 후보를 OPEN 시작 시각, 시술 ID 순으로 조회한다. 시간대가 조회 기간과 겹치면 후보로 본다(종료 시각 미포함).
+     *
+     * @param condition 조회 조건
+     * @return 탐색 후보 목록
+     */
+    default List<ExploreVacancyCandidate> findCandidates(ExploreVacancyCondition condition) {
+        boolean allRegions = condition.regionCodes().isEmpty();
+        // 빈 목록을 IN 에 넘기지 않도록 전체 지역이면 쓰지 않는 값을 넣는다
+        List<String> regionCodes = allRegions ? List.of("") : condition.regionCodes();
+        String keyword = condition.keyword() == null
+                ? null
+                : "%" + escapeLike(condition.keyword().toUpperCase()) + "%";
         MapBounds bounds = condition.bounds();
-        if (bounds != null) {
-            conditions.add("s.LATITUDE BETWEEN :minLat AND :maxLat");
-            conditions.add("s.LONGITUDE BETWEEN :minLng AND :maxLng");
-            params.addValue("minLat", bounds.minLat())
-                    .addValue("maxLat", bounds.maxLat())
-                    .addValue("minLng", bounds.minLng())
-                    .addValue("maxLng", bounds.maxLng());
-        }
-        return " WHERE " + String.join(" AND ", conditions);
+        return findCandidates(condition.from(), condition.to(), allRegions, regionCodes, condition.categoryId(),
+                condition.shopId(), keyword,
+                bounds == null ? null : bounds.minLat(), bounds == null ? null : bounds.maxLat(),
+                bounds == null ? null : bounds.minLng(), bounds == null ? null : bounds.maxLng());
     }
 
-    // 검색어의 % · _ 가 와일드카드로 해석되지 않게 한다
+    @Query(FIND_CANDIDATES)
+    List<ExploreVacancyCandidate> findCandidates(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("allRegions") boolean allRegions,
+            @Param("regionCodes") List<String> regionCodes,
+            @Param("categoryId") Long categoryId,
+            @Param("shopId") Long shopId,
+            @Param("keyword") String keyword,
+            @Param("minLat") BigDecimal minLat,
+            @Param("maxLat") BigDecimal maxLat,
+            @Param("minLng") BigDecimal minLng,
+            @Param("maxLng") BigDecimal maxLng);
+
+    // 검색어의 % · _ 가 와일드카드로 해석되지 않게 한다. 이스케이프 문자는 쿼리의 escape '!' 와 같다
     private static String escapeLike(String keyword) {
-        return keyword.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-    }
-
-    private static final RowMapper<ExploreVacancyCandidate> ROW_MAPPER = (rs, rowNum) -> new ExploreVacancyCandidate(
-            time(rs, "OPEN_STARTS_AT"),
-            time(rs, "OPEN_ENDS_AT"),
-            rs.getLong("SHOP_ID"),
-            rs.getString("SHOP_NAME"),
-            rs.getString("REGION_CODE"),
-            rs.getString("ADDRESS"),
-            rs.getBigDecimal("LATITUDE"),
-            rs.getBigDecimal("LONGITUDE"),
-            rs.getString("SHOP_IMAGE_URL"),
-            rs.getLong("TREATMENT_ID"),
-            rs.getString("TREATMENT_NAME"),
-            rs.getLong("CATEGORY_ID"),
-            rs.getString("CATEGORY_NAME"),
-            rs.getString("TREATMENT_TYPE"),
-            rs.getInt("DURATION_MINUTES"),
-            rs.getInt("REGULAR_PRICE"),
-            rs.getInt("PRICE"),
-            rs.getInt("LAST_MINUTE_PRICE"),
-            rs.getString("TREATMENT_IMAGE_URL"));
-
-    private static LocalDateTime time(ResultSet rs, String column) throws SQLException {
-        return rs.getObject(column, LocalDateTime.class);
+        return keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 }

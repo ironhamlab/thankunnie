@@ -61,7 +61,7 @@ public record ExploreVacancyResponse(
                 candidate.treatmentName(),
                 candidate.categoryId(),
                 candidate.categoryName(),
-                candidate.treatmentType(),
+                candidate.treatmentType().name(),
                 candidate.durationMinutes(),
                 imageUrl,
                 TimeUtils.toOffset(startsAt),
