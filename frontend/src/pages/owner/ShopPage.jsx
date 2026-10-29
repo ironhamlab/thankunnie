@@ -1,175 +1,187 @@
-import { useState } from 'react';
-import { useDesignStore } from '@/store/useDesignStore';
-import Asset from '@/components/common/Asset';
-import Badge from '@/components/common/Badge';
+import { useEffect, useState } from 'react';
+import { useShopStore } from '@/store/useShopStore';
 import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
-import Notice from '@/components/common/Notice';
-import styles from './ShopPage.module.css';
+import Alert from '@/components/common/Alert';
+import EmptyState from '@/components/common/EmptyState';
+import OwnerImageEditor from './components/OwnerImageEditor';
 
-export default function ShopPage() {
-  const shop = useDesignStore((s) => s.shop);
-  const save = useDesignStore((s) => s.saveShop);
-  const [form, setForm] = useState({ ...shop });
-  const [status, setStatus] = useState('');
-  const [scenario, setScenario] = useState('complete');
-  const change = (e) => {
-    setStatus('');
-    setForm({ ...form, [e.target.name]: e.target.value });
+const FIELDS = [
+  ['name', '매장명', 100],
+  ['phone', '대표 연락처', 20],
+  ['regionCode', '지역 코드', 20],
+  ['address', '주소', 300],
+  ['addressDetail', '상세 주소', 200],
+];
+
+function ShopForm({ shop, isSaving, onSave, onImage }) {
+  const [form, setForm] = useState(shop);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const change = (event) => {
+    const { name, value } = event.target;
+    setForm((previous) => ({ ...previous, [name]: value }));
+    setMessage('');
   };
-  const submit = (e) => {
-    e.preventDefault();
-    if (!form.name.trim() || !form.address.trim() || !form.phone.trim()) {
-      setStatus('필수 입력 항목을 확인해 주세요.');
-      return;
+  const submit = async (event) => {
+    event.preventDefault();
+    setError('');
+    setMessage('');
+    const {
+      categoryId,
+      name,
+      regionCode,
+      address,
+      addressDetail,
+      latitude,
+      longitude,
+      phone,
+      description,
+      notice,
+    } = form;
+    try {
+      const saved = await onSave({
+        categoryId: Number(categoryId),
+        name: name.trim(),
+        regionCode: regionCode.trim(),
+        address: address.trim(),
+        addressDetail,
+        latitude: Number(latitude),
+        longitude: Number(longitude),
+        phone: phone.trim(),
+        description,
+        notice,
+      });
+      setForm(saved);
+      setMessage('매장 정보를 저장했습니다.');
+    } catch (failure) {
+      setError(failure.message);
     }
-    save(form);
-    setStatus('변경사항을 저장했습니다. 새로고침 전까지 데모 화면에 유지됩니다.');
   };
   return (
     <div className="b-stack">
-      <Notice>
-        <strong>본 환경은 사장님 전용 테스트 모드이며, 모의 결제 기반으로 운영됩니다.</strong>
-        <p>실제 고객 예약금 결제 및 정산 시스템은 영업 인증 완료 후 활성화됩니다.</p>
-      </Notice>
-      <Panel padded className="b-row">
-        <strong>화면 상태 시연 컨트롤러</strong>
-        <div className="b-options">
-          {[
-            ['complete', '매장 정보 등록 완료 상태'],
-            ['error', '필수값 누락 오류 상태'],
-            ['new', '신규 매장 등록 안내 모드'],
-          ].map(([value, label]) => (
-            <button
-              key={value}
-              className={scenario === value ? 'is-selected' : ''}
-              onClick={() => {
-                setScenario(value);
-                setForm(
-                  value === 'new'
-                    ? {
-                        name: '',
-                        category: '네일·패디',
-                        phone: '',
-                        address: '',
-                        detail: '',
-                        description: '',
-                      }
-                    : { ...shop, name: value === 'error' ? '' : shop.name },
-                );
-                setStatus(value === 'error' ? '매장명은 필수 입력 항목입니다.' : '');
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </Panel>
-      <form onSubmit={submit} className="b-columns">
-        <div className="b-stack">
-          <Panel as="section" padded>
-            <h2 className="b-panel-heading">
-              매장 기본 정보 <small className="b-pink">* 필수 입력 항목</small>
-            </h2>
-            <div className="b-form-grid">
-              <label className="b-span-two">
-                매장명 *
-                <input name="name" value={form.name} maxLength={30} required onChange={change} />
-              </label>
-              <label>
-                업종 카테고리 *
-                <select name="category" value={form.category} onChange={change}>
-                  {['네일·패디', '헤어', '속눈썹', '피부관리', '왁싱'].map((v) => (
-                    <option key={v}>{v}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                대표 연락처 *
-                <input name="phone" type="tel" value={form.phone} required onChange={change} />
-              </label>
-              <label className="b-span-two">
-                지역 및 상세 주소 *
-                <input name="address" value={form.address} required onChange={change} />
-                <input name="detail" value={form.detail} aria-label="상세 주소" onChange={change} />
-                <small>고객이 방문하기 쉽도록 출구 번호나 주변 랜드마크를 함께 적어주세요.</small>
-              </label>
-              <label className="b-span-two">
-                매장 소개 텍스트 <small>{form.description.length}/500자</small>
-                <textarea
-                  name="description"
-                  rows="6"
-                  maxLength={500}
-                  value={form.description}
+      <h1>매장 관리</h1>
+      <Panel padded>
+        <form onSubmit={submit} className="b-stack">
+          <fieldset disabled={isSaving} className="b-form-grid">
+            {FIELDS.map(([name, label, maxLength]) => (
+              <label key={name}>
+                {label}
+                {name !== 'addressDetail' && ' *'}
+                <input
+                  name={name}
+                  value={form[name] ?? ''}
+                  maxLength={maxLength}
+                  required={name !== 'addressDetail'}
                   onChange={change}
                 />
               </label>
-            </div>
-          </Panel>
-          <Panel as="section" padded>
-            <h2 className="b-panel-heading">운영 시간 및 예약 정책 요약</h2>
-            <div className="b-three-grid">
-              {[
-                ['정기 영업 시간', '월-토 11:00 ~ 21:00', '매주 일요일 정기 휴무'],
-                ['빈자리 예약 마감 기준', '시술 시작 30분 전까지', '실시간 자동 확정'],
-                ['노쇼 방지 예약금', '기본 시술가의 20%', '현장 결제 시 차감'],
-              ].map(([label, value, note]) => (
-                <Notice key={label}>
-                  <small>{label}</small>
-                  <strong>{value}</strong>
-                  <small className="b-pink">{note}</small>
-                </Notice>
-              ))}
-            </div>
-          </Panel>
-          <Panel padded className="b-row">
-            <span className={scenario === 'error' ? 'b-error' : 'b-muted'} role="status">
-              {status || '모든 변경사항이 안전하게 보관되어 있습니다.'}
-            </span>
-            <div className="b-flex">
-              <Button
-                type="button"
-                onClick={() => {
-                  setForm({ ...shop });
-                  setStatus('변경사항을 취소했습니다.');
-                }}
-              >
-                취소
-              </Button>
-              <Button variant="primary" type="submit">
-                변경사항 저장
-              </Button>
-            </div>
-          </Panel>
-        </div>
-        <aside className="b-stack">
-          <Panel as="section" padded>
-            <h2 className="b-panel-heading">
-              매장 대표 이미지 <Badge tone="neutral">자동 매칭</Badge>
-            </h2>
-            <div className="b-highlight">
-              업로드 기능은 미지원하며 기본 매장 이미지가 자동 적용됩니다.
-            </div>
-            <Asset
-              className={styles.image}
-              name="12-2061-0.png"
-              alt="프리미엄 네일 살롱 대표 이미지"
-            />
-            <p className="b-help">공식 테마 이미지 · 네일 살롱 A형</p>
-          </Panel>
-          <Panel as="section" padded>
-            <h2 className="b-panel-heading">고객 앱 카드 노출 미리보기</h2>
-            <Asset className={styles.image} name="12-2061-1.png" alt="네일 시술 예시" />
-            <h2>{form.name || '매장명을 입력해 주세요'}</h2>
-            <p>{form.address}</p>
-            <div className="b-row">
-              <strong className="b-pink">35% 42,000원</strong>
-              <del className="b-muted">65,000원</del>
-            </div>
-            <Notice>수정된 내용은 저장 후 데모 화면에 반영됩니다.</Notice>
-          </Panel>
-        </aside>
-      </form>
+            ))}
+            <label>
+              업종 카테고리 *
+              <select name="categoryId" value={form.categoryId} onChange={change} required>
+                {[
+                  [1, '네일'],
+                  [2, '헤어'],
+                  [3, '속눈썹'],
+                  [4, '왁싱'],
+                  [5, '바버'],
+                ].map(([id, label]) => (
+                  <option key={id} value={id}>
+                    {label}
+                  </option>
+                ))}
+                {![1, 2, 3, 4, 5].includes(Number(form.categoryId)) && (
+                  <option value={form.categoryId}>현재 업종 ({form.categoryId})</option>
+                )}
+              </select>
+            </label>
+            {['latitude', 'longitude'].map((name) => (
+              <label key={name}>
+                {name === 'latitude' ? '위도' : '경도'} *
+                <input
+                  type="number"
+                  name={name}
+                  value={form[name] ?? ''}
+                  min={name === 'latitude' ? -90 : -180}
+                  max={name === 'latitude' ? 90 : 180}
+                  step="0.0000001"
+                  required
+                  onChange={change}
+                />
+              </label>
+            ))}
+            {[
+              ['description', '매장 소개'],
+              ['notice', '매장 공지'],
+            ].map(([name, label]) => (
+              <label key={name} className="b-span-two">
+                {label}
+                <textarea
+                  name={name}
+                  value={form[name] ?? ''}
+                  maxLength={2000}
+                  rows="4"
+                  onChange={change}
+                />
+              </label>
+            ))}
+          </fieldset>
+          {error && (
+            <Alert tone="error" role="alert">
+              {error}
+            </Alert>
+          )}
+          {message && (
+            <Alert tone="success" role="status">
+              {message}
+            </Alert>
+          )}
+          <div className="b-flex">
+            <Button
+              type="button"
+              disabled={isSaving}
+              onClick={() => {
+                setForm(shop);
+                setError('');
+                setMessage('변경사항을 취소했습니다.');
+              }}
+            >
+              취소
+            </Button>
+            <Button type="submit" variant="primary" disabled={isSaving}>
+              {isSaving ? '저장 중…' : '변경사항 저장'}
+            </Button>
+          </div>
+        </form>
+      </Panel>
+      <Panel padded>
+        <h2>매장 대표 이미지</h2>
+        <OwnerImageEditor imageUrl={shop.imageUrl} isSaving={isSaving} onSave={onImage} />
+      </Panel>
     </div>
+  );
+}
+
+export default function ShopPage() {
+  const shop = useShopStore((state) => state.shop);
+  const status = useShopStore((state) => state.status);
+  const error = useShopStore((state) => state.error);
+  const isSaving = useShopStore((state) => state.mutationStatus === 'loading');
+  const load = useShopStore((state) => state.loadShop);
+  const save = useShopStore((state) => state.saveShop);
+  const saveImage = useShopStore((state) => state.saveImage);
+  useEffect(() => {
+    load();
+  }, [load]);
+  if (status === 'failed')
+    return (
+      <Alert tone="error" role="alert">
+        {error.message} <Button onClick={load}>다시 불러오기</Button>
+      </Alert>
+    );
+  if (!shop) return <EmptyState role="status">매장 정보를 불러오는 중입니다.</EmptyState>;
+  return (
+    <ShopForm key={shop.shopId} shop={shop} isSaving={isSaving} onSave={save} onImage={saveImage} />
   );
 }
