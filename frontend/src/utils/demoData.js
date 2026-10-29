@@ -106,7 +106,6 @@ export const SERVICES = [
   },
   {
     id: 'art',
-    treatmentId: 2,
     name: '이달의 아트 (Design of Month)',
     shop: '글로우 네일',
     location: '판교역 1번출구',
@@ -127,7 +126,6 @@ export const SERVICES = [
   },
   {
     id: 'clinic',
-    treatmentId: 4,
     name: '뿌리염색 & 클리닉',
     shop: '리프레쉬 헤어',
     location: '잠실새내역 도보 5분',
