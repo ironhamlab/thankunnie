@@ -12,7 +12,6 @@
 |---|---|---|---|
 | GET | 기본 경로 | 본인 매장 전체 시술 목록 (비활성 포함, ID 내림차순) | 200 |
 | GET | `?status=ACTIVE` | 신규 빈자리에서 선택 가능한 활성 시술만 조회 | 200 |
-| GET | `/categories` | 선택 가능한 CATEGORY 목록 (이름 오름차순) | 200 |
 | GET | `/{treatmentId}` | 본인 매장 시술 단건 | 200 |
 | POST | 기본 경로 | 시술 등록 | 201 |
 | PUT | `/{treatmentId}` | 기본 정보 전체 수정 | 200 |
@@ -27,7 +26,6 @@
   "regularPrice": 50000,
   "price": 40000,
   "lastMinutePrice": 30000,
-  "categoryId": 1,
   "durationMinutes": 60,
   "conditions": {
     "treatmentType": "MODEL",
@@ -40,7 +38,7 @@
 - 시술명: 공백만 입력 불가, 최대 100자. 앞뒤 공백을 제거해 저장한다.
 - 설명: 선택, 최대 2,000자.
 - 정상가: 양의 정수, 100원 단위. 기존 가격 계산의 Integer 범위에 맞춰 최대 2,147,483,600원.
-- 카테고리: CATEGORY에 존재하는 ID 필수. 매장 카테고리와 독립적으로 선택한다.
+- 시술의 카테고리는 소속 매장의 카테고리를 따른다. 시술별 카테고리 선택은 제공하지 않는다.
 - 소요 시간: 30~9,990분, 30분 배수.
 - 신규 시술: `conditions`를 생략하면 기본 유형은 NORMAL이며, `conditions.treatmentType`에 MODEL을 지정하면 MODEL로 등록한다. 상태는 ACTIVE다. 판매가와 초임박가는 필수 입력이며 요청한 값으로 저장한다.
 - 등록·수정 모두 양의 정수, 100원 단위, 초임박가 ≤ 판매가 ≤ 정상가를 검사한다. 같은 가격이면 할인 없음.
@@ -76,16 +74,15 @@
 - 스키마 및 공통 인증·예외·설정 파일 변경은 없다.
 
 시술 응답 필드: `treatmentId`, `shopId`, `name`, `description`, `regularPrice`, `price`, `lastMinutePrice`,
-`categoryId`, `categoryName`, `durationMinutes`, `status`, `treatmentType`,
+`durationMinutes`, `status`, `treatmentType`,
 `modelCondition`, `photoNotice`, `imageUrl`, `createdAt`, `updatedAt`.
 시각은 `+09:00` 오프셋이다.
-카테고리 응답 항목: `categoryId`, `name`.
 
 ## 오류
 
 | 코드 | 상태 | 조건 |
 |---|---|---|
-| COMMON_400 | 400 | 입력 검증 실패, 없는 카테고리, 잘못된 상태 |
+| COMMON_400 | 400 | 입력 검증 실패, 잘못된 상태 |
 | VACANCY_007 | 400 | 판매가·초임박가가 양의 100원 단위가 아니거나 판매가가 정상가 초과 |
 | VACANCY_008 | 400 | 초임박가가 판매가 초과 |
 | COMMON_401 | 401 | 비로그인 |
@@ -97,7 +94,7 @@
 - 화면: `/owner/menus`. 시연용 브라우저 메모리 메뉴 대신 서버 응답을 사용한다.
 - 화면 → `useTreatmentStore` → `treatmentApi` → `axiosInstance` 순서로 요청한다.
 - 인증은 기존 공통 방식을 사용한다. 실제 로그인 연동 전 로컬 확인은 B-01의 `X-Test-User: OWNER_1` 헤더를 요청에 부여하는 개발 도구를 사용한다. 운영에서는 테스트 헤더 인증이 동작하지 않는다.
-- OWNER_1의 SHOP_ID=1 매장과 CATEGORY 초기 데이터가 있어야 한다. 초기 데이터가 없으면 매장 없음/카테고리 없음 안내가 표시된다.
+- OWNER_1의 SHOP_ID=1 매장 초기 데이터가 있어야 한다. 초기 데이터가 없으면 매장 없음 안내가 표시된다.
 - 공통 인증·CORS·라우터 파일을 수정하거나 개별 임시 인증 방식을 추가하지 않았다.
 - 다른 사장님 페이지의 빈자리·예약 데이터는 기존 시연용 구현이다. 해당 업무 API 연동은 각 담당 이슈 범위다.
 
@@ -105,14 +102,16 @@
 
 A-06은 기존 목적·참여 조건·촬영 안내 컬럼을 사용하므로 추가 스키마 변경과 마이그레이션은 없다.
 
-새 DB는 `docs/erd/01_schema_ddl.sql`을 사용한다.
-기존 Oracle 21c XE에는 아래 SQL 파일을 적용해야 한다.
+새 DB는 `docs/erd/01_schema_ddl.sql`을 사용하며 `TREATMENT.CATEGORY_ID`를 생성하지 않는다.
+기존 Oracle DB에서 `TREATMENT.CATEGORY_ID`가 있으면 기존 버전 인스턴스를 모두 중지한 유지보수 시간에 아래 순서로 제거하고, 새 버전을 기동한다. 기존 버전의 Treatment 매핑을 사용하는 조회·등록·수정이 실행되는 동안에는 컬럼을 제거하지 않는다. `UNNIE-32-treatment-category.sql`을 적용한 DB와 해당 컬럼을 포함한 이전 전체 DDL로 생성한 DB가 모두 대상이다.
 
-`docs/erd/migrations/UNNIE-32-treatment-category.sql`
+1. 대상 스키마의 `USER_TAB_COLUMNS`에서 `TREATMENT.CATEGORY_ID`, `USER_CONSTRAINTS`에서 `FK_TREATMENT_CATEGORY` 존재 여부를 확인한다.
+2. 제약이 존재하면 `ALTER TABLE TREATMENT DROP CONSTRAINT FK_TREATMENT_CATEGORY;`를 실행한다.
+3. 컬럼이 존재하면 `ALTER TABLE TREATMENT DROP COLUMN CATEGORY_ID;`를 실행한다.
+4. 두 객체가 제거된 것을 확인한 뒤 새 버전을 기동한다. 컬럼과 제약이 없는 DB에서는 제거 SQL을 실행하지 않는다.
 
-SQL은 CATEGORY_ID를 추가하고 기존 시술을 소속 매장의 카테고리로 채운 뒤 NOT NULL과 FK를 적용한다.
-카테고리 마스터는 기존 CATEGORY를 공유하고 선택값은 시술별로 저장한다.
-Oracle에서 실제 적용한 결과는 별도 검증이 필요하다.
+Oracle DDL은 자동 커밋되므로 실행 전 대상 스키마와 백업을 확인한다.
+매장 카테고리는 `SHOP.CATEGORY_ID`를 계속 사용한다. Oracle에서 실제 적용한 결과는 별도 검증이 필요하다.
 
 ## A-06 초기 구현 당시 검증 결과
 

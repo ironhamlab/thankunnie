@@ -3,6 +3,7 @@ package com.ucamp.app.domain.notification.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.ucamp.app.common.util.TimeUtils;
 
@@ -57,6 +59,9 @@ class NotificationServiceTest {
     @Test
     @DisplayName("업장 구독을 등록하면 매장 ID 와 희망 시간이 ACTIVE 상태로 저장된다")
     void subscribe_store_savesActiveSubscription() {
+        given(repository.existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTime(
+                eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(1L),
+                eq(toLocal(start)), eq(toLocal(end)))).willReturn(false);
         given(repository.save(any(NotificationSubscription.class))).willAnswer(invocation -> invocation.getArgument(0));
 
         NotificationSubscriptionResponse response = notificationService.subscribe(CUSTOMER,
@@ -73,6 +78,9 @@ class NotificationServiceTest {
     @Test
     @DisplayName("카테고리 구독을 등록하면 카테고리 ID와 지역코드가 저장되고 매장 ID는 없다")
     void subscribe_categoryRegion_savesCategoryAndRegion() {
+        given(repository.existsByUserIdAndStatusAndCategoryIdAndRegionCodeAndStartTimeAndEndTime(
+                eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(10L), eq("SEOUL_GANGNAM"),
+                eq(toLocal(start)), eq(toLocal(end)))).willReturn(false);
         given(repository.save(any(NotificationSubscription.class))).willAnswer(invocation -> invocation.getArgument(0));
 
         NotificationSubscriptionResponse response = notificationService.subscribe(CUSTOMER,
@@ -81,6 +89,32 @@ class NotificationServiceTest {
         assertThat(response.shopId()).isNull();
         assertThat(response.categoryId()).isEqualTo(10L);
         assertThat(response.regionCode()).isEqualTo("SEOUL_GANGNAM");
+    }
+
+    @Test
+    @DisplayName("같은 매장·같은 희망 시간의 ACTIVE 구독이 있으면 등록할 수 없다")
+    void subscribe_duplicateStore_throwsDuplicate() {
+        given(repository.existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTime(
+                eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(1L),
+                eq(toLocal(start)), eq(toLocal(end)))).willReturn(true);
+
+        assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
+                createRequest(SubscriptionType.STORE, 1L, null, null, start, end)),
+                ErrorCode.SUBSCRIPTION_DUPLICATE);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("같은 카테고리·지역·희망 시간의 ACTIVE 구독이 있으면 등록할 수 없다")
+    void subscribe_duplicateCategoryRegion_throwsDuplicate() {
+        given(repository.existsByUserIdAndStatusAndCategoryIdAndRegionCodeAndStartTimeAndEndTime(
+                eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(10L), eq("SEOUL_GANGNAM"),
+                eq(toLocal(start)), eq(toLocal(end)))).willReturn(true);
+
+        assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
+                createRequest(SubscriptionType.CATEGORY_REGION, null, 10L, "SEOUL_GANGNAM", start, end)),
+                ErrorCode.SUBSCRIPTION_DUPLICATE);
+        verify(repository, never()).save(any());
     }
 
     @Test
@@ -97,6 +131,9 @@ class NotificationServiceTest {
         assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
                 createRequest(SubscriptionType.STORE, 1L, 10L, null, start, end)),
                 ErrorCode.SUBSCRIPTION_INVALID_TARGET);
+        // 대상이 틀리면 중복 조회까지 가지 않는다
+        verify(repository, never()).existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTime(
+                any(), any(), any(), any(), any());
     }
 
     @Test
@@ -146,13 +183,39 @@ class NotificationServiceTest {
         NotificationSubscription subscription = storeSubscription();
         given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(subscription));
         OffsetDateTime newStart = start.plusDays(1);
+        LocalDateTime newStartLocal = toLocal(newStart);
+        LocalDateTime newEndLocal = toLocal(newStart.plusHours(2));
+        // ACTIVE 만 보고, 자기 구독 id=10 은 중복에서 뺀다
+        given(repository.existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
+                eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(2L),
+                eq(newStartLocal), eq(newEndLocal), eq(10L))).willReturn(false);
 
         NotificationSubscriptionResponse response = notificationService.updateSubscription(CUSTOMER, 10L,
                 new NotificationSubscriptionUpdateRequest(2L, null, null, newStart, newStart.plusHours(2)));
 
         assertThat(response.shopId()).isEqualTo(2L);
-        assertThat(subscription.getStartTime()).isEqualTo(TimeUtils.toLocal(newStart));
-        assertThat(subscription.getEndTime()).isEqualTo(TimeUtils.toLocal(newStart.plusHours(2)));
+        assertThat(subscription.getStartTime()).isEqualTo(newStartLocal);
+        assertThat(subscription.getEndTime()).isEqualTo(newEndLocal);
+        verify(repository).existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
+                eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(2L),
+                eq(newStartLocal), eq(newEndLocal), eq(10L));
+    }
+
+    @Test
+    @DisplayName("수정 결과가 다른 ACTIVE 구독과 같으면 수정할 수 없다")
+    void updateSubscription_duplicateOther_throwsDuplicate() {
+        NotificationSubscription subscription = storeSubscription();
+        given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(subscription));
+        given(repository.existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
+                eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(2L),
+                eq(toLocal(start)), eq(toLocal(end)), eq(10L))).willReturn(true);
+
+        assertErrorCode(() -> notificationService.updateSubscription(CUSTOMER, 10L,
+                new NotificationSubscriptionUpdateRequest(2L, null, null, start, end)),
+                ErrorCode.SUBSCRIPTION_DUPLICATE);
+        verify(repository).existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
+                eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(2L),
+                eq(toLocal(start)), eq(toLocal(end)), eq(10L));
     }
 
     @Test
@@ -163,6 +226,22 @@ class NotificationServiceTest {
         assertErrorCode(() -> notificationService.updateSubscription(CUSTOMER, 10L,
                 new NotificationSubscriptionUpdateRequest(null, 10L, "SEOUL_GANGNAM", start, end)),
                 ErrorCode.SUBSCRIPTION_INVALID_TARGET);
+        // 대상이 틀리면 중복 조회까지 가지 않는다 (409 가 나면 안 됨)
+        verify(repository, never()).existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
+                any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("STORE 수정에 카테고리가 섞여 있으면 매장 중복과 같아도 대상 오류다")
+    void updateSubscription_invalidTarget_notDuplicate() {
+        given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(storeSubscription()));
+
+        // shopId=2 는 다른 구독과 겹칠 수 있는 값이지만, categoryId 가 있어 대상 오류가 먼저다
+        assertErrorCode(() -> notificationService.updateSubscription(CUSTOMER, 10L,
+                new NotificationSubscriptionUpdateRequest(2L, 10L, null, start, end)),
+                ErrorCode.SUBSCRIPTION_INVALID_TARGET);
+        verify(repository, never()).existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
+                any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -197,13 +276,16 @@ class NotificationServiceTest {
     }
 
     private NotificationSubscription storeSubscription() {
-        return NotificationSubscription.builder()
+        NotificationSubscription subscription = NotificationSubscription.builder()
                 .userId(CUSTOMER.userId())
                 .subscriptionType(SubscriptionType.STORE)
                 .shopId(1L)
                 .startTime(toLocal(start))
                 .endTime(toLocal(end))
                 .build();
+        // 빌더는 id 를 안 넣어서, 수정 테스트용으로 직접 넣는다
+        ReflectionTestUtils.setField(subscription, "id", 10L);
+        return subscription;
     }
 
     private static NotificationSubscriptionCreateRequest createRequest(SubscriptionType type, Long shopId,

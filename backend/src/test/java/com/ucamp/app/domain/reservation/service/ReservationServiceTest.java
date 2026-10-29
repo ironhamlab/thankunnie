@@ -317,8 +317,8 @@ class ReservationServiceTest {
     private static Treatment treatment(TreatmentStatus status) {
         Shop shop = BeanUtils.instantiateClass(Shop.class);
         ReflectionTestUtils.setField(shop, "shopId", SHOP_ID);
-        Treatment treatment = Treatment.create(shop, null,
-                new TreatmentSaveRequest("젤 네일", null, 50_000, 30_000, 18_000, 1L, 60));
+        Treatment treatment = Treatment.create(shop,
+                new TreatmentSaveRequest("젤 네일", null, 50_000, 30_000, 18_000, 60));
         ReflectionTestUtils.setField(treatment, "treatmentId", TREATMENT_ID);
         treatment.changeStatus(status);
         return treatment;

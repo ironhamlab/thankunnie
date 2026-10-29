@@ -9,7 +9,6 @@ const toError = (error) => ({
 export const useTreatmentStore = create((set, get) => ({
   shopId: null,
   treatments: [],
-  categories: [],
   status: 'idle',
   mutationStatus: 'idle',
   error: null,
@@ -41,7 +40,6 @@ export const useTreatmentStore = create((set, get) => ({
       error: null,
       mutationError: null,
       treatments: [],
-      categories: [],
       shopId: null,
     });
     try {
@@ -50,11 +48,8 @@ export const useTreatmentStore = create((set, get) => ({
       if (user?.role !== 'OWNER' || !user.shopId) {
         throw { code: 'COMMON_403', message: '사장님 계정으로 로그인해 주세요.' };
       }
-      const [treatments, categories] = await Promise.all([
-        treatmentApi.getTreatments(user.shopId),
-        treatmentApi.getCategories(user.shopId),
-      ]);
-      set({ shopId: user.shopId, treatments, categories, status: 'succeeded' });
+      const treatments = await treatmentApi.getTreatments(user.shopId);
+      set({ shopId: user.shopId, treatments, status: 'succeeded' });
     } catch (error) {
       set({ status: 'failed', error: toError(error) });
     }
