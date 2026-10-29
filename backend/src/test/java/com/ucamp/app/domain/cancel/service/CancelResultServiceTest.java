@@ -24,6 +24,7 @@ import com.ucamp.app.domain.cancel.entity.CancelStatus;
 import com.ucamp.app.domain.cancel.entity.CancelType;
 import com.ucamp.app.domain.cancel.entity.ReservationCancel;
 import com.ucamp.app.domain.cancel.repository.ReservationCancelRepository;
+import com.ucamp.app.domain.notification.event.CancelCompletedEvent;
 import com.ucamp.app.domain.notification.event.SlotReopenedEvent;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
@@ -92,6 +93,8 @@ class CancelResultServiceTest {
         assertThat(graceCancelUsageService.isUsed(CancelFixture.CUSTOMER_ID, NOW.toLocalDate())).isTrue();
         assertThat(applicationEvents.stream(SlotReopenedEvent.class))
                 .containsExactly(new SlotReopenedEvent(100L));
+        assertThat(applicationEvents.stream(CancelCompletedEvent.class))
+                .containsExactly(new CancelCompletedEvent(100L, CancelType.CUSTOMER));
     }
 
     @Test
@@ -114,6 +117,7 @@ class CancelResultServiceTest {
 
         assertThat(shopScheduleExceptionRepository.existsByReservationId(100L)).isFalse();
         assertThat(applicationEvents.stream(SlotReopenedEvent.class)).isEmpty();
+        assertThat(applicationEvents.stream(CancelCompletedEvent.class)).isEmpty();
     }
 
     @Test
@@ -136,6 +140,7 @@ class CancelResultServiceTest {
         assertThat(response.completedAt()).isNull();
         assertThat(reservationStatus()).isEqualTo("CANCEL_PENDING");
         assertThat(graceCancelUsageService.isUsed(CancelFixture.CUSTOMER_ID, NOW.toLocalDate())).isTrue();
+        assertThat(applicationEvents.stream(CancelCompletedEvent.class)).isEmpty();
     }
 
     @Test

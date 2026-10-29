@@ -56,7 +56,7 @@
 | `startDate` | `yyyy-MM-dd` | 오늘(KST) | 시작 날짜 (포함) |
 | `endDate` | `yyyy-MM-dd` | `startDate` + 6일 | 종료 날짜 (포함). `startDate <= endDate`, 최대 60일 이내 |
 | `regionCode` | string, 여러 개 (최대 10개) | 전체 | `SHOP.REGION_CODE`(시군구 5자리). `regionCode=11680&regionCode=11650`처럼 반복. 화면 지역 묶음과의 대응은 9장 |
-| `categoryId` | number | 전체 | `TREATMENT.CATEGORY_ID` |
+| `categoryId` | number | 전체 | `SHOP.CATEGORY_ID` |
 | `shopId` | number | 전체 | 한 매장의 빈자리만. 지도에서 매장 마커를 눌렀을 때 사용 |
 | `timeOfDay` | `MORNING`·`AFTERNOON`·`EVENING` | 전체 | 시작 시각 기준 09~12시 / 12~18시 / 18시 이후 |
 | `closingWithinHours` | number (1~72) | 없음 | 예약 마감(시작 20분 전)이 지금부터 N시간 안인 빈자리만. 메인 "마감 임박" 영역용 |
@@ -132,7 +132,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 | `regionCode`, `address` | string | 매장 주소 | 카드 위치 문구 |
 | `latitude`, `longitude` | number | 매장 좌표 (`SHOP.LATITUDE/LONGITUDE`) | 카카오맵 마커 |
 | `treatmentId`, `treatmentName` | number, string | 시술 | 카드 제목 |
-| `categoryId`, `categoryName` | number, string | 시술 카테고리 | 카드 배지 |
+| `categoryId`, `categoryName` | number, string | 매장 카테고리 | 카드 배지 |
 | `treatmentType` | `NORMAL`·`MODEL` | 일반 / 모델 시술 | 모델 배지 |
 | `durationMinutes` | number | 소요 시간(분) | "60분 소요" |
 | `imageUrl` | string, null 가능 | 시술 이미지(`TREATMENT.IMAGE_URL`), 없으면 매장 이미지(`SHOP.IMAGE_URL`), 둘 다 없으면 null | 카드 이미지 (null이면 기본 이미지) |

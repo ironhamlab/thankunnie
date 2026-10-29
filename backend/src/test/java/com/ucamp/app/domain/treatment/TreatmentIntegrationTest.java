@@ -88,15 +88,14 @@ class TreatmentIntegrationTest {
     }
 
     @Test
-    @DisplayName("시술별 카테고리와 30분 배수 소요 시간을 저장하고 새로 조회한다")
-    void create_validMenu_persistsIndependentCategory() throws Exception {
-        long id = create(60, 50000, 9002).get("treatmentId").asLong();
+    @DisplayName("30분 배수 소요 시간을 저장하고 새로 조회한다")
+    void create_validMenu_persistsDuration() throws Exception {
+        long id = create(60, 50000).get("treatmentId").asLong();
 
         mvc.perform(get(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("테스트 시술"))
-                .andExpect(jsonPath("$.data.categoryId").value(9002))
-                .andExpect(jsonPath("$.data.categoryName").value("헤어"))
+                .andExpect(jsonPath("$.data.categoryId").doesNotExist())
                 .andExpect(jsonPath("$.data.durationMinutes").value(60))
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.createdAt").value(org.hamcrest.Matchers.endsWith("+09:00")));
@@ -115,7 +114,7 @@ class TreatmentIntegrationTest {
     @DisplayName("30분 배수가 아닌 시간·범위 초과·잘못된 정상가는 거절한다")
     void create_invalidNumbers_returnsBadRequest(int duration, int price) throws Exception {
         mvc.perform(post(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
-                        .contentType(MediaType.APPLICATION_JSON).content(body(duration, price, 9002)))
+                        .contentType(MediaType.APPLICATION_JSON).content(body(duration, price)))
                 .andExpect(status().isBadRequest());
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM TREATMENT", Integer.class)).isZero();
     }
@@ -124,14 +123,14 @@ class TreatmentIntegrationTest {
     @ValueSource(ints = {30, 90, 9990})
     @DisplayName("30분 배수의 최소값·일반값·최대값을 허용한다")
     void create_validDurations_returnsCreated(int duration) throws Exception {
-        assertThat(create(duration, 100, 9002).get("durationMinutes").asInt()).isEqualTo(duration);
+        assertThat(create(duration, 100).get("durationMinutes").asInt()).isEqualTo(duration);
     }
 
     @Test
-    @DisplayName("존재하지 않는 카테고리·빈 시술명·누락한 필수값을 거절한다")
+    @DisplayName("빈 시술명·누락한 필수값을 거절한다")
     void create_invalidFields_returnsBadRequest() throws Exception {
-        for (String payload : new String[]{body(60, 50000, 9999), "{}",
-                body(60, 50000, 9002).replace("테스트 시술", "  ")}) {
+        for (String payload : new String[]{"{}",
+                body(60, 50000).replace("테스트 시술", "  ")}) {
             mvc.perform(post(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
                             .contentType(MediaType.APPLICATION_JSON).content(payload))
                     .andExpect(status().isBadRequest());
@@ -146,7 +145,7 @@ class TreatmentIntegrationTest {
             mvc.perform(get(URL).header(StubAuthFilter.HEADER_NAME, actor))
                     .andExpect(status().isForbidden());
             mvc.perform(post(URL).header(StubAuthFilter.HEADER_NAME, actor)
-                            .contentType(MediaType.APPLICATION_JSON).content(body(60, 50000, 9002)))
+                            .contentType(MediaType.APPLICATION_JSON).content(body(60, 50000)))
                     .andExpect(status().isForbidden());
         }
     }
@@ -154,12 +153,12 @@ class TreatmentIntegrationTest {
     @Test
     @DisplayName("다른 매장의 시술 ID로 조회·수정·상태 변경을 할 수 없다")
     void access_foreignTreatment_returnsNotFound() throws Exception {
-        long id = create(60, 50000, 9002).get("treatmentId").asLong();
+        long id = create(60, 50000).get("treatmentId").asLong();
         String foreignUrl = "/api/v1/shops/2/treatments/" + id;
         mvc.perform(get(foreignUrl).header(StubAuthFilter.HEADER_NAME, "OWNER_2"))
                 .andExpect(status().isNotFound());
         mvc.perform(put(foreignUrl).header(StubAuthFilter.HEADER_NAME, "OWNER_2")
-                        .contentType(MediaType.APPLICATION_JSON).content(body(90, 60000, 9001)))
+                        .contentType(MediaType.APPLICATION_JSON).content(body(90, 60000)))
                 .andExpect(status().isNotFound());
         mvc.perform(patch(foreignUrl + "/status").header(StubAuthFilter.HEADER_NAME, "OWNER_2")
                         .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"INACTIVE\"}"))
@@ -169,13 +168,13 @@ class TreatmentIntegrationTest {
     @Test
     @DisplayName("기본 정보 수정·비활성화·재활성화가 저장되고 목록에 반영된다")
     void update_menuAndStatus_persistsChanges() throws Exception {
-        long id = create(60, 50000, 9002).get("treatmentId").asLong();
+        long id = create(60, 50000).get("treatmentId").asLong();
         mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
-                        .contentType(MediaType.APPLICATION_JSON).content(body(90, 60000, 9001)))
+                        .contentType(MediaType.APPLICATION_JSON).content(body(90, 60000)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.durationMinutes").value(90))
                 .andExpect(jsonPath("$.data.regularPrice").value(60000))
-                .andExpect(jsonPath("$.data.categoryName").value("네일"));
+                .andExpect(jsonPath("$.data.categoryId").doesNotExist());
         assertThat(jdbc.queryForObject("SELECT PRICE FROM TREATMENT WHERE TREATMENT_ID = ?", Integer.class, id))
                 .isEqualTo(60000);
         for (String value : new String[]{"INACTIVE", "ACTIVE"}) {
@@ -188,18 +187,9 @@ class TreatmentIntegrationTest {
     }
 
     @Test
-    @DisplayName("카테고리 목록은 서버의 실제 목록을 반환한다")
-    void getCategories_returnsAvailableCategories() throws Exception {
-        mvc.perform(get(URL + "/categories").header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].categoryId").value(9001));
-    }
-
-    @Test
     @DisplayName("할인가·모델 조건·기존 예약 스냅샷을 보존하고 판매가보다 낮은 정상가를 거절한다")
     void update_discountedTreatment_preservesPricesAndReservation() throws Exception {
-        long id = create(60, 50000, 9002).get("treatmentId").asLong();
+        long id = create(60, 50000).get("treatmentId").asLong();
         jdbc.update("""
                 UPDATE TREATMENT SET PRICE = 40000, LAST_MINUTE_PRICE = 30000,
                     TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '모델 조건' WHERE TREATMENT_ID = ?
@@ -219,7 +209,7 @@ class TreatmentIntegrationTest {
         entityManager.clear();
 
         mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
-                        .contentType(MediaType.APPLICATION_JSON).content(body(90, 60000, 9001, 40000, 30000)))
+                        .contentType(MediaType.APPLICATION_JSON).content(body(90, 60000, 40000, 30000)))
                 .andExpect(status().isOk());
         var treatment = jdbc.queryForMap("SELECT * FROM TREATMENT WHERE TREATMENT_ID = ?", id);
         assertThat(((Number) treatment.get("PRICE")).intValue()).isEqualTo(40000);
@@ -232,7 +222,7 @@ class TreatmentIntegrationTest {
         assertThat(reservation.get("ENDS_AT").toString()).startsWith("2026-10-25 13:00:00");
 
         mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
-                        .contentType(MediaType.APPLICATION_JSON).content(body(90, 35000, 9001, 40000, 30000)))
+                        .contentType(MediaType.APPLICATION_JSON).content(body(90, 35000, 40000, 30000)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -240,7 +230,7 @@ class TreatmentIntegrationTest {
     @DisplayName("등록·수정한 할인가를 DB와 상세 응답에서 다시 읽는다")
     void save_discountPrices_persistsAndReturnsPrices() throws Exception {
         String response = mvc.perform(post(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
-                        .contentType(MediaType.APPLICATION_JSON).content(body(60, 50000, 9002, 40000, 30000)))
+                        .contentType(MediaType.APPLICATION_JSON).content(body(60, 50000, 40000, 30000)))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         long id = mapper.readTree(response).get("data").get("treatmentId").asLong();
         assertThat(jdbc.queryForObject("SELECT PRICE FROM TREATMENT WHERE TREATMENT_ID = ?", Integer.class, id))
@@ -248,7 +238,7 @@ class TreatmentIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT LAST_MINUTE_PRICE FROM TREATMENT WHERE TREATMENT_ID = ?", Integer.class, id))
                 .isEqualTo(30000);
         mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
-                        .contentType(MediaType.APPLICATION_JSON).content(body(60, 60000, 9002, 45000, 35000)))
+                        .contentType(MediaType.APPLICATION_JSON).content(body(60, 60000, 45000, 35000)))
                 .andExpect(status().isOk());
         entityManager.clear();
         mvc.perform(get(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
@@ -262,11 +252,11 @@ class TreatmentIntegrationTest {
             "40000,30001,VACANCY_007", "0,0,VACANCY_007", "40000,40100,VACANCY_008"})
     @DisplayName("등록·수정 시 가격 정책 오류 코드를 반환한다")
     void save_invalidPrices_returnsPolicyError(int price, int lastMinutePrice, String code) throws Exception {
-        String payload = body(60, 50000, 9002, price, lastMinutePrice);
+        String payload = body(60, 50000, price, lastMinutePrice);
         mvc.perform(post(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
                         .contentType(MediaType.APPLICATION_JSON).content(payload))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value(code));
-        long id = create(60, 50000, 9002).get("treatmentId").asLong();
+        long id = create(60, 50000).get("treatmentId").asLong();
         mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
                         .contentType(MediaType.APPLICATION_JSON).content(payload))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value(code));
@@ -275,7 +265,7 @@ class TreatmentIntegrationTest {
     @Test
     @DisplayName("모델의 목적과 조건을 저장하고 재조회하며 일반 시술로 전환한다")
     void save_modelConditions_persistsAndClears() throws Exception {
-        var payload = mapper.readTree(body(60, 50000, 9002));
+        var payload = mapper.readTree(body(60, 50000));
         ((com.fasterxml.jackson.databind.node.ObjectNode) payload).set("conditions", mapper.readTree("""
                 {"treatmentType":"MODEL",
                  "modelCondition":"  탈색 이력 없음  ","photoNotice":"  전후 사진 촬영  "}
@@ -291,7 +281,7 @@ class TreatmentIntegrationTest {
                 .andExpect(jsonPath("$.data.photoNotice").value("전후 사진 촬영"));
         // 기존 기본정보 요청은 모델 조건을 그대로 보존한다.
         mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
-                        .contentType(MediaType.APPLICATION_JSON).content(body(90, 60000, 9001)))
+                        .contentType(MediaType.APPLICATION_JSON).content(body(90, 60000)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.modelCondition").value("탈색 이력 없음"));
         var updatedConditions = (com.fasterxml.jackson.databind.node.ObjectNode) payload.path("conditions");
         updatedConditions.put("modelCondition", "가".repeat(2000)).put("photoNotice", "나".repeat(1000));
@@ -324,13 +314,13 @@ class TreatmentIntegrationTest {
     })
     @DisplayName("잘못된 목적·빈 조건은 등록과 수정에서 거절하고 기존 데이터를 보존한다")
     void save_invalidConditions_returnsBadRequest(String conditions) throws Exception {
-        var payload = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(body(60, 50000, 9002));
+        var payload = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(body(60, 50000));
         payload.set("conditions", mapper.readTree(conditions));
         mvc.perform(post(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
                         .contentType(MediaType.APPLICATION_JSON).content(payload.toString()))
                 .andExpect(status().isBadRequest());
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM TREATMENT", Integer.class)).isZero();
-        long id = create(60, 50000, 9002).path("treatmentId").asLong();
+        long id = create(60, 50000).path("treatmentId").asLong();
         mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
                         .contentType(MediaType.APPLICATION_JSON).content(payload.toString()))
                 .andExpect(status().isBadRequest());
@@ -342,7 +332,7 @@ class TreatmentIntegrationTest {
     @DisplayName("참여 조건과 촬영 안내의 최대 길이를 초과하면 거절한다")
     void save_oversizedConditions_returnsBadRequest() throws Exception {
         for (String field : new String[]{"modelCondition", "photoNotice"}) {
-            var payload = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(body(60, 50000, 9002));
+            var payload = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(body(60, 50000));
             var conditions = payload.putObject("conditions");
             conditions.put("treatmentType", "MODEL")
                     .put("modelCondition", "조건").put("photoNotice", "촬영");
@@ -356,8 +346,8 @@ class TreatmentIntegrationTest {
     @Test
     @DisplayName("비활성 시술은 신규 선택 목록에서만 제외되고 재활성화하면 다시 선택할 수 있다")
     void list_activeFilter_excludesInactiveAndRestoresReactivated() throws Exception {
-        long inactiveId = create(60, 50000, 9002).get("treatmentId").asLong();
-        long activeId = create(60, 50000, 9001).get("treatmentId").asLong();
+        long inactiveId = create(60, 50000).get("treatmentId").asLong();
+        long activeId = create(60, 50000).get("treatmentId").asLong();
         mvc.perform(patch(URL + "/" + inactiveId + "/status").header(StubAuthFilter.HEADER_NAME, "OWNER_1")
                         .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"INACTIVE\"}"))
                 .andExpect(status().isOk());
@@ -397,7 +387,7 @@ class TreatmentIntegrationTest {
     @ValueSource(strings = {"HOLD", "CONFIRMED", "CANCEL_PENDING", "CANCELLED", "EXPIRED"})
     @DisplayName("반복 비활성화해도 기존 빈자리와 모든 상태의 예약 행을 그대로 보존한다")
     void deactivate_existingHistory_preservesVacancyAndReservation(String reservationStatus) throws Exception {
-        long id = create(60, 50000, 9002).get("treatmentId").asLong();
+        long id = create(60, 50000).get("treatmentId").asLong();
         jdbc.update("""
                 INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
                 VALUES (9001, 'CHANGE_ME', 'CHANGE_ME', '고객', '010-0000-0000',
@@ -432,21 +422,21 @@ class TreatmentIntegrationTest {
                 .isEqualTo(1);
     }
 
-    private JsonNode create(int duration, int price, long category) throws Exception {
+    private JsonNode create(int duration, int price) throws Exception {
         String response = mvc.perform(post(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
-                        .contentType(MediaType.APPLICATION_JSON).content(body(duration, price, category)))
+                        .contentType(MediaType.APPLICATION_JSON).content(body(duration, price)))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return mapper.readTree(response).get("data");
     }
 
-    private String body(int duration, int price, long category) {
-        return body(duration, price, category, price, price);
+    private String body(int duration, int price) {
+        return body(duration, price, price, price);
     }
 
-    private String body(int duration, int price, long category, int salePrice, int lastMinutePrice) {
+    private String body(int duration, int price, int salePrice, int lastMinutePrice) {
         return """
                 {"name":"테스트 시술","description":"시술 설명","regularPrice":%d,
-                 "categoryId":%d,"durationMinutes":%d,"price":%d,"lastMinutePrice":%d}
-                """.formatted(price, category, duration, salePrice, lastMinutePrice);
+                 "durationMinutes":%d,"price":%d,"lastMinutePrice":%d}
+                """.formatted(price, duration, salePrice, lastMinutePrice);
     }
 }

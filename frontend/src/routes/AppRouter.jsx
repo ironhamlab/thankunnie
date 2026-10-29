@@ -15,7 +15,6 @@ const ServiceDetailPage = lazy(() => import('@/pages/service/ServiceDetailPage')
 const ReservationPage = lazy(() => import('@/pages/reservation/ReservationPage'));
 const CheckoutPage = lazy(() => import('@/pages/reservation/CheckoutPage'));
 const BookingResultPage = lazy(() => import('@/pages/reservation/BookingResultPage'));
-const BookingsPage = lazy(() => import('@/pages/my/BookingsPage'));
 const MyReservationsPage = lazy(() => import('@/pages/my/MyReservationsPage'));
 const CustomerProfilePage = lazy(() => import('@/pages/my/CustomerProfilePage'));
 const CustomerCancelPage = lazy(() => import('@/pages/cancel/CustomerCancelPage'));
@@ -54,10 +53,9 @@ export default function AppRouter() {
           <Route path={ROUTES.RESERVE} element={<ReservationPage />} />
           <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />
           <Route path={ROUTES.BOOKING_RESULT} element={<BookingResultPage />} />
-          <Route path={ROUTES.PROFILE} element={<CustomerProfilePage />} />
-          <Route path={ROUTES.BOOKINGS} element={<BookingsPage />} />
-          {/* 실제 예약 API 를 쓰는 화면은 로그인이 필요하다 */}
+          {/* 실제 API 로 로그인 사용자 데이터를 불러오는 화면은 로그인이 필요하다 */}
           <Route element={<PrivateRoute />}>
+            <Route path={ROUTES.PROFILE} element={<CustomerProfilePage />} />
             <Route path={ROUTES.MY_RESERVATIONS} element={<MyReservationsPage />} />
             <Route path={ROUTES.MY_RESERVATION_CANCEL} element={<CustomerCancelPage />} />
             <Route

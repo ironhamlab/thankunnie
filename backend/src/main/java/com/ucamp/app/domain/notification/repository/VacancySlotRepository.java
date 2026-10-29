@@ -109,55 +109,6 @@ public class VacancySlotRepository {
         ORDER BY o.STARTS_AT, o.EXCEPTION_ID
         """;
 
-    // 취소된 예약 시간과 겹치는 CLOSE가 있으면 제외한다
-    private static final String NOT_OVERLAPPING_CLOSE = """
-        NOT EXISTS (
-                SELECT 1 FROM SHOP_SCHEDULE_EXCEPTION c
-                WHERE c.SHOP_ID = t.SHOP_ID
-                AND c.EXCEPTION_TYPE = 'CLOSE'
-                AND c.STARTS_AT < r.ENDS_AT
-                AND r.STARTS_AT < c.ENDS_AT)""";
-
-    // 다른 예약의 확정, 취소 처리 중, 만료 전 점유가 그 시간을 잡고 있으면 제외한다
-    private static final String NOT_OCCUPIED_BY_OTHER = """
-        NOT EXISTS (
-                SELECT 1 FROM RESERVATION x
-                JOIN TREATMENT xt ON xt.TREATMENT_ID = x.TREATMENT_ID
-                WHERE xt.SHOP_ID = t.SHOP_ID
-                AND x.RESERVATION_ID <> r.RESERVATION_ID
-                AND x.STARTS_AT < r.ENDS_AT
-                AND r.STARTS_AT < x.ENDS_AT
-                AND (x.STATUS IN ('CONFIRMED', 'CANCEL_PENDING')
-                OR (x.STATUS = 'HOLD' AND x.HOLD_EXPIRES_AT > :now)))""";
-
-    // 취소 완료된 일반 시술. 영업 중이고, 클릭 마감 전이며, 예약 시간을 덮는 OPEN
-    private static final String FIND_REOPENED_SQL = """
-        SELECT o.EXCEPTION_ID, t.SHOP_ID, r.RESERVATION_ID, r.STARTS_AT, r.ENDS_AT
-        FROM RESERVATION r
-        JOIN TREATMENT t ON t.TREATMENT_ID = r.TREATMENT_ID
-        JOIN SHOP s ON s.SHOP_ID = t.SHOP_ID
-        JOIN SHOP_SCHEDULE_EXCEPTION o
-        ON o.SHOP_ID = t.SHOP_ID
-        AND o.EXCEPTION_TYPE = 'OPEN'
-        AND o.STARTS_AT <= r.STARTS_AT
-        AND o.ENDS_AT >= r.ENDS_AT
-        WHERE r.RESERVATION_ID = :reservationId
-        AND r.STATUS = 'CANCELLED'
-        AND t.TREATMENT_TYPE = 'NORMAL'
-        AND s.STATUS = 'ACTIVE'
-        AND r.STARTS_AT > :bookingClosesBefore
-        AND
-        """
-        + NOT_OVERLAPPING_CLOSE
-        + """
-        AND
-        """
-        + NOT_OCCUPIED_BY_OTHER
-        + """
-        ORDER BY o.STARTS_AT, o.EXCEPTION_ID
-        FETCH FIRST 1 ROWS ONLY
-        """;
-
     // 취소 완료된 일반 시술 예약만 읽는다. OPEN 행은 보지 않는다. 팔리는지는 isAvailable 이 본다.
     private static final String FIND_CANCELLED_RESERVATION_SQL = """
         SELECT t.SHOP_ID, r.RESERVATION_ID, r.STARTS_AT, r.ENDS_AT
@@ -258,29 +209,6 @@ public class VacancySlotRepository {
     }
 
     /**
-     * 취소된 예약 시간이 다시 판매 가능한지 확인하고, 그 시간을 담은 빈자리를 조회한다.
-     * 취소 완료, 일반 시술, 영업 중 매장, 클릭 마감(시작 20분 전) 전, 예약 시간을 덮는 OPEN이 있어야 한다.
-     * 그 시간과 겹치는 CLOSE나, 다른 예약의 확정·취소 처리 중·만료 전 점유가 있으면 제외한다.
-     *
-     * @param reservationId 취소된 예약 ID
-     * @param now           현재 시각 (서울)
-     * @return 재공개된 빈자리. 판매 가능하지 않으면 empty
-     */
-    public Optional<VacancySlot> findReopened(Long reservationId, LocalDateTime now) {
-        LocalDateTime bookingClosesBefore = now.plus(BookingPolicy.BOOKING_DEADLINE);
-        Map<String, Object> params = Map.of(
-                "reservationId", reservationId,
-                "bookingClosesBefore", bookingClosesBefore,
-                "now", now);
-        List<VacancySlot> slots = jdbcTemplate.query(
-                FIND_REOPENED_SQL, params, VacancySlotRepository::toReopenedSlot);
-        if (slots.isEmpty()) {
-            return Optional.empty();
-        }
-        return Optional.of(slots.get(0));
-    }
-
-    /**
      * 취소가 끝난 일반 시술 예약을 읽는다.
      * OPEN 행은 보지 않는다. 그 시간이 지금 예약 가능한지는 AvailabilityService 가 본다.
      *
@@ -308,16 +236,6 @@ public class VacancySlotRepository {
                 rs.getLong("EXCEPTION_ID"),
                 rs.getLong("SHOP_ID"),
                 null,
-                toLocalDateTime(rs, "STARTS_AT"),
-                toLocalDateTime(rs, "ENDS_AT"));
-    }
-
-    // 재공개(OPEN 조회)는 취소된 예약 ID가 있다. 시각은 그 예약의 시작·종료다.
-    private static VacancySlot toReopenedSlot(ResultSet rs, int rowNum) throws SQLException {
-        return new VacancySlot(
-                rs.getLong("EXCEPTION_ID"),
-                rs.getLong("SHOP_ID"),
-                rs.getLong("RESERVATION_ID"),
                 toLocalDateTime(rs, "STARTS_AT"),
                 toLocalDateTime(rs, "ENDS_AT"));
     }
