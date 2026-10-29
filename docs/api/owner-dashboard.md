@@ -17,7 +17,16 @@
     "date": "2026-11-02",
     "today": {
       "confirmedCount": 1,
-      "upcomingCount": 1
+      "upcomingCount": 1,
+      "availableStartTimes": [
+        "2026-11-02T15:00:00+09:00",
+        "2026-11-02T15:30:00+09:00",
+        "2026-11-02T19:30:00+09:00"
+      ],
+      "availableRanges": [
+        { "startsAt": "2026-11-02T15:00:00+09:00", "endsAt": "2026-11-02T16:00:00+09:00" },
+        { "startsAt": "2026-11-02T19:30:00+09:00", "endsAt": "2026-11-02T20:00:00+09:00" }
+      ]
     },
     "month": {
       "from": "2026-11-01",
@@ -44,6 +53,8 @@
 | --- | --- |
 | `today.confirmedCount` | 오늘 시작하는 확정 예약 |
 | `today.upcomingCount` | 그중 아직 시작하지 않은 예약 (시작 시각이 현재보다 뒤) |
+| `today.availableStartTimes` | 오늘 지금 예약할 수 있는 30분 단위 시작 시각. 고객 예약 화면과 같은 기준(영업시간·열기·닫기·기존 예약·시작 20분 전 마감)이며 시술 소요 시간은 고려하지 않음. 남은 빈 시간 = 개수 × 30분 |
+| `today.availableRanges` | 위 시각을 연속 구간으로 묶은 것 `[startsAt, endsAt)` |
 | `month.confirmedCount` | 이번 달 확정 예약 |
 | `month.expectedSales` | 확정 예약 적용가 합계. 현장 잔금을 포함한 예상 매출 |
 | `month.cancelledCount` | 취소 완료(`CANCELLED`) 합계 = 아래 세 유형의 합 |
@@ -103,7 +114,7 @@
     "treatments": [
       { "treatmentId": 1, "treatmentName": "젤네일 원컬러", "confirmedCount": 2, "sales": 60000, "cancelledCount": 0 }
     ],
-    "timeSlots": [
+    "hourly": [
       { "dayOfWeek": "MONDAY", "hour": 14, "confirmedCount": 1 }
     ]
   }
@@ -119,7 +130,7 @@
 | `summary.lastMinuteCount`·`lastMinuteSales` | 시작 3시간 이내에 점유한 확정 예약 (초임박가 판매) | "땡처리 매출" 카드 |
 | `daily` | 날짜별 확정 건수·매출·취소 건수. 예약 없는 날도 0 으로 채워 `from`~`to` 를 모두 담음 | 라인 차트 |
 | `treatments` | 시술별 확정 건수·매출·취소 건수. 매출 → 확정 건수 많은 순 | 막대 차트 |
-| `timeSlots` | 요일(`MONDAY`~`SUNDAY`)·시작 시각(시)별 확정 건수. 0 인 칸은 없음 | 요일 × 시간 히트맵 |
+| `hourly` | 요일(`MONDAY`~`SUNDAY`)·시작 시각(시)별 확정 건수. 0 인 칸은 없음 | 요일 × 시간 히트맵 |
 
 초임박 판정: 예약 테이블에 가격 구간 컬럼이 없어서 점유 시작 시각(`HOLD_EXPIRES_AT − 5분`)과 시작 시각의 차이가 3시간 이하이면 초임박으로 본다. 경계(정확히 3시간)는 초임박이다.
 

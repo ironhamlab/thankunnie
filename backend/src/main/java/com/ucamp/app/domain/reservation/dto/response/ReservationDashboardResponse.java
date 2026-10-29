@@ -1,6 +1,8 @@
 package com.ucamp.app.domain.reservation.dto.response;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.List;
 
 /**
  * 사장님 메인 대시보드. 날짜는 서버 시각(한국 시간) 기준이며 월간 지표는 시술일 기준이다.
@@ -12,10 +14,23 @@ import java.time.LocalDate;
 public record ReservationDashboardResponse(LocalDate date, Today today, Month month) {
 
     /**
-     * @param confirmedCount 오늘 시작하는 확정 예약
-     * @param upcomingCount  그중 아직 시작하지 않은 예약
+     * @param confirmedCount      오늘 시작하는 확정 예약
+     * @param upcomingCount       그중 아직 시작하지 않은 예약
+     * @param availableStartTimes 지금 예약할 수 있는 30분 단위 시작 시각, 오름차순. 고객 예약 화면과 같은 기준
+     *                            (영업시간·열기·닫기·기존 예약·접수 마감)이며, 각 시각부터 30분이 비어 있다
+     * @param availableRanges     위 시각을 연속 구간으로 묶은 것. 끝은 마지막 시각 + 30분
      */
-    public record Today(int confirmedCount, int upcomingCount) {
+    public record Today(
+            int confirmedCount,
+            int upcomingCount,
+            List<OffsetDateTime> availableStartTimes,
+            List<AvailableRange> availableRanges) {
+    }
+
+    /**
+     * 연속으로 비어 있는 시간 구간 [startsAt, endsAt).
+     */
+    public record AvailableRange(OffsetDateTime startsAt, OffsetDateTime endsAt) {
     }
 
     /**

@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -46,7 +48,9 @@ class OwnerDashboardControllerTest {
     void getDashboard_owner_returnsDashboard() throws Exception {
         ReservationDashboardResponse response = new ReservationDashboardResponse(
                 LocalDate.of(2026, 11, 2),
-                new ReservationDashboardResponse.Today(1, 1),
+                new ReservationDashboardResponse.Today(1, 1,
+                        List.of(at(15, 0), at(15, 30)),
+                        List.of(new ReservationDashboardResponse.AvailableRange(at(15, 0), at(16, 0)))),
                 new ReservationDashboardResponse.Month(LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30),
                         2, 60000L, 1, 1, 0, 0, 0, 1, 15000L));
         given(reservationDashboardService.getOwnerDashboard(any(AuthUser.class))).willReturn(response);
@@ -55,6 +59,8 @@ class OwnerDashboardControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.date").value("2026-11-02"))
                 .andExpect(jsonPath("$.data.today.confirmedCount").value(1))
+                .andExpect(jsonPath("$.data.today.availableStartTimes[1]").value("2026-11-02T15:30:00+09:00"))
+                .andExpect(jsonPath("$.data.today.availableRanges[0].endsAt").value("2026-11-02T16:00:00+09:00"))
                 .andExpect(jsonPath("$.data.month.from").value("2026-11-01"))
                 .andExpect(jsonPath("$.data.month.expectedSales").value(60000))
                 .andExpect(jsonPath("$.data.month.rebookedCount").value(1))
@@ -78,7 +84,7 @@ class OwnerDashboardControllerTest {
                 List.of(new ReservationStatsResponse.Daily(from, 0, 0L, 0),
                         new ReservationStatsResponse.Daily(to, 1, 30000L, 0)),
                 List.of(new ReservationStatsResponse.Treatment(1L, "젤네일 원컬러", 2, 60000L, 0)),
-                List.of(new ReservationStatsResponse.TimeSlot(DayOfWeek.MONDAY, 14, 1)));
+                List.of(new ReservationStatsResponse.Hourly(DayOfWeek.MONDAY, 14, 1)));
         given(reservationDashboardService.getOwnerStats(any(AuthUser.class), eq(from), eq(to))).willReturn(response);
 
         mockMvc.perform(get(URL + "/stats").header(StubAuthFilter.HEADER_NAME, "OWNER_1")
@@ -88,8 +94,8 @@ class OwnerDashboardControllerTest {
                 .andExpect(jsonPath("$.data.daily.length()").value(2))
                 .andExpect(jsonPath("$.data.daily[1].date").value("2026-11-02"))
                 .andExpect(jsonPath("$.data.treatments[0].treatmentName").value("젤네일 원컬러"))
-                .andExpect(jsonPath("$.data.timeSlots[0].dayOfWeek").value("MONDAY"))
-                .andExpect(jsonPath("$.data.timeSlots[0].hour").value(14));
+                .andExpect(jsonPath("$.data.hourly[0].dayOfWeek").value("MONDAY"))
+                .andExpect(jsonPath("$.data.hourly[0].hour").value(14));
     }
 
     @Test
@@ -98,5 +104,9 @@ class OwnerDashboardControllerTest {
         mockMvc.perform(get(URL + "/stats").header(StubAuthFilter.HEADER_NAME, "OWNER_1").param("from", "2026-13-01"))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(reservationDashboardService);
+    }
+
+    private static OffsetDateTime at(int hour, int minute) {
+        return OffsetDateTime.of(2026, 11, 2, hour, minute, 0, 0, ZoneOffset.ofHours(9));
     }
 }

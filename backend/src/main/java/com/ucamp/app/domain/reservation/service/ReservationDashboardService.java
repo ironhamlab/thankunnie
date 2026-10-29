@@ -20,6 +20,7 @@ import com.ucamp.app.common.auth.UserRole;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.policy.BookingPolicy;
+import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.cancel.entity.CancelType;
 import com.ucamp.app.domain.reservation.dto.response.ReservationDashboardResponse;
 import com.ucamp.app.domain.reservation.dto.response.ReservationStatsResponse;
@@ -29,6 +30,7 @@ import com.ucamp.app.domain.reservation.repository.ReservationDashboardRepositor
 import com.ucamp.app.domain.reservation.repository.ReservationRebookStats;
 import com.ucamp.app.domain.reservation.repository.ReservationStatsRow;
 import com.ucamp.app.domain.vacancy.policy.PriceTier;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 /**
  * 사장님 메인 대시보드. 매장은 로그인한 사장님의 매장으로 정해진다.
@@ -43,10 +45,13 @@ public class ReservationDashboardService {
     private static final int MAX_STATS_DAYS = 92;
 
     private final ReservationDashboardRepository reservationDashboardRepository;
+    private final AvailabilityService availabilityService;
     private final Clock clock;
 
-    public ReservationDashboardService(ReservationDashboardRepository reservationDashboardRepository, Clock clock) {
+    public ReservationDashboardService(ReservationDashboardRepository reservationDashboardRepository,
+            AvailabilityService availabilityService, Clock clock) {
         this.reservationDashboardRepository = reservationDashboardRepository;
+        this.availabilityService = availabilityService;
         this.clock = clock;
     }
 
@@ -65,13 +70,20 @@ public class ReservationDashboardService {
         Map<CancelType, Integer> cancelled =
                 reservationDashboardRepository.countCancelledByType(shopId, periodStart, periodEnd);
         ReservationRebookStats rebooked = reservationDashboardRepository.countRebooked(shopId, periodStart, periodEnd);
+        // 최소 시간 단위(30분)로 계산하면 "지금 예약할 수 있는 빈 시간"이 된다. 시술별 소요 시간은 고려하지 않는다
+        List<LocalDateTime> availableStartTimes =
+                availabilityService.getAvailableStartTimes(shopId, today, BookingPolicy.TIME_UNIT_MINUTES);
 
         int customer = cancelled.getOrDefault(CancelType.CUSTOMER, 0);
         int shopFault = cancelled.getOrDefault(CancelType.SHOP_FAULT, 0);
         int customerRequest = cancelled.getOrDefault(CancelType.CUSTOMER_REQUEST, 0);
         return new ReservationDashboardResponse(
                 today,
-                new ReservationDashboardResponse.Today(counts.todayConfirmedCount(), counts.todayUpcomingCount()),
+                new ReservationDashboardResponse.Today(
+                        counts.todayConfirmedCount(),
+                        counts.todayUpcomingCount(),
+                        availableStartTimes.stream().map(TimeUtils::toOffset).toList(),
+                        toRanges(availableStartTimes)),
                 new ReservationDashboardResponse.Month(
                         monthFrom,
                         monthTo,
@@ -103,7 +115,7 @@ public class ReservationDashboardService {
         List<ReservationStatsRow> rows = reservationDashboardRepository.findStatsRows(
                 loginUser.shopId(), start.atStartOfDay(), end.plusDays(1).atStartOfDay());
         return new ReservationStatsResponse(start, end, summarize(rows), daily(rows, start, end),
-                byTreatment(rows), byTimeSlot(rows));
+                byTreatment(rows), byHour(rows));
     }
 
     private static ReservationStatsResponse.Summary summarize(List<ReservationStatsRow> rows) {
@@ -179,7 +191,7 @@ public class ReservationDashboardService {
                 .toList();
     }
 
-    private static List<ReservationStatsResponse.TimeSlot> byTimeSlot(List<ReservationStatsRow> rows) {
+    private static List<ReservationStatsResponse.Hourly> byHour(List<ReservationStatsRow> rows) {
         // 요일(월=1)·시 순으로 정렬되도록 요일*100+시를 키로 쓴다
         Map<Integer, Integer> counts = new TreeMap<>();
         for (ReservationStatsRow row : rows) {
@@ -188,10 +200,35 @@ public class ReservationDashboardService {
                 counts.merge(key, 1, Integer::sum);
             }
         }
-        List<ReservationStatsResponse.TimeSlot> result = new ArrayList<>();
+        List<ReservationStatsResponse.Hourly> result = new ArrayList<>();
         counts.forEach((key, count) ->
-                result.add(new ReservationStatsResponse.TimeSlot(DayOfWeek.of(key / 100), key % 100, count)));
+                result.add(new ReservationStatsResponse.Hourly(DayOfWeek.of(key / 100), key % 100, count)));
         return result;
+    }
+
+    // 30분 간격으로 이어지는 시작 시각을 하나의 구간으로 묶는다
+    private static List<ReservationDashboardResponse.AvailableRange> toRanges(List<LocalDateTime> startTimes) {
+        long unit = BookingPolicy.TIME_UNIT_MINUTES;
+        List<ReservationDashboardResponse.AvailableRange> ranges = new ArrayList<>();
+        LocalDateTime rangeStart = null;
+        LocalDateTime rangeEnd = null;
+        for (LocalDateTime startTime : startTimes) {
+            if (rangeEnd != null && rangeEnd.equals(startTime)) {
+                rangeEnd = startTime.plusMinutes(unit);
+                continue;
+            }
+            if (rangeStart != null) {
+                ranges.add(new ReservationDashboardResponse.AvailableRange(
+                        TimeUtils.toOffset(rangeStart), TimeUtils.toOffset(rangeEnd)));
+            }
+            rangeStart = startTime;
+            rangeEnd = startTime.plusMinutes(unit);
+        }
+        if (rangeStart != null) {
+            ranges.add(new ReservationDashboardResponse.AvailableRange(
+                    TimeUtils.toOffset(rangeStart), TimeUtils.toOffset(rangeEnd)));
+        }
+        return ranges;
     }
 
     // 예약 테이블에 가격 구간 컬럼이 없어 점유 시작 시각(점유 만료 - 점유 시간)으로 구간을 다시 판단한다

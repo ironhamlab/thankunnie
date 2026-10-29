@@ -13,6 +13,8 @@ import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +35,7 @@ import com.ucamp.app.domain.reservation.repository.ReservationDashboardCounts;
 import com.ucamp.app.domain.reservation.repository.ReservationDashboardRepository;
 import com.ucamp.app.domain.reservation.repository.ReservationRebookStats;
 import com.ucamp.app.domain.reservation.repository.ReservationStatsRow;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 class ReservationDashboardServiceTest {
 
@@ -43,13 +46,15 @@ class ReservationDashboardServiceTest {
     private static final AuthUser OWNER = new AuthUser(11L, UserRole.OWNER, 1L);
 
     private ReservationDashboardRepository reservationDashboardRepository;
+    private AvailabilityService availabilityService;
     private ReservationDashboardService reservationDashboardService;
 
     @BeforeEach
     void setUp() {
         reservationDashboardRepository = mock(ReservationDashboardRepository.class);
+        availabilityService = mock(AvailabilityService.class);
         Clock clock = Clock.fixed(NOW.atZone(TimeUtils.KST).toInstant(), TimeUtils.KST);
-        reservationDashboardService = new ReservationDashboardService(reservationDashboardRepository, clock);
+        reservationDashboardService = new ReservationDashboardService(reservationDashboardRepository, availabilityService, clock);
     }
 
     @Test
@@ -83,6 +88,44 @@ class ReservationDashboardServiceTest {
     }
 
     @Test
+    @DisplayName("오늘 남은 빈 시간은 30분 단위 시작 시각과, 이어지는 시각을 묶은 구간으로 내려준다")
+    void getOwnerDashboard_availableTimes_groupedIntoRanges() {
+        LocalDate today = LocalDate.of(2027, 2, 28);
+        given(reservationDashboardRepository.countReservations(any(), any(), any(), any(), any()))
+                .willReturn(new ReservationDashboardCounts(0, 0, 0, 0L, 0));
+        given(reservationDashboardRepository.countCancelledByType(any(), any(), any())).willReturn(Map.of());
+        given(reservationDashboardRepository.countRebooked(any(), any(), any()))
+                .willReturn(new ReservationRebookStats(0, 0L));
+        // 15:00·15:30·16:00 은 이어지고 19:30 은 떨어져 있다
+        given(availabilityService.getAvailableStartTimes(1L, today, 30)).willReturn(List.of(
+                today.atTime(15, 0), today.atTime(15, 30), today.atTime(16, 0), today.atTime(19, 30)));
+
+        ReservationDashboardResponse.Today result = reservationDashboardService.getOwnerDashboard(OWNER).today();
+
+        assertThat(result.availableStartTimes()).containsExactly(
+                kst(15, 0), kst(15, 30), kst(16, 0), kst(19, 30));
+        assertThat(result.availableRanges()).containsExactly(
+                new ReservationDashboardResponse.AvailableRange(kst(15, 0), kst(16, 30)),
+                new ReservationDashboardResponse.AvailableRange(kst(19, 30), kst(20, 0)));
+    }
+
+    @Test
+    @DisplayName("남은 빈 시간이 없으면 빈 목록이다")
+    void getOwnerDashboard_noAvailableTimes_emptyLists() {
+        given(reservationDashboardRepository.countReservations(any(), any(), any(), any(), any()))
+                .willReturn(new ReservationDashboardCounts(0, 0, 0, 0L, 0));
+        given(reservationDashboardRepository.countCancelledByType(any(), any(), any())).willReturn(Map.of());
+        given(reservationDashboardRepository.countRebooked(any(), any(), any()))
+                .willReturn(new ReservationRebookStats(0, 0L));
+        given(availabilityService.getAvailableStartTimes(any(), any(), eq(30))).willReturn(List.of());
+
+        ReservationDashboardResponse.Today result = reservationDashboardService.getOwnerDashboard(OWNER).today();
+
+        assertThat(result.availableStartTimes()).isEmpty();
+        assertThat(result.availableRanges()).isEmpty();
+    }
+
+    @Test
     @DisplayName("사장님이 아니면 FORBIDDEN 이고 조회하지 않는다")
     void getOwnerDashboard_customer_throwsForbidden() {
         AuthUser customer = new AuthUser(1L, UserRole.CUSTOMER, null);
@@ -90,7 +133,7 @@ class ReservationDashboardServiceTest {
         assertThatThrownBy(() -> reservationDashboardService.getOwnerDashboard(customer))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.FORBIDDEN);
-        verifyNoInteractions(reservationDashboardRepository);
+        verifyNoInteractions(reservationDashboardRepository, availabilityService);
     }
 
     @Test
@@ -160,9 +203,9 @@ class ReservationDashboardServiceTest {
                 new ReservationStatsResponse.Treatment(1L, "젤네일", 2, 57000L, 0),
                 new ReservationStatsResponse.Treatment(2L, "손 케어", 1, 15000L, 1));
 
-        assertThat(response.timeSlots()).containsExactly(
-                new ReservationStatsResponse.TimeSlot(DayOfWeek.MONDAY, 14, 2),
-                new ReservationStatsResponse.TimeSlot(DayOfWeek.TUESDAY, 10, 1));
+        assertThat(response.hourly()).containsExactly(
+                new ReservationStatsResponse.Hourly(DayOfWeek.MONDAY, 14, 2),
+                new ReservationStatsResponse.Hourly(DayOfWeek.TUESDAY, 10, 1));
     }
 
     @Test
@@ -191,5 +234,9 @@ class ReservationDashboardServiceTest {
     private static ReservationStatsRow row(Long treatmentId, String name, ReservationStatus status,
             LocalDateTime startsAt, LocalDateTime holdExpiresAt, int price, boolean rebooked) {
         return new ReservationStatsRow(treatmentId, name, status, startsAt, holdExpiresAt, price, rebooked);
+    }
+
+    private static OffsetDateTime kst(int hour, int minute) {
+        return OffsetDateTime.of(2027, 2, 28, hour, minute, 0, 0, ZoneOffset.ofHours(9));
     }
 }

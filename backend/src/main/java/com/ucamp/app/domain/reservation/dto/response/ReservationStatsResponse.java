@@ -12,7 +12,7 @@ import java.util.List;
  * @param summary    기간 합계
  * @param daily      날짜별 추이. 예약이 없는 날도 0 으로 채워 from~to 를 모두 담는다
  * @param treatments 시술별 성과. 매출 많은 순
- * @param timeSlots  요일·시작 시각(시)별 확정 건수. 0 인 칸은 뺀다
+ * @param hourly     요일·시작 시각(시)별 확정 건수. 0 인 칸은 뺀다
  */
 public record ReservationStatsResponse(
         LocalDate from,
@@ -20,7 +20,7 @@ public record ReservationStatsResponse(
         Summary summary,
         List<Daily> daily,
         List<Treatment> treatments,
-        List<TimeSlot> timeSlots) {
+        List<Hourly> hourly) {
 
     /**
      * @param confirmedCount  확정 예약
@@ -48,6 +48,6 @@ public record ReservationStatsResponse(
             int cancelledCount) {
     }
 
-    public record TimeSlot(DayOfWeek dayOfWeek, int hour, int confirmedCount) {
+    public record Hourly(DayOfWeek dayOfWeek, int hour, int confirmedCount) {
     }
 }
