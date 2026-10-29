@@ -86,6 +86,7 @@ export default function VacancySearch() {
   const resetSearch = useDesignStore((s) => s.setSearch);
   const shops = useExploreStore((s) => s.searchShops);
   const status = useExploreStore((s) => s.searchShopsStatus);
+  const error = useExploreStore((s) => s.searchShopsError);
   const shopVacancies = useExploreStore((s) => s.shopVacancies);
   const categories = useExploreStore((s) => s.categories);
   const loadSearchShops = useExploreStore((s) => s.loadSearchShops);
@@ -267,7 +268,7 @@ export default function VacancySearch() {
           ) : status === 'failed' ? (
             <EmptyState className="b-panel" role="alert">
               <h2>빈자리를 불러오지 못했어요</h2>
-              <p>잠시 후 다시 시도해 주세요.</p>
+              <p>{error?.message ?? '잠시 후 다시 시도해 주세요.'}</p>
               <Button variant="primary" onClick={() => loadSearchShops(filter)}>
                 다시 시도
               </Button>

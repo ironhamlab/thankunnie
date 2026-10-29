@@ -9,18 +9,28 @@ const fetchVacancyCards = async (params) =>
   (await exploreApi.getVacancies(params)).content.map((item) => toVacancyCard(item));
 const fetchShops = async (params) => (await exploreApi.getShops(params)).shops;
 
-// 결과를 dataKey 하나에 담는 조회. 실패하면 빈 목록으로 두고 statusKey 로 알린다.
+const toError = (error) => ({
+  code: error?.code ?? 'UNKNOWN_ERROR',
+  message: error?.message ?? '빈자리를 불러오지 못했습니다.',
+});
+
+// 펼친 매장 빈자리 요청 번호. 검색 조건이 바뀐 뒤 늦게 온 이전 응답이 새 결과를 덮지 않게 한다
+let shopVacancySeq = 0;
+
+// 결과를 dataKey 하나에 담는 조회. 실패하면 빈 목록으로 두고 statusKey·errorKey 로 알린다.
 // 조건을 빠르게 바꾸면 이전 응답이 늦게 와서 현재 결과를 덮을 수 있어 요청 번호로 마지막 요청만 반영한다
-const simpleLoader = (set, dataKey, statusKey, fetch) => {
+const simpleLoader = (set, keys, fetch) => {
+  const { data: dataKey, status: statusKey, error: errorKey } = keys;
   let seq = 0;
   return async (params) => {
     const current = ++seq;
-    set({ [statusKey]: 'loading' });
+    set({ [statusKey]: 'loading', [errorKey]: null });
     try {
       const data = await fetch(params);
       if (current === seq) set({ [dataKey]: data, [statusKey]: 'succeeded' });
-    } catch {
-      if (current === seq) set({ [dataKey]: [], [statusKey]: 'failed' });
+    } catch (error) {
+      if (current === seq)
+        set({ [dataKey]: [], [statusKey]: 'failed', [errorKey]: toError(error) });
     }
   };
 };
@@ -29,16 +39,20 @@ export const useExploreStore = create((set, get) => ({
   // 홈 오늘 임박 캐러셀 (C-01, 시술 × 시각)
   imminentVacancies: [],
   imminentStatus: 'idle',
+  imminentError: null,
 
   // 매장 요약 (C-02). 홈 분야 탭 목록·홈 지도·검색 화면 목록과 지도
   homeShops: [],
   homeShopsStatus: 'idle',
+  homeShopsError: null,
   shops: [],
   shopsStatus: 'idle',
+  shopsError: null,
   searchShops: [],
   searchShopsStatus: 'idle',
+  searchShopsError: null,
 
-  // 검색 화면에서 펼친 매장의 빈자리 (C-01). { [shopId]: { status, vacancies } }
+  // 검색 화면에서 펼친 매장의 빈자리 (C-01). { [shopId]: { requestId, status, vacancies, error } }
   shopVacancies: {},
 
   // 고른 날짜에 빈자리가 없을 때 안내할 가장 가까운 빈자리 날짜(YYYY-MM-DD). 없으면 null
@@ -48,12 +62,19 @@ export const useExploreStore = create((set, get) => ({
 
   loadImminentVacancies: simpleLoader(
     set,
-    'imminentVacancies',
-    'imminentStatus',
+    { data: 'imminentVacancies', status: 'imminentStatus', error: 'imminentError' },
     fetchVacancyCards,
   ),
-  loadHomeShops: simpleLoader(set, 'homeShops', 'homeShopsStatus', fetchShops),
-  loadShops: simpleLoader(set, 'shops', 'shopsStatus', fetchShops),
+  loadHomeShops: simpleLoader(
+    set,
+    { data: 'homeShops', status: 'homeShopsStatus', error: 'homeShopsError' },
+    fetchShops,
+  ),
+  loadShops: simpleLoader(
+    set,
+    { data: 'shops', status: 'shopsStatus', error: 'shopsError' },
+    fetchShops,
+  ),
 
   /** 검색 조건을 바꾸면 매장 목록을 다시 받고, 이전 조건으로 펼쳐 둔 빈자리는 버린다 */
   loadSearchShops: async (params) => {
@@ -63,9 +84,14 @@ export const useExploreStore = create((set, get) => ({
 
   /** 펼친 매장의 빈자리를 같은 검색 조건으로 받는다 */
   loadShopVacancies: async (shopId, params) => {
+    const requestId = ++shopVacancySeq;
     const entry = (patch) =>
-      set((state) => ({ shopVacancies: { ...state.shopVacancies, [shopId]: patch } }));
-    entry({ status: 'loading', vacancies: [] });
+      set((state) => ({
+        shopVacancies: { ...state.shopVacancies, [shopId]: { requestId, ...patch } },
+      }));
+    // 그사이 조건이 바뀌거나 같은 매장을 다시 요청했으면 이 응답은 버린다
+    const isCurrent = () => get().shopVacancies[shopId]?.requestId === requestId;
+    entry({ status: 'loading', vacancies: [], error: null });
     try {
       const vacancies = await fetchVacancyCards({
         ...params,
@@ -73,10 +99,9 @@ export const useExploreStore = create((set, get) => ({
         sort: 'START_ASC',
         size: SHOP_VACANCY_SIZE,
       });
-      // 그사이 조건이 바뀌어 비워졌으면 반영하지 않는다
-      if (get().shopVacancies[shopId]) entry({ status: 'succeeded', vacancies });
-    } catch {
-      if (get().shopVacancies[shopId]) entry({ status: 'failed', vacancies: [] });
+      if (isCurrent()) entry({ status: 'succeeded', vacancies, error: null });
+    } catch (error) {
+      if (isCurrent()) entry({ status: 'failed', vacancies: [], error: toError(error) });
     }
   },
 
@@ -108,7 +133,6 @@ export const useExploreStore = create((set, get) => ({
 
 const searchShopsLoader = simpleLoader(
   useExploreStore.setState,
-  'searchShops',
-  'searchShopsStatus',
+  { data: 'searchShops', status: 'searchShopsStatus', error: 'searchShopsError' },
   fetchShops,
 );

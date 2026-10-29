@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ROUTES } from '@/constants/routes';
 import { money } from '@/utils/demoData';
 import { useExploreStore } from '@/store/useExploreStore';
-import { dayLabel } from '@/utils/exploreVacancy';
+import { dayLabel, shopPagePath } from '@/utils/exploreVacancy';
 import { datePart, timePart } from '@/utils/scheduleDate';
 import KakaoMap from '@/components/map/KakaoMap';
 import Button from '@/components/common/Button';
@@ -98,7 +97,7 @@ export default function HomeBeautyMap() {
               <Button
                 as={Link}
                 variant="primary"
-                to={`${ROUTES.HOME}?view=list&shop=${selected.shopId}`}
+                to={shopPagePath(selected.shopId, { date: datePart(selected.earliestStartsAt) })}
               >
                 빈자리 보기
               </Button>

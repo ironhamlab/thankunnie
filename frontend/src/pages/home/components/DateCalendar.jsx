@@ -58,9 +58,12 @@ export default function DateCalendar({ value, min, max, onChange, disabled = fal
     onChange(date);
     setOpen(false);
   };
+  // 달력이 열린 채로 화살표로 달을 넘겨도 고른 날짜가 보이게 표시 중인 달도 함께 옮긴다
   const step = (days) => {
     const next = addDays(value, days);
-    if (next >= min && next <= max) onChange(next);
+    if (next < min || next > max) return;
+    setMonth(next.slice(0, 7));
+    onChange(next);
   };
 
   const { firstWeekday, days } = monthInfo(month);
