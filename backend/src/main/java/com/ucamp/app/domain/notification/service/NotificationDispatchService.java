@@ -24,8 +24,10 @@ import com.ucamp.app.domain.notification.entity.NotificationDispatchStatus;
 import com.ucamp.app.domain.notification.entity.NotificationEvent;
 import com.ucamp.app.domain.notification.entity.NotificationEventStatus;
 import com.ucamp.app.domain.notification.entity.NotificationEventType;
+import com.ucamp.app.domain.notification.entity.NotificationSubscription;
 import com.ucamp.app.domain.notification.repository.NotificationDispatchRepository;
 import com.ucamp.app.domain.notification.repository.NotificationEventRepository;
+import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepository;
 import com.ucamp.app.domain.notification.repository.RecipientContactRepository;
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
 import com.ucamp.app.domain.vacancy.repository.ShopStatusQueryRepository;
@@ -52,9 +54,14 @@ public class NotificationDispatchService {
             NotificationDispatchStatus.SENT,
             NotificationDispatchStatus.UNKNOWN);
 
+    /** 카테고리·지역 구독은 단건 문자를 만든 시각부터 이 시간 동안 다음 빈자리를 발송 줄에 넣지 않는다. */
+    private static final Duration CATEGORY_REGION_COOLDOWN = Duration.ofMinutes(60);
+
     private final NotificationEventRepository notificationEventRepository;
     private final NotificationDispatchRepository notificationDispatchRepository;
+    private final NotificationSubscriptionRepository notificationSubscriptionRepository;
     private final SubscriptionMatchService subscriptionMatchService;
+    private final CategoryRegionPendingQueue categoryRegionPendingQueue;
     private final VacancySlotRepository vacancySlotRepository;
     private final AvailabilityService availabilityService;
     private final RecipientContactRepository recipientContactRepository;
@@ -63,7 +70,7 @@ public class NotificationDispatchService {
     private final ShopStatusQueryRepository shopStatusQueryRepository;
 
     /**
-     * PENDING 이벤트 하나를 고른다. 맞는 회원마다 대기 작업을 넣고 그 이벤트를 PROCESSED로 바꾼다.
+     * PENDING 이벤트 하나를 고른다. 매장 구독 회원은 대기 작업을 넣고, 카테고리 구독은 쿨다운을 보고 나눈다.
      * 같은 이벤트·회원이 이미 있으면 그 회원은 건너뛴다. 한 번 호출에 이벤트 하나만 처리한다.
      *
      * @return 이벤트를 처리했으면 이번에 만든 대기 작업 수. 맞는 회원이 없어도 0이다.
@@ -79,27 +86,173 @@ public class NotificationDispatchService {
         }
 
         NotificationEvent event = found.get();
-        // 이 빈자리를 받을 회원. 업장 구독과 카테고리 구독이 겹쳐도 회원은 한 명만 나온다.
-        List<Long> userIds = subscriptionMatchService.findRecipientUserIds(
+        SubscriptionMatchGroups groups = subscriptionMatchService.findMatchGroups(
                 event.getShopId(), event.getSlotStartsAt());
 
         int created = 0;
-        for (Long userId : userIds) {
-            // 같은 이벤트·회원이 이미 있으면 건너뛴다.
-            // SENT·UNKNOWN·FAILED 등 상태와 관계없이 한 줄만 둔다. DB UNIQUE 도 같다.
-            if (notificationDispatchRepository.existsByEventIdAndUserId(event.getId(), userId)) {
-                continue;
+        // 매장 구독은 지금처럼 회원마다 발송 줄을 바로 만든다. 쿨다운 메모장에는 적지 않는다.
+        for (Long userId : groups.storeUserIds()) {
+            if (saveDispatchIfAbsent(event.getId(), userId)) {
+                created++;
             }
-            notificationDispatchRepository.save(NotificationDispatch.builder()
-                    .eventId(event.getId())
-                    .userId(userId)
-                    .build());
-            created++;
         }
+        created += createOrQueueCategoryRegion(event, groups.categoryRegionOnlySubscriptions());
 
         // 받을 회원이 없어도 이 이벤트 매칭은 끝이다. PENDING으로 두면 다음에 또 집는다.
         event.markProcessed();
         return Optional.of(created);
+    }
+
+    /**
+     * 카테고리·지역 구독만 처리한다.
+     * 마지막 발송 시각부터 60분이 지나지 않았으면 발송 줄을 만들지 않고 메모장에만 넣는다.
+     * 60분이 지났거나 한 번도 안 보냈으면 발송 줄을 만들고, 그 순간 마지막 발송 시각을 적는다.
+     * 문자가 나가기 전에 다음 이벤트가 또 바로 나가지 않게 하려는 것이다.
+     *
+     * @return 이번에 새로 만든 발송 줄 수
+     */
+    private int createOrQueueCategoryRegion(NotificationEvent event, List<NotificationSubscription> subscriptions) {
+        int created = 0;
+        LocalDateTime now = LocalDateTime.now(clock);
+        for (NotificationSubscription subscription : subscriptions) {
+            Long subscriptionId = subscription.getId();
+            if (isCategoryRegionCoolingDown(subscriptionId, now)) {
+                categoryRegionPendingQueue.addPendingEvent(subscriptionId, event.getId());
+                continue;
+            }
+            if (saveDispatchIfAbsent(event.getId(), subscription.getUserId())) {
+                created++;
+            }
+            categoryRegionPendingQueue.markSent(subscriptionId, now);
+        }
+        return created;
+    }
+
+    // 마지막 발송 시각이 있고, 그 시각부터 60분이 아직 안 지났으면 true.
+    // 60분이 딱 지난 시각은 쿨다운이 끝난 것으로 본다.
+    private boolean isCategoryRegionCoolingDown(Long subscriptionId, LocalDateTime now) {
+        LocalDateTime lastSentAt = categoryRegionPendingQueue.lastSentAt(subscriptionId);
+        if (lastSentAt == null || now == null) {
+            return false;
+        }
+        return now.isBefore(lastSentAt.plus(CATEGORY_REGION_COOLDOWN));
+    }
+
+    // 같은 이벤트·회원이 이미 있으면 만들지 않는다. SENT·UNKNOWN·FAILED 여도 한 줄만 둔다.
+    private boolean saveDispatchIfAbsent(Long eventId, Long userId) {
+        if (notificationDispatchRepository.existsByEventIdAndUserId(eventId, userId)) {
+            return false;
+        }
+        notificationDispatchRepository.save(NotificationDispatch.builder()
+                .eventId(eventId)
+                .userId(userId)
+                .build());
+        return true;
+    }
+
+    /**
+     * 마지막 발송 시각이 60분을 넘긴 카테고리·지역 구독만 본다.
+     * 아직 안 보낸 이벤트를 하나씩 다시 확인해, 구독이 살아 있고 슬롯이 비어 있는 개수를 센다.
+     * 개수는 매장 수가 아니라 슬롯 수다.
+     * 1건 이상이면 "새 빈자리 N건" 한 통을 바로 보내고 목록을 비운 뒤 마지막 발송 시각을 지금으로 바꾼다.
+     * 0건이면 문자는 보내지 않고 목록만 비운다. 마지막 발송 시각은 그대로라서 다음 빈자리는 다시 단건으로 나간다.
+     * 묶음 문자는 발송 줄에 넣지 않는다.
+     *
+     * @return 이번에 문자 발송을 시도한 구독 수
+     */
+    @Transactional
+    public int flushCategoryRegionSummaries() {
+        LocalDateTime now = LocalDateTime.now(clock);
+        int sent = 0;
+        for (Long subscriptionId : categoryRegionPendingQueue.subscriptionIds()) {
+            if (sendCategoryRegionSummaryIfDue(subscriptionId, now)) {
+                sent++;
+            }
+        }
+        return sent;
+    }
+
+    // 60분이 지나지 않았거나, 쌓인 이벤트가 없으면 아무것도 하지 않는다.
+    private boolean sendCategoryRegionSummaryIfDue(Long subscriptionId, LocalDateTime now) {
+        if (categoryRegionPendingQueue.lastSentAt(subscriptionId) == null) {
+            return false;
+        }
+        if (isCategoryRegionCoolingDown(subscriptionId, now)) {
+            return false;
+        }
+        List<Long> eventIds = categoryRegionPendingQueue.pendingEventIds(subscriptionId);
+        if (eventIds.isEmpty()) {
+            return false;
+        }
+
+        int openSlotCount = countOpenCategoryRegionSlots(subscriptionId, eventIds, now);
+        if (openSlotCount == 0) {
+            categoryRegionPendingQueue.clearPendingEvents(subscriptionId);
+            log.info("카테고리 묶음 문자 생략(남은 빈자리 없음) subscriptionId={}", subscriptionId);
+            return false;
+        }
+
+        NotificationSubscription subscription = notificationSubscriptionRepository.findById(subscriptionId).orElse(null);
+        if (subscription == null) {
+            categoryRegionPendingQueue.clearPendingEvents(subscriptionId);
+            return false;
+        }
+        Optional<String> phone = recipientContactRepository.findPhoneByUserId(subscription.getUserId());
+        if (phone.isEmpty() || !StringUtils.hasText(phone.get())) {
+            // 번호가 없으면 목록을 지우지 않는다. 다음 1분에 다시 본다.
+            log.warn("카테고리 묶음 문자 보류(전화번호 없음) subscriptionId={}, userId={}",
+                    subscriptionId, subscription.getUserId());
+            return false;
+        }
+
+        String messageBody = "새 빈자리 " + openSlotCount + "건이 생겼습니다.";
+        log.info("카테고리 묶음 문자 발송 시작 subscriptionId={}, userId={}, count={}, to={}",
+                subscriptionId, subscription.getUserId(), openSlotCount, maskPhone(phone.get()));
+        SmsSendResult result = solapiSmsClient.send(phone.get(), messageBody);
+        logCategoryRegionSummaryResult(subscriptionId, subscription.getUserId(), result);
+        // 성공이든 실패든 같은 묶음을 다음 1분에 다시 보내지 않는다.
+        categoryRegionPendingQueue.clearPendingEvents(subscriptionId);
+        categoryRegionPendingQueue.markSent(subscriptionId, now);
+        return true;
+    }
+
+    // 구독이 해제되지 않았고 희망 시간이 남은 이벤트만 센다. 그 슬롯이 아직 팔려야 한다.
+    private int countOpenCategoryRegionSlots(Long subscriptionId, List<Long> eventIds, LocalDateTime now) {
+        NotificationSubscription subscription = notificationSubscriptionRepository.findById(subscriptionId).orElse(null);
+        int count = 0;
+        for (Long eventId : eventIds) {
+            NotificationEvent event = notificationEventRepository.findById(eventId).orElse(null);
+            if (event == null) {
+                continue;
+            }
+            if (!categorySubscriptionStillApplies(subscription, event, now)) {
+                continue;
+            }
+            if (!slotStillSellable(event)) {
+                continue;
+            }
+            count++;
+        }
+        return count;
+    }
+
+    // 해제한 구독, 희망 종료가 지난 구독, 빈자리 시작이 희망 시간 밖인 구독은 세지 않는다.
+    private boolean categorySubscriptionStillApplies(NotificationSubscription subscription, NotificationEvent event,
+            LocalDateTime now) {
+        if (subscription == null || !subscription.isActive() || now == null) {
+            return false;
+        }
+        if (subscription.getEndTime() == null || !subscription.getEndTime().isAfter(now)) {
+            return false;
+        }
+        LocalDateTime slotStartsAt = event.getSlotStartsAt();
+        if (slotStartsAt == null || subscription.getStartTime() == null) {
+            return false;
+        }
+        if (subscription.getStartTime().isAfter(slotStartsAt)) {
+            return false;
+        }
+        return !subscription.getEndTime().isBefore(slotStartsAt);
     }
 
     /**
@@ -257,6 +410,21 @@ public class NotificationDispatchService {
         }
         log.warn("문자 발송 실패 dispatchId={}, userId={}, reason={}",
                 job.getId(), job.getUserId(), result.failReason());
+    }
+
+    private void logCategoryRegionSummaryResult(Long subscriptionId, Long userId, SmsSendResult result) {
+        if (result.status() == SmsSendStatus.SUCCESS) {
+            log.info("카테고리 묶음 문자 발송 성공 subscriptionId={}, userId={}, providerMessageId={}",
+                    subscriptionId, userId, result.providerMessageId());
+            return;
+        }
+        if (result.status() == SmsSendStatus.UNKNOWN) {
+            log.warn("카테고리 묶음 문자 결과 불명 subscriptionId={}, userId={}, reason={}",
+                    subscriptionId, userId, result.failReason());
+            return;
+        }
+        log.warn("카테고리 묶음 문자 발송 실패 subscriptionId={}, userId={}, reason={}",
+                subscriptionId, userId, result.failReason());
     }
 
     private static String maskPhone(String phone) {

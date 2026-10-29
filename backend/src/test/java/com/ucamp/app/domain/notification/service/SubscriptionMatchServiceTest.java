@@ -148,7 +148,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("업장 구독만 맞아도 그 회원을 발송 대상으로 고른다")
+    @DisplayName("업장 구독으로만 이 빈자리 알림을 받을 수 있어도 그 회원을 발송 대상으로 고른다")
     void findRecipientUserIds_storeOnly_returnsThatUser() {
         repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
         repository.save(categoryRegion(2L, 10L, "SEOUL_MAPO", NOW, NOW.plusHours(5)));
@@ -157,7 +157,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리·지역 구독만 맞아도 그 회원을 발송 대상으로 고른다")
+    @DisplayName("카테고리·지역 구독으로만 이 빈자리 알림을 받을 수 있어도 그 회원을 발송 대상으로 고른다")
     void findRecipientUserIds_categoryOnly_returnsThatUser() {
         repository.save(store(1L, 2L, NOW, NOW.plusHours(5)));
         repository.save(categoryRegion(2L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
@@ -166,7 +166,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("한 회원이 업장 구독과 카테고리 구독에 모두 맞아도 한 번만 고른다")
+    @DisplayName("한 회원이 업장 구독과 카테고리 구독으로 모두 알림을 받을 수 있어도 한 번만 고른다")
     void findRecipientUserIds_bothConditions_returnsUserOnce() {
         repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
         repository.save(store(1L, 1L, NOW, NOW.plusHours(4)));
@@ -197,6 +197,88 @@ class SubscriptionMatchServiceTest {
 
         assertThat(subscriptionMatchService.findRecipientUserIds(null, SLOT_START)).isEmpty();
         assertThat(subscriptionMatchService.findRecipientUserIds(1L, null)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("매장 구독으로 이 빈자리 알림을 받을 회원은 카테고리 구독이 여러 개여도 카테고리 목록에 넣지 않는다")
+    void findMatchGroups_storeUser_isRemovedFromCategorySubscriptions() {
+        NotificationSubscription storeMatch = repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
+        repository.save(store(1L, 1L, NOW, NOW.plusHours(4)));
+        repository.save(categoryRegion(1L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
+        repository.save(categoryRegion(1L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(4)));
+        NotificationSubscription otherCategory = repository.save(
+                categoryRegion(2L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
+
+        SubscriptionMatchGroups groups = subscriptionMatchService.findMatchGroups(1L, SLOT_START);
+
+        assertThat(groups.storeUserIds()).containsExactly(storeMatch.getUserId());
+        assertThat(groups.categoryRegionOnlySubscriptions())
+                .extracting(NotificationSubscription::getId)
+                .containsExactly(otherCategory.getId());
+    }
+
+    @Test
+    @DisplayName("카테고리 구독으로만 이 빈자리 알림을 받을 회원은 구독이 두 개면 두 개 다 남긴다")
+    void findMatchGroups_categoryOnlyUser_keepsEverySubscription() {
+        NotificationSubscription first = repository.save(
+                categoryRegion(1L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
+        NotificationSubscription second = repository.save(
+                categoryRegion(1L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(4)));
+        repository.save(store(2L, 2L, NOW, NOW.plusHours(5)));
+
+        SubscriptionMatchGroups groups = subscriptionMatchService.findMatchGroups(1L, SLOT_START);
+
+        assertThat(groups.storeUserIds()).isEmpty();
+        assertThat(groups.categoryRegionOnlySubscriptions())
+                .extracting(NotificationSubscription::getId)
+                .containsExactlyInAnyOrder(first.getId(), second.getId());
+    }
+
+    @Test
+    @DisplayName("해제한 매장 구독은 같은 회원의 카테고리 구독을 빼지 않는다")
+    void findMatchGroups_inactiveStore_doesNotRemoveCategory() {
+        NotificationSubscription inactiveStore = store(1L, 1L, NOW, NOW.plusHours(5));
+        inactiveStore.deactivate();
+        repository.save(inactiveStore);
+        NotificationSubscription category = repository.save(
+                categoryRegion(1L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
+
+        SubscriptionMatchGroups groups = subscriptionMatchService.findMatchGroups(1L, SLOT_START);
+
+        assertThat(groups.storeUserIds()).isEmpty();
+        assertThat(groups.categoryRegionOnlySubscriptions())
+                .extracting(NotificationSubscription::getId)
+                .containsExactly(category.getId());
+    }
+
+    @Test
+    @DisplayName("이 빈자리의 매장 구독이 아니면 카테고리 구독은 빼지 않는다")
+    void findMatchGroups_storeSubscriptionForAnotherShop_doesNotRemoveCategory() {
+        repository.save(store(1L, 2L, NOW, NOW.plusHours(5)));
+        NotificationSubscription category = repository.save(
+                categoryRegion(1L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
+
+        SubscriptionMatchGroups groups = subscriptionMatchService.findMatchGroups(1L, SLOT_START);
+
+        assertThat(groups.storeUserIds()).isEmpty();
+        assertThat(groups.categoryRegionOnlySubscriptions())
+                .extracting(NotificationSubscription::getId)
+                .containsExactly(category.getId());
+    }
+
+    @Test
+    @DisplayName("매장 ID나 빈자리 시작 시각이 없으면 나눈 결과도 양쪽이 빈 목록이다")
+    void findMatchGroups_missingInput_returnsEmptyGroups() {
+        repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
+        repository.save(categoryRegion(2L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
+
+        SubscriptionMatchGroups missingShop = subscriptionMatchService.findMatchGroups(null, SLOT_START);
+        SubscriptionMatchGroups missingSlot = subscriptionMatchService.findMatchGroups(1L, null);
+
+        assertThat(missingShop.storeUserIds()).isEmpty();
+        assertThat(missingShop.categoryRegionOnlySubscriptions()).isEmpty();
+        assertThat(missingSlot.storeUserIds()).isEmpty();
+        assertThat(missingSlot.categoryRegionOnlySubscriptions()).isEmpty();
     }
 
     @Test

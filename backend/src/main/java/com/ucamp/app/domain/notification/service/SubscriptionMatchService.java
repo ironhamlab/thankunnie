@@ -19,6 +19,7 @@ import com.ucamp.app.domain.notification.repository.ShopCategoryRegionRepository
 /**
  * 이 빈자리를 누구에게 알려 줄지 고르는 곳.
  * 그 매장을 신청한 사람과, 그 매장의 카테고리·지역을 신청한 사람을 찾는다.
+ * 매장 구독으로 이 빈자리 알림을 받을 회원은 카테고리 목록에서 뺀다.
  * 두 쪽에 모두 있어도 회원은 한 명만 남긴다.
  */
 @Service
@@ -72,17 +73,41 @@ public class SubscriptionMatchService {
     }
 
     /**
-     * 조건 A와 조건 B에 맞는 발송 대상 회원을 고른다.
-     * 둘 중 하나라도 맞으면 포함한다. 두 조건에 모두 맞아도 회원은 한 번만 넣는다.
+     * 이 빈자리의 발송 대상을 매장 구독과 카테고리 구독으로 나눈다.
+     * 매장 구독으로 이 빈자리 알림을 받을 회원은 카테고리 목록에 넣지 않는다.
+     * 그 회원의 카테고리 구독이 여러 개여도 전부 뺀다.
+     * 카테고리 구독으로만 받을 회원은 구독을 그대로 둔다. 구독이 두 개면 두 개 다 남긴다.
      *
      * @param shopId       빈자리 매장 번호
      * @param slotStartsAt 빈자리 시작 시각
-     * @return 발송 대상 회원 ID. 업장 구독 회원이 먼저이고, 이어서 카테고리 구독만 맞는 회원이다
+     * @return 매장 구독으로 받을 회원과, 그 회원을 뺀 카테고리·지역 구독. 없으면 양쪽 다 빈 목록
+     */
+    public SubscriptionMatchGroups findMatchGroups(Long shopId, LocalDateTime slotStartsAt) {
+        List<Long> storeUserIds = new ArrayList<>();
+        addUserIds(storeUserIds, findStoreMatches(shopId, slotStartsAt));
+
+        List<NotificationSubscription> categoryOnly = new ArrayList<>();
+        for (NotificationSubscription match : findCategoryRegionMatches(shopId, slotStartsAt)) {
+            if (storeUserIds.contains(match.getUserId())) {
+                continue;
+            }
+            categoryOnly.add(match);
+        }
+        return new SubscriptionMatchGroups(List.copyOf(storeUserIds), List.copyOf(categoryOnly));
+    }
+
+    /**
+     * 조건 A와 조건 B로 이 빈자리 알림을 받을 회원을 고른다.
+     * 둘 중 하나로라도 받을 수 있으면 포함한다. 둘 다로 받을 수 있어도 회원은 한 번만 넣는다.
+     *
+     * @param shopId       빈자리 매장 번호
+     * @param slotStartsAt 빈자리 시작 시각
+     * @return 발송 대상 회원 ID. 업장 구독 회원이 먼저이고, 이어서 카테고리 구독으로만 받을 회원이다
      */
     public List<Long> findRecipientUserIds(Long shopId, LocalDateTime slotStartsAt) {
-        List<Long> userIds = new ArrayList<>();
-        addUserIds(userIds, findStoreMatches(shopId, slotStartsAt));
-        addUserIds(userIds, findCategoryRegionMatches(shopId, slotStartsAt));
+        SubscriptionMatchGroups groups = findMatchGroups(shopId, slotStartsAt);
+        List<Long> userIds = new ArrayList<>(groups.storeUserIds());
+        addUserIds(userIds, groups.categoryRegionOnlySubscriptions());
         return userIds;
     }
 
