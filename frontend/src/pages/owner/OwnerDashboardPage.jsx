@@ -119,10 +119,6 @@ export default function OwnerDashboardPage() {
           <h2>주니어 모델 모집 공고 관리</h2>
           <p>실습생 포트폴리오 모집 등록 및 공고 관리</p>
         </Panel>
-        <Link to={ROUTES.HOME} className="b-panel b-pad">
-          <h2>고객용 내 매장 뷰 미리보기</h2>
-          <p>고객 앱에 노출되는 타임세일 화면 시뮬레이션</p>
-        </Link>
       </div>
       <Panel as="section" padded>
         <div className="b-row b-panel-heading">

@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDesignStore } from '@/store/useDesignStore';
@@ -35,9 +35,6 @@ export default function OwnerLayout() {
               <Badge>파트너 가맹점</Badge>
             </div>
             <div className="b-flex">
-              <Button as={Link} size="small" to={ROUTES.HOME}>
-                ↔ 고객 모드로 전환
-              </Button>
               {token && (
                 <Button type="button" size="small" onClick={handleLogout}>
                   로그아웃

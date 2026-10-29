@@ -46,3 +46,9 @@ export const setDevTestUser = (value) => {
     // 저장소를 쓸 수 없으면 VITE_TEST_USER 기본값을 그대로 쓴다
   }
 };
+
+/**
+ * 테스트 사용자의 역할. 'OWNER_1' → 'OWNER', 'CUSTOMER_2' → 'CUSTOMER', 'ADMIN' → 'ADMIN'.
+ * 고른 사용자가 없으면 null.
+ */
+export const getDevTestUserRole = () => getDevTestUser()?.replace(/_\d+$/, '') ?? null;
