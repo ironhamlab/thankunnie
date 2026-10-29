@@ -67,8 +67,8 @@ class CancelSmsServiceTest {
     }
 
     @Test
-    @DisplayName("사장님이 고객 요청으로 대리 취소해도 매장 사정 문구로 보낸다")
-    void send_customerRequest_sendsOwnerMessage() {
+    @DisplayName("사장님이 고객 요청으로 대리 취소하면 고객 요청 문구로 보낸다")
+    void send_customerRequest_sendsCustomerRequestMessage() {
         given(recipientContactRepository.findCancelSmsInfo(RESERVATION_ID))
                 .willReturn(Optional.of(new CancelSmsInfo("010-1234-5678", "예쁜네일", STARTS_AT)));
         given(solapiSmsClient.send(any(), any())).willReturn(SmsSendResult.success("G-1"));
@@ -76,7 +76,7 @@ class CancelSmsServiceTest {
         cancelSmsService.send(RESERVATION_ID, CancelType.CUSTOMER_REQUEST);
 
         verify(solapiSmsClient).send("010-1234-5678",
-                "[땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 매장 사정으로 취소되었습니다.");
+                "[땡잡은 언니] 예쁜네일 11월 2일 10:00 고객 요청으로 예약이 취소되었습니다.");
     }
 
     @Test

@@ -56,18 +56,21 @@ public class CancelSmsService {
         }
     }
 
-    // 고객 취소: [땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 취소되었습니다.
-    // 사장님 취소: [땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 매장 사정으로 취소되었습니다.
+    // 고객 직접 취소: [땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 취소되었습니다.
+    // 매장 사유 취소: [땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 매장 사정으로 취소되었습니다.
+    // 고객 요청 대리 취소: [땡잡은 언니] 예쁜네일 11월 2일 10:00 고객 요청으로 예약이 취소되었습니다.
     String buildMessage(CancelSmsInfo info, CancelType cancelType) {
-        String sentence = ownerCancelled(cancelType)
-                ? "예약이 매장 사정으로 취소되었습니다."
-                : "예약이 취소되었습니다.";
         return "[땡잡은 언니] " + info.shopName() + " " + info.startsAt().format(STARTS_AT_TEXT)
-                + " " + sentence;
+                + " " + cancelSentence(cancelType);
     }
 
-    // 사장님이 직접 취소한 경우(매장 사유, 고객 요청 대리 취소)만 매장 사정 문구를 쓴다
-    private boolean ownerCancelled(CancelType cancelType) {
-        return cancelType == CancelType.SHOP_FAULT || cancelType == CancelType.CUSTOMER_REQUEST;
+    private String cancelSentence(CancelType cancelType) {
+        if (cancelType == CancelType.SHOP_FAULT) {
+            return "예약이 매장 사정으로 취소되었습니다.";
+        }
+        if (cancelType == CancelType.CUSTOMER_REQUEST) {
+            return "고객 요청으로 예약이 취소되었습니다.";
+        }
+        return "예약이 취소되었습니다.";
     }
 }
