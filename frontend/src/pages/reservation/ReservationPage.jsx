@@ -15,7 +15,10 @@ import styles from './ReservationPage.module.css';
 
 const dayLabel = (isClosed) => (isClosed ? '휴무' : '•');
 
-// 한국 시간 기준 지금 시각(HH:mm). 오늘 날짜에서 이미 지난 시간은 고를 수 없게 한다
+// 서버 접수 마감(BookingPolicy.BOOKING_DEADLINE): 시작 20분 전(결제 마감 15분 + 점유 5분)까지만 예약할 수 있다
+const BOOKING_DEADLINE_MINUTES = 20;
+
+// 한국 시간 기준 지금 시각(HH:mm). 오늘 날짜에서 접수 마감이 지난 시간은 고를 수 없게 한다
 const nowKstTime = () =>
   new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Seoul',
@@ -45,7 +48,7 @@ export default function ReservationPage() {
   const duration = 90;
   const blocked = (value) =>
     mode === 'soldout' ||
-    (date === today && value.padStart(5, '0') <= nowKstTime()) ||
+    (date === today && minutes(value) - BOOKING_DEADLINE_MINUTES <= minutes(nowKstTime())) ||
     minutes(value) + duration > 1200 ||
     bookings.some(
       (b) =>

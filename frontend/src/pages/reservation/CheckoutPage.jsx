@@ -124,6 +124,27 @@ export default function CheckoutPage() {
       </EmptyState>
     );
   }
+  // 취소된 예약도 본인 상세 조회로 열리므로, 점유 만료 안내와 구분해 보여준다
+  if (summary.status === 'CANCEL_PENDING' || summary.status === 'CANCELLED') {
+    return (
+      <EmptyState className="b-container">
+        <h1>
+          {summary.status === 'CANCEL_PENDING'
+            ? '취소 처리 중인 예약입니다'
+            : '취소된 예약이라 결제할 수 없습니다'}
+        </h1>
+        <p>취소·환불 진행 상황은 내 예약에서 확인할 수 있어요.</p>
+        <div className="b-flex b-center">
+          <Button as={Link} variant="primary" to={ROUTES.MY_RESERVATIONS}>
+            내 예약 보기
+          </Button>
+          <Button as={Link} to={ROUTES.HOME}>
+            빈자리 탐색
+          </Button>
+        </div>
+      </EmptyState>
+    );
+  }
 
   const remaining =
     summary.status === 'HOLD'
