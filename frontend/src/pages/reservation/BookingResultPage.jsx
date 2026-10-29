@@ -126,7 +126,7 @@ export default function BookingResultPage() {
           </Alert>
         )}
         <div className={`b-flex ${styles.actions}`}>
-          <Button as={Link} variant="primary" to={ROUTES.BOOKINGS}>
+          <Button as={Link} variant="primary" to={ROUTES.MY_RESERVATIONS}>
             내 예약 상세 보기
           </Button>
           <Button as={Link} variant="danger" to={ROUTES.HOME}>

@@ -190,7 +190,7 @@ export default function ServiceDetailPage() {
             <Button as={Link} wide to={generatePath(ROUTES.RESERVE, { id })}>
               원하는 날짜·시간 선택
             </Button>
-            <Link className="b-help b-pink b-center" to={ROUTES.BOOKINGS}>
+            <Link className="b-help b-pink b-center" to={ROUTES.MY_RESERVATIONS}>
               내 예약 상세 확인 →
             </Link>
           </Panel>
