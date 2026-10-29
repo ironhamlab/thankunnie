@@ -6,8 +6,7 @@ export const ROUTES = {
   CHECKOUT: '/checkout',
   BOOKING_RESULT: '/result',
   PROFILE: '/profile',
-  BOOKINGS: '/bookings',
-  // 고객 내 예약 (실제 API). BOOKINGS 는 모의 결제·환불 데모 화면이다
+  // 고객 내 예약 (실제 API)
   MY_RESERVATIONS: '/my-reservations',
   // 고객 예약 취소 화면 (E 담당). 내 예약의 "취소하기"가 이 경로로 이동한다
   MY_RESERVATION_CANCEL: '/my-reservations/:reservationId/cancel',
