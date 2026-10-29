@@ -92,7 +92,7 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
           아래에서 새 사진을 선택하면 대표 이미지가 바로 교체됩니다. 매장 정보 저장과 별도로
           적용됩니다.
         </p>
-        <OwnerImageEditor imageUrl={shop.imageUrl} isSaving={isBusy} onSave={onImage} />
+        <OwnerImageEditor imageUrl={shop.imageUrl} kind="shop" isSaving={isBusy} onSave={onImage} />
       </Panel>
       <Panel padded>
         <form onSubmit={submit} className="b-stack">

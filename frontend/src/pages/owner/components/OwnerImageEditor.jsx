@@ -2,9 +2,10 @@ import { useState } from 'react';
 import Button from '@/components/common/Button';
 import Alert from '@/components/common/Alert';
 import ImageFileInput from './ImageFileInput';
+import RepresentativeImage from './RepresentativeImage';
 import styles from './OwnerImageEditor.module.css';
 
-export default function OwnerImageEditor({ imageUrl, isSaving, onSave }) {
+export default function OwnerImageEditor({ imageUrl, isSaving, onSave, kind = 'treatment' }) {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const save = async (file) => {
@@ -21,26 +22,26 @@ export default function OwnerImageEditor({ imageUrl, isSaving, onSave }) {
       setError(failure.message ?? '이미지 요청에 실패했습니다.');
     }
   };
-  const src = imageUrl
-    ? new URL(
-        imageUrl,
-        new URL(
-          import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api',
-          window.location.origin,
-        ),
-      ).href
-    : null;
   return (
     <div className="b-stack">
-      {src ? (
-        <img className={styles.preview} src={src} alt="등록된 대표 이미지" />
-      ) : (
-        <p>등록된 대표 이미지가 없습니다.</p>
-      )}
-      <ImageFileInput disabled={isSaving} hasImage={Boolean(imageUrl)} onSelect={save} />
-      <Button type="button" disabled={isSaving || !imageUrl} onClick={() => save(null)}>
-        이미지 삭제
-      </Button>
+      <div className={styles.editor}>
+        <figure className={styles.currentImage}>
+          <RepresentativeImage
+            key={imageUrl ?? 'default'}
+            imageUrl={imageUrl}
+            kind={kind}
+            name={kind === 'shop' ? '매장' : '시술'}
+            className={styles.preview}
+          />
+          <figcaption>{imageUrl ? '현재 등록된 이미지' : '기본 이미지'}</figcaption>
+        </figure>
+        <div className={styles.editorControls}>
+          <ImageFileInput disabled={isSaving} hasImage={Boolean(imageUrl)} onSelect={save} />
+          <Button type="button" disabled={isSaving || !imageUrl} onClick={() => save(null)}>
+            이미지 삭제
+          </Button>
+        </div>
+      </div>
       {error && (
         <Alert tone="error" role="alert">
           {error}
