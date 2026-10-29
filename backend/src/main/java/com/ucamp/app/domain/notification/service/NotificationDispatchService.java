@@ -205,7 +205,7 @@ public class NotificationDispatchService {
             return false;
         }
 
-        String messageBody = "새 빈자리 " + openSlotCount + "건이 생겼습니다.";
+        String messageBody = "땡 잡을 기회 " + openSlotCount + "건이 생겼어요!";
         log.info("카테고리 묶음 문자 발송 시작 subscriptionId={}, userId={}, count={}, to={}",
                 subscriptionId, subscription.getUserId(), openSlotCount, maskPhone(phone.get()));
         SmsSendResult result = solapiSmsClient.send(phone.get(), messageBody);
@@ -382,7 +382,7 @@ public class NotificationDispatchService {
     private String buildMessage(NotificationEvent event) {
         String shopName = recipientContactRepository.findShopNameById(event.getShopId()).orElse("매장");
         String startsAtText = event.getSlotStartsAt().format(SLOT_START_TEXT);
-        return shopName + "에 " + startsAtText + " 시작 빈자리가 생겼습니다.";
+        return "땡!" + shopName + "-" + startsAtText + " 땡잡을 기회가 생겼어요!";
     }
 
     private void applySendResult(NotificationDispatch job, SmsSendResult result) {
