@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useShopDetailStore } from '@/store/useShopDetailStore';
 import { addDays, todayKst } from '@/utils/scheduleDate';
@@ -29,9 +29,8 @@ const businessDay = (date) => BUSINESS_DAYS[new Date(`${date}T00:00:00Z`).getUTC
  */
 export default function ShopDetailPage() {
   const { shopId } = useParams();
-  const location = useLocation();
-  // 선택값은 주소에 남기지 않고 화면 상태로만 둔다. 이전 시술 상세 주소에서 넘어오면 이동 state 로 처음 선택을 받는다
-  const [selection, setSelection] = useState(() => ({ shopId, ...location.state?.selection }));
+  // 선택값은 주소에 남기지 않고 화면 상태로만 둔다
+  const [selection, setSelection] = useState({ shopId });
   // 다른 매장으로 이동하면 이전 매장의 선택은 쓰지 않는다
   const current = selection.shopId === shopId ? selection : { shopId };
   const selected = (key) => current[key] ?? null;
@@ -43,13 +42,6 @@ export default function ShopDetailPage() {
   const loadAvailableTimes = useShopDetailStore((state) => state.loadAvailableTimes);
   const clearShop = useShopDetailStore((state) => state.clearShop);
   const validShopId = /^[1-9]\d*$/.test(shopId ?? '');
-  const navigate = useNavigate();
-  const passedSelection = Boolean(location.state?.selection);
-
-  // 넘겨받은 선택은 처음 한 번만 쓴다. 남겨 두면 새로고침할 때 그 선택으로 다시 열린다
-  useEffect(() => {
-    if (passedSelection) navigate(location.pathname, { replace: true, state: null });
-  }, [passedSelection, navigate, location.pathname]);
 
   useEffect(() => {
     if (validShopId) loadShop(shopId);

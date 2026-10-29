@@ -66,13 +66,9 @@
 - 휴무 요일은 달력에 "휴무"로 표시한다. 사장님이 휴무일에 따로 연 시간이 있을 수 있어 고를 수는 있고, 슬롯이 없으면 안내를 보여준다.
 - 빈자리 목록(C-01)은 OPEN 시간대만 노출하지만, 이 화면은 영업시간 전체에서 고를 수 있다. C-01 문서 9장 1번의 남은 확인 사항(목록에 없던 시간을 고를 수 있게 둘지)과 관련 있으므로 B·C 담당과 확인한다.
 
-## 이전 주소 호환
+## 매장 상세로 연결하기
 
-이전 시술 상세 주소 `/services/:treatmentId?startsAt=...`는 C-03으로 시술의 매장을 찾은 뒤 `/shops/{shopId}`로 이동한다.
-고른 시술·날짜·시간은 주소 대신 라우터 이동 state(`state.selection`)로 넘겨 처음 화면에서 선택된 채 열리고,
-매장 상세가 한 번 읽은 뒤 state를 지워 새로고침하면 처음 상태로 열린다.
-
-목록·지도 담당은 매장 상세로 보낼 때 매장 ID만 넘긴다.
+매장 상세로 보낼 때는 매장 ID만 넘긴다.
 
 ```jsx
 const to = generatePath(ROUTES.SHOP_DETAIL, { shopId: vacancy.shopId });
@@ -81,7 +77,8 @@ const to = generatePath(ROUTES.SHOP_DETAIL, { shopId: vacancy.shopId });
 ## 공통 파일 변경 (프런트 파트장 리뷰 필요)
 
 - `constants/routes.js`: `SHOP_DETAIL: '/shops/:shopId'` 추가
-- `routes/AppRouter.jsx`: 매장 상세 라우트 추가
+- `routes/AppRouter.jsx`: 이전 시술 상세 라우트(`/services/:id`)를 매장 상세 라우트(`/shops/:shopId`)로 교체
+  - `ROUTES.SERVICE_DETAIL` 상수는 홈·지도·마이페이지 시연 링크(`HomePage`, `HomeBeautyMap`, `ServiceCard`, `VacancyMap`, `CustomerProfilePage`)가 아직 참조하므로 남겨 두었다. 라우트가 없어 이 링크는 찾을 수 없음 화면으로 열리며, 각 담당이 `SHOP_DETAIL`로 바꾼 뒤 상수를 지운다.
 
 ## 가격 표시
 
