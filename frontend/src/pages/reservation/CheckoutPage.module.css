@@ -1,3 +1,33 @@
+/* 스크롤해도 헤더 아래에 남는 남은 시간 띠. top 은 헤더 실제 높이로 화면에서 지정하고, 헤더(z-index 40)보다는 아래에 둔다 */
+.holdBar {
+  position: sticky;
+  z-index: 30;
+}
+/* 남은 시간 1분 이하 */
+.holdBarWarning {
+  background: var(--color-warning-bg);
+  border-bottom-color: var(--color-warning);
+}
+.holdBarWarning strong {
+  color: var(--color-warning);
+}
+/* 점유 만료 */
+.holdBarExpired {
+  background: var(--color-surface);
+  border-bottom-color: var(--color-border);
+}
+.holdBarExpired strong {
+  color: var(--color-text);
+}
+.holdBarAction {
+  color: var(--color-primary);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.dialogActions {
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
 .check {
   display: flex;
   align-items: flex-start;

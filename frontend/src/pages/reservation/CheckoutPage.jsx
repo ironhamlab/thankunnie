@@ -6,6 +6,7 @@ import { datePart, timePart } from '@/utils/scheduleDate';
 import { useReservationStore } from '@/store/useReservationStore';
 import Asset from '@/components/common/Asset';
 import Button from '@/components/common/Button';
+import Dialog from '@/components/common/Dialog';
 import Panel from '@/components/common/Panel';
 import Notice from '@/components/common/Notice';
 import EmptyState from '@/components/common/EmptyState';
@@ -13,6 +14,11 @@ import Alert from '@/components/common/Alert';
 import styles from './CheckoutPage.module.css';
 
 const EXPIRED_MESSAGE = '임시 확보 시간이 만료되었습니다. 시간을 다시 선택해 주세요.';
+// 남은 시간이 이 값(초) 이하면 띠를 경고색으로 바꾼다
+const WARNING_SECONDS = 60;
+
+const formatRemaining = (seconds) =>
+  `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 
 /**
  * 예약을 불러오지 못했을 때 안내. 다시 불러와도 결과가 같은 경우(없는 예약·남의 예약, 로그인 필요)는
@@ -74,6 +80,12 @@ export default function CheckoutPage() {
   const [demo, setDemo] = useState(false);
   const [request, setRequest] = useState('');
   const [error, setError] = useState('');
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const [showExpiredDialog, setShowExpiredDialog] = useState(false);
+
+  // 화면을 보는 중에 점유(HOLD) 시간이 끝난 순간. 처음부터 만료 상태로 열린 예약은 해당하지 않는다
+  const holdEndedWhileOpen =
+    detail?.summary?.status === 'HOLD' && now >= new Date(detail.holdExpiresAt).getTime();
 
   useEffect(() => {
     if (reservationId) {
@@ -87,6 +99,28 @@ export default function CheckoutPage() {
     return () => window.clearInterval(timer);
   }, []);
 
+  // 만료 순간 한 번 안내 팝업을 띄우고, 남은 시간은 이 기기 시계로 센 값이므로 서버 예약 상태를 다시 받는다.
+  // 페이지를 자동으로 옮기지 않는다 (결제창 진행 중일 수 있고, 입력한 요청사항이 사라진다)
+  useEffect(() => {
+    if (holdEndedWhileOpen) {
+      setShowExpiredDialog(true);
+      loadReservation('my', reservationId);
+    }
+  }, [holdEndedWhileOpen, loadReservation, reservationId]);
+
+  // 남은 시간 띠를 고정 헤더 바로 아래에 붙인다. 헤더 높이가 화면 폭에 따라 바뀌므로(모바일은 검색창이 줄바꿈) 실제 높이를 잰다
+  useEffect(() => {
+    const header = document.querySelector('header');
+    if (!header) {
+      return undefined;
+    }
+    const update = () => setHeaderHeight(header.offsetHeight);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
+
   if (!reservationId) {
     return (
       <EmptyState className="b-container">
@@ -98,7 +132,8 @@ export default function CheckoutPage() {
       </EmptyState>
     );
   }
-  if (status === 'idle' || status === 'loading') {
+  // 만료 확인처럼 다시 불러오는 동안에는 기존 화면(팝업 포함)을 유지한다
+  if (status === 'idle' || (status === 'loading' && !detail)) {
     return (
       <EmptyState className="b-container" role="status">
         예약 정보를 불러오는 중입니다.
@@ -151,7 +186,15 @@ export default function CheckoutPage() {
       ? Math.max(0, Math.ceil((new Date(holdExpiresAt).getTime() - now) / 1000))
       : 0;
   const expired = remaining === 0;
+  const warning = !expired && remaining <= WARNING_SECONDS;
+  let holdBarTone = '';
+  if (expired) {
+    holdBarTone = styles.holdBarExpired;
+  } else if (warning) {
+    holdBarTone = styles.holdBarWarning;
+  }
 
+  /* 결제 진행하기 버튼 클릭시 실행하는 함수입니다. 결제 담당은 여기를 채워주세요. */
   const handlePay = () => {
     setError('');
     if (!policy || !demo) {
@@ -165,20 +208,39 @@ export default function CheckoutPage() {
 
   return (
     <>
-      <div className="b-hold-bar">
+      <div className={`b-hold-bar ${styles.holdBar} ${holdBarTone}`} style={{ top: headerHeight }}>
         <div className="b-container b-row">
-          <span>
-            <strong>빈자리 임시 확보 중!</strong> — 제한 시간 내에 결제를 완료해 주세요.
-          </span>
-          <span>
-            남은 시간{' '}
-            <strong>
-              {String(Math.floor(remaining / 60)).padStart(2, '0')}:
-              {String(remaining % 60).padStart(2, '0')}
-            </strong>
-          </span>
+          {expired ? (
+            <>
+              <span>
+                <strong>임시 확보 시간이 끝났어요.</strong> 같은 시간이 아직 비어 있으면 다시 선택할
+                수 있어요.
+              </span>
+              <Link className={styles.holdBarAction} to={reserveLink}>
+                시간 다시 선택 →
+              </Link>
+            </>
+          ) : (
+            <>
+              <span>
+                {warning ? (
+                  <>
+                    <strong>곧 확보가 풀려요!</strong> — 1분 안에 결제를 완료해 주세요.
+                  </>
+                ) : (
+                  <>
+                    <strong>빈자리 임시 확보 중!</strong> — 제한 시간 내에 결제를 완료해 주세요.
+                  </>
+                )}
+              </span>
+              <span>
+                남은 시간 <strong>{formatRemaining(remaining)}</strong>
+              </span>
+            </>
+          )}
         </div>
       </div>
+
       <div className="b-container b-page">
         <Link className="b-back" to={reserveLink}>
           ← 시간 다시 선택하기
@@ -252,19 +314,6 @@ export default function CheckoutPage() {
                 </span>
               </label>
             </Panel>
-            <Panel as="section" padded>
-              <h2 className="b-panel-heading">4. 결제 수단</h2>
-              <Notice>
-                <strong>선택된 결제 수단 · 모의 안전 결제</strong>
-                <div className={styles.paymentMethod}>
-                  <span>언니</span>
-                  <div>
-                    <strong>테스트 결제용 가상 수단 (모의 간편결제)</strong>
-                    <p>실제 카드 번호, CVC, 비밀번호 입력이 필요 없습니다.</p>
-                  </div>
-                </div>
-              </Notice>
-            </Panel>
           </div>
           <Panel as="aside" padded className="b-summary">
             <h2>결제 금액 내역</h2>
@@ -303,13 +352,27 @@ export default function CheckoutPage() {
                 {money(summary.deposit)} 결제 진행하기
               </Button>
             )}
-            <p className="b-help">
-              결제하지 않으면 잡아 둔 시간은 5분 뒤 자동으로 풀립니다. MVP 모의 결제 환경으로 실제
-              금융 결제가 발생하지 않습니다.
-            </p>
+            <p className="b-help">결제하지 않으면 잡아 둔 시간은 5분 뒤 자동으로 풀립니다.</p>
           </Panel>
         </div>
       </div>
+
+      {showExpiredDialog && (
+        <Dialog title="빈자리 확보가 풀렸어요" onClose={() => setShowExpiredDialog(false)}>
+          <p>
+            결제 제한 시간 5분이 지나 잡아 둔 시간이 풀렸어요. 결제는 진행되지 않았어요. 같은 시간이
+            아직 비어 있으면 다시 선택할 수 있어요.
+          </p>
+          <div className={`b-flex ${styles.dialogActions}`}>
+            <Button as={Link} variant="primary" to={reserveLink}>
+              시간 다시 선택
+            </Button>
+            <Button as={Link} to={ROUTES.HOME}>
+              다른 빈자리 보기
+            </Button>
+          </div>
+        </Dialog>
+      )}
     </>
   );
 }
