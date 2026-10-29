@@ -18,6 +18,7 @@ const ReservationPage = lazy(() => import('@/pages/reservation/ReservationPage')
 const CheckoutPage = lazy(() => import('@/pages/reservation/CheckoutPage'));
 const BookingResultPage = lazy(() => import('@/pages/reservation/BookingResultPage'));
 const MyReservationsPage = lazy(() => import('@/pages/my/MyReservationsPage'));
+const MyNotificationsPage = lazy(() => import('@/pages/my/MyNotificationsPage'));
 const CustomerProfilePage = lazy(() => import('@/pages/my/CustomerProfilePage'));
 const CustomerCancelPage = lazy(() => import('@/pages/cancel/CustomerCancelPage'));
 const CancelResultPage = lazy(() => import('@/pages/cancel/CancelResultPage'));
@@ -72,6 +73,7 @@ export default function AppRouter() {
             <Route element={<PrivateRoute />}>
               <Route path={ROUTES.PROFILE} element={<CustomerProfilePage />} />
               <Route path={ROUTES.MY_RESERVATIONS} element={<MyReservationsPage />} />
+              <Route path={ROUTES.MY_NOTIFICATIONS} element={<MyNotificationsPage />} />
               <Route path={ROUTES.MY_RESERVATION_CANCEL} element={<CustomerCancelPage />} />
               <Route
                 path={ROUTES.MY_RESERVATION_CANCEL_RESULT}

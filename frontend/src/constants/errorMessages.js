@@ -16,6 +16,11 @@ export const ERROR_MESSAGES = {
   COMMON_405: '지원하지 않는 HTTP 메서드입니다.',
   COMMON_500: '서버 내부 오류가 발생했습니다.',
 
+  // NOTIFICATION (알림 구독)
+  NOTIFICATION_001: '구독을 찾을 수 없습니다.',
+  NOTIFICATION_002: '구독 유형에 맞지 않는 구독 대상입니다.',
+  NOTIFICATION_003: '알림 희망 시간이 올바르지 않습니다.',
+  NOTIFICATION_004: '같은 대상과 희망 시간의 구독이 이미 있습니다.',
   // AUTH (회원가입·로그인)
   AUTH_001: '이미 사용 중인 아이디입니다.',
   AUTH_002: '아이디 또는 비밀번호가 올바르지 않습니다.',
