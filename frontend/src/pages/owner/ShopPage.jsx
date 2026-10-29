@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { canGeocode, geocodeAddress } from '@/utils/geocodeAddress';
 import { useShopStore } from '@/store/useShopStore';
 import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
@@ -9,7 +10,6 @@ import OwnerImageEditor from './components/OwnerImageEditor';
 const FIELDS = [
   ['name', '매장명', 100],
   ['phone', '대표 연락처', 20],
-  ['regionCode', '지역 코드', 20],
   ['address', '주소', 300],
   ['addressDetail', '상세 주소', 200],
 ];
@@ -18,6 +18,12 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
   const [form, setForm] = useState(shop);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [isLocating, setIsLocating] = useState(false);
+  const submitting = useRef(false);
+  const isBusy = isSaving || isLocating;
+  let saveLabel = '변경사항 저장';
+  if (isSaving) saveLabel = '저장 중…';
+  if (isLocating) saveLabel = '주소 확인·저장 중…';
   const change = (event) => {
     const { name, value } = event.target;
     setForm((previous) => ({ ...previous, [name]: value }));
@@ -25,21 +31,37 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
   };
   const submit = async (event) => {
     event.preventDefault();
+    if (submitting.current || isSaving) return;
+    submitting.current = true;
     setError('');
     setMessage('');
-    const {
-      categoryId,
-      name,
-      regionCode,
-      address,
-      addressDetail,
-      latitude,
-      longitude,
-      phone,
-      description,
-      notice,
-    } = form;
     try {
+      let locatedForm = form;
+      if (
+        form.address.trim() !== shop.address?.trim() ||
+        !form.regionCode ||
+        form.latitude == null ||
+        form.longitude == null
+      ) {
+        if (!canGeocode())
+          throw new Error('주소 자동 확인을 사용할 수 없습니다. 카카오맵 설정을 확인해 주세요.');
+        setIsLocating(true);
+        const location = await geocodeAddress(form.address);
+        locatedForm = { ...form, ...location };
+        setForm(locatedForm);
+      }
+      const {
+        categoryId,
+        name,
+        regionCode,
+        address,
+        addressDetail,
+        latitude,
+        longitude,
+        phone,
+        description,
+        notice,
+      } = locatedForm;
       const saved = await onSave({
         categoryId: Number(categoryId),
         name: name.trim(),
@@ -56,6 +78,9 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
       setMessage('매장 정보를 저장했습니다.');
     } catch (failure) {
       setError(failure.message);
+    } finally {
+      setIsLocating(false);
+      submitting.current = false;
     }
   };
   return (
@@ -63,7 +88,7 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
       <h1>매장 관리</h1>
       <Panel padded>
         <form onSubmit={submit} className="b-stack">
-          <fieldset disabled={isSaving} className="b-form-grid">
+          <fieldset disabled={isBusy} className="b-form-grid">
             {FIELDS.map(([name, label, maxLength]) => (
               <label key={name}>
                 {label}
@@ -96,21 +121,10 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
                 )}
               </select>
             </label>
-            {['latitude', 'longitude'].map((name) => (
-              <label key={name}>
-                {name === 'latitude' ? '위도' : '경도'} *
-                <input
-                  type="number"
-                  name={name}
-                  value={form[name] ?? ''}
-                  min={name === 'latitude' ? -90 : -180}
-                  max={name === 'latitude' ? 90 : 180}
-                  step="0.0000001"
-                  required
-                  onChange={change}
-                />
-              </label>
-            ))}
+            <p className="b-span-two">
+              주소를 변경하고 저장하면 위치 정보를 자동으로 확인합니다. 상세 주소는 별도로 입력해
+              주세요.
+            </p>
             {[
               ['description', '매장 소개'],
               ['notice', '매장 공지'],
@@ -140,7 +154,7 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
           <div className="b-flex">
             <Button
               type="button"
-              disabled={isSaving}
+              disabled={isBusy}
               onClick={() => {
                 setForm(shop);
                 setError('');
@@ -149,15 +163,15 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
             >
               취소
             </Button>
-            <Button type="submit" variant="primary" disabled={isSaving}>
-              {isSaving ? '저장 중…' : '변경사항 저장'}
+            <Button type="submit" variant="primary" disabled={isBusy}>
+              {saveLabel}
             </Button>
           </div>
         </form>
       </Panel>
       <Panel padded>
         <h2>매장 대표 이미지</h2>
-        <OwnerImageEditor imageUrl={shop.imageUrl} isSaving={isSaving} onSave={onImage} />
+        <OwnerImageEditor imageUrl={shop.imageUrl} isSaving={isBusy} onSave={onImage} />
       </Panel>
     </div>
   );
