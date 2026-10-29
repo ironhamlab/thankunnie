@@ -61,10 +61,42 @@
 .content :global(.b-panel-heading) p {
   margin-top: 6px !important;
 }
-.intro {
-  margin-top: 10px;
+.shop :global(.b-panel-heading) > button {
+  flex-shrink: 0;
+}
+.shopInfo {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 22px;
+  font-size: 13px;
+}
+.shopInfo > div {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+}
+.shopInfo dt {
+  color: var(--color-text-muted);
+}
+.shopInfo dd {
+  margin: 0;
+}
+.shopInfo a {
+  color: inherit;
+}
+.shop h2 {
+  font-size: 15px;
+}
+/* 패널 공통 문단 규칙(.content .b-panel.b-pad p)보다 우선하도록 선택자를 맞춘다 */
+.content .shop p.intro {
+  margin: 8px 0 16px;
   font-size: 13px;
   line-height: 1.8;
+  white-space: pre-line;
+}
+.content .shop :global(.b-highlight) p {
+  margin-top: 0;
+  white-space: pre-line;
 }
 .content :global(.b-panel):global(.b-pad) p {
   font-size: 12px;

@@ -102,15 +102,36 @@ export default function ServiceDetailPage() {
             <RepresentativeImage imageUrl={detail.imageUrl} name={detail.treatmentName} />
             <span className={styles.location}>{address}</span>
           </section>
-          <Panel as="section" padded>
-            <h1>{detail.shopName}</h1>
-            <p>{address}</p>
-            {detail.phone && <p>매장 연락처: {detail.phone}</p>}
+          <Panel as="section" padded className={styles.shop}>
+            <div className="b-row b-panel-heading">
+              <h1>{detail.shopName}</h1>
+              {/* 지도 보기 동작은 지도 담당이 연결한다 */}
+              <Button type="button" size="small">
+                지도 보기
+              </Button>
+            </div>
+            <dl className={styles.shopInfo}>
+              <div>
+                <dt>주소</dt>
+                <dd>{address}</dd>
+              </div>
+              {detail.phone && (
+                <div>
+                  <dt>연락처</dt>
+                  <dd>
+                    <a href={`tel:${detail.phone}`}>{detail.phone}</a>
+                  </dd>
+                </div>
+              )}
+            </dl>
             <h2>매장 소개</h2>
-            <Notice className={styles.intro}>
-              {detail.shopDescription || '등록된 매장 소개가 없습니다.'}
-            </Notice>
-            {detail.shopNotice && <Notice>{detail.shopNotice}</Notice>}
+            <p className={styles.intro}>{detail.shopDescription || '등록된 매장 소개가 없습니다.'}</p>
+            {detail.shopNotice && (
+              <div className="b-highlight">
+                <h3>매장 공지</h3>
+                <p>{detail.shopNotice}</p>
+              </div>
+            )}
           </Panel>
           <Panel as="section" padded>
             <div className="b-row b-panel-heading">
