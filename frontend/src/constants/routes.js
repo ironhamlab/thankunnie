@@ -1,6 +1,9 @@
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
+  // 고객 회원가입. 사장님은 매장 정보와 함께 가입한다
+  SIGNUP: '/signup',
+  SHOP_SIGNUP: '/signup/shop',
   SERVICE_DETAIL: '/services/:id',
   RESERVE: '/reserve/:id',
   CHECKOUT: '/checkout',

@@ -1,0 +1,21 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.root input[aria-invalid='true'],
+.root select[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+.hint {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+.error {
+  font-weight: 400;
+  color: var(--color-danger);
+}

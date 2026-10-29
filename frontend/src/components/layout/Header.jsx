@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useDesignStore } from '@/store/useDesignStore';
 import SearchIcon from '@/components/icons/SearchIcon';
 import NotificationIcon from '@/components/icons/NotificationIcon';
@@ -48,6 +49,8 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const activeMenu = getActiveMenu(location);
+  const token = useAuthStore((s) => s.token);
+  const clearSession = useAuthStore((s) => s.clearSession);
   const search = useDesignStore((s) => s.search);
   const setSearch = useDesignStore((s) => s.setSearch);
   const [open, setOpen] = useState(false);
@@ -74,6 +77,10 @@ export default function Header() {
     event.preventDefault();
     setSearch(search.trim());
     navigate(`${ROUTES.HOME}?search=1`);
+  };
+  const handleLogout = () => {
+    clearSession();
+    navigate(ROUTES.HOME);
   };
   const current = (menu) => (activeMenu === menu ? 'page' : undefined);
   return (
@@ -116,9 +123,19 @@ export default function Header() {
               사장님 센터
             </Link>
 
-            <Link to={ROUTES.LOGIN} className={styles.loginLink}>
-              로그인
-            </Link>
+            {token ? (
+              <button
+                type="button"
+                className={`${styles.loginLink} ${styles.logoutButton}`}
+                onClick={handleLogout}
+              >
+                로그아웃
+              </button>
+            ) : (
+              <Link to={ROUTES.LOGIN} className={styles.loginLink}>
+                로그인
+              </Link>
+            )}
 
             {/* 알림 영역 */}
             <div ref={popoverRef}>
