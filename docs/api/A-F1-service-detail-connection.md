@@ -1,51 +1,92 @@
-# 시술 상세 프론트 연결 (UNNIE-49)
+# 매장 상세 화면 연결 (UNNIE-49)
 
-## 조회 흐름
+시술 상세 화면을 매장 상세 화면으로 바꿨다. 매장 대표 이미지·이름·주소 아래에 메뉴 버튼(예약하기, 상세정보)을 좌우로 두고,
+고른 메뉴의 내용만 아래에 보여준다. 처음 들어오면 예약하기를 연다. 예약은 시술 선택(1단계) → 날짜·30분 단위 시작 시간 선택(2단계) 순서로 한 단계씩 보여준다.
 
-- 화면 → `useServiceDetailStore.loadDetail` → `serviceDetailApi.getDetail` → 공통 `axiosInstance`.
-- `GET /api/v1/explore/vacancies/{treatmentId}?startsAt={KST 시작 시각}`을 호출한다.
-- 인증 없는 고객용 C-03 API를 사용한다. 사장님 전용 시술 단건 API는 사용하지 않는다.
-- 상세 조회가 실패하면 시연 데이터로 대체하지 않는다.
+## 화면 흐름
 
-## 목록·지도 담당 연결 방법
-
-기존 라우트 `/services/:id`에서 `id`는 실제 `treatmentId`다. 선택한 빈자리의 시작 시각을
-쿼리로 함께 전달한다. 같은 시술도 시간에 따라 가격과 예약 가능 여부가 달라진다.
-
-```jsx
-const query = new URLSearchParams({ startsAt: vacancy.startsAt });
-const to = `${generatePath(ROUTES.SERVICE_DETAIL, { id: vacancy.treatmentId })}?${query}`;
+```text
+/shops/:shopId                              이미지·매장명·주소, 메뉴 [예약하기(넓게)] [상세정보(좁게)]
+  ├ 예약하기 (기본, ?view=reserve)
+  │   → 1단계 시술 선택                       판매 중인 시술, 정상 가격
+  │   → 2단계 날짜·시간 (&treatmentId=)       선택한 시술 + [시술 변경], 달력(오늘 포함 60일), 30분 단위 시작 시각
+  │                 (&date=&time=)           오른쪽 예약 요약: 고른 시각의 서버 가격·예약금·잔금·예약 가능 여부
+  └ 상세정보 (?view=info)                    주소·연락처·영업시간·소개·공지
 ```
 
-`startsAt`은 KST 기준 `2026-10-30T15:00:00` 또는 서버 응답의
-`2026-10-30T15:00:00+09:00`을 받는다. `+`가 공백이 되지 않도록 `URLSearchParams`로 인코딩한다.
-API에는 오프셋을 제거한 KST `LocalDateTime`을 보낸다.
-시작 시각 또는 실제 시술 ID가 없는 이전 시연 주소(`/services/nail` 등)에서는
-빈자리 선택 안내를 표시한다. 홈·검색의 실제 목록 연결은 담당 C 범위로 남아 있다.
+- 선택값은 주소 쿼리(`view`, `treatmentId`, `step`, `date`, `time`)에 둔다. 새로고침·공유해도 같은 화면이 유지된다.
+- 시술을 고르면 2단계로 넘어간다. 단계 표시("1. 시술 선택", "2. 날짜·시간 선택")를 눌러 바로 오갈 수 있고, 2단계는 시술을 고른 뒤에만 누를 수 있다. "시술 변경"도 1단계(`step=1`)로 돌아간다.
+- 고른 시작 시각부터 소요 시간 동안의 칸을 함께 표시한다. 예: 60분 시술을 12:00에 고르면 12:00·12:30이 함께 잡힌 것으로 보인다. 실제 예약 막힘은 서버(B `AvailabilityCalculator`)가 예약 구간 `[시작, 시작 + 소요 시간)` 전체로 판단한다.
+- 예약 요약은 2단계에서만 보인다. 상세정보·1단계일 때는 한 열로 가운데 정렬한다.
+- 시술이나 날짜를 바꾸면 고른 시간은 지운다.
+- 예약 점유·결제 흐름은 아직 시연 데이터를 사용하므로 예약 요약의 "예약하기" 버튼은 비활성화하고 준비 중 안내를 표시한다.
+- 지도 보기 버튼은 두지 않는다. 매장 위치 지도는 지도 담당이 추가한다.
 
-## 표시 및 상태
+## 사용하는 API
 
-- 매장명·소개·공지·주소·연락처, 시술 설명·소요 시간·모델 참여 조건·촬영 안내·준비 사항을 표시한다.
-- 이미지가 없거나 불러오지 못하면 기존 기본 시술 일러스트를 표시한다.
-- 정상가·할인율·판매가·예약금·잔금은 서버 값 그대로 표시한다. 20% 예약금 계산을 제거했다.
-- 시작·종료·예약 마감 시각을 Asia/Seoul 기준으로 표시한다. 가짜 점유 타이머는 표시하지 않는다.
-- 로딩, 조회 실패와 재시도, 404, 예약 마감·예약 불가를 구분한다.
-- 이동·재조회 시 이전 응답이 뒤늦게 도착해 현재 상세를 덮어쓰지 않도록 요청 번호로 제어한다.
+| 단계 | API | 인증 |
+| --- | --- | --- |
+| 매장 정보·시술 목록 | `GET /api/v1/explore/shops/{shopId}` (이번에 추가) | 불필요 |
+| 시작 가능 시각 | `GET /api/v1/available-times?shopId=&date=&durationMinutes=` (B) | 불필요 |
+| 고른 시각의 가격 | `GET /api/v1/explore/vacancies/{treatmentId}?startsAt=` (C-03) | 불필요 |
 
-## 남은 연결
+호출 경로: 화면 → `useShopDetailStore`·`useServiceDetailStore` → `shopDetailApi`·`serviceDetailApi` → 공통 `axiosInstance`.
 
-현재 `ReservationPage`와 `CheckoutPage`는 시연 데이터와 브라우저 내 점유를 사용한다.
-실제 시술 ID를 이 흐름에 넘기지 않도록 예약 버튼은 비활성화하고 준비 중 안내를 표시한다.
-예약 점유 API 및 다른 시간 선택 연결은 후속 담당 범위다.
-상세 화면의 조회 성공만으로 예약·결제까지 검증됐다고 판단하지 않는다.
+### 매장 상세 `GET /api/v1/explore/shops/{shopId}`
 
-## 검증
+- 노출 중인 매장(`SHOP.STATUS = ACTIVE`)의 안내, 월~일 영업시간 7개, 판매 중인 시술(`TREATMENT.STATUS = ACTIVE`, 시술 ID 순)을 돌려준다.
+- 저장하지 않은 요일은 휴무(`closed: true`, 시각 null)로 채운다. 사장님 영업시간 조회와 같은 형식이다.
+- 시술의 `price`는 일반 판매가다. 초임박 구간 가격은 시각을 고른 뒤 C-03으로 확인한다.
+- 매장이 없거나 비활성이면 404 `COMMON_404`("매장을 찾을 수 없습니다.").
+- 코드: `domain/explore` (`ExploreShopController`, `ExploreShopDetailService`, `ExploreShopDetailRepository`). 매장·시술·영업시간 엔티티는 읽기만 한다.
 
-- `frontend/`: `npm run lint`, `npm run build` 통과.
-- `frontend/`: `node --input-type=module` 임시 검증 스크립트 통과. 기존 esbuild로 실제 모듈을
-  묶고 Axios 어댑터에 준비된 응답을 주입해 요청 경로·파라미터, 이전 요청 무시,
-  화면 이탈 후 응답 무시, 빈 응답 오류를 확인했다. React 서버 렌더링으로 성공·모델 조건·서버 금액,
-  예약 마감·예약 불가·선택 누락·404 표시를 확인했다. 브라우저에서 실제 데이터 성공 조회를 검증한 것은 아니다.
-- 로컬 백엔드 `GET /api/v1/explore/vacancies?size=1`: 200, 빈 목록.
-- 로컬 백엔드 시술 ID 1 상세 조회: 404. 실제 데이터로 성공 화면을 확인하려면 활성 매장·시술 데이터가 필요하다.
-- 백엔드 코드·스키마·공통 인증·라우터·의존성 변경은 없다.
+```json
+{
+  "shopId": 1, "shopName": "언니네 네일", "categoryId": 1, "categoryName": "네일",
+  "regionCode": "11680", "address": "서울특별시 강남구 테헤란로 1", "addressDetail": "2층",
+  "latitude": 37.4979, "longitude": 127.0276, "phone": "02-111-1111",
+  "description": "젤네일·케어 전문", "notice": "예약 시간 10분 전 도착해 주세요", "imageUrl": null,
+  "businessHours": [{ "dayOfWeek": "MON", "closed": false, "openTime": "10:00", "closeTime": "20:00" }],
+  "treatments": [{
+    "treatmentId": 1, "name": "젤네일 원컬러", "description": "기본 원컬러 젤네일",
+    "treatmentType": "NORMAL", "durationMinutes": 60, "regularPrice": 35000, "price": 30000,
+    "modelCondition": null, "imageUrl": null
+  }]
+}
+```
+
+## 시간 슬롯
+
+- 그 날 영업시간 안에서 시술이 끝날 수 있는 30분 단위 시작 시각을 모두 표시한다 (`openTime` ~ `closeTime - 소요 시간`).
+- 예약 가능 여부는 `available-times` 응답만 따른다. 응답에 없는 시각은 비활성(취소선)으로 보인다. 지난 시각, 시작 20분 전 마감, 닫은 시간, 다른 예약과 겹치는 시간이 여기에 해당한다.
+- 사장님이 영업시간 밖으로 연 시간(OPEN)은 `available-times` 응답에 들어 있으므로 슬롯에 함께 표시한다.
+- 날짜는 월 단위 달력으로 고른다. 서버 예약 가능 범위와 같게 오늘 포함 60일까지 고를 수 있고, 그 밖의 날짜와 달은 비활성이다.
+- 휴무 요일은 달력에 "휴무"로 표시한다. 사장님이 휴무일에 따로 연 시간이 있을 수 있어 고를 수는 있고, 슬롯이 없으면 안내를 보여준다.
+- 빈자리 목록(C-01)은 OPEN 시간대만 노출하지만, 이 화면은 영업시간 전체에서 고를 수 있다. C-01 문서 9장 1번의 남은 확인 사항(목록에 없던 시간을 고를 수 있게 둘지)과 관련 있으므로 B·C 담당과 확인한다.
+
+## 이전 주소 호환
+
+이전 시술 상세 주소 `/services/:treatmentId?startsAt=...`는 C-03으로 시술의 매장을 찾은 뒤
+`/shops/{shopId}?treatmentId=&date=&time=`으로 이동한다. 목록·지도 담당은 기존 연결 방법을 그대로 써도 되고,
+매장 상세로 바로 보내려면 아래처럼 연결한다.
+
+```jsx
+const startsAt = vacancy.startsAt; // 2026-11-06T20:00:00+09:00
+const query = new URLSearchParams({
+  treatmentId: vacancy.treatmentId,
+  date: startsAt.slice(0, 10),
+  time: startsAt.slice(11, 16),
+});
+const to = `${generatePath(ROUTES.SHOP_DETAIL, { shopId: vacancy.shopId })}?${query}`;
+```
+
+## 공통 파일 변경 (프런트 파트장 리뷰 필요)
+
+- `constants/routes.js`: `SHOP_DETAIL: '/shops/:shopId'` 추가
+- `routes/AppRouter.jsx`: 매장 상세 라우트 추가
+
+## 가격 표시
+
+- 시술 목록에는 정상 가격(`regularPrice`)만 표시한다.
+- 시간을 고르면 예약 요약에 C-03 응답 값(정상 가격, 할인 금액·할인율, 최종 금액, 예약금, 잔금)을 그대로 표시한다. 할인은 `salePrice < regularPrice`일 때만 보이고, 가격 구간이 `IMMINENT`·`LAST_MINUTE`이면 "임박"·"초임박 특가" 라벨을 붙인다.
+- 현재 가격 규칙(B-05 `SalePrices`)에서는 시작 8시간 초과 전(`NORMAL`)에도 일반 판매가(`treatment.price`)가 적용되고, 시작 3시간 전부터 초임박 판매가가 적용된다. 따라서 일반 시간에도 사장님이 정한 할인이 요약에 보일 수 있다.

@@ -1,27 +1,15 @@
 import { useEffect } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { generatePath, Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useServiceDetailStore } from '@/store/useServiceDetailStore';
-import Badge from '@/components/common/Badge';
-import Button from '@/components/common/Button';
-import Panel from '@/components/common/Panel';
-import Notice from '@/components/common/Notice';
-import EmptyState from '@/components/common/EmptyState';
 import Alert from '@/components/common/Alert';
-import RepresentativeImage from '@/pages/owner/components/RepresentativeImage';
-import styles from './ServiceDetailPage.module.css';
+import Button from '@/components/common/Button';
+import EmptyState from '@/components/common/EmptyState';
 
-const money = (value) => `${value.toLocaleString('ko-KR')}원`;
-const formatTime = (value) =>
-  new Intl.DateTimeFormat('ko-KR', {
-    timeZone: 'Asia/Seoul',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date(value));
-
+/**
+ * 이전 시술 상세 주소(/services/:treatmentId?startsAt=...).
+ * 빈자리 상세(C-03)로 시술의 매장을 찾은 뒤 같은 시술·날짜·시간을 고른 매장 상세로 이동한다.
+ */
 export default function ServiceDetailPage() {
   const { id } = useParams();
   const [params] = useSearchParams();
@@ -66,151 +54,22 @@ export default function ServiceDetailPage() {
       </EmptyState>
     );
   }
-  if (
-    status !== 'succeeded' ||
-    !detail ||
-    String(detail.treatmentId) !== id ||
-    detail.startsAt.slice(0, 16) !== startsAt.slice(0, 16)
-  ) {
+  if (status === 'succeeded' && detail && String(detail.treatmentId) === id) {
+    const query = new URLSearchParams({
+      treatmentId: id,
+      date: startsAt.slice(0, 10),
+      time: startsAt.slice(11, 16),
+    });
     return (
-      <EmptyState className="b-container b-page" role="status">
-        시술 정보를 불러오는 중입니다.
-      </EmptyState>
+      <Navigate
+        to={`${generatePath(ROUTES.SHOP_DETAIL, { shopId: detail.shopId })}?${query}`}
+        replace
+      />
     );
   }
-
-  const address = [detail.address, detail.addressDetail].filter(Boolean).join(' ');
-  const closedMessage =
-    detail.notBookableReason === 'BOOKING_CLOSED'
-      ? '예약이 마감된 시간입니다. 다른 빈자리를 선택해 주세요.'
-      : '현재 예약할 수 없는 시간입니다. 다른 빈자리를 선택해 주세요.';
-
   return (
-    <div className={`b-container b-page ${styles.root}`}>
-      <nav aria-label="현재 위치" className={styles.breadcrumb}>
-        <Link to={ROUTES.HOME}>홈</Link>
-        <span>›</span>
-        <span>{detail.categoryName}</span>
-        <span>›</span>
-        <strong>
-          {detail.shopName} · {detail.treatmentName}
-        </strong>
-      </nav>
-      <div className="b-columns">
-        <div className={`b-stack ${styles.content}`}>
-          <section className={styles.photo}>
-            <RepresentativeImage imageUrl={detail.imageUrl} name={detail.treatmentName} />
-            <span className={styles.location}>{address}</span>
-          </section>
-          <Panel as="section" padded className={styles.shop}>
-            <div className="b-row b-panel-heading">
-              <h1>{detail.shopName}</h1>
-              {/* 지도 보기 동작은 지도 담당이 연결한다 */}
-              <Button type="button" size="small">
-                지도 보기
-              </Button>
-            </div>
-            <dl className={styles.shopInfo}>
-              <div>
-                <dt>주소</dt>
-                <dd>{address}</dd>
-              </div>
-              {detail.phone && (
-                <div>
-                  <dt>연락처</dt>
-                  <dd>
-                    <a href={`tel:${detail.phone}`}>{detail.phone}</a>
-                  </dd>
-                </div>
-              )}
-            </dl>
-            <h2>매장 소개</h2>
-            <p className={styles.intro}>{detail.shopDescription || '등록된 매장 소개가 없습니다.'}</p>
-            {detail.shopNotice && (
-              <div className="b-highlight">
-                <h3>매장 공지</h3>
-                <p>{detail.shopNotice}</p>
-              </div>
-            )}
-          </Panel>
-          <Panel as="section" padded>
-            <div className="b-row b-panel-heading">
-              <h2>시술 정보</h2>
-              <Badge>소요 시간 {detail.durationMinutes}분</Badge>
-            </div>
-            <h3>{detail.treatmentName}</h3>
-            <p>{detail.treatmentDescription || '등록된 시술 설명이 없습니다.'}</p>
-            {detail.treatmentType === 'MODEL' && (
-              <Notice>
-                <h3>시술 모델 참여 조건</h3>
-                <p>{detail.modelCondition || '매장에 참여 조건을 문의해 주세요.'}</p>
-              </Notice>
-            )}
-            {detail.photoNotice && (
-              <Notice>
-                <h3>촬영 안내</h3>
-                <p>{detail.photoNotice}</p>
-              </Notice>
-            )}
-            {detail.preparationNotes && (
-              <Notice>
-                <h3>방문 준비 사항</h3>
-                <p>{detail.preparationNotes}</p>
-              </Notice>
-            )}
-          </Panel>
-          <Panel as="section" padded className={styles.slot}>
-            <h2>선택한 빈자리</h2>
-            <p>
-              {formatTime(detail.startsAt)} ~ {formatTime(detail.endsAt)}
-            </p>
-            <p>예약 마감: {formatTime(detail.bookingClosesAt)}</p>
-            <Badge tone={detail.bookable ? 'success' : 'neutral'}>
-              {detail.bookable ? '예약 가능' : '예약 불가'}
-            </Badge>
-          </Panel>
-        </div>
-        <aside className={`b-stack ${styles.aside}`}>
-          <Panel as="section" padded className="b-summary">
-            <h2>빈자리 예약 요약</h2>
-            <dl className="b-details">
-              <div>
-                <dt>정상 가격</dt>
-                <dd>{money(detail.regularPrice)}</dd>
-              </div>
-              <div>
-                <dt>할인율</dt>
-                <dd>{detail.discountRate}%</dd>
-              </div>
-              <div>
-                <dt>최종 예약 금액</dt>
-                <dd className="b-final-price">{money(detail.salePrice)}</dd>
-              </div>
-              <div>
-                <dt>예약금</dt>
-                <dd>{money(detail.depositAmount)}</dd>
-              </div>
-              <div>
-                <dt>매장 방문 현장 잔금</dt>
-                <dd>{money(detail.balanceAmount)}</dd>
-              </div>
-            </dl>
-            <Notice>가격과 예약 가능 여부는 조회 시점 기준이며 예약 시 다시 확인합니다.</Notice>
-            {!detail.bookable && (
-              <Alert tone="error" role="alert">
-                {closedMessage}
-              </Alert>
-            )}
-            <Button variant="primary" wide disabled>
-              이 빈자리 예약하기
-            </Button>
-            <Notice>예약 기능을 준비 중입니다. 현재는 시술 상세 정보를 확인할 수 있습니다.</Notice>
-            <Button as={Link} wide to={ROUTES.HOME}>
-              다른 빈자리 찾기
-            </Button>
-          </Panel>
-        </aside>
-      </div>
-    </div>
+    <EmptyState className="b-container b-page" role="status">
+      시술 정보를 불러오는 중입니다.
+    </EmptyState>
   );
 }

@@ -4,7 +4,10 @@ export const ROUTES = {
   // 고객 회원가입. 사장님은 매장 정보와 함께 가입한다
   SIGNUP: '/signup',
   SHOP_SIGNUP: '/signup/shop',
+  // 이전 시술 상세 주소. 시술·시작 시각을 들고 매장 상세(SHOP_DETAIL)로 이동한다
   SERVICE_DETAIL: '/services/:id',
+  // 매장 상세: 매장 정보 → 시술 선택 → 날짜·시간 선택
+  SHOP_DETAIL: '/shops/:shopId',
   RESERVE: '/reserve/:id',
   CHECKOUT: '/checkout',
   BOOKING_RESULT: '/result',
