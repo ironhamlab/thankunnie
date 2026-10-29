@@ -9,6 +9,9 @@ COPY . .
 
 ARG VITE_API_BASE_URL=/api
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+# 카카오맵 JavaScript 키. 브라우저에 공개되는 값이며 카카오 콘솔에 등록한 도메인에서만 동작한다
+ARG VITE_KAKAO_MAP_APP_KEY=
+ENV VITE_KAKAO_MAP_APP_KEY=${VITE_KAKAO_MAP_APP_KEY}
 
 RUN npm run build
 

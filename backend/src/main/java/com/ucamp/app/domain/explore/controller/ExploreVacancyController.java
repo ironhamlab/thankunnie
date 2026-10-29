@@ -2,11 +2,13 @@ package com.ucamp.app.domain.explore.controller;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,7 +20,9 @@ import com.ucamp.app.domain.explore.dto.request.ExploreVacancyFilter;
 import com.ucamp.app.domain.explore.dto.request.ExploreVacancySearchRequest;
 import com.ucamp.app.domain.explore.dto.request.ExploreVacancySort;
 import com.ucamp.app.domain.explore.dto.response.ExploreShopMapResponse;
+import com.ucamp.app.domain.explore.dto.response.ExploreVacancyDetailResponse;
 import com.ucamp.app.domain.explore.dto.response.ExploreVacancyResponse;
+import com.ucamp.app.domain.explore.service.ExploreVacancyDetailService;
 import com.ucamp.app.domain.explore.service.ExploreVacancyService;
 import com.ucamp.app.domain.vacancy.policy.PriceTier;
 
@@ -26,7 +30,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * 고객 빈자리 탐색 API (C-01 목록, C-02 지도 매장 요약). 비로그인 조회 가능. 계약: docs/api/C-01-vacancy-search.md
+ * 고객 빈자리 탐색 API (C-01 목록, C-02 지도 매장 요약, C-03 상세). 비로그인 조회 가능. 계약: docs/api/C-01-vacancy-search.md
  */
 @Tag(name = "빈자리 탐색", description = "홈·검색·지도 공용 빈자리 목록과 지도 마커용 매장 요약")
 @RestController
@@ -34,9 +38,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class ExploreVacancyController {
 
     private final ExploreVacancyService exploreVacancyService;
+    private final ExploreVacancyDetailService exploreVacancyDetailService;
 
-    public ExploreVacancyController(ExploreVacancyService exploreVacancyService) {
+    public ExploreVacancyController(ExploreVacancyService exploreVacancyService,
+            ExploreVacancyDetailService exploreVacancyDetailService) {
         this.exploreVacancyService = exploreVacancyService;
+        this.exploreVacancyDetailService = exploreVacancyDetailService;
     }
 
     @Operation(summary = "빈자리 목록",
@@ -64,6 +71,16 @@ public class ExploreVacancyController {
                 timeOfDay, closingWithinHours, priceTier, keyword, minLat, maxLat, minLng, maxLng);
         return ResponseEntity.ok(ApiResponse.success(
                 exploreVacancyService.search(new ExploreVacancySearchRequest(filter, sort, page, size))));
+    }
+
+    @Operation(summary = "빈자리 상세",
+            description = "시술 × 시작 시각의 예약 가능 여부·가격·시술/매장 안내. 조회 시점에 다시 계산하며,"
+                    + " 지났거나 마감된 시각도 200 으로 bookable=false 를 돌려준다")
+    @GetMapping("/vacancies/{treatmentId}")
+    public ResponseEntity<ApiResponse<ExploreVacancyDetailResponse>> getVacancyDetail(
+            @PathVariable Long treatmentId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startsAt) {
+        return ResponseEntity.ok(ApiResponse.success(exploreVacancyDetailService.getDetail(treatmentId, startsAt)));
     }
 
     @Operation(summary = "지도 매장 요약",

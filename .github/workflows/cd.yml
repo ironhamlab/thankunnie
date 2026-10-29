@@ -179,6 +179,8 @@ jobs:
         env:
           IMAGE_BASE: ${{ needs.plan.outputs.image-base }}
           SERVICE: ${{ matrix.service }}
+          # 저장소 Settings > Secrets and variables > Actions > Variables 에 등록한 공개 키 (비밀값 아님)
+          VITE_KAKAO_MAP_APP_KEY: ${{ vars.VITE_KAKAO_MAP_APP_KEY }}
         run: |
           set -euo pipefail
 
@@ -192,6 +194,7 @@ jobs:
           else
             docker build \
               --build-arg VITE_API_BASE_URL=/api \
+              --build-arg VITE_KAKAO_MAP_APP_KEY="$VITE_KAKAO_MAP_APP_KEY" \
               --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
               -t "$IMAGE" frontend
           fi

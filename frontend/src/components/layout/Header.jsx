@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
+import { useCurrentRole } from '@/hooks/useCurrentRole';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useDesignStore } from '@/store/useDesignStore';
 import SearchIcon from '@/components/icons/SearchIcon';
 import NotificationIcon from '@/components/icons/NotificationIcon';
@@ -49,6 +51,9 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const activeMenu = getActiveMenu(location);
+  const token = useAuthStore((s) => s.token);
+  const role = useCurrentRole();
+  const clearSession = useAuthStore((s) => s.clearSession);
   const search = useDesignStore((s) => s.search);
   const setSearch = useDesignStore((s) => s.setSearch);
   const [open, setOpen] = useState(false);
@@ -75,6 +80,10 @@ export default function Header() {
     event.preventDefault();
     setSearch(search.trim());
     navigate(`${ROUTES.HOME}?search=1`);
+  };
+  const handleLogout = () => {
+    clearSession();
+    navigate(ROUTES.HOME);
   };
   const current = (menu) => (activeMenu === menu ? 'page' : undefined);
   return (
@@ -116,13 +125,26 @@ export default function Header() {
           </nav>
 
           <div className={styles.actions}>
-            <Link to={ROUTES.OWNER} className={styles.ownerLink}>
-              사장님 센터
-            </Link>
+            {/* 사장님 센터는 사장님 계정으로 따로 로그인한다. 로그인한 고객에게는 보여주지 않는다 */}
+            {!role && (
+              <Link to={ROUTES.OWNER} className={styles.ownerLink}>
+                사장님 센터
+              </Link>
+            )}
 
-            <Link to={ROUTES.LOGIN} className={styles.loginLink}>
-              로그인
-            </Link>
+            {token ? (
+              <button
+                type="button"
+                className={`${styles.loginLink} ${styles.logoutButton}`}
+                onClick={handleLogout}
+              >
+                로그아웃
+              </button>
+            ) : (
+              <Link to={ROUTES.LOGIN} className={styles.loginLink}>
+                로그인
+              </Link>
+            )}
 
             {/* 알림 영역 */}
             <div ref={popoverRef}>
