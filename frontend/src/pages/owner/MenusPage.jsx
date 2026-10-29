@@ -13,7 +13,9 @@ export default function MenusPage() {
   const treatments = useTreatmentStore((state) => state.treatments);
   const status = useTreatmentStore((state) => state.status);
   const error = useTreatmentStore((state) => state.error);
-  const isSaving = useTreatmentStore((state) => state.mutationStatus === 'loading');
+  const isMutating = useTreatmentStore((state) => state.mutationStatus === 'loading');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSaving = isMutating || isSubmitting;
   const load = useTreatmentStore((state) => state.loadTreatments);
   const save = useTreatmentStore((state) => state.saveTreatment);
   const changeStatus = useTreatmentStore((state) => state.changeTreatmentStatus);
@@ -31,14 +33,27 @@ export default function MenusPage() {
     setActionError(null);
     setEdit({ treatment });
   };
-  const submit = async (treatmentId, payload) => {
+  const submit = async (treatmentId, payload, imageFile) => {
+    if (isSaving) return;
+    setIsSubmitting(true);
     setActionError(null);
+    let saved;
     try {
-      await save(treatmentId, payload);
+      saved = await save(treatmentId, payload);
+      if (imageFile) await saveImage(saved.treatmentId, imageFile);
       setEdit(null);
       setNotice('시술 메뉴를 저장했습니다.');
     } catch (failure) {
-      setActionError(failure);
+      if (saved) {
+        // 생성된 ID를 유지해 이미지 재시도가 새 시술을 중복 생성하지 않도록 한다.
+        setEdit({ treatment: saved });
+        setActionError({
+          ...failure,
+          message: `시술 정보는 저장됐지만 이미지 등록에 실패했습니다. 다시 저장해 주세요. ${failure.message}`,
+        });
+      } else setActionError(failure);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   const toggle = async (treatment) => {

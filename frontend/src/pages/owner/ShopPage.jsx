@@ -171,6 +171,10 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
       </Panel>
       <Panel padded>
         <h2>매장 대표 이미지</h2>
+        <p>
+          아래에서 새 사진을 선택하면 대표 이미지가 바로 교체됩니다. 매장 정보 저장과 별도로
+          적용됩니다.
+        </p>
         <OwnerImageEditor imageUrl={shop.imageUrl} isSaving={isBusy} onSave={onImage} />
       </Panel>
     </div>
