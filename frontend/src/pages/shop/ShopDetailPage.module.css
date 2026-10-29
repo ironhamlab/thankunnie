@@ -1,7 +1,4 @@
 .root {
-  /* 연한 분홍 바탕·테두리는 공통 강조 상자(b-highlight)와 같은 값을 쓴다 */
-  --shop-tint: #fff5f8;
-  --shop-line: #ffc0d8;
   padding-top: 18px;
 }
 .root :global(.b-columns) {
@@ -52,7 +49,7 @@
   padding: 12px 16px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: white;
+  background: var(--color-white);
   font-size: 15px;
   font-weight: 700;
   color: var(--color-text);
@@ -65,7 +62,7 @@
 }
 .menu button:global(.is-selected) {
   border-color: var(--color-primary);
-  background: var(--shop-tint);
+  background: var(--color-primary-faint);
   box-shadow: 0 0 0 1px var(--color-primary);
   color: var(--color-primary);
 }
@@ -89,7 +86,7 @@
   font-size: 13px;
 }
 .steps button:not(:disabled):hover {
-  box-shadow: inset 0 0 0 1px var(--shop-line);
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
 }
 .steps button:disabled {
   color: var(--color-text-muted);
@@ -97,7 +94,7 @@
 }
 .steps .currentStep {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-white);
   font-weight: 700;
 }
 .selectedTreatment {
@@ -106,9 +103,9 @@
   align-items: center;
   gap: 12px;
   padding: 14px 18px;
-  border: 1px solid var(--shop-line);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
-  background: var(--shop-tint);
+  background: var(--color-primary-faint);
   font-size: 13px;
 }
 .selectedTreatment small {
@@ -200,14 +197,14 @@
   padding: 14px 16px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: white;
+  background: var(--color-white);
   text-align: left;
   font-size: 12px;
   color: var(--color-text-secondary);
 }
 .treatments button:global(.is-selected) {
   border-color: var(--color-primary);
-  background: var(--shop-tint);
+  background: var(--color-primary-faint);
   box-shadow: 0 0 0 1px var(--color-primary);
 }
 .treatmentName {
@@ -251,7 +248,7 @@
   height: 32px;
   border: 1px solid var(--color-border);
   border-radius: 50%;
-  background: white;
+  background: var(--color-white);
   font-size: 18px;
   line-height: 1;
 }
@@ -278,15 +275,15 @@
   min-height: 46px;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
-  background: white;
+  background: var(--color-white);
   font-size: 13px;
   line-height: 1.2;
 }
 .calendarGrid button:not(:disabled):hover {
-  border-color: var(--shop-line);
+  border-color: var(--color-border-strong);
 }
 .calendarGrid button:disabled {
-  color: #c8cad6;
+  color: var(--color-border-strong);
 }
 .calendarGrid button small {
   font-size: 9px;
@@ -303,10 +300,10 @@
 .calendarGrid button:global(.is-selected) {
   border-color: var(--color-primary);
   background: var(--color-primary);
-  color: white;
+  color: var(--color-white);
 }
 .calendarGrid button:global(.is-selected) small {
-  color: white;
+  color: var(--color-white);
 }
 .slotDate {
   margin-bottom: 12px;
@@ -324,7 +321,7 @@
 .slots button:global(.is-selected) {
   border-color: var(--color-primary);
   background: var(--color-primary);
-  color: white;
+  color: var(--color-white);
 }
 .favorite {
   display: grid;
@@ -339,7 +336,7 @@
   padding: 7px 14px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
-  background: white;
+  background: var(--color-white);
   font-size: 13px;
   font-weight: 700;
   color: var(--color-text-secondary);
@@ -386,19 +383,19 @@
 .aside :global(.b-summary) {
   position: static;
   gap: 18px;
-  border-color: var(--shop-line);
+  border-color: var(--color-border-strong);
   border-top: 3px solid var(--color-primary);
 }
 /* 예약 요약 안의 안내 상자도 파란 공통 안내 대신 화면의 분홍 톤으로 맞춘다 */
 .aside :global(.b-summary) :global(.b-notice) {
-  border-color: var(--shop-line);
-  background: var(--shop-tint);
+  border-color: var(--color-border-strong);
+  background: var(--color-primary-faint);
   color: var(--color-text-secondary);
 }
 /* 공통 비활성 버튼은 기본 색을 반투명하게 해 탁한 분홍이 되므로, 연한 기본 색 바탕으로 비활성을 보여준다 */
 .aside :global(.b-summary) :global(.b-primary):disabled {
   opacity: 1;
-  border-color: var(--shop-line);
+  border-color: var(--color-border-strong);
   background: var(--color-primary-soft);
   color: var(--color-primary);
 }
