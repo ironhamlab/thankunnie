@@ -59,7 +59,14 @@ export default function SubscriptionCreateForm() {
     hasFullStamp && toStamp(form.endDate, form.endTime) <= toStamp(form.startDate, form.startTime);
   const expired =
     hasFullStamp && new Date(toKstDateTime(form.endDate, form.endTime)).getTime() <= Date.now();
-  const canSubmit = hasFullStamp && !invalidTime && !expired;
+  const hasSelection = Boolean(form.categoryId && form.regionCode);
+  const outOfRange =
+    hasFullStamp &&
+    (form.startDate < minDate ||
+      form.startDate > maxDate ||
+      form.endDate < minDate ||
+      form.endDate > maxDate);
+  const canSubmit = hasFullStamp && hasSelection && !invalidTime && !expired && !outOfRange;
 
   const handleSubmit = async (event) => {
     event.preventDefault();

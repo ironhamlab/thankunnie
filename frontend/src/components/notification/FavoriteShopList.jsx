@@ -105,6 +105,11 @@ export default function FavoriteShopList() {
 
   return (
     <div className={styles.list}>
+      {result && (
+        <Alert as="p" tone={result.tone} role="status">
+          {result.message}
+        </Alert>
+      )}
       {shops.map((shop) => {
         const open = openId === shop.id;
         return (
@@ -226,11 +231,6 @@ export default function FavoriteShopList() {
                 <p className={formStyles.hint}>
                   날짜는 오늘부터 {HOPE_DAYS}일 안, 시각은 30분 단위로 고를 수 있어요.
                 </p>
-                {result && (
-                  <Alert as="p" tone={result.tone} role="status">
-                    {result.message}
-                  </Alert>
-                )}
                 <Button variant="primary" wide disabled={saving || !canSubmit}>
                   알림 조건 추가
                 </Button>

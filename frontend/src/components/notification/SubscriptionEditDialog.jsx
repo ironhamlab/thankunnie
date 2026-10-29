@@ -47,7 +47,15 @@ export default function SubscriptionEditDialog({
   const hasFullStamp = Boolean(form.startDate && form.startTime && form.endDate && form.endTime);
   const invalidTime =
     hasFullStamp && toStamp(form.endDate, form.endTime) <= toStamp(form.startDate, form.startTime);
-  const canSubmit = hasFullStamp && !invalidTime;
+  const outOfRange =
+    hasFullStamp &&
+    (form.startDate < minDate ||
+      form.startDate > maxDate ||
+      form.endDate < minDate ||
+      form.endDate > maxDate);
+  const expired =
+    hasFullStamp && new Date(toKstDateTime(form.endDate, form.endTime)).getTime() <= Date.now();
+  const canSubmit = hasFullStamp && !invalidTime && !outOfRange && !expired;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -143,6 +151,12 @@ export default function SubscriptionEditDialog({
                 희망 시작일을 선택해 주세요.
               </p>
             )}
+            {!startDateEmpty &&
+              (form.startDate < minDate || form.startDate > maxDate) && (
+                <p role="alert" className={styles.error}>
+                  날짜는 오늘부터 {HOPE_DAYS}일 안에서 선택해 주세요.
+                </p>
+              )}
           </div>
           <div className={styles.field}>
             <label>
@@ -178,6 +192,11 @@ export default function SubscriptionEditDialog({
                 희망 종료일을 선택해 주세요.
               </p>
             )}
+            {!endDateEmpty && (form.endDate < minDate || form.endDate > maxDate) && (
+              <p role="alert" className={styles.error}>
+                날짜는 오늘부터 {HOPE_DAYS}일 안에서 선택해 주세요.
+              </p>
+            )}
           </div>
           <div className={styles.field}>
             <label>
@@ -198,6 +217,11 @@ export default function SubscriptionEditDialog({
             {!endTimeEmpty && invalidTime && (
               <p role="alert" className={styles.error}>
                 종료 시간은 시작 시간보다 뒤여야 합니다.
+              </p>
+            )}
+            {!endTimeEmpty && !invalidTime && expired && (
+              <p role="alert" className={styles.error}>
+                이미 지난 시간은 등록할 수 없어요.
               </p>
             )}
           </div>
