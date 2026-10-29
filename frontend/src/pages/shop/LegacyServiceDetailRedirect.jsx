@@ -55,14 +55,16 @@ export default function LegacyServiceDetailRedirect() {
     );
   }
   if (status === 'succeeded' && detail && String(detail.treatmentId) === id) {
-    const query = new URLSearchParams({
+    // 매장 상세는 선택값을 주소에 두지 않으므로 이동 state 로 처음 선택을 넘긴다
+    const selection = {
       treatmentId: id,
       date: startsAt.slice(0, 10),
       time: startsAt.slice(11, 16),
-    });
+    };
     return (
       <Navigate
-        to={`${generatePath(ROUTES.SHOP_DETAIL, { shopId: detail.shopId })}?${query}`}
+        to={generatePath(ROUTES.SHOP_DETAIL, { shopId: detail.shopId })}
+        state={{ selection }}
         replace
       />
     );
