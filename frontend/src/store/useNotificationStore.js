@@ -65,6 +65,25 @@ export const useNotificationStore = create((set, get) => ({
     }
   },
 
+  /** 구독 유형은 유지한 채 대상과 희망 시간만 바꾼다 */
+  updateSubscription: async (subscriptionId, request) => {
+    set({ saving: true });
+    try {
+      const updated = await notificationApi.updateSubscription(subscriptionId, request);
+      set((state) => ({
+        subscriptions: state.subscriptions.map((item) =>
+          item.subscriptionId === subscriptionId ? updated : item,
+        ),
+        saving: false,
+      }));
+      get().reloadIfLoading();
+      return { ok: true };
+    } catch (error) {
+      set({ saving: false });
+      return { ok: false, error: toError(error, '알림 조건을 수정하지 못했습니다.') };
+    }
+  },
+
   removeSubscription: async (subscriptionId) => {
     set({ saving: true });
     try {

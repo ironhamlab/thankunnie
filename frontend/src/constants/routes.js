@@ -8,6 +8,8 @@ export const ROUTES = {
   PROFILE: '/profile',
   // 고객 내 예약 (실제 API)
   MY_RESERVATIONS: '/my-reservations',
+  // 고객 알림 구독 목록. 활성 구독만 최근 등록 순으로 보여 준다
+  MY_NOTIFICATIONS: '/my-notifications',
   // 고객 예약 취소 화면 (E 담당). 내 예약의 "취소하기"가 이 경로로 이동한다
   MY_RESERVATION_CANCEL: '/my-reservations/:reservationId/cancel',
   // 고객 취소 결과 (E 담당). 새로고침해도 서버 예약 상태로 다시 그린다

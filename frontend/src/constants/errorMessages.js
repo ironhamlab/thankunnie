@@ -16,6 +16,12 @@ export const ERROR_MESSAGES = {
   COMMON_405: '지원하지 않는 HTTP 메서드입니다.',
   COMMON_500: '서버 내부 오류가 발생했습니다.',
 
+  // NOTIFICATION (알림 구독)
+  NOTIFICATION_001: '구독을 찾을 수 없습니다.',
+  NOTIFICATION_002: '구독 유형에 맞지 않는 구독 대상입니다.',
+  NOTIFICATION_003: '알림 희망 시간이 올바르지 않습니다.',
+  NOTIFICATION_004: '같은 대상과 희망 시간의 구독이 이미 있습니다.',
+
   // VACANCY (영업시간·시간대 열기·닫기·가용 시간)
   VACANCY_003: '오늘부터 60일 이내 날짜만 선택할 수 있습니다.',
   VACANCY_004: '시각은 30분 단위로 선택해 주세요.',

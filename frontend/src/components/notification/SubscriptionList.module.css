@@ -1,0 +1,105 @@
+.root {
+  max-width: 880px;
+  margin-inline: auto;
+}
+.intro {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.eyebrow {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+.intro h1 {
+  margin-top: 4px;
+}
+.lead {
+  margin-top: 8px;
+  color: var(--color-text-secondary);
+}
+.demoNotice {
+  margin-bottom: 16px;
+  text-align: center;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.title {
+  flex: 1;
+  min-width: 0;
+  font-size: 18px;
+}
+.storeBadge {
+  color: var(--color-white);
+  background: var(--color-primary);
+}
+.categoryBadge {
+  color: var(--color-info);
+  background: var(--color-surface-blue);
+}
+.period {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary);
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.editButton {
+  color: var(--color-primary);
+  border-color: var(--color-primary-soft);
+  background: var(--color-white);
+}
+.note {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 20px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+}
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+.timeRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.error {
+  font-size: 12px;
+  color: var(--color-danger);
+}
+@media (max-width: 767px) {
+  .head {
+    flex-wrap: wrap;
+  }
+  .title {
+    flex-basis: calc(100% - 88px);
+  }
+}
