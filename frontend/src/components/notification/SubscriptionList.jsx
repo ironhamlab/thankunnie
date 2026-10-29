@@ -29,8 +29,10 @@ const formatHope = (startTime, endTime) =>
 /**
  * 내 알림 구독 목록. 해제하지 않은 구독만 최근 등록 순으로 보여주고, 조건 수정과 해제를 한다.
  * 서버 목록이 비었거나 불러오지 못하면 업장·카테고리·지역 예시 카드를 보여 준다.
+ *
+ * @param {boolean} [embedded] 구독 화면 탭 안에 넣을 때 바깥 여백을 빼기 위해 사용한다
  */
-export default function SubscriptionList() {
+export default function SubscriptionList({ embedded = false }) {
   const subscriptions = useNotificationStore((state) => state.subscriptions);
   const listStatus = useNotificationStore((state) => state.listStatus);
   const listError = useNotificationStore((state) => state.listError);
@@ -98,9 +100,8 @@ export default function SubscriptionList() {
   };
 
   return (
-    <div className={`b-container b-page ${styles.root}`}>
+    <div className={embedded ? styles.embedded : `b-container b-page ${styles.root}`}>
       <header className={styles.intro}>
-        <p className={styles.eyebrow}>고객</p>
         <h1>내 알림 구독</h1>
         <p className={styles.lead}>해제하지 않은 구독만 최근 등록 순으로 보여요.</p>
       </header>

@@ -1,8 +1,44 @@
+import { useState } from 'react';
+import SubscriptionCreateForm from '@/components/notification/SubscriptionCreateForm';
 import SubscriptionList from '@/components/notification/SubscriptionList';
+import ClockIcon from '@/components/icons/ClockIcon';
+import HeartIcon from '@/components/icons/HeartIcon';
+import NotificationIcon from '@/components/icons/NotificationIcon';
+import styles from './MyNotificationsPage.module.css';
+
+const TABS = [
+  { id: 'subscriptions', label: '내 알림 구독', icon: ClockIcon },
+  { id: 'favorites', label: '찜한 매장', icon: HeartIcon },
+  { id: 'conditions', label: '카테고리·지역 알림 설정', icon: NotificationIcon },
+];
 
 /**
- * 고객 내 알림 구독. 해제하지 않은 구독을 최근 등록 순으로 보여 준다.
+ * 구독 화면. 네비의 구독으로 들어오며, 프로필 없이 탭만 보여 준다.
+ * 찜한 매장 내용은 아직 그리지 않는다.
+ * 빈자리 알림 조건에서 카테고리·지역 구독을 등록하고, 내 알림 구독에서 목록을 본다.
  */
 export default function MyNotificationsPage() {
-  return <SubscriptionList />;
+  const [tab, setTab] = useState('subscriptions');
+
+  return (
+    <div className={`b-container b-page ${styles.root}`}>
+      <div className={styles.tabs} role="tablist" aria-label="구독">
+        {TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            className={styles.tab}
+            aria-selected={tab === id}
+            onClick={() => setTab(id)}
+          >
+            <Icon size={16} />
+            {label}
+          </button>
+        ))}
+      </div>
+      {tab === 'conditions' && <SubscriptionCreateForm />}
+      {tab === 'subscriptions' && <SubscriptionList embedded />}
+    </div>
+  );
 }
