@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTreatmentStore } from '@/store/useTreatmentStore';
 import { money } from '@/utils/demoData';
 import TreatmentForm from '@/pages/owner/components/TreatmentForm';
+import TreatmentThumbnail from './components/TreatmentThumbnail';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
@@ -124,16 +125,25 @@ export default function MenusPage() {
                 <table>
                   <thead>
                     <tr>
-                      {['시술명', '설명', '소요 시간', '정상가', '상태', '관리'].map((heading) => (
-                        <th key={heading} scope="col">
-                          {heading}
-                        </th>
-                      ))}
+                      {['이미지', '시술명', '설명', '소요 시간', '정상가', '상태', '관리'].map(
+                        (heading) => (
+                          <th key={heading} scope="col">
+                            {heading}
+                          </th>
+                        ),
+                      )}
                     </tr>
                   </thead>
                   <tbody>
                     {treatments.map((item) => (
                       <tr key={item.treatmentId}>
+                        <td>
+                          <TreatmentThumbnail
+                            key={item.imageUrl ?? 'default'}
+                            imageUrl={item.imageUrl}
+                            name={item.name}
+                          />
+                        </td>
                         <td>
                           <strong>{item.name}</strong>
                           <small>
