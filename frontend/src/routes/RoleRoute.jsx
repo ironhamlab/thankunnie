@@ -3,7 +3,7 @@ import { USER_ROLE } from '@/constants/userRole';
 import { useCurrentRole } from '@/hooks/useCurrentRole';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getHomePathByRole } from '@/utils/authRedirect';
-import { setDevTestUser } from '@/utils/devTestUser';
+import { isDevTestUserEnabled, setDevTestUser } from '@/utils/devTestUser';
 import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
 import styles from './RoleRoute.module.css';
@@ -41,12 +41,15 @@ export default function RoleRoute({ allow, areaName, redirectPaths = [] }) {
   const handleBack = () => navigate(getHomePathByRole(role), { replace: true });
 
   const handleLogout = () => {
+    // 개발 서버에서는 테스트 계정 선택도 비운다. 남아 있으면 로그아웃 후에도 그 역할로 다시 판단된다
+    if (isDevTestUserEnabled) {
+      setDevTestUser('');
+    }
     if (token) {
       clearSession();
       return;
     }
-    // 개발용 테스트 계정은 스위치와 같은 방식으로 비로그인으로 바꾼다
-    setDevTestUser('');
+    // 테스트 계정만 있던 경우는 스위치와 같은 방식으로 새로고침해 비로그인으로 다시 그린다
     window.location.reload();
   };
 
