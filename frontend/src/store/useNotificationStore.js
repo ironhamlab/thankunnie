@@ -11,16 +11,24 @@ export const useNotificationStore = create((set, get) => ({
   subscriptions: [],
   listStatus: 'idle',
   listError: null,
+  listRequestId: 0,
   categories: [],
   categoryStatus: 'idle',
   saving: false,
 
+  // 등록·해제보다 늦게 도착한 이전 조회가 목록을 덮지 않도록 마지막 요청의 응답만 반영한다
   loadSubscriptions: async () => {
-    set({ listStatus: 'loading', listError: null });
+    const requestId = get().listRequestId + 1;
+    set({ listRequestId: requestId, listStatus: 'loading', listError: null });
     try {
       const subscriptions = await notificationApi.getMySubscriptions();
-      set({ subscriptions: subscriptions ?? [], listStatus: 'succeeded' });
+      if (get().listRequestId === requestId) {
+        set({ subscriptions: subscriptions ?? [], listStatus: 'succeeded' });
+      }
     } catch (error) {
+      if (get().listRequestId !== requestId) {
+        return;
+      }
       set({
         subscriptions: [],
         listStatus: 'failed',
@@ -49,6 +57,7 @@ export const useNotificationStore = create((set, get) => ({
     try {
       const created = await notificationApi.createSubscription(request);
       set((state) => ({ subscriptions: [created, ...state.subscriptions], saving: false }));
+      get().reloadIfLoading();
       return { ok: true };
     } catch (error) {
       set({ saving: false });
@@ -64,10 +73,18 @@ export const useNotificationStore = create((set, get) => ({
         subscriptions: state.subscriptions.filter((item) => item.subscriptionId !== subscriptionId),
         saving: false,
       }));
+      get().reloadIfLoading();
       return { ok: true };
     } catch (error) {
       set({ saving: false });
       return { ok: false, error: toError(error, '알림 조건을 해제하지 못했습니다.') };
+    }
+  },
+
+  // 변경 전에 보낸 조회가 아직 진행 중이면 그 응답은 버리고 서버 목록을 새로 받는다
+  reloadIfLoading: () => {
+    if (get().listStatus === 'loading') {
+      get().loadSubscriptions();
     }
   },
 }));
