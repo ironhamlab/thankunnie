@@ -160,6 +160,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 
 - 요청 파라미터는 C-01과 같다(`startDate`·`endDate`·`regionCode`·`categoryId`·`treatmentType`·`timeOfDay`·`closingWithinHours`·`priceTier`·`keyword`·지도 범위). `shopId`·`sort`·`page`·`size`는 받지 않는다.
 - 조건에 맞는 빈자리가 1건 이상인 매장만 돌려준다. 순서는 가장 빠른 시작 시각, 매장 ID 순이다.
+- 매장 상세는 일반 시술만, 모델 모집 상세는 모델 시술만 보여주므로 `vacancyCount`·`minSalePrice`·`maxDiscountRate`·`earliestStartsAt`은 카드가 연결되는 쪽 빈자리로 계산한다. 일반 빈자리가 있으면 일반 빈자리, 없으면(`modelOnly=true`) 모델 빈자리다.
 - 한 번에 최대 200개 매장을 돌려주고, 더 있으면 `hasMore=true`다. 지도에는 "확대하면 더 보여요"를 표시한다.
 
 ```json
@@ -179,7 +180,9 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
         "minSalePrice": 18000,
         "maxDiscountRate": 14,
         "earliestStartsAt": "2026-11-06T20:00:00+09:00",
-        "modelOnly": false
+        "modelOnly": false,
+        "modelVacancyCount": 0,
+        "modelMinSalePrice": null
       }
     ],
     "hasMore": false
@@ -199,6 +202,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 | `maxDiscountRate` | 빈자리 중 최대 할인율 | 마커 강조(할인 배지) |
 | `earliestStartsAt` | 가장 빠른 시작 시각 (+09:00) | "오늘 20:00부터" |
 | `modelOnly` | 조건에 맞는 빈자리가 모두 MODEL 시술인지 | true 면 매장 카드·"매장 보기"가 모델 모집 상세(`/shops/{shopId}/models`)로 연결 |
+| `modelVacancyCount`, `modelMinSalePrice` | MODEL 빈자리 수·최저 판매가 (없으면 0·null) | 일반·모델이 섞인 매장의 "모델 모집 빈자리 N개 · 가격~" 링크 |
 
 ## 5. C-03 빈자리 상세
 

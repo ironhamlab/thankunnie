@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { money } from '@/utils/demoData';
 import { earliestLabel, shopPagePath } from '@/utils/exploreVacancy';
 import { datePart } from '@/utils/scheduleDate';
 import ExploreMap from '@/components/map/ExploreMap';
@@ -53,6 +54,19 @@ export default function ShopLocationMap({ shops, status, expandedShopId, onShowS
                 {earliestLabel(selected)}부터 · 빈자리 {selected.vacancyCount}개
               </p>
               <small>{selected.address}</small>
+              {/* 일반·모델이 섞인 매장은 매장 보기가 일반 시술로 가므로 모델 빈자리는 따로 연결한다 */}
+              {!model && !selected.modelOnly && selected.modelVacancyCount > 0 && (
+                <Link
+                  className={styles.modelLink}
+                  to={shopPagePath(selected.shopId, {
+                    date: datePart(selected.earliestStartsAt),
+                    model: true,
+                  })}
+                >
+                  ✦ 모델 모집 빈자리 {selected.modelVacancyCount}개 ·{' '}
+                  {money(selected.modelMinSalePrice)}~ ›
+                </Link>
+              )}
             </div>
             <div className={styles.actions}>
               <Button

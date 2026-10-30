@@ -157,8 +157,17 @@ public class ExploreVacancyService {
         return items.values().stream();
     }
 
+    // 매장 상세는 일반 시술만, 모델 모집 상세는 모델 시술만 보여준다. 카드 값이 연결되는 상세와 맞도록
+    // 일반 빈자리가 있으면 일반 빈자리로, 없으면 모델 빈자리로 요약하고, 섞인 매장의 모델 빈자리는 따로 담는다
     private static ExploreShopResponse toShop(List<Item> items) {
         ExploreVacancyCandidate shop = items.get(0).candidate();
+        List<Item> modelItems = items.stream()
+                .filter(item -> item.candidate().treatmentType() == TreatmentType.MODEL)
+                .toList();
+        boolean modelOnly = modelItems.size() == items.size();
+        List<Item> linked = modelOnly
+                ? items
+                : items.stream().filter(item -> item.candidate().treatmentType() != TreatmentType.MODEL).toList();
         return new ExploreShopResponse(
                 shop.shopId(),
                 shop.shopName(),
@@ -167,11 +176,17 @@ public class ExploreVacancyService {
                 shop.latitude(),
                 shop.longitude(),
                 shop.shopImageUrl(),
-                items.size(),
-                items.stream().mapToInt(item -> item.quote().salePrice()).min().orElseThrow(),
-                items.stream().mapToInt(item -> item.quote().discountRate()).max().orElseThrow(),
-                TimeUtils.toOffset(items.stream().map(Item::startsAt).min(LocalDateTime::compareTo).orElseThrow()),
-                items.stream().allMatch(item -> item.candidate().treatmentType() == TreatmentType.MODEL));
+                linked.size(),
+                minSalePrice(linked),
+                linked.stream().mapToInt(item -> item.quote().discountRate()).max().orElseThrow(),
+                TimeUtils.toOffset(linked.stream().map(Item::startsAt).min(LocalDateTime::compareTo).orElseThrow()),
+                modelOnly,
+                modelItems.size(),
+                modelItems.isEmpty() ? null : minSalePrice(modelItems));
+    }
+
+    private static int minSalePrice(List<Item> items) {
+        return items.stream().mapToInt(item -> item.quote().salePrice()).min().orElseThrow();
     }
 
     private static PriceQuote quote(ExploreVacancyCandidate candidate, LocalDateTime startsAt, LocalDateTime now) {

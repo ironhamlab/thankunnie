@@ -167,9 +167,27 @@ class ExploreVacancyServiceTest {
                 request().treatmentType(TreatmentType.MODEL).build().filter()).shops();
         assertThat(modelShops).extracting(ExploreShopResponse::shopId).containsExactly(1L);
         assertThat(modelShops.get(0).modelOnly()).isTrue();
+        assertThat(modelShops.get(0).modelVacancyCount()).isEqualTo(4);
         // 매장 1 은 일반·모델이 섞여 있고, 매장 2 는 일반 시술만 있다
         assertThat(exploreVacancyService.searchShops(request().build().filter()).shops())
                 .extracting(ExploreShopResponse::modelOnly).containsExactly(false, false);
+    }
+
+    @Test
+    @DisplayName("일반·모델이 섞인 매장 요약은 매장 상세에 보이는 일반 빈자리로 계산하고 모델 빈자리는 따로 담는다")
+    void searchShops_mixedShop_summarizesNormalAndModelSeparately() {
+        // 젤네일(일반) 30,000원·14% 3건, 손 케어(모델) 18,000원·10% 4건
+        jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건',"
+                + " PHOTO_NOTICE = '안내' WHERE TREATMENT_ID = 2");
+
+        ExploreShopResponse shop = exploreVacancyService.searchShops(request().build().filter()).shops().get(0);
+
+        assertThat(shop.modelOnly()).isFalse();
+        assertThat(shop.vacancyCount()).isEqualTo(3);
+        assertThat(shop.minSalePrice()).isEqualTo(30000);
+        assertThat(shop.maxDiscountRate()).isEqualTo(14);
+        assertThat(shop.modelVacancyCount()).isEqualTo(4);
+        assertThat(shop.modelMinSalePrice()).isEqualTo(18000);
     }
 
     @Test

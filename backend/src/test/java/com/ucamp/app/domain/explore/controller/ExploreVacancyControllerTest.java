@@ -151,7 +151,7 @@ class ExploreVacancyControllerTest {
     void getShops_anonymous_returnsShops() throws Exception {
         ExploreShopResponse shop = new ExploreShopResponse(1L, "언니네 네일", "11680", "서울특별시 강남구 테헤란로 1",
                 new BigDecimal("37.4979"), new BigDecimal("127.0276"), null, 7, 18000, 14,
-                OffsetDateTime.of(2026, 11, 6, 20, 0, 0, 0, ZoneOffset.ofHours(9)), true);
+                OffsetDateTime.of(2026, 11, 6, 20, 0, 0, 0, ZoneOffset.ofHours(9)), true, 7, 18000);
         given(exploreVacancyService.searchShops(any())).willReturn(new ExploreShopMapResponse(List.of(shop), false));
 
         mockMvc.perform(get(SHOPS_URL).param("minLat", "37.48").param("maxLat", "37.52")
