@@ -3,6 +3,7 @@ package com.ucamp.app.domain.reservation.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.inOrder;
@@ -313,6 +314,129 @@ class ReservationServiceTest {
     }
 
     @Test
+    @DisplayName("다른 시간의 본인 점유가 있는데 교체를 요청하지 않으면 RESERVATION_HOLD_EXISTS 예외가 발생하고 기존 점유는 그대로다")
+    void createReservation_otherHoldWithoutReplace_throwsHoldExists() {
+        givenTreatment(TreatmentStatus.ACTIVE);
+        Reservation hold = userReservation(NOW.plusMinutes(5));
+        givenHolds(hold);
+
+        assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11))),
+                ErrorCode.RESERVATION_HOLD_EXISTS);
+        assertThat(hold.getStatus()).isEqualTo(ReservationStatus.HOLD);
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("같은 시술·같은 시각을 다시 누르면 교체 여부와 관계없이 기존 점유를 만료 시각 그대로 돌려준다")
+    void createReservation_sameSlot_returnsExistingHold() {
+        givenTreatment(TreatmentStatus.ACTIVE);
+        Reservation hold = Reservation.builder()
+                .userId(CUSTOMER.userId())
+                .treatmentId(TREATMENT_ID)
+                .startsAt(NOW.plusHours(11))
+                .endsAt(NOW.plusHours(12))
+                .appliedPrice(30_000)
+                .deposit(20_000)
+                .holdExpiresAt(NOW.plusMinutes(2))
+                .build();
+        givenHolds(hold);
+
+        ReservationCreateResponse response = reservationService.createReservation(
+                CUSTOMER, request(NOW.plusHours(11)));
+
+        assertThat(response.holdExpiresAt())
+                .isEqualTo(NOW.plusMinutes(2).atZone(BookingPolicy.ZONE).toOffsetDateTime());
+        assertThat(hold.getStatus()).isEqualTo(ReservationStatus.HOLD);
+        verify(availabilityService, never()).validateAvailable(any(), any(), anyInt());
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("교체를 요청하면 기존 점유를 EXPIRED 로 바꾸고 반영한 뒤 가용 시간을 검사해 새 점유를 만든다")
+    void createReservation_replaceHold_releasesThenCreates() {
+        givenTreatment(TreatmentStatus.ACTIVE);
+        Reservation hold = userReservation(NOW.plusMinutes(5));
+        ReflectionTestUtils.setField(hold, "id", RESERVATION_ID);
+        givenHolds(hold);
+        given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        ReservationCreateResponse response = reservationService.createReservation(
+                CUSTOMER, replaceRequest(NOW.plusHours(11), RESERVATION_ID));
+
+        assertThat(hold.getStatus()).isEqualTo(ReservationStatus.EXPIRED);
+        assertThat(hold.getHoldExpiresAt()).isEqualTo(NOW);
+        assertThat(response.status()).isEqualTo(ReservationStatus.HOLD);
+        InOrder inOrder = inOrder(userLock, reservationRepository, availabilityService);
+        inOrder.verify(userLock).lock(CUSTOMER.userId());
+        inOrder.verify(reservationRepository).findByUserIdAndStatusForUpdate(CUSTOMER.userId(), ReservationStatus.HOLD);
+        inOrder.verify(reservationRepository).flush();
+        inOrder.verify(availabilityService).validateAvailable(SHOP_ID, NOW.plusHours(11), 60);
+        inOrder.verify(reservationRepository).save(any(Reservation.class));
+    }
+
+    @Test
+    @DisplayName("확인창에서 본 점유와 지금 점유가 다르면 풀지 않고 RESERVATION_HOLD_EXISTS 예외가 발생한다")
+    void createReservation_replaceOtherHold_throwsHoldExists() {
+        givenTreatment(TreatmentStatus.ACTIVE);
+        Reservation hold = userReservation(NOW.plusMinutes(5));
+        ReflectionTestUtils.setField(hold, "id", RESERVATION_ID);
+        givenHolds(hold);
+
+        assertErrorCode(() -> reservationService.createReservation(
+                CUSTOMER, replaceRequest(NOW.plusHours(11), RESERVATION_ID + 1)), ErrorCode.RESERVATION_HOLD_EXISTS);
+        assertThat(hold.getStatus()).isEqualTo(ReservationStatus.HOLD);
+        verify(reservationRepository, never()).flush();
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("만료 시각이 지난 HOLD 는 점유로 보지 않아 교체 없이 새 점유를 만든다")
+    void createReservation_staleHold_ignored() {
+        givenTreatment(TreatmentStatus.ACTIVE);
+        Reservation stale = userReservation(NOW);
+        givenHolds(stale);
+        given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11)));
+
+        assertThat(stale.getStatus()).isEqualTo(ReservationStatus.HOLD);
+        verify(reservationRepository, never()).flush();
+    }
+
+    @Test
+    @DisplayName("본인 점유를 풀면 예약 행을 잠가 조회한 뒤 EXPIRED 로 바꾸고 만료 시각을 지금으로 당긴다")
+    void releaseHold_validHold_expires() {
+        Reservation hold = userReservation(NOW.plusMinutes(5));
+        given(reservationRepository.findByIdForUpdate(RESERVATION_ID)).willReturn(Optional.of(hold));
+
+        reservationService.releaseHold(CUSTOMER, RESERVATION_ID);
+
+        assertThat(hold.getStatus()).isEqualTo(ReservationStatus.EXPIRED);
+        assertThat(hold.getHoldExpiresAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    @DisplayName("없는 예약이나 다른 고객의 예약을 풀면 RESERVATION_NOT_FOUND 예외가 발생한다")
+    void releaseHold_missingOrOthers_throwsNotFound() {
+        given(reservationRepository.findByIdForUpdate(RESERVATION_ID))
+                .willReturn(Optional.empty())
+                .willReturn(Optional.of(userReservation(NOW.plusMinutes(5))));
+
+        assertErrorCode(() -> reservationService.releaseHold(CUSTOMER, RESERVATION_ID),
+                ErrorCode.RESERVATION_NOT_FOUND);
+        assertErrorCode(() -> reservationService.releaseHold(TestUser.CUSTOMER_2.toAuthUser(), RESERVATION_ID),
+                ErrorCode.RESERVATION_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("고객이 아니면 점유를 풀 수 없다")
+    void releaseHold_owner_throwsForbidden() {
+        assertErrorCode(() -> reservationService.releaseHold(TestUser.OWNER_1.toAuthUser(), RESERVATION_ID),
+                ErrorCode.FORBIDDEN);
+        verify(reservationRepository, never()).findByIdForUpdate(any());
+    }
+
+    @Test
     @DisplayName("점유 만료 정리는 현재 시각으로 만료된 HOLD 를 일괄 갱신하고 건수를 반환한다")
     void expireHolds_expiresWithNow() {
         given(reservationRepository.expireHolds(NOW)).willReturn(3);
@@ -347,8 +471,18 @@ class ReservationServiceTest {
                 .build();
     }
 
+    private void givenHolds(Reservation... holds) {
+        given(reservationRepository.findByUserIdAndStatusForUpdate(CUSTOMER.userId(), ReservationStatus.HOLD))
+                .willReturn(List.of(holds));
+    }
+
     private static ReservationCreateRequest request(LocalDateTime startsAt) {
         return new ReservationCreateRequest(TREATMENT_ID, startsAt.atZone(BookingPolicy.ZONE).toOffsetDateTime());
+    }
+
+    private static ReservationCreateRequest replaceRequest(LocalDateTime startsAt, Long replaceReservationId) {
+        return new ReservationCreateRequest(TREATMENT_ID, startsAt.atZone(BookingPolicy.ZONE).toOffsetDateTime(),
+                replaceReservationId);
     }
 
     private static void assertErrorCode(Runnable action, ErrorCode errorCode) {

@@ -12,6 +12,8 @@
 | POST | `/api/v1/reservations` | 예약 생성(점유) | 고객 | 201 |
 | GET | `/api/v1/my/reservations` | 내 예약 목록 | 고객 | 200 |
 | GET | `/api/v1/my/reservations/{reservationId}` | 내 예약 상세 | 고객 | 200 |
+| GET | `/api/v1/my/reservations/current-hold` | 내 현재 점유 | 고객 | 200 |
+| POST | `/api/v1/my/reservations/{reservationId}/release` | 내 점유 풀기 | 고객 | 204 |
 | GET | `/api/v1/owner/reservations` | 본인 매장 예약 목록 | 사장님 | 200 |
 | GET | `/api/v1/owner/reservations/{reservationId}` | 본인 매장 예약 상세 | 사장님 | 200 |
 
@@ -125,7 +127,7 @@
 | CANCELLED | 취소 완료 |
 | EXPIRED | 점유 만료. 5분 안에 결제하지 않았거나, 결제 화면을 떠나 점유를 풀었음 |
 
-## 점유 풀기·교체 규칙 (설계 확정, 미구현)
+## 점유 풀기·교체 규칙 (UNNIE-138 구현)
 
 결제 화면을 떠난 고객이 시간을 계속 잡고 있지 않도록, 그리고 한 고객이 여러 시간을 잡지 않도록 정한 규칙이다.
 
@@ -139,7 +141,7 @@
 | R6 | 고객 한 명은 점유를 1개만 가진다. 점유가 있는데 다른 시간을 누르면 확인창 후 교체한다. 같은 시술·같은 시간을 누르면 기존 점유를 그대로 돌려준다(만료 시각 유지). 교체에 실패하면 기존 점유가 남는다 |
 | R7 | 결제 화면은 탭이 다시 보일 때와 결제 직전에 예약 상태를 다시 조회한다. 다른 탭에서 풀렸거나 교체됐으면 만료 안내를 보여준다 |
 
-### 점유 풀기 `POST /api/v1/my/reservations/{reservationId}/release` (예정)
+### 점유 풀기 `POST /api/v1/my/reservations/{reservationId}/release`
 
 - 고객 본인의 예약만. 다른 사람의 예약·없는 예약은 `RESERVATION_001`(404).
 - 예약 행을 잠근 뒤 상태를 다시 확인한다 (결제 확정과 동시에 와도 한쪽만 반영).
@@ -150,23 +152,39 @@
 - 프론트는 실패해도 이동은 막지 않는다. 남은 점유는 5분 뒤 만료된다.
 - 알림 영향 없음: 빈자리 재공개(REOPENED) 알림은 CANCELLED만 대상이다. 풀린 시간은 임박·초임박 알림 스캔에서 빈자리로 다시 잡힌다.
 
-### 예약 생성의 점유 교체 (R6, 예정)
+### 예약 생성의 점유 교체 (R6)
 
-요청에 `replaceHold`(선택, 기본 false)를 추가한다.
+요청에 `replaceReservationId`(선택)를 추가한다. 고객이 확인창에서 보고 풀기로 한 기존 점유 예약 ID다.
 
-1. 회원 잠금(`UserLock`) 뒤 이 고객의 유효한 HOLD를 찾는다.
+```json
+{
+  "treatmentId": 1,
+  "startsAt": "2026-10-31T16:00:00+09:00",
+  "replaceReservationId": 1002
+}
+```
+
+1. 회원 잠금(`UserLock`) 뒤 이 고객의 유효한 HOLD(만료 전)를 행 잠금으로 찾는다.
 2. 없으면 지금과 같이 만든다.
-3. 있고 같은 시술·같은 시작 시각이면 `replaceHold`와 관계없이 기존 점유를 그대로 돌려준다.
+3. 있고 같은 시술·같은 시작 시각이면 `replaceReservationId`와 관계없이 기존 점유를 그대로 돌려준다.
    만료 시각을 늘리지 않아 반복 클릭으로 무한 점유할 수 없다.
-4. 있고 다른 시술·시각이며 `replaceHold`가 false면 `RESERVATION_006`(409).
+4. 있고 다른 시술·시각이며 `replaceReservationId`가 없거나 지금 점유의 ID와 다르면 `RESERVATION_006`(409).
+   확인창을 띄운 뒤 다른 탭에서 점유가 바뀌었으면 사용자가 본 것과 다른 점유를 풀지 않고 다시 묻게 한다.
    오류 응답은 공통 형식(코드·메시지)만 담는다.
-5. 있고 다른 시술·시각이며 `replaceHold`가 true면 기존 점유 행을 잠그고 HOLD인지 다시 확인한 뒤 EXPIRED로 바꾸고,
+5. 있고 다른 시술·시각이며 `replaceReservationId`가 지금 점유의 ID와 같으면 기존 점유를 EXPIRED로 바꾸고,
    가용 시간을 검사해 새 점유를 만든다.
 6. 5는 한 트랜잭션이다. 새 시간이 이미 차 있어 실패하면 전체가 롤백되어 기존 점유가 남는다.
 
-매장 상세 화면은 `RESERVATION_006`을 받으면 내 예약 목록(`GET /api/v1/my/reservations?status=HOLD`)으로 기존 점유를 찾아
+### 현재 점유 조회 `GET /api/v1/my/reservations/current-hold`
+
+- 고객이 지금 잡고 있는 결제 대기 예약(HOLD, 만료 시각 전)의 상세를 돌려준다. 응답 모양은 내 예약 상세와 같다.
+- 없으면 200이고 `data`가 null이다.
+- 1인 1점유 검사와 같은 기준이라, 만료 정리(60초 주기) 전인 HOLD는 보여주지 않는다.
+
+매장 상세 화면은 `RESERVATION_006`을 받으면 현재 점유 조회로 기존 점유를 찾아
 "결제 대기 중인 예약(매장·시각)이 있어요. 이 시간으로 바꿀까요?" 확인창을 띄운다.
-[이 시간으로 바꾸기] → `replaceHold=true`로 재요청, [기존 예약 결제하기] → 기존 예약의 `/checkout?reservationId=`로 이동.
+[이 시간으로 바꾸기] → 그 예약 ID를 `replaceReservationId`로 재요청, [기존 예약 결제하기] → 기존 예약의 `/checkout?reservationId=`로 이동.
+조회에 실패하면 바꾸지 않고 오류를 보여준다. 점유가 없으면(그 사이 만료) 바꾸기 없이 한 번 다시 보낸다.
 
 ### 이동 감지 방식 (프론트)
 
@@ -281,6 +299,10 @@ export default function App() {
 | VACANCY_006 | 409 | 매장의 다른 예약과 시간이 겹침 |
 | VACANCY_013 | 409 | 영업하지 않는 시간이거나 닫힌 시간 |
 | VACANCY_016 | 409 | 본인의 다른 예약과 시간이 겹침 |
+| RESERVATION_006 | 409 | 다른 시간의 결제 대기 예약이 있는데 그 예약 ID를 `replaceReservationId`로 보내지 않고 생성 |
+| RESERVATION_001 | 404 | 없는 예약 또는 다른 고객의 예약 (점유 풀기) |
+| RESERVATION_002 | 409 | 이미 확정된 예약 (점유 풀기·교체) |
+| RESERVATION_004 | 409 | 취소 처리 중·취소 완료 예약 (점유 풀기·교체) |
 
 결제 확정 단계의 오류(RESERVATION_001~005, VACANCY_002)는 결제 확인 API에서 발생한다.
 
