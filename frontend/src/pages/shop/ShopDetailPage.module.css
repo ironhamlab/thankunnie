@@ -356,6 +356,97 @@
   color: var(--color-primary);
   text-align: right;
 }
+.alertDialog,
+.alertDialogForm {
+  border: 0;
+  border-top: 4px solid var(--color-primary);
+  box-shadow: 0 24px 60px #b7005226;
+  transition: width 320ms ease;
+}
+.alertDialog {
+  width: min(440px, calc(100vw - 32px));
+}
+.alertDialogForm {
+  width: min(520px, calc(100vw - 32px));
+}
+.alertDialog :global(.b-pad),
+.alertDialogForm :global(.b-pad) {
+  padding: 22px 22px 18px;
+  background: var(--color-white);
+}
+.alertDialog :global(.b-panel-heading),
+.alertDialogForm :global(.b-panel-heading) {
+  justify-content: center;
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.alertDialogForm :global(.b-pad) {
+  position: relative;
+}
+.alertDialogForm :global(.b-panel-heading) :global(.b-button) {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+}
+.alertDialog h2,
+.alertDialogForm h2 {
+  font-size: 17px;
+  line-height: 1.45;
+  text-align: center;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+.alertDialogForm h2 {
+  padding-inline: 36px;
+}
+.alertShop {
+  margin: 4px 0 0;
+  text-align: center;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.formError {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-danger);
+}
+.doneCopy {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  word-break: keep-all;
+}
+.doneActions {
+  margin-top: 16px;
+}
+.doneActions :global(.b-button) {
+  width: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .alertDialog,
+  .alertDialogForm {
+    transition: none;
+  }
+}
+.confirmActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 16px;
+}
+.confirmActions :global(.b-button) {
+  width: 100%;
+}
+.confirmYes {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
+}
 /* 고른 시각 이후 소요 시간 동안 이어지는 칸. 시작으로 고를 수 없는 칸이어도 같은 색으로 보인다 */
 .slots button.inRange,
 .slots button.inRange:disabled {

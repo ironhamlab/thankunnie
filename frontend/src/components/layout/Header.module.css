@@ -113,7 +113,8 @@
   width: 21px;
   height: 21px;
 }
-.notificationButton > b {
+/* 읽지 않은 개수·탭 개수 등 작은 숫자 뱃지 */
+.count {
   position: absolute;
   top: -1px;
   right: -2px;
@@ -122,6 +123,7 @@
   border-radius: var(--radius-xl);
   font-size: 10px;
   min-width: 17px;
+  text-align: center;
 }
 .notifications {
   position: absolute;

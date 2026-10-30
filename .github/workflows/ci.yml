@@ -37,6 +37,8 @@ jobs:
               - 'backend/**'
               - 'docs/erd/**'
               - '.github/workflows/ci.yml'
+              - '.github/scripts/jacoco_summary.py'
+
             frontend:
               - 'frontend/**'
               - '.github/workflows/ci.yml'

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   EXAMPLE_CATEGORIES,
   EXAMPLE_SUBSCRIPTIONS,
@@ -17,6 +17,9 @@ import ClockIcon from '@/components/icons/ClockIcon';
 import InfoIcon from '@/components/icons/InfoIcon';
 import SubscriptionEditDialog from './SubscriptionEditDialog';
 import styles from './SubscriptionList.module.css';
+
+const LEAVE_MS = 320;
+const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const monthDay = (dateTime) => {
   const [, month, day] = datePart(dateTime).split('-');
@@ -43,7 +46,20 @@ export default function SubscriptionList({ embedded = false }) {
   const removeSubscription = useNotificationStore((state) => state.removeSubscription);
   const [examples, setExamples] = useState(EXAMPLE_SUBSCRIPTIONS);
   const [editing, setEditing] = useState(null);
-  const [result, setResult] = useState(null);
+  // 해제 애니메이션 중. 서버에서 먼저 빠져도 카드가 잠깐 남도록 스냅샷을 둔다
+  const [leaving, setLeaving] = useState(null);
+  const [error, setError] = useState(null);
+  const [savedMessage, setSavedMessage] = useState(null);
+  const leaveTimer = useRef(null);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      window.clearTimeout(leaveTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     loadSubscriptions();
@@ -52,7 +68,11 @@ export default function SubscriptionList({ embedded = false }) {
 
   const useExamples =
     listStatus === 'failed' || (listStatus === 'succeeded' && subscriptions.length === 0);
-  const items = useExamples ? examples : subscriptions;
+  const baseItems = useExamples ? examples : subscriptions;
+  const items =
+    leaving && !baseItems.some((item) => item.subscriptionId === leaving.id)
+      ? [...baseItems.slice(0, leaving.index), leaving.item, ...baseItems.slice(leaving.index)]
+      : baseItems;
   const categoryOptions = categories.length ? categories : EXAMPLE_CATEGORIES;
 
   const categoryNameOf = (categoryId) =>
@@ -64,24 +84,63 @@ export default function SubscriptionList({ embedded = false }) {
       ? shopTitleOf(item)
       : `${categoryNameOf(item.categoryId)} · ${regionNameOf(item.regionCode)}`;
 
+  const waitLeave = (ms) =>
+    new Promise((resolve) => {
+      leaveTimer.current = window.setTimeout(resolve, ms);
+    });
+
+  // 해제는 바로 보내고, 카드 사라짐 애니메이션은 그와 따로 맞춘다
   const handleRemove = async (subscriptionId) => {
-    if (useExamples) {
-      setExamples((prev) => prev.filter((item) => item.subscriptionId !== subscriptionId));
-      setResult({ tone: 'success', message: '구독을 해제했습니다.' });
+    if (leaving != null || saving) return;
+    setError(null);
+    setSavedMessage(null);
+
+    const index = items.findIndex((item) => item.subscriptionId === subscriptionId);
+    const item = items[index];
+    if (!item) return;
+
+    const animate = !reduceMotion();
+    if (animate) setLeaving({ id: subscriptionId, item, index });
+
+    const removePromise = useExamples
+      ? Promise.resolve({ ok: true })
+      : removeSubscription(subscriptionId);
+    const [result] = await Promise.all([
+      removePromise,
+      animate ? waitLeave(LEAVE_MS) : Promise.resolve(),
+    ]);
+
+    if (!mounted.current) return;
+
+    if (!result.ok) {
+      window.clearTimeout(leaveTimer.current);
+      setLeaving(null);
+      setError(result.error.message);
       return;
     }
-    const { ok, error } = await removeSubscription(subscriptionId);
-    setResult(
-      ok
-        ? { tone: 'success', message: '구독을 해제했습니다.' }
-        : { tone: 'error', message: error.message },
+
+    if (useExamples) {
+      setExamples((prev) => prev.filter((row) => row.subscriptionId !== subscriptionId));
+    }
+    setLeaving(null);
+  };
+
+  const savedTitleOf = (subscription, request) =>
+    subscription.subscriptionType === 'STORE'
+      ? shopTitleOf({ ...subscription, shopId: request.shopId })
+      : `${categoryNameOf(request.categoryId)} · ${regionNameOf(request.regionCode)}`;
+
+  const handleSaved = (subscription, request) => {
+    setError(null);
+    setSavedMessage(
+      `${savedTitleOf(subscription, request)} · ${formatHope(request.startTime, request.endTime)} 으로 수정했어요`,
     );
   };
 
-  const handleExampleSaved = (subscriptionId, request) => {
+  const handleExampleSaved = (subscription, request) => {
     setExamples((prev) =>
       prev.map((item) => {
-        if (item.subscriptionId !== subscriptionId) return item;
+        if (item.subscriptionId !== subscription.subscriptionId) return item;
         return {
           ...item,
           shopId: request.shopId,
@@ -96,7 +155,7 @@ export default function SubscriptionList({ embedded = false }) {
         };
       }),
     );
-    setResult({ tone: 'success', message: '알림 조건을 수정했습니다.' });
+    handleSaved(subscription, request);
   };
 
   return (
@@ -114,9 +173,22 @@ export default function SubscriptionList({ embedded = false }) {
         </Notice>
       )}
 
-      {result && (
-        <Alert as="p" tone={result.tone} role="status">
-          {result.message}
+      {savedMessage && (
+        <Alert className={styles.result} tone="success" role="status">
+          <span className={styles.resultText}>{savedMessage}</span>
+          <button
+            type="button"
+            className={styles.resultClose}
+            aria-label="닫기"
+            onClick={() => setSavedMessage(null)}
+          >
+            ✕
+          </button>
+        </Alert>
+      )}
+      {error && (
+        <Alert className={styles.error} tone="error" role="alert">
+          {error}
         </Alert>
       )}
       {listStatus === 'loading' && <p role="status">알림 구독을 불러오는 중입니다.</p>}
@@ -131,7 +203,12 @@ export default function SubscriptionList({ embedded = false }) {
         {items.map((item) => {
           const isStore = item.subscriptionType === 'STORE';
           return (
-            <Panel as="article" padded className={styles.card} key={item.subscriptionId}>
+            <Panel
+              as="article"
+              padded
+              className={leaving?.id === item.subscriptionId ? styles.cardLeaving : styles.card}
+              key={item.subscriptionId}
+            >
               <div className={styles.head}>
                 <Badge className={isStore ? styles.storeBadge : styles.categoryBadge}>
                   {isStore ? '업장' : '카테고리·지역'}
@@ -148,7 +225,7 @@ export default function SubscriptionList({ embedded = false }) {
                   type="button"
                   size="small"
                   className={styles.editButton}
-                  disabled={saving}
+                  disabled={saving || leaving != null}
                   onClick={() => setEditing(item)}
                 >
                   조건 수정
@@ -157,7 +234,7 @@ export default function SubscriptionList({ embedded = false }) {
                   type="button"
                   variant="primary"
                   size="small"
-                  disabled={saving}
+                  disabled={saving || leaving != null}
                   onClick={() => handleRemove(item.subscriptionId)}
                 >
                   구독 해제
@@ -182,8 +259,8 @@ export default function SubscriptionList({ embedded = false }) {
           onClose={() => setEditing(null)}
           onSaved={
             useExamples
-              ? (request) => handleExampleSaved(editing.subscriptionId, request)
-              : () => setResult({ tone: 'success', message: '알림 조건을 수정했습니다.' })
+              ? (request) => handleExampleSaved(editing, request)
+              : (request) => handleSaved(editing, request)
           }
           localOnly={useExamples}
         />

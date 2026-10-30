@@ -155,7 +155,7 @@ export default function Header() {
                 onClick={() => setOpen(!open)}
               >
                 <NotificationIcon />
-                {unreadCount > 0 && <b>{unreadCount}</b>}
+                {unreadCount > 0 && <b className={styles.count}>{unreadCount}</b>}
               </button>
               {open && (
                 <section

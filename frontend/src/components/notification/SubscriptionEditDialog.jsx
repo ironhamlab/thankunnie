@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { shopTitleOf } from '@/constants/notificationExamples';
 import { REGION_GROUPS } from '@/constants/regions';
 import { useNotificationStore } from '@/store/useNotificationStore';
@@ -9,7 +9,9 @@ import Dialog from '@/components/common/Dialog';
 import styles from './SubscriptionList.module.css';
 
 const HOPE_DAYS = 30;
+const CLOSE_MS = 280;
 const toStamp = (date, time) => `${date}T${time}`;
+const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
  * 구독 조건 수정. 구독 유형은 그대로 둔다.
@@ -38,6 +40,20 @@ export default function SubscriptionEditDialog({
     endTime: timePart(subscription.endTime),
   });
   const [error, setError] = useState('');
+  const [closing, setClosing] = useState(false);
+  const closeTimer = useRef(null);
+
+  useEffect(() => () => window.clearTimeout(closeTimer.current), []);
+
+  const requestClose = () => {
+    if (closing) return;
+    if (reduceMotion()) {
+      onClose();
+      return;
+    }
+    setClosing(true);
+    closeTimer.current = window.setTimeout(onClose, CLOSE_MS);
+  };
 
   const change = (field) => (event) => setForm((prev) => ({ ...prev, [field]: event.target.value }));
   const startDateEmpty = !form.startDate;
@@ -70,7 +86,7 @@ export default function SubscriptionEditDialog({
     };
     if (localOnly) {
       onSaved?.(request);
-      onClose();
+      requestClose();
       return;
     }
     const { ok, error: saveError } = await updateSubscription(subscription.subscriptionId, request);
@@ -79,11 +95,15 @@ export default function SubscriptionEditDialog({
       return;
     }
     onSaved?.(request);
-    onClose();
+    requestClose();
   };
 
   return (
-    <Dialog title="조건 수정" onClose={onClose}>
+    <Dialog
+      className={closing ? styles.editDialogClosing : styles.editDialog}
+      title="조건 수정"
+      onClose={requestClose}
+    >
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         <p className={styles.lead}>
           {isStore
