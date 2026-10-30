@@ -8,6 +8,7 @@ import { addDays, todayKst, toKstDateTime } from '@/utils/scheduleDate';
 import { formatDayLabel } from '@/utils/scheduleSlots';
 import { formOf, minStartOf, newForm } from '@/utils/scheduleForm';
 import AvailableTimesPanel from '@/pages/owner/components/AvailableTimesPanel';
+import DayReservationsPanel from '@/pages/owner/components/DayReservationsPanel';
 import { EXCEPTION_TYPES } from '@/constants/scheduleException';
 import ScheduleExceptionForm from '@/pages/owner/components/ScheduleExceptionForm';
 import ScheduleExceptionList from '@/pages/owner/components/ScheduleExceptionList';
@@ -163,6 +164,7 @@ export default function VacancyManagePage() {
               maxDate={lastDate}
               onDateChange={(date) => update({ date })}
             />
+            <DayReservationsPanel date={form.date} />
             {form.exceptionType === 'OPEN' && (
               <VacancyPreviewPanel
                 treatments={treatments}

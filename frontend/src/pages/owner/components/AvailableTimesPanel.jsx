@@ -55,7 +55,8 @@ export default function AvailableTimesPanel({ date, minDate, maxDate, onDateChan
             min={minDate}
             max={maxDate}
             value={date}
-            onChange={(event) => onDateChange(event.target.value)}
+            // 입력을 지우면 빈 값이 온다. 날짜 없는 조회가 나가지 않게 무시한다
+            onChange={(event) => event.target.value && onDateChange(event.target.value)}
           />
         </label>
       </div>
