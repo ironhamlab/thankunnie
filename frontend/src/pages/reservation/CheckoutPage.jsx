@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { generatePath, Link, useBlocker, useSearchParams } from 'react-router-dom';
+import { generatePath, Link, useBlocker, useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { money } from '@/utils/demoData';
 import { datePart, timePart } from '@/utils/scheduleDate';
+import { savePendingRequest, takePendingRequest, verifyErrorMessage } from '@/utils/payment';
+import { loadPortOne, requestPay } from '@/utils/portoneLoader';
 import { useReservationStore } from '@/store/useReservationStore';
+import { usePaymentStore } from '@/store/usePaymentStore';
 import Asset from '@/components/common/Asset';
 import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
@@ -77,7 +80,10 @@ export default function CheckoutPage() {
   const loadError = useReservationStore((s) => s.detailError);
   const clockOffset = useReservationStore((s) => s.detailClockOffset);
   const releaseHold = useReservationStore((s) => s.releaseHold);
+  const verifyPayment = usePaymentStore((s) => s.verifyPayment);
+  const navigate = useNavigate();
   const [now, setNow] = useState(Date.now);
+  const [paying, setPaying] = useState(false);
   const [policy, setPolicy] = useState(false);
   const [demo, setDemo] = useState(false);
   const [request, setRequest] = useState('');
@@ -231,22 +237,71 @@ export default function CheckoutPage() {
     holdBarTone = styles.holdBarWarning;
   }
 
-  /* 결제 진행하기 버튼 클릭시 실행하는 함수입니다. 결제 담당은 여기를 채워주세요. */
+  const resultPath = `${ROUTES.BOOKING_RESULT}?reservationId=${reservationId}`;
+
+  /**
+   * 결제창(포트원 V1, KG이니시스)을 열고, 결제가 끝나면 서버에 결제 확인을 요청해 예약을 확정한다.
+   * 금액·결제 성공 여부는 서버가 포트원에 다시 조회해 판단하므로 결제창 응답은 결제 고유번호만 쓴다.
+   */
   const handlePay = async () => {
     setError('');
     if (!policy || !demo) {
       setError('필수 약관과 모의 결제 확인에 동의해 주세요.');
       return;
     }
-    // 다른 탭에서 풀린 예약에 결제하지 않도록 결제 직전에 서버 상태를 다시 받는다 (R7).
-    // 점유가 아니면 화면이 만료 안내로 바뀐다
-    await loadReservation('my', reservationId);
-    if (useReservationStore.getState().detail?.summary?.status !== 'HOLD') {
-      return;
+    setPaying(true);
+    // 결제 중 이동(결제 완료 화면, 모바일 결제창 페이지 이동)은 막지도 풀지도 않는다 (R5)
+    payingRef.current = true;
+    let moved = false;
+    try {
+      // 다른 탭에서 풀린 예약에 결제하지 않도록 결제 직전에 서버 상태를 다시 받는다 (R7).
+      // 점유가 아니면 화면이 만료 안내로 바뀐다
+      await loadReservation('my', reservationId);
+      const current = useReservationStore.getState().detail;
+      if (current?.summary?.status !== 'HOLD') {
+        return;
+      }
+      const IMP = await loadPortOne();
+      const { summary: hold } = current;
+      savePendingRequest(reservationId, request);
+      const rsp = await requestPay(IMP, {
+        pg: 'html5_inicis',
+        pay_method: 'card',
+        // 서버가 앞부분(reservation-{예약 ID}-)으로 결제와 예약의 짝을 확인한다
+        merchant_uid: `reservation-${reservationId}-${Date.now()}`,
+        name: `${hold.shopName} ${hold.treatmentName} 예약금`,
+        amount: hold.deposit,
+        buyer_name: hold.customerName,
+        buyer_tel: current.customerPhone ?? '',
+        // 모바일은 결제창이 페이지를 옮기므로 결과 화면에서 결제 확인을 이어서 한다
+        m_redirect_url: `${window.location.origin}${resultPath}`,
+      });
+      if (!rsp.success) {
+        takePendingRequest(reservationId);
+        setError(
+          rsp.error_msg
+            ? `결제가 완료되지 않았습니다. (${rsp.error_msg})`
+            : '결제가 완료되지 않았습니다.',
+        );
+        return;
+      }
+      await verifyPayment({
+        impUid: rsp.imp_uid,
+        reservationId: Number(reservationId),
+        customerRequest: takePendingRequest(reservationId),
+      });
+      moved = true;
+      navigate(resultPath, { replace: true });
+    } catch (err) {
+      setError(err.code ? verifyErrorMessage(err) : err.message);
+      // 자동 취소·만료처럼 예약 상태가 바뀌었을 수 있으므로 화면을 서버 상태에 맞춘다
+      loadReservation('my', reservationId);
+    } finally {
+      if (!moved) {
+        payingRef.current = false;
+        setPaying(false);
+      }
     }
-    // 결제 요청(아임포트)과 결제 확인(POST /api/v1/payments/verify)은 결제 담당 작업에서 연결한다.
-    // 요청사항은 결제 확인 요청에 customerRequest 로 함께 보낸다 (docs/api/reservations.md)
-    setError('결제 연결은 준비 중입니다.');
   };
 
   return (
@@ -391,8 +446,8 @@ export default function CheckoutPage() {
                 시간 다시 선택하기
               </Button>
             ) : (
-              <Button variant="primary" wide onClick={handlePay}>
-                {money(summary.deposit)} 결제 진행하기
+              <Button variant="primary" wide disabled={paying} onClick={handlePay}>
+                {paying ? '결제 진행 중...' : `${money(summary.deposit)} 결제 진행하기`}
               </Button>
             )}
             <p className="b-help">결제하지 않으면 잡아 둔 시간은 5분 뒤 자동으로 풀립니다.</p>
