@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useShopDetailStore } from '@/store/useShopDetailStore';
 import { addDays, todayKst } from '@/utils/scheduleDate';
@@ -26,13 +26,25 @@ const businessDay = (date) => BUSINESS_DAYS[new Date(`${date}T00:00:00Z`).getUTC
  * 매장 상세. 매장 이름 아래 메뉴에서 상세정보 또는 예약하기를 고르면 그 내용만 보여준다.
  * 예약은 1단계 시술 선택 → 2단계 날짜·30분 단위 시간 선택 순서로 진행한다.
  * 선택값(view, treatmentId, step, date, time)은 화면 상태로만 두며, 주소는 /shops/:shopId 로 유지한다.
+ * 탐색 화면(마감 임박·시간 버튼·매장 카드)에서 ?date=&treatmentId=&startsAt= 로 들어오면 처음 선택값으로만 쓴다.
  */
 export default function ShopDetailPage() {
   const { shopId } = useParams();
-  // 선택값은 주소에 남기지 않고 화면 상태로만 둔다
-  const [selection, setSelection] = useState({ shopId });
+  const [params] = useSearchParams();
+  // 주소로 넘어온 시술·날짜·시간을 처음 선택으로 잡는다. 형식·범위·판매 중 여부는 아래에서 다시 검사한다
+  const initialSelection = () => {
+    const startsAt = params.get('startsAt');
+    const initial = { shopId };
+    if (params.get('treatmentId')) initial.treatmentId = params.get('treatmentId');
+    const date = startsAt ? startsAt.slice(0, 10) : params.get('date');
+    if (date) initial.date = date;
+    if (startsAt) initial.time = startsAt.slice(11, 16);
+    return initial;
+  };
+  // 그 뒤 선택값은 주소에 남기지 않고 화면 상태로만 둔다
+  const [selection, setSelection] = useState(initialSelection);
   // 다른 매장으로 이동하면 이전 매장의 선택은 쓰지 않는다
-  const current = selection.shopId === shopId ? selection : { shopId };
+  const current = selection.shopId === shopId ? selection : initialSelection();
   const selected = (key) => current[key] ?? null;
   const shop = useShopDetailStore((state) => state.shop);
   const status = useShopDetailStore((state) => state.status);
@@ -137,11 +149,7 @@ export default function ShopDetailPage() {
       </nav>
       <div className={`b-columns ${step === 2 ? '' : styles.single}`}>
         <div className={`b-stack ${styles.content}`}>
-          <ShopHeader
-            shop={shop}
-            view={view}
-            onSelect={(key) => updateParams({ view: key })}
-          />
+          <ShopHeader shop={shop} view={view} onSelect={(key) => updateParams({ view: key })} />
           {view === 'info' && <ShopInfoPanel shop={shop} />}
           {view === 'reserve' && (
             <>
