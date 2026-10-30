@@ -419,10 +419,11 @@ export default function CheckoutPage() {
       )}
 
       {blocker.state === 'blocked' && (
-        <Dialog title="결제 화면을 나갈까요?" onClose={() => blocker.reset()}>
+        // 푸는 중에 닫으면 서버는 풀렸는데 결제 화면에 남게 되므로, 나가는 중에는 ✕·Esc 로 닫지 않는다
+        <Dialog title="결제 화면을 나갈까요?" onClose={() => !leaving && blocker.reset()}>
           <p>
-            나가면 잡아 둔 시간이 바로 풀려요. 다른 고객이 먼저 예약하면 같은 시간을 다시 잡지
-            못할 수 있어요.
+            나가면 잡아 둔 시간을 풀어요. 바로 풀리지 않으면 5분 뒤 자동으로 풀려요. 다른 고객이
+            먼저 예약하면 같은 시간을 다시 잡지 못할 수 있어요.
           </p>
           <div className={`b-flex ${styles.dialogActions}`}>
             <Button variant="primary" disabled={leaving} onClick={() => blocker.reset()}>

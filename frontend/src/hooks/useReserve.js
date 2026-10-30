@@ -31,7 +31,16 @@ export default function useReserve() {
       navigate(`${ROUTES.CHECKOUT}?reservationId=${reservation.reservationId}`);
     } catch (err) {
       if (err.code === HOLD_EXISTS && !request.replaceHold) {
-        const hold = await findMyHold();
+        let hold;
+        try {
+          hold = await findMyHold();
+        } catch {
+          // 기존 예약을 확인하지 못했으면 바꾸지 않는다. 사용자가 다시 누르면 처음부터 다시 묻는다
+          setPendingHold(null);
+          setError('결제 대기 중인 예약을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.');
+          setLoading(false);
+          return;
+        }
         // 찾는 사이 기존 예약이 만료됐으면 물을 것이 없으므로 바로 다시 보낸다
         if (!hold) {
           await submit({ ...request, replaceHold: true });
