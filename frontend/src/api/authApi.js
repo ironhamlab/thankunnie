@@ -9,7 +9,7 @@ export const authApi = {
   login: (payload) => axiosInstance.post('/v1/auth/login', payload),
   /** 사장님(매장) 로그인. body: { loginId, password } */
   loginShop: (payload) => axiosInstance.post('/v1/auth/shops/login', payload),
-  /** 고객 가입. body: { loginId, password, name, phone } */
+  /** 고객 가입. body: { loginId, password, name, phone, agreedTerms } (agreedTerms: 동의한 약관 코드 배열) */
   signup: (payload) => axiosInstance.post('/v1/auth/signup', payload),
   /** 사장님(매장) 가입. 계정과 매장 필수 정보를 함께 보낸다 */
   signupShop: (payload) => axiosInstance.post('/v1/auth/shops/signup', payload),

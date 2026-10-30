@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { notificationApi } from '@/api/notificationApi';
 import { shopDetailApi } from '@/api/shopDetailApi';
 import { ERROR_MESSAGES } from '@/constants/errorMessages';
+import { withTermsAgreement } from '@/store/useTermsStore';
 import {
   duplicateCandidate,
   findDuplicateSubscription,
@@ -106,7 +107,8 @@ export const useNotificationStore = create((set, get) => ({
     if (rejected) return { ok: false, error: rejected };
     set({ saving: true });
     try {
-      const created = await notificationApi.createSubscription(request);
+      // 문자 수신 동의가 없으면(TERMS_003) 동의 모달을 띄우고, 동의하면 한 번 다시 등록한다
+      const created = await withTermsAgreement(() => notificationApi.createSubscription(request));
       // 목록을 온전히 받지 못한 상태면 새 구독만으로 성공 처리하지 않고 서버 목록을 다시 받는다
       const listLoaded = get().listStatus === 'succeeded';
       set((state) => ({
@@ -137,7 +139,10 @@ export const useNotificationStore = create((set, get) => ({
     if (rejected) return { ok: false, error: rejected };
     set({ saving: true });
     try {
-      const updated = await notificationApi.updateSubscription(subscriptionId, body);
+      // 찜에 희망 시간을 넣어 알림을 켤 때 문자 수신 동의가 없으면(TERMS_003) 동의 모달을 띄우고, 동의하면 한 번 다시 저장한다
+      const updated = await withTermsAgreement(() =>
+        notificationApi.updateSubscription(subscriptionId, body),
+      );
       set((state) => ({
         subscriptions: state.subscriptions.map((item) =>
           sameSubscriptionId(item.subscriptionId, subscriptionId) ? updated : item,
