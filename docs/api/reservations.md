@@ -197,10 +197,44 @@ export default function App() {
 
 ### 협의 필요
 
-- 결제 담당: R5 결제 진행 중 표시, R7 결제 직전 재확인, 풀린 예약에 결제가 들어온 경우 환불 처리
+- 결제 담당: R5 결제 진행 중 표시, R7 결제 직전 재확인 (프론트 결제 연결 작업). 풀린 예약에 결제가 들어온 경우 환불 처리는 [결제 확인](#결제-확인-예약-확정-unnie-142)에서 자동 취소로 처리
 - 매장 상세 담당: `RESERVATION_006` 확인창
 
-## 요청사항 저장 (예약 쪽 구현 완료, 결제 연결 대기)
+## 결제 확인 → 예약 확정 (UNNIE-142)
+
+`POST /api/v1/payments/verify` (고객 로그인 필요)
+
+결제창(포트원 V1, KG이니시스)이 끝나면 프론트가 결제 고유번호와 예약 ID를 보낸다. 서버는 결제를 확인하고 예약을 확정한다.
+
+```json
+{
+  "impUid": "imp_123456789012",
+  "reservationId": 10,
+  "customerRequest": "손톱은 라운드로 부탁드려요"
+}
+```
+
+- 결제창 주문번호(`merchant_uid`)는 `reservation-{reservationId}-{고유값}` 으로 만든다. 서버는 이 앞부분으로 결제와 예약의 짝을 확인한다.
+- 결제 금액은 예약의 `deposit`(예약금)과 같아야 한다.
+- 처리 순서
+  1. 고객이 아니면 `FORBIDDEN`
+  2. 포트원에서 결제 조회 → 상태가 `paid` 가 아니면 `PAYMENT_006`, 주문번호가 이 예약 것이 아니면 `PAYMENT_007`
+  3. 한 트랜잭션에서 예약 확정(`confirmReservation`, 요청사항 저장 포함)과 예약금결제(PAID) 저장
+  4. 확정할 수 없으면 결제를 **바로 포트원에서 전액 취소**하고 확정 오류를 그대로 돌려준다:
+     `RESERVATION_001`, `RESERVATION_002`(이미 확정), `RESERVATION_003`(점유 만료), `RESERVATION_004`, `RESERVATION_005`(금액 불일치), `VACANCY_002`(결제 마감).
+     요청사항이 1,000자를 넘는 `COMMON_400` 은 고쳐서 같은 결제로 다시 확인할 수 있으므로 취소하지 않는다.
+     자동 취소가 실패하면 서버 로그(`수동 확인 필요`)에 남긴다.
+- 같은 결제를 다시 보내면(새로고침·중복 클릭) 다시 확정하지 않고 같은 결과를 돌려준다. 동시에 두 번 와서 한쪽이 먼저 확정한 경우도 성공으로 본다.
+
+응답 `ApiResponse<PaymentVerifyResponse>`
+
+| 필드 | 설명 |
+|---|---|
+| `reservationId` | 확정된 예약 ID. 결과 화면 이동에 쓴다 |
+| `depositPaymentId` | 저장된 예약금결제 ID |
+| `impUid`, `merchantUid`, `amount`, `status`, `payMethod`, `paidAt` | 포트원 결제 정보 (`paidAt` 은 +09:00) |
+
+## 요청사항 저장 (UNNIE-142에서 결제 연결 완료)
 
 원장님께 남길 요청사항은 예약 화면(`/reserve`)이 아니라 결제 화면(`/checkout`)에서 입력받는다.
 예약을 만든 뒤 요청사항만 고치는 API는 두지 않고, **결제 확인 요청에 함께 보내 결제가 확인될 때 저장**한다.
@@ -221,12 +255,11 @@ export default function App() {
   `Reservation.confirm(paidAmount, now, customerRequest)`
   - 앞뒤 공백을 제거해 저장한다. null이거나 공백뿐이면 저장하지 않는다(null).
   - 1,000자를 넘으면 `COMMON_400`(INVALID_INPUT)이며 확정·저장하지 않는다.
-- **결제 쪽 연결 (결제 담당, 미구현)**: `PaymentVerifyRequest`에 `customerRequest`를 추가하고,
+- **결제 쪽 연결 (완료, UNNIE-142)**: `PaymentVerifyRequest`에 `customerRequest`를 추가하고,
   결제 확인을 마친 뒤 위 `confirmReservation`에 그대로 넘긴다.
 - 기존 `CUSTOMER_REQUEST` 컬럼(`VARCHAR2(1000)`)을 사용하므로 스키마 변경은 없다.
 - 예약 생성 요청(`ReservationCreateRequest`)에서는 `customerRequest`를 뺐다.
-- 현재 상태: 프론트는 결제 화면에서 요청사항을 입력받아 상태로 들고 있다. 결제 요청·결제 확인 API 연결은
-  결제 담당 작업에서 진행한다.
+- 현재 상태: 서버 연결은 완료. 프론트 결제 화면의 결제창·결제 확인 API 연결은 UNNIE-143에서 진행한다.
 
 ## 오류
 
