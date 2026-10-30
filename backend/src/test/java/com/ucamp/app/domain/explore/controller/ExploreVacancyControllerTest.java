@@ -38,6 +38,7 @@ import com.ucamp.app.domain.explore.dto.response.ExploreShopResponse;
 import com.ucamp.app.domain.explore.dto.response.ExploreVacancyDetailResponse;
 import com.ucamp.app.domain.explore.service.ExploreVacancyDetailService;
 import com.ucamp.app.domain.explore.service.ExploreVacancyService;
+import com.ucamp.app.domain.treatment.entity.TreatmentType;
 import com.ucamp.app.domain.vacancy.policy.PriceTier;
 
 @WebMvcTest(controllers = ExploreVacancyController.class)
@@ -84,7 +85,8 @@ class ExploreVacancyControllerTest {
         mockMvc.perform(get(VACANCIES_URL)
                         .param("startDate", "2026-11-06").param("endDate", "2026-11-07")
                         .param("regionCode", "11680").param("regionCode", "11650")
-                        .param("categoryId", "1").param("shopId", "3").param("timeOfDay", "EVENING")
+                        .param("categoryId", "1").param("shopId", "3").param("treatmentType", "MODEL")
+                        .param("timeOfDay", "EVENING")
                         .param("closingWithinHours", "24").param("priceTier", "IMMINENT")
                         .param("keyword", "네일")
                         .param("minLat", "37.48").param("maxLat", "37.52")
@@ -96,7 +98,8 @@ class ExploreVacancyControllerTest {
         verify(exploreVacancyService).search(captor.capture());
         assertThat(captor.getValue()).isEqualTo(new ExploreVacancySearchRequest(
                 new ExploreVacancyFilter(LocalDate.of(2026, 11, 6), LocalDate.of(2026, 11, 7),
-                        List.of("11680", "11650"), 1L, 3L, ExploreTimeOfDay.EVENING, 24, PriceTier.IMMINENT, "네일",
+                        List.of("11680", "11650"), 1L, 3L, TreatmentType.MODEL, ExploreTimeOfDay.EVENING, 24,
+                        PriceTier.IMMINENT, "네일",
                         new BigDecimal("37.48"), new BigDecimal("37.52"),
                         new BigDecimal("127.00"), new BigDecimal("127.06")),
                 ExploreVacancySort.DISCOUNT_DESC, 1, 50));
@@ -148,21 +151,23 @@ class ExploreVacancyControllerTest {
     void getShops_anonymous_returnsShops() throws Exception {
         ExploreShopResponse shop = new ExploreShopResponse(1L, "언니네 네일", "11680", "서울특별시 강남구 테헤란로 1",
                 new BigDecimal("37.4979"), new BigDecimal("127.0276"), null, 7, 18000, 14,
-                OffsetDateTime.of(2026, 11, 6, 20, 0, 0, 0, ZoneOffset.ofHours(9)));
+                OffsetDateTime.of(2026, 11, 6, 20, 0, 0, 0, ZoneOffset.ofHours(9)), true);
         given(exploreVacancyService.searchShops(any())).willReturn(new ExploreShopMapResponse(List.of(shop), false));
 
         mockMvc.perform(get(SHOPS_URL).param("minLat", "37.48").param("maxLat", "37.52")
-                        .param("minLng", "127.00").param("maxLng", "127.06"))
+                        .param("minLng", "127.00").param("maxLng", "127.06").param("treatmentType", "MODEL"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.shops[0].shopId").value(1))
                 .andExpect(jsonPath("$.data.shops[0].minSalePrice").value(18000))
                 .andExpect(jsonPath("$.data.shops[0].earliestStartsAt").value("2026-11-06T20:00:00+09:00"))
+                .andExpect(jsonPath("$.data.shops[0].modelOnly").value(true))
                 .andExpect(jsonPath("$.data.hasMore").value(false));
 
         ArgumentCaptor<ExploreVacancyFilter> captor = ArgumentCaptor.forClass(ExploreVacancyFilter.class);
         verify(exploreVacancyService).searchShops(captor.capture());
         assertThat(captor.getValue().minLat()).isEqualByComparingTo("37.48");
         assertThat(captor.getValue().shopId()).isNull();
+        assertThat(captor.getValue().treatmentType()).isEqualTo(TreatmentType.MODEL);
     }
 
     @Test

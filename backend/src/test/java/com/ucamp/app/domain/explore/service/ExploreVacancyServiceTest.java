@@ -37,6 +37,7 @@ import com.ucamp.app.domain.explore.dto.request.ExploreVacancySort;
 import com.ucamp.app.domain.explore.dto.response.ExploreShopMapResponse;
 import com.ucamp.app.domain.explore.dto.response.ExploreShopResponse;
 import com.ucamp.app.domain.explore.dto.response.ExploreVacancyResponse;
+import com.ucamp.app.domain.treatment.entity.TreatmentType;
 import com.ucamp.app.domain.vacancy.policy.PriceTier;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
@@ -146,6 +147,29 @@ class ExploreVacancyServiceTest {
                 .extracting(ExploreShopResponse::shopId).containsExactly(2L);
         assertThat(exploreVacancyService.searchShops(request().timeOfDay(ExploreTimeOfDay.MORNING).build().filter())
                 .shops()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("시술 유형을 지정하면 그 유형의 빈자리만 나오고, 매장 요약은 모델 시술만 있는지 알려준다")
+    void search_treatmentType_returnsOnlyThatType() {
+        openShopTwo();
+        jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건',"
+                + " PHOTO_NOTICE = '안내' WHERE TREATMENT_ID = 2");
+
+        assertThat(exploreVacancyService.search(request().treatmentType(TreatmentType.MODEL).build()).content())
+                .extracting(ExploreVacancyResponse::treatmentId).containsOnly(2L);
+        assertThat(exploreVacancyService.search(request().treatmentType(TreatmentType.NORMAL).build()).content())
+                .extracting(ExploreVacancyResponse::treatmentId).doesNotContain(2L);
+        // 지정하지 않으면 기존처럼 두 유형이 모두 나온다
+        assertThat(exploreVacancyService.search(request().shopId(1L).build()).totalElements()).isEqualTo(7);
+
+        List<ExploreShopResponse> modelShops = exploreVacancyService.searchShops(
+                request().treatmentType(TreatmentType.MODEL).build().filter()).shops();
+        assertThat(modelShops).extracting(ExploreShopResponse::shopId).containsExactly(1L);
+        assertThat(modelShops.get(0).modelOnly()).isTrue();
+        // 매장 1 은 일반·모델이 섞여 있고, 매장 2 는 일반 시술만 있다
+        assertThat(exploreVacancyService.searchShops(request().build().filter()).shops())
+                .extracting(ExploreShopResponse::modelOnly).containsExactly(false, false);
     }
 
     @Test
@@ -290,6 +314,7 @@ class ExploreVacancyServiceTest {
         private List<String> regionCodes;
         private Long categoryId;
         private Long shopId;
+        private TreatmentType treatmentType;
         private ExploreTimeOfDay timeOfDay;
         private Integer closingWithinHours;
         private PriceTier priceTier;
@@ -320,6 +345,11 @@ class ExploreVacancyServiceTest {
 
         RequestBuilder shopId(Long id) {
             this.shopId = id;
+            return this;
+        }
+
+        RequestBuilder treatmentType(TreatmentType value) {
+            this.treatmentType = value;
             return this;
         }
 
@@ -364,7 +394,8 @@ class ExploreVacancyServiceTest {
 
         ExploreVacancySearchRequest build() {
             ExploreVacancyFilter filter = new ExploreVacancyFilter(startDate, endDate, regionCodes, categoryId,
-                    shopId, timeOfDay, closingWithinHours, priceTier, keyword, minLat, maxLat, minLng, maxLng);
+                    shopId, treatmentType, timeOfDay, closingWithinHours, priceTier, keyword, minLat, maxLat, minLng,
+                    maxLng);
             return new ExploreVacancySearchRequest(filter, sort, page, size);
         }
 

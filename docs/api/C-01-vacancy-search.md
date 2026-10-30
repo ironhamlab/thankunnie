@@ -58,6 +58,7 @@
 | `regionCode` | string, 여러 개 (최대 10개) | 전체 | `SHOP.REGION_CODE`(시군구 5자리). `regionCode=11680&regionCode=11650`처럼 반복. 화면 지역 묶음과의 대응은 9장 |
 | `categoryId` | number | 전체 | `SHOP.CATEGORY_ID` |
 | `shopId` | number | 전체 | 한 매장의 빈자리만. 지도에서 매장 마커를 눌렀을 때 사용 |
+| `treatmentType` | `NORMAL`·`MODEL` | 전체 | 해당 시술 유형만. 모델 모집 목록에서 `MODEL` 로 사용 |
 | `timeOfDay` | `MORNING`·`AFTERNOON`·`EVENING` | 전체 | 시작 시각 기준 09~12시 / 12~18시 / 18시 이후 |
 | `closingWithinHours` | number (1~72) | 없음 | 예약 마감(시작 20분 전)이 지금부터 N시간 안인 빈자리만. 메인 "마감 임박" 영역용 |
 | `priceTier` | `IMMINENT`·`LAST_MINUTE` | 전체 | 해당 가격 구간 이상만. 홈 "임박 특가만 보기"는 `IMMINENT` |
@@ -157,7 +158,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 
 한 매장에 빈자리가 여러 개여도 좌표가 같아 마커가 겹치므로, 지도에는 **매장당 마커 1개**를 띄우고 그 매장 빈자리의 최저 판매가를 표시한다.
 
-- 요청 파라미터는 C-01과 같다(`startDate`·`endDate`·`regionCode`·`categoryId`·`timeOfDay`·`closingWithinHours`·`priceTier`·`keyword`·지도 범위). `shopId`·`sort`·`page`·`size`는 받지 않는다.
+- 요청 파라미터는 C-01과 같다(`startDate`·`endDate`·`regionCode`·`categoryId`·`treatmentType`·`timeOfDay`·`closingWithinHours`·`priceTier`·`keyword`·지도 범위). `shopId`·`sort`·`page`·`size`는 받지 않는다.
 - 조건에 맞는 빈자리가 1건 이상인 매장만 돌려준다. 순서는 가장 빠른 시작 시각, 매장 ID 순이다.
 - 한 번에 최대 200개 매장을 돌려주고, 더 있으면 `hasMore=true`다. 지도에는 "확대하면 더 보여요"를 표시한다.
 
@@ -177,7 +178,8 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
         "vacancyCount": 7,
         "minSalePrice": 18000,
         "maxDiscountRate": 14,
-        "earliestStartsAt": "2026-11-06T20:00:00+09:00"
+        "earliestStartsAt": "2026-11-06T20:00:00+09:00",
+        "modelOnly": false
       }
     ],
     "hasMore": false
@@ -196,6 +198,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 | `minSalePrice` | 빈자리 중 최저 판매가 | 마커 라벨 "18,000원~" |
 | `maxDiscountRate` | 빈자리 중 최대 할인율 | 마커 강조(할인 배지) |
 | `earliestStartsAt` | 가장 빠른 시작 시각 (+09:00) | "오늘 20:00부터" |
+| `modelOnly` | 조건에 맞는 빈자리가 모두 MODEL 시술인지 | true 면 매장 카드·"매장 보기"가 모델 모집 상세(`/shops/{shopId}/models`)로 연결 |
 
 ## 5. C-03 빈자리 상세
 

@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.ucamp.app.domain.explore.repository.ExploreVacancyCondition.MapBounds;
 import com.ucamp.app.domain.schedule.entity.ShopScheduleException;
+import com.ucamp.app.domain.treatment.entity.TreatmentType;
 
 /**
  * 고객 빈자리 탐색 후보 조회 (C). 매장(A)·시술·시간대 열기(B) 엔티티를 읽기만 하고 고치지 않는다.
@@ -51,6 +52,7 @@ public interface ExploreVacancyQueryRepository extends Repository<ShopScheduleEx
               and (:allRegions = true or s.regionCode in :regionCodes)
               and (:categoryId is null or c.categoryId = :categoryId)
               and (:shopId is null or s.shopId = :shopId)
+              and (:treatmentType is null or t.treatmentType = :treatmentType)
               and (:keyword is null
                    or upper(s.name) like :keyword escape '!'
                    or upper(t.name) like :keyword escape '!')
@@ -74,7 +76,7 @@ public interface ExploreVacancyQueryRepository extends Repository<ShopScheduleEx
                 : "%" + escapeLike(condition.keyword().toUpperCase()) + "%";
         MapBounds bounds = condition.bounds();
         return findCandidates(condition.from(), condition.to(), allRegions, regionCodes, condition.categoryId(),
-                condition.shopId(), keyword,
+                condition.shopId(), condition.treatmentType(), keyword,
                 bounds == null ? null : bounds.minLat(), bounds == null ? null : bounds.maxLat(),
                 bounds == null ? null : bounds.minLng(), bounds == null ? null : bounds.maxLng());
     }
@@ -87,6 +89,7 @@ public interface ExploreVacancyQueryRepository extends Repository<ShopScheduleEx
             @Param("regionCodes") List<String> regionCodes,
             @Param("categoryId") Long categoryId,
             @Param("shopId") Long shopId,
+            @Param("treatmentType") TreatmentType treatmentType,
             @Param("keyword") String keyword,
             @Param("minLat") BigDecimal minLat,
             @Param("maxLat") BigDecimal maxLat,

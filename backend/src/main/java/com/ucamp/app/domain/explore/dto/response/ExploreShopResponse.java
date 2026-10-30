@@ -8,6 +8,7 @@ import java.time.OffsetDateTime;
  *
  * @param imageUrl     매장 이미지, 없으면 null
  * @param minSalePrice 마커 라벨 "18,000원~" 에 쓰는 최저 판매가
+ * @param modelOnly    조건에 맞는 빈자리가 모두 모델 시술이면 true. 화면은 매장 상세 대신 모델 모집 상세로 연결한다
  */
 public record ExploreShopResponse(
         Long shopId,
@@ -20,5 +21,6 @@ public record ExploreShopResponse(
         int vacancyCount,
         int minSalePrice,
         int maxDiscountRate,
-        OffsetDateTime earliestStartsAt) {
+        OffsetDateTime earliestStartsAt,
+        boolean modelOnly) {
 }

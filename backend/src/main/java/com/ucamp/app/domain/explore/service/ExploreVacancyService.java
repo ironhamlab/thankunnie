@@ -30,6 +30,7 @@ import com.ucamp.app.domain.explore.repository.ExploreVacancyCandidate;
 import com.ucamp.app.domain.explore.repository.ExploreVacancyCondition;
 import com.ucamp.app.domain.explore.repository.ExploreVacancyCondition.MapBounds;
 import com.ucamp.app.domain.explore.repository.ExploreVacancyQueryRepository;
+import com.ucamp.app.domain.treatment.entity.TreatmentType;
 import com.ucamp.app.domain.vacancy.policy.PriceCalculator;
 import com.ucamp.app.domain.vacancy.policy.PriceQuote;
 import com.ucamp.app.domain.vacancy.policy.SalePrices;
@@ -119,7 +120,8 @@ public class ExploreVacancyService {
             return List.of();
         }
         ExploreVacancyCondition condition = new ExploreVacancyCondition(fromDate.atStartOfDay(),
-                endDate.plusDays(1).atStartOfDay(), regionCodes, filter.categoryId(), filter.shopId(), keyword,
+                endDate.plusDays(1).atStartOfDay(), regionCodes, filter.categoryId(), filter.shopId(),
+                filter.treatmentType(), keyword,
                 bounds);
 
         return findItems(exploreVacancyQueryRepository.findCandidates(condition), condition, now)
@@ -168,7 +170,8 @@ public class ExploreVacancyService {
                 items.size(),
                 items.stream().mapToInt(item -> item.quote().salePrice()).min().orElseThrow(),
                 items.stream().mapToInt(item -> item.quote().discountRate()).max().orElseThrow(),
-                TimeUtils.toOffset(items.stream().map(Item::startsAt).min(LocalDateTime::compareTo).orElseThrow()));
+                TimeUtils.toOffset(items.stream().map(Item::startsAt).min(LocalDateTime::compareTo).orElseThrow()),
+                items.stream().allMatch(item -> item.candidate().treatmentType() == TreatmentType.MODEL));
     }
 
     private static PriceQuote quote(ExploreVacancyCandidate candidate, LocalDateTime startsAt, LocalDateTime now) {
