@@ -80,9 +80,9 @@
     flex-direction: row;
     flex-wrap: wrap;
   }
+  /* 빈자리 열기·닫기 버튼은 메뉴에 따로 없어 모바일에서도 남긴다 (가로 메뉴 위에 꽉 찬 너비) */
   .root .shop,
-  .root .bottom,
-  .root > :global(.b-button) {
+  .root .bottom {
     display: none;
   }
   .brand {
@@ -95,5 +95,8 @@
   .root nav a {
     padding: 8px;
     font-size: 12px;
+  }
+  .root > :global(.b-button) {
+    min-height: 44px;
   }
 }

@@ -27,9 +27,8 @@ const OwnerCancelPage = lazy(() => import('@/pages/cancel/OwnerCancelPage'));
 const OwnerDashboardPage = lazy(() => import('@/pages/owner/OwnerDashboardPage'));
 const ShopPage = lazy(() => import('@/pages/owner/ShopPage'));
 const MenusPage = lazy(() => import('@/pages/owner/MenusPage'));
-const SlotsPage = lazy(() => import('@/pages/owner/SlotsPage'));
-const NewSlotPage = lazy(() => import('@/pages/owner/NewSlotPage'));
 const SchedulePage = lazy(() => import('@/pages/owner/SchedulePage'));
+const VacancyManagePage = lazy(() => import('@/pages/owner/VacancyManagePage'));
 const OwnerBookingsPage = lazy(() => import('@/pages/owner/OwnerBookingsPage'));
 
 const LEGACY_EXPLORE_PATHS = ['/explore', '/explore-classic'];
@@ -92,9 +91,8 @@ export default function AppRouter() {
               <Route index element={<OwnerDashboardPage />} />
               <Route path={ROUTES.OWNER_SHOP} element={<ShopPage />} />
               <Route path={ROUTES.OWNER_MENUS} element={<MenusPage />} />
-              <Route path={ROUTES.OWNER_SLOTS} element={<SlotsPage />} />
-              <Route path={ROUTES.OWNER_SLOT_NEW} element={<NewSlotPage />} />
               <Route path={ROUTES.OWNER_SCHEDULE} element={<SchedulePage />} />
+              <Route path={ROUTES.OWNER_VACANCIES} element={<VacancyManagePage />} />
               <Route path={ROUTES.OWNER_BOOKINGS} element={<OwnerBookingsPage />} />
               <Route path={ROUTES.OWNER_RESERVATION_CANCEL} element={<OwnerCancelPage />} />
               <Route

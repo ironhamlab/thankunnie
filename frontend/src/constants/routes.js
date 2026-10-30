@@ -25,9 +25,9 @@ export const ROUTES = {
   OWNER: '/owner',
   OWNER_SHOP: '/owner/shop',
   OWNER_MENUS: '/owner/menus',
-  OWNER_SLOTS: '/owner/slots',
-  OWNER_SLOT_NEW: '/owner/slots/new',
   OWNER_SCHEDULE: '/owner/schedule',
+  // 빈자리 열기·닫기: 시간대를 열면 그 안에서 할 수 있는 시술이 고객 빈자리 목록에 노출되고, 닫으면 예약을 받지 않는다
+  OWNER_VACANCIES: '/owner/vacancies',
   OWNER_BOOKINGS: '/owner/bookings',
   // 사장님 예약 취소 화면 (E 담당). 예약 현황의 "취소하기"가 이 경로로 이동한다
   OWNER_RESERVATION_CANCEL: '/owner/bookings/:reservationId/cancel',
