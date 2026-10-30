@@ -40,7 +40,8 @@ export function loadKakaoMap() {
     );
 
     // autoload=false 로 받아야 kakao.maps.load 콜백 이후에 지도를 안전하게 만들 수 있다
-    script.src = `${SDK_URL}?appkey=${encodeURIComponent(appKey)}&autoload=false&libraries=services`;
+    // services 는 주소→좌표 변환, clusterer 는 지도 화면(/map)의 핀 묶음에 쓴다
+    script.src = `${SDK_URL}?appkey=${encodeURIComponent(appKey)}&autoload=false&libraries=services,clusterer`;
     script.async = true;
     script.onload = () => {
       if (!window.kakao?.maps) {
