@@ -6,6 +6,9 @@ import styles from './TimeRangePicker.module.css';
 const DEFAULT_FROM = '09:00';
 // 열기·닫기는 하루 안에서 끝나야 해서 23:00 칸(~23:30)까지만 고른다
 const LAST_START = '23:00';
+// HH:mm 를 분만큼 옮긴다 (하루 범위 안)
+const shift = (time, minutes) =>
+  toTime(Math.min(Math.max(toMinutes(time) + minutes, 0), 23 * 60 + 30));
 const STATUS_LABELS = {
   AVAILABLE: '',
   BOOKED: '예약됨',
@@ -17,15 +20,26 @@ const STATUS_LABELS = {
 /**
  * 30분 칸을 눌러 시간대를 고른다. 시작 칸을 누른 뒤 끝 칸을 누르면 그 사이가 선택된다.
  * 칸마다 지금 상태(예약됨·닫음·영업 외)를 보여줘 어디를 열고 닫는지 한눈에 보이게 한다.
+ * 기본은 영업 범위 앞뒤 1시간만 보여주고, 영업시간 밖 열기를 위해 전체 시간으로 펼칠 수 있다.
  *
  * @param slots     useDaySlots 의 칸 상태 (영업 범위 밖 칸은 영업 외로 본다)
  * @param minStart  이보다 이른 칸은 고를 수 없다 (오늘의 등록 마감). 없으면 제한 없음
  */
 export default function TimeRangePicker({ slots, startTime, endTime, minStart, onChange }) {
   const [picking, setPicking] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const statusOf = new Map(slots.map((slot) => [slot.time, slot.status]));
-  const from = slots[0] && slots[0].time < DEFAULT_FROM ? slots[0].time : DEFAULT_FROM;
-  const times = TIME_OPTIONS.filter((time) => time >= from && time <= LAST_START);
+  const fullFrom = slots[0] && slots[0].time < DEFAULT_FROM ? slots[0].time : DEFAULT_FROM;
+  // 기본은 영업 범위 앞뒤 1시간만 보여준다. 고른 구간은 접혀 있어도 늘 보이게 한다
+  const near = slots.length > 0 && !showAll;
+  const minTime = (a, b) => (a < b ? a : b);
+  const maxTime = (a, b) => (a > b ? a : b);
+  const from = near ? minTime(maxTime(fullFrom, shift(slots[0].time, -60)), startTime) : fullFrom;
+  const to = near
+    ? maxTime(minTime(LAST_START, shift(slots.at(-1).time, 60)), shift(endTime, -30))
+    : LAST_START;
+  const times = TIME_OPTIONS.filter((time) => time >= from && time <= to);
+  const canExpand = slots.length > 0 && (showAll || from > fullFrom || to < LAST_START);
 
   const handleClick = (time) => {
     const slotEnd = toTime(toMinutes(time) + 30);
@@ -73,6 +87,11 @@ export default function TimeRangePicker({ slots, startTime, endTime, minStart, o
           );
         })}
       </div>
+      {canExpand && (
+        <button type="button" className={styles.more} onClick={() => setShowAll(!showAll)}>
+          {showAll ? '영업시간 주변만 보기' : `전체 시간 보기 (${fullFrom}~${LAST_START})`}
+        </button>
+      )}
     </div>
   );
 }

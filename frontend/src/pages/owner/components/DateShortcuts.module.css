@@ -25,3 +25,8 @@
 .root input {
   width: auto;
 }
+@media (max-width: 540px) {
+  .root button {
+    min-height: 44px;
+  }
+}

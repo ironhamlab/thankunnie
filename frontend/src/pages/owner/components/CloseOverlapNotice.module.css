@@ -38,3 +38,8 @@
 .root li b {
   color: var(--color-danger);
 }
+@media (max-width: 540px) {
+  .root li button {
+    min-height: 44px;
+  }
+}

@@ -74,3 +74,26 @@
 .first.last {
   box-shadow: none;
 }
+.more {
+  align-self: flex-start;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+@media (max-width: 540px) {
+  /* 칸이 많아 모바일에서는 영업 외·마감 글자를 빼고 색으로만 구분한다 (닫음·예약됨은 남긴다) */
+  .off small,
+  .passed small,
+  .slot:disabled small {
+    display: none;
+  }
+  .slot,
+  .more {
+    min-height: 44px;
+  }
+}

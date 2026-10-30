@@ -18,7 +18,7 @@ const SLOT_STATUS = {
  * 선택한 날짜의 30분 칸별 예약 가능 여부 (B-F3). 가능한 칸은 서버가 영업시간·열기·닫기·예약을 반영해 계산한 값이고,
  * 안 되는 칸은 영업시간·일정으로 이유(닫음·예약됨·마감)를 구분해 보여준다.
  */
-export default function AvailableTimesPanel({ date, minDate, maxDate, onDateChange }) {
+export default function AvailableTimesPanel({ className, date, minDate, maxDate, onDateChange }) {
   const loadAvailableTimes = useScheduleStore((state) => state.loadAvailableTimes);
   const availableTimes = useScheduleStore((state) => state.availableTimes);
   const timesStatus = useScheduleStore((state) => state.timesStatus);
@@ -45,7 +45,7 @@ export default function AvailableTimesPanel({ date, minDate, maxDate, onDateChan
   );
 
   return (
-    <Panel as="section" padded>
+    <Panel as="section" padded className={className}>
       <div className="b-row b-panel-heading">
         <h2>날짜별 예약 가능 시간</h2>
         <label>

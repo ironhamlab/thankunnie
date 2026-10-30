@@ -18,6 +18,8 @@ export default function ScheduleExceptionForm({
   editingId,
   slots,
   ready,
+  fresh,
+  failed,
   exceptions,
   minStart,
   minDate,
@@ -28,6 +30,7 @@ export default function ScheduleExceptionForm({
   onSubmit,
   onCancelEdit,
   onDeleteClose,
+  onRetry,
 }) {
   const type = EXCEPTION_TYPES[form.exceptionType];
   const inRange = slots.filter((slot) => slot.time >= form.startTime && slot.time < form.endTime);
@@ -38,6 +41,8 @@ export default function ScheduleExceptionForm({
       ? overlappingCloses(exceptions, form.date, form.startTime, form.endTime, editingId)
       : [];
   const tooEarly = Boolean(minStart) && form.startTime < minStart;
+  // 닫기는 지금 일정 기준으로 받은 칸으로 예약을 확인한 뒤에만 저장한다. 서버도 막지만 헛된 실패 요청을 줄인다
+  const closeUnchecked = form.exceptionType === 'CLOSE' && (!fresh || failed);
 
   return (
     <form className={styles.root} onSubmit={onSubmit} aria-busy={isSaving}>
@@ -81,7 +86,18 @@ export default function ScheduleExceptionForm({
         <h2>
           <span className={styles.step}>2</span> 시간
         </h2>
-        {ready ? (
+        {failed && (
+          <Alert as="div" tone="error" role="alert" className={styles.retry}>
+            <span>
+              시간 칸을 불러오지 못했어요. 예약 여부를 확인할 수 없어 닫기는 저장할 수 없어요.
+            </span>
+            <Button type="button" size="small" onClick={onRetry}>
+              다시 시도
+            </Button>
+          </Alert>
+        )}
+        {!failed && !ready && <p role="status">시간 칸을 불러오는 중입니다.</p>}
+        {!failed && ready && (
           <TimeRangePicker
             slots={slots}
             startTime={form.startTime}
@@ -89,8 +105,6 @@ export default function ScheduleExceptionForm({
             minStart={minStart}
             onChange={onChange}
           />
-        ) : (
-          <p role="status">시간 칸을 불러오는 중입니다.</p>
         )}
       </Panel>
 
@@ -119,10 +133,6 @@ export default function ScheduleExceptionForm({
         />
       </Panel>
 
-      <p className={`${styles.summary} ${styles[form.exceptionType.toLowerCase()]}`}>
-        {formatDayLabel(form.date)} {form.startTime}~{form.endTime} ·{' '}
-        {durationLabel(form.startTime, form.endTime)} {type.verb}
-      </p>
       {tooEarly && (
         <Alert as="p" tone="error" role="alert">
           {minStart === NO_MORE_TODAY &&
@@ -144,9 +154,21 @@ export default function ScheduleExceptionForm({
           {errorMessage}
         </Alert>
       )}
-      <Button variant="primary" wide type="submit" disabled={isSaving || tooEarly || hasBooking}>
-        {editingId ? '수정 저장' : `${form.startTime}~${form.endTime} ${type.verb}`}
-      </Button>
+      {/* 한 단 화면에서는 아래에 붙어, 칸을 고르면서 결과를 보고 바로 저장할 수 있다 */}
+      <div className={styles.footer}>
+        <p className={`${styles.summary} ${styles[form.exceptionType.toLowerCase()]}`}>
+          {formatDayLabel(form.date)} {form.startTime}~{form.endTime} ·{' '}
+          {durationLabel(form.startTime, form.endTime)} {type.verb}
+        </p>
+        <Button
+          variant="primary"
+          wide
+          type="submit"
+          disabled={isSaving || tooEarly || hasBooking || closeUnchecked}
+        >
+          {editingId ? '수정 저장' : `${form.startTime}~${form.endTime} ${type.verb}`}
+        </Button>
+      </div>
     </form>
   );
 }

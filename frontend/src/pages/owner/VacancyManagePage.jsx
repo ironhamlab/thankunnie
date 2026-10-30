@@ -5,7 +5,7 @@ import { useScheduleStore } from '@/store/useScheduleStore';
 import { useTreatmentStore } from '@/store/useTreatmentStore';
 import useDaySlots from '@/hooks/useDaySlots';
 import { addDays, todayKst, toKstDateTime } from '@/utils/scheduleDate';
-import { formatDayLabel } from '@/utils/scheduleSlots';
+import { formatDayLabel, unsellableTimes } from '@/utils/scheduleSlots';
 import { formOf, minStartOf, newForm } from '@/utils/scheduleForm';
 import AvailableTimesPanel from '@/pages/owner/components/AvailableTimesPanel';
 import DayReservationsPanel from '@/pages/owner/components/DayReservationsPanel';
@@ -13,20 +13,21 @@ import { EXCEPTION_TYPES } from '@/constants/scheduleException';
 import ScheduleExceptionForm from '@/pages/owner/components/ScheduleExceptionForm';
 import ScheduleExceptionList from '@/pages/owner/components/ScheduleExceptionList';
 import VacancyPreviewPanel from '@/pages/owner/components/VacancyPreviewPanel';
+import VacancyNotices from '@/pages/owner/components/VacancyNotices';
 import VacancyTabs from '@/pages/owner/components/VacancyTabs';
-import Alert from '@/components/common/Alert';
 import styles from './VacancyManagePage.module.css';
 
 /**
- * 빈자리 열기·닫기 (B-F3). 시간대를 열면 그 안에서 할 수 있는 시술이 고객 빈자리 목록에 노출되고,
- * 닫으면 예약을 받지 않는다. 왼쪽에서 입력하고, 오른쪽에서 그날 예약 가능 시간과(열기면) 고객 화면을 미리 본다.
- * 아래 목록에서 등록한 일정을 수정·삭제한다.
+ * 빈자리 열기·닫기 (B-F3). 열면 그 시간에 할 수 있는 시술이 고객 빈자리 목록에 노출되고, 닫으면 예약을 받지 않는다.
+ * 등록 탭은 입력과 그날 상태·고객 노출 미리보기를, 일정 탭은 등록한 일정의 수정·삭제를 보여준다.
  */
 export default function VacancyManagePage() {
   const [params, setParams] = useSearchParams();
   // 등록과 목록을 탭으로 나눈다. 새로고침해도 보던 탭이 남게 주소에 둔다
   const tab = params.get('tab') === 'list' ? 'list' : 'form';
   const changeTab = (next) => setParams(next === 'list' ? { tab: 'list' } : {}, { replace: true });
+  const loadSchedule = useScheduleStore((state) => state.loadSchedule);
+  const scheduleFailed = useScheduleStore((state) => state.status === 'failed');
   const exceptions = useScheduleStore((state) => state.exceptions);
   const businessHours = useScheduleStore((state) => state.businessHours);
   const refreshFailed = useScheduleStore((state) => state.refreshFailed);
@@ -46,13 +47,14 @@ export default function VacancyManagePage() {
   const [editingId, setEditingId] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [notice, setNotice] = useState(null);
-  const { slots, ready } = useDaySlots(form.date);
+  const { slots, ready, fresh, failed, retry } = useDaySlots(form.date);
   const today = todayKst();
   const lastDate = addDays(today, P.BOOKING_MAX_DAYS - 1);
-  // 닫았거나 예약이 있는 칸은 열어도 팔 수 없어 미리보기에서 뺀다
-  const blockedTimes = new Set(
-    slots.filter((slot) => ['CLOSED', 'BOOKED'].includes(slot.status)).map((slot) => slot.time),
-  );
+
+  // 화면을 열 때마다 새로 받는다. 로그아웃 후 다른 사장님으로 들어와도 이전 매장 일정이 남지 않게 한다
+  useEffect(() => {
+    loadSchedule();
+  }, [loadSchedule]);
 
   useEffect(() => {
     // 실패는 store 의 selectionStatus·selectionError 로 미리보기에 보여준다
@@ -91,6 +93,10 @@ export default function VacancyManagePage() {
     }
   };
 
+  // 겹침 안내의 닫기 지우기. 실패하면 저장 버튼 위에 이유를 보여준다
+  const handleDeleteClose = (exceptionId) =>
+    deleteException(exceptionId).catch((error) => setErrorMessage(error.message));
+
   const handleEdit = (exception) => {
     setErrorMessage('');
     changeTab('form');
@@ -124,16 +130,7 @@ export default function VacancyManagePage() {
           닫으면 예약을 받지 않습니다. 시간이 임박할수록 초임박가로 노출됩니다.
         </p>
       </div>
-      {refreshFailed && (
-        <Alert as="p" tone="error" role="alert">
-          변경은 완료됐지만 목록을 새로 불러오지 못했습니다. 페이지를 새로고침해 주세요.
-        </Alert>
-      )}
-      {notice && (
-        <Alert as="p" tone={notice.tone} role={notice.tone === 'success' ? 'status' : 'alert'}>
-          {notice.text}
-        </Alert>
-      )}
+      <VacancyNotices refreshFailed={refreshFailed} notice={notice} />
       <VacancyTabs
         tab={tab}
         listCount={exceptions.length}
@@ -147,6 +144,9 @@ export default function VacancyManagePage() {
             editingId={editingId}
             slots={slots}
             ready={ready}
+            fresh={fresh}
+            failed={failed || scheduleFailed}
+            onRetry={scheduleFailed ? loadSchedule : retry}
             exceptions={exceptions}
             minStart={minStartOf(form.exceptionType, form.date)}
             minDate={today}
@@ -156,10 +156,11 @@ export default function VacancyManagePage() {
             onChange={update}
             onSubmit={handleSubmit}
             onCancelEdit={resetForm}
-            onDeleteClose={deleteException}
+            onDeleteClose={handleDeleteClose}
           />
           <aside className={styles.side}>
             <AvailableTimesPanel
+              className={styles.timesPanel}
               date={form.date}
               minDate={today}
               maxDate={lastDate}
@@ -174,7 +175,7 @@ export default function VacancyManagePage() {
                 date={form.date}
                 startTime={form.startTime}
                 endTime={form.endTime}
-                blockedTimes={blockedTimes}
+                blockedTimes={unsellableTimes(slots)}
               />
             )}
           </aside>

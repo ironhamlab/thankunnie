@@ -10,6 +10,12 @@
   justify-content: space-between;
   gap: 10px;
 }
+.retry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
 .types {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -100,8 +106,48 @@
   background: var(--color-success-bg);
   color: var(--color-success-strong);
 }
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+@media (max-width: 1100px) {
+  /* 한 단 화면에서는 폼을 보는 동안 요약·저장이 화면 아래에 붙어 있다 */
+  .footer {
+    order: 2;
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: 0 -4px;
+    padding: 12px 4px;
+    border-top: 1px solid var(--color-border);
+    background: white;
+  }
+}
 @media (max-width: 540px) {
   .types {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .type {
+    padding: 14px;
+  }
+  .type.close[aria-checked='true'],
+  .type.open[aria-checked='true'] {
+    padding: 13px;
+  }
+  /* 모바일에서는 카드 제목만으로 구분하고 설명은 줄인다 */
+  .type small {
+    display: none;
+  }
+  .chips button {
+    min-height: 44px;
+  }
+  .summary {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .footer button {
+    min-height: 48px;
   }
 }

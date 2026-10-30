@@ -44,6 +44,14 @@ export const overlappingCloses = (exceptions, date, startTime, endTime, excludeI
       (datePart(item.endsAt) !== date || timePart(item.endsAt) > startTime),
   );
 
+/** 닫았거나 예약이 있거나 접수 마감이 지난 칸. 열어도 고객에게 팔 수 없어 미리보기에서 뺀다 */
+export const unsellableTimes = (slots) =>
+  new Set(
+    slots
+      .filter((slot) => ['CLOSED', 'BOOKED', 'PASSED'].includes(slot.status))
+      .map((slot) => slot.time),
+  );
+
 const covers = (ranges, minutes) =>
   ranges.some(([start, end]) => minutes >= start && minutes < end);
 
