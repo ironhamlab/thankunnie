@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -281,7 +282,9 @@ class NotificationServiceTest {
         assertErrorCode(() -> notificationService.updateSubscription(CUSTOMER, 10L,
                 new NotificationSubscriptionUpdateRequest(1L, null, null, start, end)),
                 ErrorCode.TERMS_SMS_AGREEMENT_REQUIRED);
-        assertThat(subscription.getStartTime()).isNull();
+        // 중복 검사 전에 멈춘다. 바꾼 조건은 예외로 트랜잭션이 롤백되어 저장되지 않는다
+        verify(repository, never()).existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
+                any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -389,6 +392,72 @@ class NotificationServiceTest {
         given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(subscription));
 
         assertErrorCode(() -> notificationService.unsubscribe(CUSTOMER, 10L), ErrorCode.SUBSCRIPTION_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("문자 수신 동의가 없어도 매장 ID 가 빠진 업장 구독은 동의 필요가 아니라 대상 오류다")
+    void subscribe_withoutSmsAgreementAndShop_throwsInvalidTargetFirst() {
+        denySmsAgreement();
+
+        assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
+                createRequest(SubscriptionType.STORE, null, null, null, start, end)),
+                ErrorCode.SUBSCRIPTION_INVALID_TARGET);
+        verify(termsAgreementService, never()).requireAgreed(any(), any());
+    }
+
+    @Test
+    @DisplayName("문자 수신 동의가 없어도 시작이 종료보다 늦으면 동의 필요가 아니라 시간 오류다")
+    void subscribe_withoutSmsAgreementAndStartAfterEnd_throwsInvalidTimeFirst() {
+        denySmsAgreement();
+
+        assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
+                createRequest(SubscriptionType.STORE, 1L, null, null, end, start)),
+                ErrorCode.SUBSCRIPTION_INVALID_TIME);
+        verify(termsAgreementService, never()).requireAgreed(any(), any());
+    }
+
+    @Test
+    @DisplayName("이미 알림이 켜진 구독은 문자 수신 동의 기록이 없어도 수정할 수 있다")
+    void updateSubscription_alreadyNotifyingWithoutSmsAgreement_updates() {
+        denySmsAgreement();
+        NotificationSubscription subscription = storeSubscription();
+        given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(subscription));
+        OffsetDateTime newStart = start.plusDays(1);
+        given(repository.existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
+                eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(1L),
+                eq(toLocal(newStart)), eq(toLocal(newStart.plusHours(2))), eq(10L))).willReturn(false);
+
+        notificationService.updateSubscription(CUSTOMER, 10L,
+                new NotificationSubscriptionUpdateRequest(1L, null, null, newStart, newStart.plusHours(2)));
+
+        assertThat(subscription.getStartTime()).isEqualTo(toLocal(newStart));
+        verify(termsAgreementService, never()).requireAgreed(any(), any());
+    }
+
+    @Test
+    @DisplayName("문자 수신 동의가 없어도 찜에 넣는 희망 시간이 잘못되면 동의 필요가 아니라 시간 오류다")
+    void updateSubscription_favoriteWithoutSmsAgreementAndStartAfterEnd_throwsInvalidTimeFirst() {
+        denySmsAgreement();
+        NotificationSubscription subscription = NotificationSubscription.builder()
+                .userId(CUSTOMER.userId())
+                .subscriptionType(SubscriptionType.STORE)
+                .shopId(1L)
+                .startTime(null)
+                .endTime(null)
+                .build();
+        ReflectionTestUtils.setField(subscription, "id", 10L);
+        given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(subscription));
+
+        assertErrorCode(() -> notificationService.updateSubscription(CUSTOMER, 10L,
+                new NotificationSubscriptionUpdateRequest(1L, null, null, end, start)),
+                ErrorCode.SUBSCRIPTION_INVALID_TIME);
+        verify(termsAgreementService, never()).requireAgreed(any(), any());
+    }
+
+    // 동의 기록이 없는 고객. 검사까지 가지 않는 테스트도 있어 lenient 로 둔다
+    private void denySmsAgreement() {
+        lenient().doThrow(new BusinessException(ErrorCode.TERMS_SMS_AGREEMENT_REQUIRED))
+                .when(termsAgreementService).requireAgreed(CUSTOMER.userId(), TermsCode.SMS_NOTIFICATION);
     }
 
     private NotificationSubscription storeSubscription() {
