@@ -48,12 +48,14 @@ const METRICS = [
     label: '확정 건수',
     getValue: (day) => day.confirmedCount,
     formatTick: (value) => `${value}건`,
+    minStep: 1,
   },
   {
     key: 'cancelledCount',
     label: '취소 건수',
     getValue: (day) => day.cancelledCount,
     formatTick: (value) => `${value}건`,
+    minStep: 1,
   },
 ];
 
@@ -95,7 +97,8 @@ export default function StatsSection() {
     return range.from === period.from && range.to === period.to;
   })?.key;
   const metric = METRICS.find((item) => item.key === metricKey);
-  const summary = stats?.summary;
+  // 지금 고른 기간의 조회가 성공했을 때만 본문을 그린다 (기간 오류·조회 중·실패 시 이전 통계를 숨김)
+  const summary = !periodError && status === 'succeeded' ? stats?.summary : null;
   // 확정·취소 예약이 하나도 없으면 0 카드와 빈 그래프 대신 안내를 보여 준다 (첫 가입·오래 쉰 매장 등)
   const isEmpty =
     summary &&
@@ -161,7 +164,7 @@ export default function StatsSection() {
           </Button>
         </Alert>
       )}
-      {!stats && status === 'loading' && <Spinner />}
+      {!periodError && status === 'loading' && <Spinner />}
 
       {isEmpty && (
         <Panel padded>
@@ -226,6 +229,7 @@ export default function StatsSection() {
               days={stats.daily}
               getValue={metric.getValue}
               formatTick={metric.formatTick}
+              minStep={metric.minStep}
               describe={describeDay}
               label={`${summary.from}부터 ${summary.to}까지 날짜별 ${metric.label}`}
             />

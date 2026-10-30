@@ -43,13 +43,21 @@ const useWidth = () => {
  * @param {(value: number) => string} formatTick 세로축 눈금 표시
  * @param {(day: object) => string[]} describe 툴팁 내용 줄
  * @param {string} label 스크린 리더용 그래프 설명
+ * @param {number} [minStep] 세로축 눈금 최소 간격. 건수처럼 정수만 의미 있는 지표는 1 을 넘긴다
  */
-export default function DailyBarChart({ days, getValue, formatTick, describe, label }) {
+export default function DailyBarChart({
+  days,
+  getValue,
+  formatTick,
+  describe,
+  label,
+  minStep = 0,
+}) {
   const [containerRef, width] = useWidth();
   const [hovered, setHovered] = useState(null);
 
   const values = days.map(getValue);
-  const step = niceStep(Math.max(...values, 0) / TICK_COUNT);
+  const step = Math.max(niceStep(Math.max(...values, 0) / TICK_COUNT), minStep);
   const top = step * TICK_COUNT;
   const plotWidth = Math.max(0, width - PAD.left - PAD.right);
   const plotHeight = HEIGHT - PAD.top - PAD.bottom;

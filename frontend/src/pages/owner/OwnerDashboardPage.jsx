@@ -25,9 +25,12 @@ const MAX_RANGES_ON_CARD = 3;
 export default function OwnerDashboardPage() {
   const shop = useShopStore((state) => state.shop);
   const dashboard = useOwnerDashboardStore((state) => state.dashboard);
+  const dashboardStatus = useOwnerDashboardStore((state) => state.dashboardStatus);
   const todayReservations = useOwnerDashboardStore((state) => state.todayReservations);
-  const status = useOwnerDashboardStore((state) => state.status);
+  const reservationsStatus = useOwnerDashboardStore((state) => state.reservationsStatus);
   const loadDashboard = useOwnerDashboardStore((state) => state.loadDashboard);
+  const loadToday = useOwnerDashboardStore((state) => state.loadToday);
+  const loadTodayReservations = useOwnerDashboardStore((state) => state.loadTodayReservations);
 
   // 매장 정보는 사장님 센터 레이아웃(OwnerLayout)이 불러온다
   useEffect(() => {
@@ -56,35 +59,31 @@ export default function OwnerDashboardPage() {
         </Panel>
       )}
 
-      {status === 'failed' && (
-        <Alert tone="error" role="alert" className={styles.error}>
-          <span>오늘 운영 현황을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</span>
-          <Button size="small" type="button" onClick={loadDashboard}>
-            다시 시도
-          </Button>
-        </Alert>
-      )}
-      {!dashboard && status === 'loading' && <Spinner />}
+      <section className="b-stack">
+        <h2>오늘 운영 현황</h2>
+        {dashboardStatus === 'failed' && (
+          <LoadError message="오늘 운영 현황을 불러오지 못했어요." onRetry={loadToday} />
+        )}
+        {dashboardStatus === 'loading' && <Spinner />}
+        {dashboardStatus === 'succeeded' && dashboard && (
+          <div className={`b-stat-grid ${styles.todayGrid}`}>
+            <TodayAvailableCard today={dashboard.today} />
+            <StatCard
+              label="오늘 예약"
+              values={[
+                { label: '남은 예약', value: dashboard.today.upcomingCount, unit: '건' },
+                { label: '확정 예약', value: dashboard.today.confirmedCount, unit: '건' },
+              ]}
+            />
+          </div>
+        )}
+      </section>
 
-      {dashboard && (
-        <>
-          <section className="b-stack">
-            <h2>오늘 운영 현황</h2>
-            <div className={`b-stat-grid ${styles.todayGrid}`}>
-              <TodayAvailableCard today={dashboard.today} />
-              <StatCard
-                label="오늘 예약"
-                values={[
-                  { label: '남은 예약', value: dashboard.today.upcomingCount, unit: '건' },
-                  { label: '확정 예약', value: dashboard.today.confirmedCount, unit: '건' },
-                ]}
-              />
-            </div>
-          </section>
-
-          <TodayReservations reservations={todayReservations} />
-        </>
-      )}
+      <TodayReservations
+        reservations={todayReservations}
+        status={reservationsStatus}
+        onRetry={loadTodayReservations}
+      />
 
       <StatsSection />
     </div>
@@ -116,38 +115,58 @@ function TodayAvailableCard({ today }) {
   );
 }
 
-function TodayReservations({ reservations }) {
+// 영역별 불러오기 실패 안내. 서버 메시지 대신 사장님이 이해할 문구와 다시 시도를 보여 준다
+function LoadError({ message, onRetry }) {
+  return (
+    <Alert tone="error" role="alert" className={styles.error}>
+      <span>{message} 잠시 후 다시 시도해 주세요.</span>
+      <Button size="small" type="button" onClick={onRetry}>
+        다시 시도
+      </Button>
+    </Alert>
+  );
+}
+
+function TodayReservations({ reservations, status, onRetry }) {
   return (
     <Panel as="section" padded className="b-stack">
       <div className="b-row">
         <h2>오늘 예약</h2>
         <Link to={ROUTES.OWNER_BOOKINGS}>예약 관리에서 전체 보기 →</Link>
       </div>
-      {reservations.length ? (
-        <ul className={styles.timeline}>
-          {reservations.map((item) => {
-            const reservationStatus = reservationStatusOf(item.status);
-            return (
-              <li key={item.reservationId}>
-                <strong className={styles.time}>
-                  {timePart(item.startsAt)}~{timePart(item.endsAt)}
-                </strong>
-                <span>{item.treatmentName}</span>
-                <span className="b-muted">{item.customerName}</span>
-                <Badge className={reservationStatus.tone}>{reservationStatus.label}</Badge>
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <div className={styles.empty}>
-          <strong>오늘 잡힌 예약이 없어요</strong>
-          <p>빈자리를 열어 두면 고객이 바로 예약할 수 있어요.</p>
-          <Button as={Link} size="small" to={ROUTES.OWNER_VACANCIES}>
-            빈자리 열기·닫기
-          </Button>
-        </div>
+      {status === 'failed' && (
+        <LoadError message="오늘 예약을 불러오지 못했어요." onRetry={onRetry} />
       )}
+      {status === 'loading' && <Spinner />}
+      {status === 'succeeded' && <TodayReservationList reservations={reservations} />}
     </Panel>
+  );
+}
+
+function TodayReservationList({ reservations }) {
+  return reservations.length ? (
+    <ul className={styles.timeline}>
+      {reservations.map((item) => {
+        const reservationStatus = reservationStatusOf(item.status);
+        return (
+          <li key={item.reservationId}>
+            <strong className={styles.time}>
+              {timePart(item.startsAt)}~{timePart(item.endsAt)}
+            </strong>
+            <span>{item.treatmentName}</span>
+            <span className="b-muted">{item.customerName}</span>
+            <Badge className={reservationStatus.tone}>{reservationStatus.label}</Badge>
+          </li>
+        );
+      })}
+    </ul>
+  ) : (
+    <div className={styles.empty}>
+      <strong>오늘 잡힌 예약이 없어요</strong>
+      <p>빈자리를 열어 두면 고객이 바로 예약할 수 있어요.</p>
+      <Button as={Link} size="small" to={ROUTES.OWNER_VACANCIES}>
+        빈자리 열기·닫기
+      </Button>
+    </div>
   );
 }
