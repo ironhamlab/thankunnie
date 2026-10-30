@@ -19,3 +19,33 @@ export const datePart = (dateTime) => dateTime.slice(0, 10);
 
 /** 서버 시각에서 HH:mm 만 꺼낸다 */
 export const timePart = (dateTime) => dateTime.slice(11, 16);
+
+/** 한국 시간 기준 지금 이후의 다음 30분 칸. 오늘이 끝나면 내일 00:00 */
+export const nextHalfHourKst = () => {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Seoul',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date());
+  const hour = Number(parts.find((part) => part.type === 'hour')?.value ?? 0) % 24;
+  const minute = Number(parts.find((part) => part.type === 'minute')?.value ?? 0);
+  const minutes = hour * 60 + minute;
+  const rounded = Math.ceil(minutes / 30) * 30;
+  const next = rounded === minutes ? minutes + 30 : rounded;
+  const date = next >= 24 * 60 ? addDays(todayKst(), 1) : todayKst();
+  const slot = next >= 24 * 60 ? 0 : next;
+  const time = `${String(Math.floor(slot / 60)).padStart(2, '0')}:${String(slot % 60).padStart(2, '0')}`;
+  return { date, time };
+};
+
+/** 희망 시간 폼의 기본값. 시작은 다음 30분 칸, 종료는 그 이틀 뒤 20:00 */
+export const defaultHopePeriod = () => {
+  const start = nextHalfHourKst();
+  return {
+    startDate: start.date,
+    startTime: start.time,
+    endDate: addDays(start.date, 2),
+    endTime: '20:00',
+  };
+};

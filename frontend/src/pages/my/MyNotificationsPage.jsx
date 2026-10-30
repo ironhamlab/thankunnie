@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import FavoriteShopList from '@/components/notification/FavoriteShopList';
+import SmsNotice from '@/components/notification/SmsNotice';
 import SubscriptionCreateForm from '@/components/notification/SubscriptionCreateForm';
 import SubscriptionList from '@/components/notification/SubscriptionList';
 import ClockIcon from '@/components/icons/ClockIcon';
 import HeartIcon from '@/components/icons/HeartIcon';
 import NotificationIcon from '@/components/icons/NotificationIcon';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import { isPendingFavorite } from '@/utils/notificationRules';
 import headerStyles from '@/components/layout/Header.module.css';
 import styles from './MyNotificationsPage.module.css';
 
@@ -19,24 +21,16 @@ const TABS = [
  * 구독 화면. 네비의 구독으로 들어오며, 프로필 없이 탭만 보여 준다.
  * 내 알림 구독에서 목록을 보고, 알림 전 찜 매장 줄을 펼쳐 업장 알림 시간을 등록한다.
  * 카테고리·지역 알림 설정에서 시술·지역 구독을 등록한다.
- *
- * @param {boolean} [embedded] 마이페이지 안에 넣을 때 바깥 여백을 빼기 위해 사용한다
  */
-export default function MyNotificationsPage({ embedded = false }) {
+export default function MyNotificationsPage() {
   const [tab, setTab] = useState('subscriptions');
-  const favoriteShops = useNotificationStore((state) => state.favoriteShops);
   const subscriptions = useNotificationStore((state) => state.subscriptions);
-  // 알림 없이 찜만 한 매장 수. 0이면 뱃지를 숨긴다
-  const pendingFavoriteCount = favoriteShops.filter(
-    (shop) =>
-      !subscriptions.some(
-        (item) =>
-          item.subscriptionType === 'STORE' && Number(item.shopId) === Number(shop.shopId),
-      ),
-  ).length;
+  // 희망 시간이 없는 업장 찜 수. 0이면 뱃지를 숨긴다
+  const pendingFavoriteCount = subscriptions.filter((item) => isPendingFavorite(item)).length;
 
   return (
-    <div className={embedded ? styles.embedded : `b-container b-page ${styles.root}`}>
+    <div className={`b-container b-page ${styles.root}`}>
+      <SmsNotice />
       <div className={styles.tabs} role="tablist" aria-label="구독">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button

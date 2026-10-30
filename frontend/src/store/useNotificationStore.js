@@ -1,10 +1,34 @@
 import { create } from 'zustand';
 import { notificationApi } from '@/api/notificationApi';
+import { shopDetailApi } from '@/api/shopDetailApi';
+import { ERROR_MESSAGES } from '@/constants/errorMessages';
+import {
+  duplicateCandidate,
+  findDuplicateSubscription,
+  hopeTimeError,
+  sameSubscriptionId,
+  toUpdateBody,
+} from '@/utils/notificationRules';
 
 const toError = (error, fallback) => ({
   code: error?.code ?? 'UNKNOWN_ERROR',
   message: error?.message ?? fallback,
 });
+
+const ruleError = (code) => ({
+  code,
+  message: ERROR_MESSAGES[code],
+});
+
+// 서버에 보내기 전에 시간(003)과 같은 대상·같은 희망 시간(004)을 거른다
+const rejectIfInvalid = (subscriptions, candidate, excludeId) => {
+  const timeCode = hopeTimeError(candidate.startTime, candidate.endTime);
+  if (timeCode) return ruleError(timeCode);
+  if (findDuplicateSubscription(subscriptions, candidate, excludeId)) {
+    return ruleError('NOTIFICATION_004');
+  }
+  return null;
+};
 
 /** 고객 빈자리 알림 조건(구독). 마이페이지 알림 조건 탭과 요약 건수가 함께 쓴다. */
 export const useNotificationStore = create((set, get) => ({
@@ -14,9 +38,10 @@ export const useNotificationStore = create((set, get) => ({
   listRequestId: 0,
   categories: [],
   categoryStatus: 'idle',
+  // 업장 구독 카드용 매장명. 키는 매장 ID 문자열, 조회 실패면 null
+  shopNames: {},
+  loadingShopIds: {},
   saving: false,
-  // 알림 구독 없이 찜만 한 매장. 서버 찜 API가 없어 이 화면 세션에서만 유지한다
-  favoriteShops: [],
 
   // 등록·해제보다 늦게 도착한 이전 조회가 목록을 덮지 않도록 마지막 요청의 응답만 반영한다
   loadSubscriptions: async () => {
@@ -53,12 +78,42 @@ export const useNotificationStore = create((set, get) => ({
     }
   },
 
+  // 아직 이름을 모르는 매장만 매장 상세 API로 조회한다. 없으면 null 로 두고 다시 부르지 않는다
+  loadShopNames: async (shopIds) => {
+    const ids = [...new Set(shopIds.map((id) => Number(id)).filter((id) => id > 0))];
+    for (const shopId of ids) {
+      const key = String(shopId);
+      if (key in get().shopNames || get().loadingShopIds[key]) continue;
+      set((state) => ({ loadingShopIds: { ...state.loadingShopIds, [key]: true } }));
+      try {
+        const shop = await shopDetailApi.getShop(shopId);
+        set((state) => ({
+          shopNames: { ...state.shopNames, [key]: shop?.shopName ?? null },
+          loadingShopIds: { ...state.loadingShopIds, [key]: false },
+        }));
+      } catch {
+        set((state) => ({
+          shopNames: { ...state.shopNames, [key]: null },
+          loadingShopIds: { ...state.loadingShopIds, [key]: false },
+        }));
+      }
+    }
+  },
+
   /** 등록 결과를 { ok, error } 로 돌려준다. 화면이 성공·실패 안내를 직접 띄운다 */
   addSubscription: async (request) => {
+    const rejected = rejectIfInvalid(get().subscriptions, request);
+    if (rejected) return { ok: false, error: rejected };
     set({ saving: true });
     try {
       const created = await notificationApi.createSubscription(request);
-      set((state) => ({ subscriptions: [created, ...state.subscriptions], saving: false }));
+      // 방금 등록한 구독을 맨 앞에 둔다. 실패로 비워 둔 목록도 이 응답부터 다시 보여 준다.
+      set((state) => ({
+        subscriptions: [created, ...state.subscriptions],
+        listStatus: 'succeeded',
+        listError: null,
+        saving: false,
+      }));
       get().reloadIfLoading();
       return { ok: true };
     } catch (error) {
@@ -69,12 +124,22 @@ export const useNotificationStore = create((set, get) => ({
 
   /** 구독 유형은 유지한 채 대상과 희망 시간만 바꾼다 */
   updateSubscription: async (subscriptionId, request) => {
+    const current = get().subscriptions.find((item) =>
+      sameSubscriptionId(item.subscriptionId, subscriptionId),
+    );
+    const body = toUpdateBody(current, request);
+    const rejected = rejectIfInvalid(
+      get().subscriptions,
+      duplicateCandidate(current, body),
+      subscriptionId,
+    );
+    if (rejected) return { ok: false, error: rejected };
     set({ saving: true });
     try {
-      const updated = await notificationApi.updateSubscription(subscriptionId, request);
+      const updated = await notificationApi.updateSubscription(subscriptionId, body);
       set((state) => ({
         subscriptions: state.subscriptions.map((item) =>
-          item.subscriptionId === subscriptionId ? updated : item,
+          sameSubscriptionId(item.subscriptionId, subscriptionId) ? updated : item,
         ),
         saving: false,
       }));
@@ -91,7 +156,9 @@ export const useNotificationStore = create((set, get) => ({
     try {
       await notificationApi.deleteSubscription(subscriptionId);
       set((state) => ({
-        subscriptions: state.subscriptions.filter((item) => item.subscriptionId !== subscriptionId),
+        subscriptions: state.subscriptions.filter(
+          (item) => !sameSubscriptionId(item.subscriptionId, subscriptionId),
+        ),
         saving: false,
       }));
       get().reloadIfLoading();
@@ -100,26 +167,6 @@ export const useNotificationStore = create((set, get) => ({
       set({ saving: false });
       return { ok: false, error: toError(error, '알림 조건을 해제하지 못했습니다.') };
     }
-  },
-
-  addFavoriteShop: (shop) => {
-    set((state) => {
-      if (state.favoriteShops.some((item) => Number(item.shopId) === Number(shop.shopId))) {
-        return state;
-      }
-      return {
-        favoriteShops: [
-          ...state.favoriteShops,
-          { shopId: shop.shopId, shopName: shop.shopName },
-        ],
-      };
-    });
-  },
-
-  removeFavoriteShop: (shopId) => {
-    set((state) => ({
-      favoriteShops: state.favoriteShops.filter((item) => Number(item.shopId) !== Number(shopId)),
-    }));
   },
 
   // 변경 전에 보낸 조회가 아직 진행 중이면 그 응답은 버리고 서버 목록을 새로 받는다

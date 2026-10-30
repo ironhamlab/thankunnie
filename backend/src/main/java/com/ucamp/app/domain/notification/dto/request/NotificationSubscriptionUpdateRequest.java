@@ -5,7 +5,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -37,11 +36,12 @@ public record NotificationSubscriptionUpdateRequest(
         Long categoryId,
         @Schema(description = "지역코드. CATEGORY_REGION 일 때만", nullable = true)
         @Size(max = 20) String regionCode,
-        @Schema(description = "알림 희망 시작", example = "2026-10-29T14:00:00+09:00")
-        @NotNull OffsetDateTime startTime,
-        @Schema(description = "알림 희망 종료. 시작보다 뒤이고 아직 지나지 않아야 함",
-                example = "2026-10-31T20:00:00+09:00")
-        @NotNull OffsetDateTime endTime) {
+        @Schema(description = "알림 희망 시작. 업장 찜은 종료와 함께 비울 수 있다",
+                example = "2026-10-29T14:00:00+09:00", nullable = true)
+        OffsetDateTime startTime,
+        @Schema(description = "알림 희망 종료. 시작보다 뒤이고 아직 지나지 않아야 함. 업장 찜은 시작과 함께 비울 수 있다",
+                example = "2026-10-31T20:00:00+09:00", nullable = true)
+        OffsetDateTime endTime) {
 
     private static final ZoneId ZONE_SEOUL = ZoneId.of("Asia/Seoul");
 
@@ -63,8 +63,11 @@ public record NotificationSubscriptionUpdateRequest(
         return toSeoulTime(endTime);
     }
 
-    // DB 컬럼이 TIMESTAMP(0) 이므로 초 단위로 맞춘다
+    // DB 컬럼이 TIMESTAMP(0) 이므로 초 단위로 맞춘다. 업장 찜은 시간을 비울 수 있다
     private static LocalDateTime toSeoulTime(OffsetDateTime time) {
+        if (time == null) {
+            return null;
+        }
         return time.atZoneSameInstant(ZONE_SEOUL).toLocalDateTime().truncatedTo(ChronoUnit.SECONDS);
     }
 }

@@ -93,7 +93,7 @@ export default function SignupPage() {
           onChange={handleChange}
           autoComplete="tel"
           placeholder="010-1234-5678"
-          hint="빈자리 알림 문자를 받을 번호예요."
+          hint="빈자리·예약 확정·취소 문자를 받을 번호예요. 번호가 없으면 문자는 가지 않습니다."
           error={fieldErrors.phone}
         />
         {error && (

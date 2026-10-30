@@ -206,8 +206,9 @@ export default function OwnerCancelPage() {
             {cancelType === 'SHOP_FAULT' && (
               <Notice>
                 <p>
-                  납부 예약금 {formatMoney(quote.paidAmount)}을 전액 환불합니다. 고객에게는 문자가
-                  가지 않으니 취소 후 직접 연락해 주세요.
+                  납부 예약금 {formatMoney(quote.paidAmount)}을 전액 환불합니다. 취소가 완료되면
+                  고객이 가입할 때 저장한 휴대폰 번호로 문자가 갑니다. 번호가 없으면 문자는
+                  생략됩니다.
                 </p>
               </Notice>
             )}
