@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { exploreApi } from '@/api/exploreApi';
+import { shopDetailApi } from '@/api/shopDetailApi';
 import { toVacancyCard } from '@/utils/exploreVacancy';
 
 // 매장 하나의 하루 빈자리는 많아야 수십 건이라 한 번에 받는다
@@ -86,6 +87,16 @@ export const useExploreStore = create((set, get) => ({
     { data: 'mapPageShops', status: 'mapPageShopsStatus', error: 'mapPageShopsError' },
     fetchShops,
   ),
+
+  /** 지도 화면: 주소로 고른 매장이 지도 범위 밖이면 그 매장 위치로 옮기려고 좌표만 받는다. 못 받으면 null */
+  locateShop: async (shopId) => {
+    try {
+      const shop = await shopDetailApi.getShop(shopId);
+      return { lat: shop.latitude, lng: shop.longitude };
+    } catch {
+      return null;
+    }
+  },
 
   /** 필터를 바꾸면 이전 조건으로 펼쳐 둔 빈자리를 버린다 */
   resetShopVacancies: () => set({ shopVacancies: {} }),

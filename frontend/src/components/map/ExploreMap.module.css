@@ -1,6 +1,8 @@
 .wrapper {
   position: absolute;
   inset: 0;
+  /* 지도 안의 핀·묶음이 지도 밖 도구 막대·미리보기 위로 올라오지 않게 지도 전체를 한 층으로 묶는다 */
+  z-index: 0;
 }
 .map {
   width: 100%;
@@ -36,7 +38,8 @@
   left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 2;
+  /* 지도 안에서는 핀보다 위에 둔다 */
+  z-index: 10;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -58,7 +61,7 @@
   position: absolute;
   top: 60px;
   left: 50%;
-  z-index: 3;
+  z-index: 11;
   transform: translateX(-50%);
   max-width: calc(100% - 32px);
   padding: 8px 14px;

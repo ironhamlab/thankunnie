@@ -57,7 +57,9 @@ export default function HomeBeautyMap() {
         ) : (
           <ExploreMap
             shops={shops}
-            selectedId={selected ? String(selected.shopId) : null}
+            // 미리보기는 첫 매장을 보여주지만, 지도에는 사용자가 직접 고른 매장만 넘긴다.
+            // 첫 매장을 넘기면 이전에 본 지역 결과가 남아 있을 때 지도가 그쪽으로 옮겨 간다
+            selectedId={selectedId}
             onSelect={setSelectedId}
             onBoundsChange={setBounds}
             onUnavailable={handleUnavailable}

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useExploreStore } from '@/store/useExploreStore';
 import { addDays, todayKst } from '@/utils/scheduleDate';
+import { validDate } from '@/utils/exploreVacancy';
 import ShopRow from '@/pages/home/components/ShopRow';
 import DateCalendar from '@/pages/home/components/DateCalendar';
 import ExploreMap from '@/components/map/ExploreMap';
@@ -28,7 +29,7 @@ export default function MapPage() {
   const categoryId = params.get('category');
   const dateParam = params.get('date');
   // 타임세일은 오늘 시작하는 빈자리만 보고, 그 밖에는 고른 날짜(기본 오늘)를 본다
-  const date = !saleOnly && dateParam >= today && dateParam <= lastDay ? dateParam : today;
+  const date = (!saleOnly && validDate(dateParam, today, lastDay)) || today;
   const shops = useExploreStore((s) => s.mapPageShops);
   const status = useExploreStore((s) => s.mapPageShopsStatus);
   const error = useExploreStore((s) => s.mapPageShopsError);
@@ -38,8 +39,12 @@ export default function MapPage() {
   const loadShopVacancies = useExploreStore((s) => s.loadShopVacancies);
   const resetShopVacancies = useExploreStore((s) => s.resetShopVacancies);
   const loadCategories = useExploreStore((s) => s.loadCategories);
+  const locateShop = useExploreStore((s) => s.locateShop);
   const [bounds, setBounds] = useState(null);
   const [mapUnavailable, setMapUnavailable] = useState(false);
+  const [focusPosition, setFocusPosition] = useState(null);
+  // 새로고침·공유 주소로 들어왔을 때 고른 매장. 지도 범위는 주소에 남기지 않으므로 처음 한 번만 그 매장 위치를 찾는다
+  const restoreShopIdRef = useRef(selectedId);
   const categoryName =
     categories.find((item) => String(item.categoryId) === categoryId)?.name ?? ALL;
 
@@ -68,6 +73,18 @@ export default function MapPage() {
     if (!bounds && !mapUnavailable) return;
     loadMapPageShops({ ...filter, ...(mapUnavailable ? {} : bounds) });
   }, [filter, bounds, mapUnavailable, loadMapPageShops]);
+
+  // 첫 조회 결과에 고른 매장이 없으면 그 매장 위치로 지도를 옮긴다. 옮기면 그 범위로 다시 조회해 목록에서 펼쳐진다.
+  // 한 번만 시도하므로 응답을 기다리는 사이 결과가 바뀌어도 버리지 않는다
+  useEffect(() => {
+    const shopId = restoreShopIdRef.current;
+    if (!shopId || status !== 'succeeded' || mapUnavailable) return;
+    restoreShopIdRef.current = null;
+    if (shops.some((shop) => String(shop.shopId) === shopId)) return;
+    locateShop(shopId).then((position) => {
+      if (position) setFocusPosition(position);
+    });
+  }, [status, shops, mapUnavailable, locateShop]);
 
   const detail = selectedId ? shopVacancies[selectedId] : undefined;
   useEffect(() => {
@@ -162,6 +179,7 @@ export default function MapPage() {
               onSelect={selectShop}
               onBoundsChange={setBounds}
               onUnavailable={handleUnavailable}
+              focusPosition={focusPosition}
             />
             {status === 'loading' && <span className={styles.refreshing}>매장을 찾는 중…</span>}
           </section>

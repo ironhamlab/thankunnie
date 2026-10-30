@@ -40,6 +40,9 @@ const LOCATE_OPTIONS = { enableHighAccuracy: false, timeout: 10000, maximumAge: 
 const LOCATE_MESSAGE_MS = 4000;
 const PERMISSION_DENIED = 1;
 
+// 매장이 다 보이게 범위를 맞출 때 기본 여백(px)
+const DEFAULT_FIT_PADDING = { top: 40, right: 40, bottom: 40, left: 40 };
+
 const round = (value) => Number(value.toFixed(COORD_DIGITS));
 
 /**
@@ -54,6 +57,10 @@ const round = (value) => Number(value.toFixed(COORD_DIGITS));
  * @param onBoundsChange 지도 범위 { minLat, maxLat, minLng, maxLng } 를 받는다
  * @param onUnavailable  키가 없거나 SDK 를 불러오지 못했을 때 부른다
  * @param resetSignal    바뀔 때마다 지도를 처음 위치로 돌린다 (지도 초기화 버튼). 0 이면 무시한다
+ * @param focusPosition  { lat, lng } 가 들어오면 그 위치로 지도를 옮긴다 (새로고침 때 고른 매장 위치 복원)
+ * @param fitToShops     true 면 받은 매장이 다 보이게 범위를 맞춘다 (검색 화면처럼 목록이 지도 범위와 상관없는 곳).
+ *                       이때는 onBoundsChange 를 넘기지 않아 지도를 움직여도 다시 조회하지 않고, 내 위치 버튼도 숨긴다
+ * @param boundsPadding  fitToShops 로 범위를 맞출 때 띄울 여백(px). 지도 위에 패널이 겹치는 쪽을 넓게 준다
  */
 export default function ExploreMap({
   shops,
@@ -62,6 +69,9 @@ export default function ExploreMap({
   onBoundsChange,
   onUnavailable,
   resetSignal = 0,
+  focusPosition = null,
+  fitToShops = false,
+  boundsPadding = DEFAULT_FIT_PADDING,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -180,8 +190,17 @@ export default function ExploreMap({
       return overlay;
     });
     clusterer.addMarkers(overlays);
+    const map = mapRef.current;
+    if (fitToShops && map && shops.length > 1) {
+      const bounds = new maps.LatLngBounds();
+      shops.forEach((shop) => bounds.extend(new maps.LatLng(shop.latitude, shop.longitude)));
+      const { top, right, bottom, left } = boundsPadding;
+      map.setBounds(bounds, top, right, bottom, left);
+    } else if (fitToShops && map && shops.length === 1) {
+      map.setCenter(new maps.LatLng(shops[0].latitude, shops[0].longitude));
+    }
     return () => clusterer.clear();
-  }, [status, shops]);
+  }, [status, shops, fitToShops, boundsPadding]);
 
   useEffect(() => {
     if (status !== 'ready') return;
@@ -206,6 +225,13 @@ export default function ExploreMap({
     map.setLevel(DEFAULT_LEVEL);
     map.setCenter(new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng));
   }, [status, resetSignal]);
+
+  // 옮기면 idle 로 그 범위를 다시 조회한다. 확대 단계는 그대로 둔다
+  useEffect(() => {
+    const map = mapRef.current;
+    if (status !== 'ready' || !map || !focusPosition) return;
+    map.setCenter(new window.kakao.maps.LatLng(focusPosition.lat, focusPosition.lng));
+  }, [status, focusPosition]);
 
   useEffect(() => {
     if (!locateMessage) return undefined;
@@ -265,7 +291,8 @@ export default function ExploreMap({
           <Spinner />
         </div>
       )}
-      {status === 'ready' && (
+      {/* 내 위치로 옮겨도 다시 조회하지 않는 지도(범위 맞추기 모드)에는 의미가 없어 숨긴다 */}
+      {status === 'ready' && onBoundsChange && (
         <button
           type="button"
           className={styles.locate}

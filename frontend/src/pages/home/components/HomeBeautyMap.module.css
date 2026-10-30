@@ -50,6 +50,8 @@
   justify-content: space-between;
   gap: 6px;
   align-items: center;
+  /* 지도 오른쪽 확대·축소 버튼(오른쪽 끝에서 약 40px)과 겹치지 않게 그만큼 비운다 */
+  margin-right: 32px;
 }
 .toolbar > span,
 .toolbar > div {
