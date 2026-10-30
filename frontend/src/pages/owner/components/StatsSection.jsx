@@ -97,8 +97,12 @@ export default function StatsSection() {
     return range.from === period.from && range.to === period.to;
   })?.key;
   const metric = METRICS.find((item) => item.key === metricKey);
-  // 지금 고른 기간의 조회가 성공했을 때만 본문을 그린다 (기간 오류·조회 중·실패 시 이전 통계를 숨김)
-  const summary = !periodError && status === 'succeeded' ? stats?.summary : null;
+  // 응답의 기간이 지금 고른 기간과 같고 조회가 성공했을 때만 본문을 그린다.
+  // 기간을 바꾼 직후(새 요청을 보내기 전 렌더)·기간 오류·조회 중·실패 때 이전 기간 통계가 보이지 않게 한다
+  const isCurrentPeriod = stats?.summary?.from === period.from && stats?.summary?.to === period.to;
+  const summary = !periodError && status === 'succeeded' && isCurrentPeriod ? stats.summary : null;
+  const waiting =
+    !periodError && (status === 'loading' || (status === 'succeeded' && !isCurrentPeriod));
   // 확정·취소 예약이 하나도 없으면 0 카드와 빈 그래프 대신 안내를 보여 준다 (첫 가입·오래 쉰 매장 등)
   const isEmpty =
     summary &&
@@ -164,7 +168,7 @@ export default function StatsSection() {
           </Button>
         </Alert>
       )}
-      {!periodError && status === 'loading' && <Spinner />}
+      {waiting && <Spinner />}
 
       {isEmpty && (
         <Panel padded>
