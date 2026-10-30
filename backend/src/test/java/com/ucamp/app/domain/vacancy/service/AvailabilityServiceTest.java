@@ -245,4 +245,30 @@ class AvailabilityServiceTest {
         ReflectionTestUtils.setField(reservation, "status", status);
         return reservation;
     }
+
+    @Test
+    @DisplayName("영업일이면 예약이 꽉 차도 열린 시간이 있다고 본다")
+    void hasOpenTime_businessDay_true() {
+        assertThat(service.hasOpenTime(SHOP_ID, DATE)).isTrue();
+    }
+
+    @Test
+    @DisplayName("영업시간이 없는 날은 열린 시간이 없다")
+    void hasOpenTime_noBusinessHour_false() {
+        assertThat(service.hasOpenTime(SHOP_ID, DATE.plusDays(1))).isFalse();
+    }
+
+    @Test
+    @DisplayName("하루 영업시간 전체가 닫기로 막히면 열린 시간이 없다")
+    void hasOpenTime_wholeDayClosed_false() {
+        given(shopScheduleExceptionRepository.findOverlapping(eq(SHOP_ID), any(), any()))
+                .willReturn(List.of(ShopScheduleException.builder()
+                        .shopId(SHOP_ID)
+                        .exceptionType(ScheduleExceptionType.CLOSE)
+                        .startsAt(at(10, 0))
+                        .endsAt(at(20, 0))
+                        .build()));
+
+        assertThat(service.hasOpenTime(SHOP_ID, DATE)).isFalse();
+    }
 }
