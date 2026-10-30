@@ -92,6 +92,15 @@ class MyReservationControllerTest {
     }
 
     @Test
+    @DisplayName("현재 점유가 없으면 data 가 null 인 200 을 반환한다")
+    void getCurrentHold_none_returnsNullData() throws Exception {
+        mockMvc.perform(get(URL + "/current-hold").header(StubAuthFilter.HEADER_NAME, "CUSTOMER_1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").doesNotExist());
+        verify(reservationQueryService).getMyCurrentHold(any(AuthUser.class));
+    }
+
+    @Test
     @DisplayName("점유 풀기는 본문 없이 204 를 반환한다")
     void releaseHold_customer_returnsNoContent() throws Exception {
         mockMvc.perform(post(URL + "/5/release").header(StubAuthFilter.HEADER_NAME, "CUSTOMER_1"))

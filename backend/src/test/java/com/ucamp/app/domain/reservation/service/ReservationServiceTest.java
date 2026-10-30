@@ -356,11 +356,12 @@ class ReservationServiceTest {
     void createReservation_replaceHold_releasesThenCreates() {
         givenTreatment(TreatmentStatus.ACTIVE);
         Reservation hold = userReservation(NOW.plusMinutes(5));
+        ReflectionTestUtils.setField(hold, "id", RESERVATION_ID);
         givenHolds(hold);
         given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
 
         ReservationCreateResponse response = reservationService.createReservation(
-                CUSTOMER, replaceRequest(NOW.plusHours(11)));
+                CUSTOMER, replaceRequest(NOW.plusHours(11), RESERVATION_ID));
 
         assertThat(hold.getStatus()).isEqualTo(ReservationStatus.EXPIRED);
         assertThat(hold.getHoldExpiresAt()).isEqualTo(NOW);
@@ -371,6 +372,21 @@ class ReservationServiceTest {
         inOrder.verify(reservationRepository).flush();
         inOrder.verify(availabilityService).validateAvailable(SHOP_ID, NOW.plusHours(11), 60);
         inOrder.verify(reservationRepository).save(any(Reservation.class));
+    }
+
+    @Test
+    @DisplayName("확인창에서 본 점유와 지금 점유가 다르면 풀지 않고 RESERVATION_HOLD_EXISTS 예외가 발생한다")
+    void createReservation_replaceOtherHold_throwsHoldExists() {
+        givenTreatment(TreatmentStatus.ACTIVE);
+        Reservation hold = userReservation(NOW.plusMinutes(5));
+        ReflectionTestUtils.setField(hold, "id", RESERVATION_ID);
+        givenHolds(hold);
+
+        assertErrorCode(() -> reservationService.createReservation(
+                CUSTOMER, replaceRequest(NOW.plusHours(11), RESERVATION_ID + 1)), ErrorCode.RESERVATION_HOLD_EXISTS);
+        assertThat(hold.getStatus()).isEqualTo(ReservationStatus.HOLD);
+        verify(reservationRepository, never()).flush();
+        verify(reservationRepository, never()).save(any());
     }
 
     @Test
@@ -464,9 +480,9 @@ class ReservationServiceTest {
         return new ReservationCreateRequest(TREATMENT_ID, startsAt.atZone(BookingPolicy.ZONE).toOffsetDateTime());
     }
 
-    private static ReservationCreateRequest replaceRequest(LocalDateTime startsAt) {
+    private static ReservationCreateRequest replaceRequest(LocalDateTime startsAt, Long replaceReservationId) {
         return new ReservationCreateRequest(TREATMENT_ID, startsAt.atZone(BookingPolicy.ZONE).toOffsetDateTime(),
-                true);
+                replaceReservationId);
     }
 
     private static void assertErrorCode(Runnable action, ErrorCode errorCode) {

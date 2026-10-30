@@ -56,6 +56,13 @@ public class MyReservationController {
                 reservationQueryService.getMyReservations(loginUser, from, to, statuses, page, size)));
     }
 
+    @Operation(summary = "내 현재 점유",
+            description = "지금 잡고 있는 결제 대기(HOLD, 만료 전) 예약. 없으면 data 가 null")
+    @GetMapping("/current-hold")
+    public ResponseEntity<ApiResponse<ReservationDetailResponse>> getCurrentHold(@LoginUser AuthUser loginUser) {
+        return ResponseEntity.ok(ApiResponse.success(reservationQueryService.getMyCurrentHold(loginUser)));
+    }
+
     @Operation(summary = "내 예약 상세", description = "결제·취소 상태 포함. 다른 고객 예약은 404")
     @GetMapping("/{reservationId}")
     public ResponseEntity<ApiResponse<ReservationDetailResponse>> getReservation(

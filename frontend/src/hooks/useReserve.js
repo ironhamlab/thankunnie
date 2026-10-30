@@ -21,7 +21,8 @@ export default function useReserve() {
   // 바꿀지 묻는 동안 기존 예약과 다시 보낼 요청을 들고 있는다
   const [pendingHold, setPendingHold] = useState(null);
 
-  const submit = async (request) => {
+  // retried: 기존 예약이 없어 한 번 다시 보낸 요청인지. 서버와 조회가 엇갈려도 계속 다시 보내지 않도록 한 번만 한다
+  const submit = async (request, retried = false) => {
     setError('');
     setLoading(true);
     try {
@@ -30,7 +31,9 @@ export default function useReserve() {
       // 새로고침해도 결제 화면이 서버에서 예약을 다시 불러올 수 있도록 예약 번호를 주소에 남긴다
       navigate(`${ROUTES.CHECKOUT}?reservationId=${reservation.reservationId}`);
     } catch (err) {
-      if (err.code === HOLD_EXISTS && !request.replaceHold) {
+      if (err.code === HOLD_EXISTS) {
+        // 바꾸기를 눌렀는데도 오면 그 사이 점유가 다른 예약으로 바뀐 것이다. 지금 점유로 다시 묻는다
+        const baseRequest = { treatmentId: request.treatmentId, startsAt: request.startsAt };
         let hold;
         try {
           hold = await findMyHold();
@@ -41,12 +44,17 @@ export default function useReserve() {
           setLoading(false);
           return;
         }
-        // 찾는 사이 기존 예약이 만료됐으면 물을 것이 없으므로 바로 다시 보낸다
+        // 찾는 사이 기존 예약이 만료됐으면 물을 것이 없으므로 바꾸기 없이 한 번 다시 보낸다
         if (!hold) {
-          await submit({ ...request, replaceHold: true });
-          return;
+          if (!retried) {
+            await submit(baseRequest, true);
+            return;
+          }
+          setPendingHold(null);
+          setError(err.message);
+        } else {
+          setPendingHold({ hold, request: baseRequest });
         }
-        setPendingHold({ hold, request });
       } else {
         setPendingHold(null);
         setError(err.message);
@@ -63,8 +71,10 @@ export default function useReserve() {
   const reserve = (treatmentId, date, time) =>
     submit({ treatmentId, startsAt: toKstDateTime(date, time.padStart(5, '0')) });
 
-  // 기존 예약의 확보를 풀고 이 시간으로 바꾼다. 새 시간이 그새 찼으면 서버가 거절하고 기존 확보는 남는다
-  const replaceHold = () => pendingHold && submit({ ...pendingHold.request, replaceHold: true });
+  // 확인창에 보여준 그 예약의 확보를 풀고 이 시간으로 바꾼다. 새 시간이 그새 찼으면 서버가 거절하고 기존 확보는 남는다
+  const replaceHold = () =>
+    pendingHold &&
+    submit({ ...pendingHold.request, replaceReservationId: pendingHold.hold.reservationId });
 
   const cancelReplace = () => setPendingHold(null);
 

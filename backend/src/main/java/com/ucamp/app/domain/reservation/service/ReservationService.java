@@ -72,7 +72,8 @@ public class ReservationService {
      *                           영업 외 시간이거나 닫힌 시간이면 VACANCY_NOT_OPEN_TIME,
      *                           매장의 다른 예약과 겹치면 VACANCY_TIME_TAKEN,
      *                           본인의 다른 예약과 겹치면 VACANCY_USER_TIME_OVERLAP,
-     *                           다른 시간의 본인 점유가 있는데 교체(replaceHold)를 요청하지 않았으면 RESERVATION_HOLD_EXISTS
+     *                           다른 시간의 본인 점유가 있는데 그 점유 ID 로 교체(replaceReservationId)를 요청하지 않았으면
+     *                           RESERVATION_HOLD_EXISTS
      */
     @Transactional
     public ReservationCreateResponse createReservation(AuthUser loginUser, ReservationCreateRequest request) {
@@ -101,7 +102,8 @@ public class ReservationService {
             if (currentHold.isSameSlot(treatment.getTreatmentId(), startsAt)) {
                 return ReservationCreateResponse.from(currentHold);
             }
-            if (!request.replacesHold()) {
+            // 고객이 확인창에서 본 그 점유일 때만 바꾼다. 그 사이 다른 탭에서 점유가 바뀌었으면 다시 묻게 한다
+            if (!request.replaces(currentHold.getId())) {
                 throw new BusinessException(ErrorCode.RESERVATION_HOLD_EXISTS);
             }
             currentHold.release(now);

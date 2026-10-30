@@ -81,6 +81,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("startsAt") LocalDateTime startsAt, @Param("endsAt") LocalDateTime endsAt);
 
     /**
+     * 사용자의 특정 상태 예약을 잠그지 않고 조회한다. 화면에 보여줄 현재 점유를 찾는 데 쓴다.
+     * 점유(HOLD)의 만료 여부는 SalePolicy.isOccupying 으로 판단한다.
+     */
+    List<Reservation> findByUserIdAndStatus(Long userId, ReservationStatus status);
+
+    /**
      * 사용자의 특정 상태 예약을 행을 잠가 조회한다 (SELECT FOR UPDATE). 1인 1점유 검사에서 HOLD 를 찾는 데 쓴다.
      * 같은 예약의 결제 확정과 줄 세워, 확정된 예약을 교체하면서 EXPIRED 로 덮어쓰지 않게 한다.
      * 점유(HOLD)의 만료 여부는 SalePolicy.isOccupying 으로 판단한다.
