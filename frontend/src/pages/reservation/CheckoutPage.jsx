@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { generatePath, Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { generatePath, Link, useBlocker, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { money } from '@/utils/demoData';
 import { datePart, timePart } from '@/utils/scheduleDate';
@@ -76,6 +76,7 @@ export default function CheckoutPage() {
   const status = useReservationStore((s) => s.detailStatus);
   const loadError = useReservationStore((s) => s.detailError);
   const clockOffset = useReservationStore((s) => s.detailClockOffset);
+  const releaseHold = useReservationStore((s) => s.releaseHold);
   const [now, setNow] = useState(Date.now);
   const [policy, setPolicy] = useState(false);
   const [demo, setDemo] = useState(false);
@@ -83,12 +84,32 @@ export default function CheckoutPage() {
   const [error, setError] = useState('');
   const [headerHeight, setHeaderHeight] = useState(0);
   const [showExpiredDialog, setShowExpiredDialog] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  // 결제 담당: 결제창을 열 때 true 로 바꿔, 결제 중 이동(결제 완료 화면 등)은 막지도 풀지도 않게 한다 (R5)
+  const payingRef = useRef(false);
 
   // 기기 시계가 서버와 달라도 서버가 만료로 보는 순간에 맞춰 세도록, 응답 때 잰 차이만큼 보정한 서버 기준 현재 시각
   const serverNow = now + clockOffset;
+  const holdOpen = detail?.summary?.status === 'HOLD';
+  const holdExpiresAtMs = holdOpen ? new Date(detail.holdExpiresAt).getTime() : 0;
   // 화면을 보는 중에 점유(HOLD) 시간이 끝난 순간. 처음부터 만료 상태로 열린 예약은 해당하지 않는다
-  const holdEndedWhileOpen =
-    detail?.summary?.status === 'HOLD' && serverNow >= new Date(detail.holdExpiresAt).getTime();
+  const holdEndedWhileOpen = holdOpen && serverNow >= holdExpiresAtMs;
+  const holdActive = holdOpen && serverNow < holdExpiresAtMs;
+
+  // 앱 안에서 다른 화면으로 가면(버튼·뒤로가기·헤더 링크) 확인창을 띄우고, 나가기로 하면 점유를 푼다 (R1·R2).
+  // 새로고침·탭 닫기는 잡지 않고 5분 만료에 맡긴다 (R3)
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      holdActive && !payingRef.current && currentLocation.pathname !== nextLocation.pathname,
+  );
+
+  const leaveCheckout = async () => {
+    setLeaving(true);
+    // 풀기에 실패해도 이동은 막지 않는다. 남은 점유는 5분 뒤 자동으로 풀린다
+    await releaseHold(reservationId);
+    setLeaving(false);
+    blocker.proceed();
+  };
 
   useEffect(() => {
     if (reservationId) {
@@ -101,6 +122,20 @@ export default function CheckoutPage() {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  // 다른 탭에서 점유를 풀거나 다른 시간으로 바꿨을 수 있으므로, 이 탭이 다시 보이면 서버 상태를 다시 받는다 (R7)
+  useEffect(() => {
+    if (!reservationId) {
+      return undefined;
+    }
+    const handleVisible = () => {
+      if (document.visibilityState === 'visible') {
+        loadReservation('my', reservationId);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisible);
+    return () => document.removeEventListener('visibilitychange', handleVisible);
+  }, [reservationId, loadReservation]);
 
   // 만료 순간 한 번 안내 팝업을 띄우고, 서버 예약 상태와 서버 시각을 다시 받는다.
   // 페이지를 자동으로 옮기지 않는다 (결제창 진행 중일 수 있고, 입력한 요청사항이 사라진다)
@@ -197,10 +232,16 @@ export default function CheckoutPage() {
   }
 
   /* 결제 진행하기 버튼 클릭시 실행하는 함수입니다. 결제 담당은 여기를 채워주세요. */
-  const handlePay = () => {
+  const handlePay = async () => {
     setError('');
     if (!policy || !demo) {
       setError('필수 약관과 모의 결제 확인에 동의해 주세요.');
+      return;
+    }
+    // 다른 탭에서 풀린 예약에 결제하지 않도록 결제 직전에 서버 상태를 다시 받는다 (R7).
+    // 점유가 아니면 화면이 만료 안내로 바뀐다
+    await loadReservation('my', reservationId);
+    if (useReservationStore.getState().detail?.summary?.status !== 'HOLD') {
       return;
     }
     // 결제 요청(아임포트)과 결제 확인(POST /api/v1/payments/verify)은 결제 담당 작업에서 연결한다.
@@ -372,6 +413,23 @@ export default function CheckoutPage() {
             </Button>
             <Button as={Link} to={ROUTES.HOME}>
               다른 빈자리 보기
+            </Button>
+          </div>
+        </Dialog>
+      )}
+
+      {blocker.state === 'blocked' && (
+        <Dialog title="결제 화면을 나갈까요?" onClose={() => blocker.reset()}>
+          <p>
+            나가면 잡아 둔 시간이 바로 풀려요. 다른 고객이 먼저 예약하면 같은 시간을 다시 잡지
+            못할 수 있어요.
+          </p>
+          <div className={`b-flex ${styles.dialogActions}`}>
+            <Button variant="primary" disabled={leaving} onClick={() => blocker.reset()}>
+              계속 결제하기
+            </Button>
+            <Button disabled={leaving} onClick={leaveCheckout}>
+              {leaving ? '나가는 중...' : '나가기'}
             </Button>
           </div>
         </Dialog>

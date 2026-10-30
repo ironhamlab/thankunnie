@@ -11,6 +11,7 @@ import Panel from '@/components/common/Panel';
 import Notice from '@/components/common/Notice';
 import EmptyState from '@/components/common/EmptyState';
 import Alert from '@/components/common/Alert';
+import HoldReplaceDialog from '@/components/reservation/HoldReplaceDialog';
 import styles from './ReservationPage.module.css';
 
 const dayLabel = (isClosed) => (isClosed ? '휴무' : '•');
@@ -30,7 +31,14 @@ export default function ReservationPage() {
   const { id } = useParams();
   const service = SERVICES.find((item) => item.id === id);
   const bookings = useDesignStore((s) => s.bookings);
-  const { reserve, loading, error: reserveError } = useReserve();
+  const {
+    reserve,
+    loading,
+    error: reserveError,
+    pendingHold,
+    replaceHold,
+    cancelReplace,
+  } = useReserve();
   const today = todayKst();
   const [date, setDate] = useState(today);
   const [time, setTime] = useState('');
@@ -285,6 +293,14 @@ export default function ReservationPage() {
             {loading || mode === 'loading' ? '실시간 검증 중…' : '다음 (예약 가능 여부 확인)'}
           </Button>
           <p className="b-help">매장 사정 취소 시 100% 모의 환불 및 보상 정책 적용</p>
+          {pendingHold && (
+            <HoldReplaceDialog
+              hold={pendingHold}
+              loading={loading}
+              onReplace={replaceHold}
+              onClose={cancelReplace}
+            />
+          )}
         </Panel>
       </div>
       <p className="b-help">

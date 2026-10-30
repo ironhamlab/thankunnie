@@ -21,4 +21,7 @@ export const reservationApi = {
   getMyReservations: (filters) =>
     axiosInstance.get('/v1/my/reservations', { params: toParams(filters) }),
   getMyReservation: (reservationId) => axiosInstance.get(`/v1/my/reservations/${reservationId}`),
+  // 결제 화면을 떠날 때 본인 점유를 푼다. 이미 만료됐어도 성공(204)이다
+  releaseHold: (reservationId) =>
+    axiosInstance.post(`/v1/my/reservations/${reservationId}/release`),
 };
