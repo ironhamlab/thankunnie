@@ -31,6 +31,7 @@ public enum ErrorCode {
     RESERVATION_HOLD_EXPIRED(HttpStatus.CONFLICT, "RESERVATION_003", "결제 대기 시간이 만료되었습니다."),
     RESERVATION_NOT_HOLD(HttpStatus.CONFLICT, "RESERVATION_004", "결제 대기 중인 예약이 아닙니다."),
     RESERVATION_DEPOSIT_MISMATCH(HttpStatus.BAD_REQUEST, "RESERVATION_005", "결제 금액이 예약금과 다릅니다."),
+    RESERVATION_HOLD_EXISTS(HttpStatus.CONFLICT, "RESERVATION_006", "결제 대기 중인 예약이 있습니다."),
 
     // NOTIFICATION
     SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION_001", "구독을 찾을 수 없습니다."),
@@ -55,6 +56,7 @@ public enum ErrorCode {
     VACANCY_BUSINESS_TIME_REQUIRED(HttpStatus.BAD_REQUEST, "VACANCY_014", "영업일은 시작·종료 시각을 입력해야 합니다."),
     VACANCY_INVALID_DURATION(HttpStatus.BAD_REQUEST, "VACANCY_015", "시술 소요 시간이 올바르지 않습니다."),
     VACANCY_USER_TIME_OVERLAP(HttpStatus.CONFLICT, "VACANCY_016", "같은 시간에 진행 중인 예약이 있습니다."),
+    VACANCY_SCHEDULE_EXCEPTION_OVERLAP(HttpStatus.CONFLICT, "VACANCY_017", "같은 시간에 이미 등록한 열기·닫기 일정이 있습니다."),
 
     // PAYMENT
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT_001", "결제 정보를 찾을 수 없습니다."),
@@ -63,6 +65,8 @@ public enum ErrorCode {
     PAYMENT_INVALID_REFUND_AMOUNT(HttpStatus.BAD_REQUEST, "PAYMENT_004", "환불 금액이 올바르지 않습니다."),
     PAYMENT_REFUND_UNCERTAIN(HttpStatus.GATEWAY_TIMEOUT, "PAYMENT_005",
             "환불 결과를 확인하고 있습니다. 잠시 후 결제 상태를 확인해 주세요."),
+    PAYMENT_NOT_PAID(HttpStatus.BAD_REQUEST, "PAYMENT_006", "결제가 완료되지 않았습니다."),
+    PAYMENT_RESERVATION_MISMATCH(HttpStatus.BAD_REQUEST, "PAYMENT_007", "예약과 맞지 않는 결제입니다."),
     // TREATMENT
     TREATMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "TREATMENT_001", "시술을 찾을 수 없습니다."),
 

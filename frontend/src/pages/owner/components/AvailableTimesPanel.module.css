@@ -1,0 +1,74 @@
+.legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 12px 0 8px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.swatch {
+  width: 12px;
+  height: 12px;
+  border: 1px solid;
+  border-radius: 3px;
+}
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 8px;
+}
+.chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  /* 이유 글자가 있는 칸과 없는 칸이 섞여도 모든 줄의 칸 높이를 같게 둔다 */
+  min-height: 46px;
+  padding: 4px;
+  border: 1px solid;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 700;
+}
+.chip small {
+  font-size: 10px;
+  font-weight: 600;
+}
+.available {
+  border-color: var(--color-success-strong);
+  background: var(--color-success-bg);
+  color: var(--color-success-strong);
+}
+.closed {
+  border-color: var(--color-danger);
+  background: #fff1f2;
+  color: var(--color-danger);
+}
+.booked {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+.passed {
+  border-color: var(--color-border);
+  background: white;
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+.off {
+  border-style: dashed;
+  border-color: var(--color-border);
+  background: white;
+  color: var(--color-text-muted);
+}

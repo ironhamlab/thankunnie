@@ -41,11 +41,13 @@ export function dayLabel(date, today = todayKst()) {
  * 시술·시작 시각까지 고른 곳(마감 임박 카드, 시간 버튼)은 그 날짜·시간이 골라진 채로 열리도록 값을 붙인다.
  * 매장 상세는 아직 주소의 선택 값을 읽지 않아 지금은 매장 상세 첫 화면이 열린다.
  *
+ * 매장 상세는 일반 시술만 보여주므로, 모델 시술로 가는 곳은 model 을 붙여 모델 모집 상세(/shops/:shopId/models)로 보낸다.
+ *
  * @param shopId    매장 ID
- * @param selection { date, treatmentId, startsAt } 중 아는 값
+ * @param selection { date, treatmentId, startsAt, model } 중 아는 값
  */
-export function shopPagePath(shopId, { date, treatmentId, startsAt } = {}) {
-  const path = generatePath(ROUTES.SHOP_DETAIL, { shopId });
+export function shopPagePath(shopId, { date, treatmentId, startsAt, model } = {}) {
+  const path = generatePath(model ? ROUTES.MODEL_RECRUIT_DETAIL : ROUTES.SHOP_DETAIL, { shopId });
   const query = new URLSearchParams();
   if (date) query.set('date', date);
   if (treatmentId && startsAt) {
@@ -53,6 +55,19 @@ export function shopPagePath(shopId, { date, treatmentId, startsAt } = {}) {
     query.set('startsAt', startsAt);
   }
   return query.size ? `${path}?${query}` : path;
+}
+
+/**
+ * 주소에서 받은 날짜가 실제 달력 날짜(YYYY-MM-DD)이고 min~max 안이면 그대로, 아니면 null 을 돌려준다.
+ * 문자열 비교만 하면 2026-10-99 같은 값이 범위 안으로 통과한다
+ */
+export function validDate(value, min, max) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value ?? '')) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const isRealDate =
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+  return isRealDate && value >= min && value <= max ? value : null;
 }
 
 /** 이미지가 없으면 기본 시술 그림을 쓴다 */
@@ -103,11 +118,12 @@ export function toVacancyCard(item, today = todayKst()) {
     discount: item.discountRate,
     urgency: URGENCY[item.priceTier] ?? URGENCY.NORMAL,
     image: vacancyImage(item.imageUrl),
-    // 이 시술 · 시각이 골라진 매장 페이지
+    // 이 시술 · 시각이 골라진 매장 페이지. 모델 시술은 참여 조건·촬영 안내가 보이는 모집 상세로 간다
     shopPath: shopPagePath(item.shopId, {
       date: datePart(item.startsAt),
       treatmentId: item.treatmentId,
       startsAt: item.startsAt,
+      model: item.treatmentType === 'MODEL',
     }),
   };
 }

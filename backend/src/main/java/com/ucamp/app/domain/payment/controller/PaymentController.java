@@ -1,5 +1,7 @@
 package com.ucamp.app.domain.payment.controller;
 
+import com.ucamp.app.common.auth.AuthUser;
+import com.ucamp.app.common.auth.LoginUser;
 import com.ucamp.app.common.response.ApiResponse;
 import com.ucamp.app.domain.payment.dto.request.PaymentVerifyRequest;
 import com.ucamp.app.domain.payment.dto.response.PaymentVerifyResponse;
@@ -23,7 +25,7 @@ public class PaymentController {
 
     @PostMapping("/verify")
     public ResponseEntity<ApiResponse<PaymentVerifyResponse>> verify(
-            @Valid @RequestBody PaymentVerifyRequest request) {
-        return ResponseEntity.ok(ApiResponse.success(paymentService.verify(request)));
+            @LoginUser AuthUser loginUser, @Valid @RequestBody PaymentVerifyRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(paymentService.verify(loginUser, request)));
     }
 }

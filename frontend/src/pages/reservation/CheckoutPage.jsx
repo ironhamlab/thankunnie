@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
-import { generatePath, Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { generatePath, Link, useBlocker, useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { money } from '@/utils/demoData';
 import { datePart, timePart } from '@/utils/scheduleDate';
+import { savePendingRequest, takePendingRequest, verifyErrorMessage } from '@/utils/payment';
+import { loadPortOne, requestPay } from '@/utils/portoneLoader';
 import { useReservationStore } from '@/store/useReservationStore';
+import { usePaymentStore } from '@/store/usePaymentStore';
 import Asset from '@/components/common/Asset';
 import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
@@ -76,19 +79,43 @@ export default function CheckoutPage() {
   const status = useReservationStore((s) => s.detailStatus);
   const loadError = useReservationStore((s) => s.detailError);
   const clockOffset = useReservationStore((s) => s.detailClockOffset);
+  const releaseHold = useReservationStore((s) => s.releaseHold);
+  const verifyPayment = usePaymentStore((s) => s.verifyPayment);
+  const navigate = useNavigate();
   const [now, setNow] = useState(Date.now);
+  const [paying, setPaying] = useState(false);
   const [policy, setPolicy] = useState(false);
   const [demo, setDemo] = useState(false);
   const [request, setRequest] = useState('');
   const [error, setError] = useState('');
   const [headerHeight, setHeaderHeight] = useState(0);
   const [showExpiredDialog, setShowExpiredDialog] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  // 결제 담당: 결제창을 열 때 true 로 바꿔, 결제 중 이동(결제 완료 화면 등)은 막지도 풀지도 않게 한다 (R5)
+  const payingRef = useRef(false);
 
   // 기기 시계가 서버와 달라도 서버가 만료로 보는 순간에 맞춰 세도록, 응답 때 잰 차이만큼 보정한 서버 기준 현재 시각
   const serverNow = now + clockOffset;
+  const holdOpen = detail?.summary?.status === 'HOLD';
+  const holdExpiresAtMs = holdOpen ? new Date(detail.holdExpiresAt).getTime() : 0;
   // 화면을 보는 중에 점유(HOLD) 시간이 끝난 순간. 처음부터 만료 상태로 열린 예약은 해당하지 않는다
-  const holdEndedWhileOpen =
-    detail?.summary?.status === 'HOLD' && serverNow >= new Date(detail.holdExpiresAt).getTime();
+  const holdEndedWhileOpen = holdOpen && serverNow >= holdExpiresAtMs;
+  const holdActive = holdOpen && serverNow < holdExpiresAtMs;
+
+  // 앱 안에서 다른 화면으로 가면(버튼·뒤로가기·헤더 링크) 확인창을 띄우고, 나가기로 하면 점유를 푼다 (R1·R2).
+  // 새로고침·탭 닫기는 잡지 않고 5분 만료에 맡긴다 (R3)
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      holdActive && !payingRef.current && currentLocation.pathname !== nextLocation.pathname,
+  );
+
+  const leaveCheckout = async () => {
+    setLeaving(true);
+    // 풀기에 실패해도 이동은 막지 않는다. 남은 점유는 5분 뒤 자동으로 풀린다
+    await releaseHold(reservationId);
+    setLeaving(false);
+    blocker.proceed();
+  };
 
   useEffect(() => {
     if (reservationId) {
@@ -101,6 +128,20 @@ export default function CheckoutPage() {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  // 다른 탭에서 점유를 풀거나 다른 시간으로 바꿨을 수 있으므로, 이 탭이 다시 보이면 서버 상태를 다시 받는다 (R7)
+  useEffect(() => {
+    if (!reservationId) {
+      return undefined;
+    }
+    const handleVisible = () => {
+      if (document.visibilityState === 'visible') {
+        loadReservation('my', reservationId);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisible);
+    return () => document.removeEventListener('visibilitychange', handleVisible);
+  }, [reservationId, loadReservation]);
 
   // 만료 순간 한 번 안내 팝업을 띄우고, 서버 예약 상태와 서버 시각을 다시 받는다.
   // 페이지를 자동으로 옮기지 않는다 (결제창 진행 중일 수 있고, 입력한 요청사항이 사라진다)
@@ -196,16 +237,78 @@ export default function CheckoutPage() {
     holdBarTone = styles.holdBarWarning;
   }
 
-  /* 결제 진행하기 버튼 클릭시 실행하는 함수입니다. 결제 담당은 여기를 채워주세요. */
-  const handlePay = () => {
+  const resultPath = `${ROUTES.BOOKING_RESULT}?reservationId=${reservationId}`;
+
+  /**
+   * 결제창(포트원 V1, KG이니시스)을 열고, 결제가 끝나면 서버에 결제 확인을 요청해 예약을 확정한다.
+   * 금액·결제 성공 여부는 서버가 포트원에 다시 조회해 판단하므로 결제창 응답은 결제 고유번호만 쓴다.
+   */
+  const handlePay = async () => {
     setError('');
     if (!policy || !demo) {
       setError('필수 약관과 모의 결제 확인에 동의해 주세요.');
       return;
     }
-    // 결제 요청(아임포트)과 결제 확인(POST /api/v1/payments/verify)은 결제 담당 작업에서 연결한다.
-    // 요청사항은 결제 확인 요청에 customerRequest 로 함께 보낸다 (docs/api/reservations.md)
-    setError('결제 연결은 준비 중입니다.');
+    setPaying(true);
+    // 결제 중 이동(결제 완료 화면, 모바일 결제창 페이지 이동)은 막지도 풀지도 않는다 (R5)
+    payingRef.current = true;
+    let moved = false;
+    try {
+      // 다른 탭에서 풀린 예약에 결제하지 않도록 결제 직전에 서버 상태를 다시 받는다 (R7).
+      // 점유가 아니면 화면이 만료 안내로 바뀐다
+      await loadReservation('my', reservationId);
+      const { detail: current, detailClockOffset } = useReservationStore.getState();
+      // 서버는 만료 처리 전까지 시간이 지난 점유도 HOLD 로 돌려줄 수 있으므로, 다시 받은 서버 시각 기준으로 만료도 확인한다.
+      // 만료면 결제창을 열지 않는다 (열면 승인 후 서버가 자동 취소한다)
+      if (
+        current?.summary?.status !== 'HOLD' ||
+        Date.now() + detailClockOffset >= new Date(current.holdExpiresAt).getTime()
+      ) {
+        return;
+      }
+      const IMP = await loadPortOne();
+      const { summary: hold } = current;
+      savePendingRequest(reservationId, request);
+      const rsp = await requestPay(IMP, {
+        pg: 'html5_inicis',
+        pay_method: 'card',
+        // 서버가 앞부분(reservation-{예약 ID}-)으로 결제와 예약의 짝을 확인한다
+        merchant_uid: `reservation-${reservationId}-${Date.now()}`,
+        name: `${hold.shopName} ${hold.treatmentName} 예약금`,
+        amount: hold.deposit,
+        buyer_name: hold.customerName,
+        buyer_tel: current.customerPhone ?? '',
+        // 모바일은 결제창이 페이지를 옮기므로 결과 화면에서 결제 확인을 이어서 한다
+        m_redirect_url: `${window.location.origin}${resultPath}`,
+      });
+      // 실패는 error_code 로 판단한다. success 는 V1 문서에서 빠진 옛 값이라 false 일 때만 실패로 본다.
+      // 그 밖의 응답은 서버가 포트원에 결제 상태를 다시 조회해 판단한다
+      if (rsp.error_code || rsp.success === false || !rsp.imp_uid) {
+        takePendingRequest(reservationId);
+        setError(
+          rsp.error_msg
+            ? `결제가 완료되지 않았습니다. (${rsp.error_msg})`
+            : '결제가 완료되지 않았습니다.',
+        );
+        return;
+      }
+      await verifyPayment({
+        impUid: rsp.imp_uid,
+        reservationId: Number(reservationId),
+        customerRequest: takePendingRequest(reservationId),
+      });
+      moved = true;
+      navigate(resultPath, { replace: true });
+    } catch (err) {
+      setError(err.code ? verifyErrorMessage(err) : err.message);
+      // 자동 취소·만료처럼 예약 상태가 바뀌었을 수 있으므로 화면을 서버 상태에 맞춘다
+      loadReservation('my', reservationId);
+    } finally {
+      if (!moved) {
+        payingRef.current = false;
+        setPaying(false);
+      }
+    }
   };
 
   return (
@@ -354,8 +457,8 @@ export default function CheckoutPage() {
                 시간 다시 선택하기
               </Button>
             ) : (
-              <Button variant="primary" wide onClick={handlePay}>
-                {money(summary.deposit)} 결제 진행하기
+              <Button variant="primary" wide disabled={paying} onClick={handlePay}>
+                {paying ? '결제 진행 중...' : `${money(summary.deposit)} 결제 진행하기`}
               </Button>
             )}
             <p className="b-help">결제하지 않으면 잡아 둔 시간은 5분 뒤 자동으로 풀립니다.</p>
@@ -376,6 +479,24 @@ export default function CheckoutPage() {
             </Button>
             <Button as={Link} to={ROUTES.HOME}>
               다른 빈자리 보기
+            </Button>
+          </div>
+        </Dialog>
+      )}
+
+      {blocker.state === 'blocked' && (
+        // 푸는 중에 닫으면 서버는 풀렸는데 결제 화면에 남게 되므로, 나가는 중에는 ✕·Esc 로 닫지 않는다
+        <Dialog title="결제 화면을 나갈까요?" onClose={() => !leaving && blocker.reset()}>
+          <p>
+            나가면 잡아 둔 시간을 풀어요. 바로 풀리지 않으면 5분 뒤 자동으로 풀려요. 다른 고객이
+            먼저 예약하면 같은 시간을 다시 잡지 못할 수 있어요.
+          </p>
+          <div className={`b-flex ${styles.dialogActions}`}>
+            <Button variant="primary" disabled={leaving} onClick={() => blocker.reset()}>
+              계속 결제하기
+            </Button>
+            <Button disabled={leaving} onClick={leaveCheckout}>
+              {leaving ? '나가는 중...' : '나가기'}
             </Button>
           </div>
         </Dialog>

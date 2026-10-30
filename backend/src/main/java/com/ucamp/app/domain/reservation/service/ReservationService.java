@@ -18,6 +18,7 @@ import com.ucamp.app.domain.reservation.dto.request.ReservationCreateRequest;
 import com.ucamp.app.domain.reservation.dto.response.ReservationCreateResponse;
 import com.ucamp.app.domain.notification.event.ReservationConfirmedEvent;
 import com.ucamp.app.domain.reservation.entity.Reservation;
+import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.treatment.entity.Treatment;
 import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
@@ -70,7 +71,9 @@ public class ReservationService {
      *                           시술이 없거나 판매 중이 아니면 TREATMENT_NOT_FOUND,
      *                           영업 외 시간이거나 닫힌 시간이면 VACANCY_NOT_OPEN_TIME,
      *                           매장의 다른 예약과 겹치면 VACANCY_TIME_TAKEN,
-     *                           본인의 다른 예약과 겹치면 VACANCY_USER_TIME_OVERLAP
+     *                           본인의 다른 예약과 겹치면 VACANCY_USER_TIME_OVERLAP,
+     *                           다른 시간의 본인 점유가 있는데 그 점유 ID 로 교체(replaceReservationId)를 요청하지 않았으면
+     *                           RESERVATION_HOLD_EXISTS
      */
     @Transactional
     public ReservationCreateResponse createReservation(AuthUser loginUser, ReservationCreateRequest request) {
@@ -92,6 +95,21 @@ public class ReservationService {
         shopLock.lock(shopId);
         // 잠금 대기 중 마감이 지나거나 점유가 만료될 수 있으므로 잠금 뒤 시각으로 검사·가격·만료를 정한다
         LocalDateTime now = LocalDateTime.now(clock);
+        // 한 고객은 점유를 하나만 가진다. 회원 잠금 안에서 찾아야 두 탭에서 동시에 눌러도 하나만 남는다
+        Reservation currentHold = findOccupyingHold(loginUser.userId(), now);
+        if (currentHold != null) {
+            // 같은 시간을 다시 누르면 만료 시각을 늘리지 않고 그대로 돌려줘 반복 클릭으로 계속 잡아 두지 못하게 한다
+            if (currentHold.isSameSlot(treatment.getTreatmentId(), startsAt)) {
+                return ReservationCreateResponse.from(currentHold);
+            }
+            // 고객이 확인창에서 본 그 점유일 때만 바꾼다. 그 사이 다른 탭에서 점유가 바뀌었으면 다시 묻게 한다
+            if (!request.replaces(currentHold.getId())) {
+                throw new BusinessException(ErrorCode.RESERVATION_HOLD_EXISTS);
+            }
+            currentHold.release(now);
+            // 아래 가용 시간 검사가 DB 를 다시 읽으므로 풀린 상태를 먼저 반영한다. 새 점유가 실패하면 함께 롤백된다
+            reservationRepository.flush();
+        }
         availabilityService.validateAvailable(shopId, startsAt, treatment.getDurationMinutes());
         validateNoUserOverlap(loginUser.userId(), startsAt, endsAt, now);
 
@@ -145,6 +163,28 @@ public class ReservationService {
     }
 
     /**
+     * 고객이 결제 화면을 떠날 때 본인 점유를 푼다. 행을 지우지 않고 EXPIRED 로 바꾼다.
+     * 예약 행을 잠근 뒤 바꾸므로 같은 예약의 결제 확정과 동시에 와도 한쪽만 반영된다.
+     * 이미 만료됐으면 아무것도 하지 않아 여러 번 불러도 안전하다.
+     *
+     * @param loginUser     로그인한 고객
+     * @param reservationId 풀 예약 ID
+     * @throws BusinessException 고객이 아니면 FORBIDDEN,
+     *                           없거나 다른 고객의 예약이면 RESERVATION_NOT_FOUND,
+     *                           이미 확정이면 RESERVATION_ALREADY_CONFIRMED,
+     *                           취소 처리 중·취소 완료면 RESERVATION_NOT_HOLD
+     */
+    @Transactional
+    public void releaseHold(AuthUser loginUser, Long reservationId) {
+        loginUser.requireRole(UserRole.CUSTOMER);
+        Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
+                .filter(found -> found.getUserId().equals(loginUser.userId()))
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
+        // 잠금 대기 중 확정·만료될 수 있으므로 잠금 뒤 시각으로 판단한다
+        reservation.release(LocalDateTime.now(clock));
+    }
+
+    /**
      * 만료 시각이 지난 점유를 EXPIRED 로 바꾸고 바뀐 건수를 반환한다 (D-07, D-08).
      * 빈자리는 가용 시간 계산이 만료된 점유를 빼고 보므로 따로 복원하지 않는다.
      * 주기 작업에서 반복 호출해도 안전하다.
@@ -154,6 +194,20 @@ public class ReservationService {
     @Transactional
     public int expireHolds() {
         return reservationRepository.expireHolds(LocalDateTime.now(clock));
+    }
+
+    /**
+     * 고객이 지금 잡고 있는 점유를 행을 잠가 찾는다. 만료 시각이 지났지만 아직 정리되지 않은 HOLD 는 점유로 보지 않는다.
+     * 잠금을 기다리는 동안 다른 탭에서 결제가 확정되면 HOLD 가 아니므로 결과에서 빠진다.
+     *
+     * @return 유효한 점유, 없으면 null
+     */
+    private Reservation findOccupyingHold(Long userId, LocalDateTime now) {
+        return reservationRepository.findByUserIdAndStatusForUpdate(userId, ReservationStatus.HOLD).stream()
+                .filter(reservation -> SalePolicy.isOccupying(
+                        reservation.getStatus(), reservation.getHoldExpiresAt(), now))
+                .findFirst()
+                .orElse(null);
     }
 
     /**

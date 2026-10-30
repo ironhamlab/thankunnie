@@ -49,7 +49,7 @@ class ExploreShopControllerTest {
                 "02-111-1111", "젤네일·케어 전문", null, null,
                 List.of(new BusinessHourResponse(BusinessDay.MON, false, LocalTime.of(10, 0), LocalTime.of(20, 0))),
                 List.of(new ShopTreatment(1L, "젤네일 원컬러", "기본 원컬러 젤네일", TreatmentType.NORMAL, 60, 35000,
-                        30000, null, null)));
+                        30000, null, null, null)));
         given(exploreShopDetailService.getShop(1L)).willReturn(response);
 
         mockMvc.perform(get(SHOP_URL, 1L))

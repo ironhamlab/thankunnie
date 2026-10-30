@@ -70,6 +70,10 @@ export const useScheduleStore = create((set, get) => ({
     }
   },
 
+  // 열기·닫기 시간 선택 칸의 상태용. 일정 화면의 날짜별 가능 시간(availableTimes)과 섞이지 않게 값만 돌려준다
+  fetchAvailableTimes: async (date) =>
+    (await scheduleApi.getAvailableTimes(get().shopId, date)).startTimes,
+
   saveBusinessHours: async (days) => {
     return get().runMutation(async () => {
       const businessHours = await scheduleApi.updateBusinessHours(days);

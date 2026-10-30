@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { exploreApi } from '@/api/exploreApi';
+import { shopDetailApi } from '@/api/shopDetailApi';
 import { toVacancyCard } from '@/utils/exploreVacancy';
 
 // 매장 하나의 하루 빈자리는 많아야 수십 건이라 한 번에 받는다
@@ -51,6 +52,10 @@ export const useExploreStore = create((set, get) => ({
   searchShops: [],
   searchShopsStatus: 'idle',
   searchShopsError: null,
+  // 지도 화면(/map)의 지도 범위 매장 요약 (C-02)
+  mapPageShops: [],
+  mapPageShopsStatus: 'idle',
+  mapPageShopsError: null,
 
   // 검색 화면에서 펼친 매장의 빈자리 (C-01). { [shopId]: { requestId, status, vacancies, error } }
   shopVacancies: {},
@@ -75,6 +80,26 @@ export const useExploreStore = create((set, get) => ({
     { data: 'shops', status: 'shopsStatus', error: 'shopsError' },
     fetchShops,
   ),
+
+  /** 지도 화면: 지도를 옮길 때마다 범위가 바뀌므로 펼쳐 둔 빈자리는 그대로 두고 매장 목록만 다시 받는다 */
+  loadMapPageShops: simpleLoader(
+    set,
+    { data: 'mapPageShops', status: 'mapPageShopsStatus', error: 'mapPageShopsError' },
+    fetchShops,
+  ),
+
+  /** 지도 화면: 주소로 고른 매장이 지도 범위 밖이면 그 매장 위치로 옮기려고 좌표만 받는다. 못 받으면 null */
+  locateShop: async (shopId) => {
+    try {
+      const shop = await shopDetailApi.getShop(shopId);
+      return { lat: shop.latitude, lng: shop.longitude };
+    } catch {
+      return null;
+    }
+  },
+
+  /** 필터를 바꾸면 이전 조건으로 펼쳐 둔 빈자리를 버린다 */
+  resetShopVacancies: () => set({ shopVacancies: {} }),
 
   /** 검색 조건을 바꾸면 매장 목록을 다시 받고, 이전 조건으로 펼쳐 둔 빈자리는 버린다 */
   loadSearchShops: async (params) => {
