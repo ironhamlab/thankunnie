@@ -24,6 +24,7 @@ import com.ucamp.app.domain.explore.dto.response.ExploreVacancyDetailResponse;
 import com.ucamp.app.domain.explore.dto.response.ExploreVacancyResponse;
 import com.ucamp.app.domain.explore.service.ExploreVacancyDetailService;
 import com.ucamp.app.domain.explore.service.ExploreVacancyService;
+import com.ucamp.app.domain.treatment.entity.TreatmentType;
 import com.ucamp.app.domain.vacancy.policy.PriceTier;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -56,6 +57,7 @@ public class ExploreVacancyController {
             @RequestParam(name = "regionCode", required = false) List<String> regionCodes,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long shopId,
+            @RequestParam(required = false) TreatmentType treatmentType,
             @RequestParam(required = false) ExploreTimeOfDay timeOfDay,
             @RequestParam(required = false) Integer closingWithinHours,
             @RequestParam(required = false) PriceTier priceTier,
@@ -68,7 +70,7 @@ public class ExploreVacancyController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         ExploreVacancyFilter filter = new ExploreVacancyFilter(startDate, endDate, regionCodes, categoryId, shopId,
-                timeOfDay, closingWithinHours, priceTier, keyword, minLat, maxLat, minLng, maxLng);
+                treatmentType, timeOfDay, closingWithinHours, priceTier, keyword, minLat, maxLat, minLng, maxLng);
         return ResponseEntity.ok(ApiResponse.success(
                 exploreVacancyService.search(new ExploreVacancySearchRequest(filter, sort, page, size))));
     }
@@ -92,6 +94,7 @@ public class ExploreVacancyController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(name = "regionCode", required = false) List<String> regionCodes,
             @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) TreatmentType treatmentType,
             @RequestParam(required = false) ExploreTimeOfDay timeOfDay,
             @RequestParam(required = false) Integer closingWithinHours,
             @RequestParam(required = false) PriceTier priceTier,
@@ -101,7 +104,7 @@ public class ExploreVacancyController {
             @RequestParam(required = false) BigDecimal minLng,
             @RequestParam(required = false) BigDecimal maxLng) {
         ExploreVacancyFilter filter = new ExploreVacancyFilter(startDate, endDate, regionCodes, categoryId, null,
-                timeOfDay, closingWithinHours, priceTier, keyword, minLat, maxLat, minLng, maxLng);
+                treatmentType, timeOfDay, closingWithinHours, priceTier, keyword, minLat, maxLat, minLng, maxLng);
         return ResponseEntity.ok(ApiResponse.success(exploreVacancyService.searchShops(filter)));
     }
 }

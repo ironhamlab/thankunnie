@@ -12,8 +12,7 @@ import styles from './OwnerSidebar.module.css';
 const NAVIGATION = [
   [ROUTES.OWNER_SHOP, '매장 정보', StoreIcon],
   [ROUTES.OWNER_MENUS, '시술 관리', ScissorsIcon],
-  [ROUTES.OWNER_SLOTS, '빈자리 관리', CalendarCheckIcon],
-  [ROUTES.OWNER_SCHEDULE, '영업시간·일정', CalendarCheckIcon],
+  [ROUTES.OWNER_SCHEDULE, '영업시간', CalendarCheckIcon],
   [ROUTES.OWNER_BOOKINGS, '예약 관리', CalendarIcon],
 ];
 
@@ -36,8 +35,8 @@ export default function OwnerSidebar() {
           <small className="b-green-text">● 영업 중</small>
         </div>
       </div>
-      <Button as={Link} variant="primary" wide to={ROUTES.OWNER_SLOT_NEW}>
-        ⊕ 빈자리 즉시 등록
+      <Button as={Link} variant="primary" wide to={ROUTES.OWNER_VACANCIES}>
+        ⊕ 빈자리 열기·닫기
       </Button>
       <nav aria-label="사장님 메뉴">
         {NAVIGATION.map(([to, label, Icon]) => (

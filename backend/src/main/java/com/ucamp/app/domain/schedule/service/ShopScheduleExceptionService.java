@@ -26,7 +26,8 @@ import com.ucamp.app.domain.vacancy.policy.SalePolicy;
 
 /**
  * 시간대 열기·닫기(예외 일정) 관리 (B-02·B-03·B-04). 사장님 본인 매장만 다룬다.
- * 예외 일정끼리 겹치는 것은 허용한다. 가용 시간 계산에서 닫기가 열기보다 우선한다.
+ * 같은 종류(열기끼리·닫기끼리)는 겹쳐 등록할 수 없다. 같은 시간이 여러 번 쌓이면 목록이 어지럽고 지우기도 번거롭다.
+ * 열기와 닫기는 겹칠 수 있고(예: 연 시간 중 일부만 닫기), 가용 시간 계산에서 닫기가 열기보다 우선한다.
  * 변경으로 시간이 닫히게 될 때 그 시간을 잡고 있는 예약이 있으면 차단하며, 고객 예약과 동시에 들어와도
  * 한쪽만 성공하도록 매장 잠금 후 검사한다.
  */
@@ -57,6 +58,7 @@ public class ShopScheduleExceptionService {
         SalePolicy.validateExceptionTime(request.exceptionType(), startsAt, endsAt, now);
 
         shopLock.lock(shopId);
+        requireNoSameTypeOverlap(shopId, request.exceptionType(), startsAt, endsAt, null);
         if (request.exceptionType() == ScheduleExceptionType.CLOSE) {
             requireNoReservation(shopId, startsAt, endsAt, now, reservation -> true);
         }
@@ -99,6 +101,7 @@ public class ShopScheduleExceptionService {
         // 잠금 전에 읽으면 동시 요청이 바꾼 유형(CLOSE→OPEN)을 놓치므로 잠근 뒤 조회한다
         shopLock.lock(loginUser.shopId());
         ShopScheduleException exception = findOwnedException(loginUser, exceptionId);
+        requireNoSameTypeOverlap(exception.getShopId(), newType, startsAt, endsAt, exceptionId);
         if (newType == ScheduleExceptionType.CLOSE) {
             requireNoReservation(exception.getShopId(), startsAt, endsAt, now, reservation -> true);
         }
@@ -130,6 +133,16 @@ public class ShopScheduleExceptionService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.VACANCY_SCHEDULE_EXCEPTION_NOT_FOUND));
         loginUser.requireShopOwner(exception.getShopId());
         return exception;
+    }
+
+    /**
+     * 같은 종류의 일정과 시간이 겹치면 차단한다. 버튼을 여러 번 눌러도 한 건만 남도록 매장 잠금 뒤에 검사한다.
+     */
+    private void requireNoSameTypeOverlap(Long shopId, ScheduleExceptionType type, LocalDateTime startsAt,
+            LocalDateTime endsAt, Long excludeId) {
+        if (shopScheduleExceptionRepository.existsSameTypeOverlapping(shopId, type, startsAt, endsAt, excludeId)) {
+            throw new BusinessException(ErrorCode.VACANCY_SCHEDULE_EXCEPTION_OVERLAP);
+        }
     }
 
     /**

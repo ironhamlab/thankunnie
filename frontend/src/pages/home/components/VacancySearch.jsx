@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDesignStore } from '@/store/useDesignStore';
 import { useExploreStore } from '@/store/useExploreStore';
-import { TIME_OF_DAY, dayLabel } from '@/utils/exploreVacancy';
+import { TIME_OF_DAY, dayLabel, validDate } from '@/utils/exploreVacancy';
 import { addDays, todayKst } from '@/utils/scheduleDate';
 import FireIcon from '@/components/icons/FireIcon';
 import InfoIcon from '@/components/icons/InfoIcon';
@@ -69,7 +69,7 @@ export default function VacancySearch() {
   const categoryId = params.get('category');
   const dateParam = params.get('date');
   // 타임세일은 오늘 시작하는 빈자리만 보고, 그 밖에는 고른 날짜(기본 오늘)를 본다
-  const date = !saleOnly && dateParam >= today && dateParam <= lastDay ? dateParam : today;
+  const date = (!saleOnly && validDate(dateParam, today, lastDay)) || today;
   const updateOption = (key, value) => {
     setParams(
       (previous) => {
@@ -284,6 +284,7 @@ export default function VacancySearch() {
                       detail={String(shop.shopId) === expandedId ? detail : undefined}
                       onToggle={() => toggleShop(shop.shopId)}
                       onRetry={() => loadShopVacancies(String(shop.shopId), filter)}
+                      model={modelOnly}
                     />
                   </div>
                 ))}
@@ -329,6 +330,7 @@ export default function VacancySearch() {
             status={status}
             expandedShopId={expandedId}
             onShowShop={(id) => updateOption('shop', id ? String(id) : '')}
+            model={modelOnly}
           />
         </aside>
       </div>

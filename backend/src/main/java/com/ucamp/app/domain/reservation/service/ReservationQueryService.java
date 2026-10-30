@@ -19,8 +19,10 @@ import com.ucamp.app.domain.reservation.dto.response.ReservationDetailResponse;
 import com.ucamp.app.domain.reservation.dto.response.ReservationSummaryResponse;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationQueryRepository;
+import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.reservation.repository.ReservationSearch;
 import com.ucamp.app.domain.reservation.repository.ReservationView;
+import com.ucamp.app.domain.vacancy.policy.SalePolicy;
 
 /**
  * 역할별 예약 조회 (B-09 고객 내 예약, B-10 사장님 예약 현황). 관리자 조회(B-11)도 같은 조회를 범위만 바꿔 쓴다.
@@ -35,10 +37,13 @@ public class ReservationQueryService {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final ReservationQueryRepository reservationQueryRepository;
+    private final ReservationRepository reservationRepository;
     private final Clock clock;
 
-    public ReservationQueryService(ReservationQueryRepository reservationQueryRepository, Clock clock) {
+    public ReservationQueryService(ReservationQueryRepository reservationQueryRepository,
+            ReservationRepository reservationRepository, Clock clock) {
         this.reservationQueryRepository = reservationQueryRepository;
+        this.reservationRepository = reservationRepository;
         this.clock = clock;
     }
 
@@ -80,6 +85,25 @@ public class ReservationQueryService {
         ReservationView view = reservationQueryRepository.findOne(reservationId, null, loginUser.userId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
         return ReservationDetailResponse.from(view, isCancellable(view), LocalDateTime.now(clock));
+    }
+
+    /**
+     * 고객이 지금 잡고 있는 결제 대기 예약. 다른 시간을 눌렀다가 RESERVATION_HOLD_EXISTS 를 받았을 때 바꿀지 묻는 데 쓴다.
+     * 예약 생성의 1인 1점유 검사와 같은 기준으로, 만료 시각이 지났지만 아직 정리되지 않은 HOLD 는 빼고 본다.
+     *
+     * @return 유효한 점유 상세, 없으면 null
+     */
+    public ReservationDetailResponse getMyCurrentHold(AuthUser loginUser) {
+        loginUser.requireRole(UserRole.CUSTOMER);
+        LocalDateTime now = LocalDateTime.now(clock);
+        return reservationRepository.findByUserIdAndStatus(loginUser.userId(), ReservationStatus.HOLD).stream()
+                .filter(reservation -> SalePolicy.isOccupying(
+                        reservation.getStatus(), reservation.getHoldExpiresAt(), now))
+                .findFirst()
+                .flatMap(reservation -> reservationQueryRepository.findOne(
+                        reservation.getId(), null, loginUser.userId()))
+                .map(view -> ReservationDetailResponse.from(view, isCancellable(view), now))
+                .orElse(null);
     }
 
     private PageResponse<ReservationSummaryResponse> findPage(ReservationSearch search, int page, int size) {

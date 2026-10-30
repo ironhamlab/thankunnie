@@ -25,6 +25,10 @@
 }
 .info strong {
   font-size: 16px;
+  /* 좁은 목록(지도 화면 옆 패널)에서도 매장명이 글자 단위로 꺾이지 않게 한 줄로 줄인다 */
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .area,
 .time {
@@ -185,4 +189,22 @@
   .toggle {
     margin-left: 12px;
   }
+}
+/* 일반·모델이 섞인 매장의 모델 모집 상세 링크 */
+.modelLink {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px dashed var(--color-border);
+  background: var(--color-primary-faint);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.modelLink b {
+  font-size: 13px;
+  color: var(--color-text);
 }

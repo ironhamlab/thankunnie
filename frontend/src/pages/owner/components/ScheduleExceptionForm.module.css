@@ -1,0 +1,157 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.editing {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.retry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.types {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.type {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: white;
+  text-align: left;
+  cursor: pointer;
+}
+.type strong {
+  font-size: 16px;
+}
+.type small {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.type.close[aria-checked='true'] {
+  border: 2px solid var(--color-danger);
+  background: #fff1f2;
+  padding: 17px;
+}
+.type.open[aria-checked='true'] {
+  border: 2px solid var(--color-success-strong);
+  background: var(--color-success-bg);
+  padding: 17px;
+}
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.section h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.step {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  background: var(--color-primary-tint);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  font-size: 15px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chips button {
+  padding: 7px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.chips button[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-faint);
+  color: var(--color-primary);
+}
+.summary {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 700;
+}
+.summary.close {
+  background: #fff1f2;
+  color: var(--color-danger);
+}
+.summary.open {
+  background: var(--color-success-bg);
+  color: var(--color-success-strong);
+}
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+@media (max-width: 1100px) {
+  /* 한 단 화면에서는 폼을 보는 동안 요약·저장이 화면 아래에 붙어 있다 */
+  .footer {
+    order: 2;
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: 0 -4px;
+    padding: 12px 4px;
+    border-top: 1px solid var(--color-border);
+    background: white;
+  }
+}
+@media (max-width: 540px) {
+  .types {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .type {
+    padding: 14px;
+  }
+  .type.close[aria-checked='true'],
+  .type.open[aria-checked='true'] {
+    padding: 13px;
+  }
+  /* 모바일에서는 카드 제목만으로 구분하고 설명은 줄인다. 제목만 남으니 가운데에 둔다 */
+  .type {
+    align-items: center;
+    text-align: center;
+  }
+  .type small {
+    display: none;
+  }
+  .chips button {
+    min-height: 44px;
+  }
+  .summary {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .footer button {
+    min-height: 48px;
+  }
+}

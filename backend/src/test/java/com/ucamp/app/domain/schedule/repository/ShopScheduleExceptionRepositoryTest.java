@@ -73,6 +73,30 @@ class ShopScheduleExceptionRepositoryTest {
         assertThat(result).containsExactly(morning, lunch);
     }
 
+    @Test
+    @DisplayName("같은 매장·같은 종류이고 시간이 겹치는 일정만 겹침으로 본다 (경계가 맞닿으면 겹치지 않는다)")
+    void existsSameTypeOverlapping_sameShopSameTypeOnly() {
+        repository.save(close(SHOP_ID, NOON, NOON.plusHours(2)));
+
+        assertThat(repository.existsSameTypeOverlapping(SHOP_ID, ScheduleExceptionType.CLOSE,
+                NOON.plusHours(1), NOON.plusHours(3), null)).isTrue();
+        assertThat(repository.existsSameTypeOverlapping(SHOP_ID, ScheduleExceptionType.CLOSE,
+                NOON.plusHours(2), NOON.plusHours(3), null)).isFalse();
+        assertThat(repository.existsSameTypeOverlapping(SHOP_ID, ScheduleExceptionType.OPEN,
+                NOON, NOON.plusHours(1), null)).isFalse();
+        assertThat(repository.existsSameTypeOverlapping(OTHER_SHOP_ID, ScheduleExceptionType.CLOSE,
+                NOON, NOON.plusHours(1), null)).isFalse();
+    }
+
+    @Test
+    @DisplayName("수정할 때는 자기 자신과의 겹침을 빼고 본다")
+    void existsSameTypeOverlapping_excludesItself() {
+        ShopScheduleException lunch = repository.save(close(SHOP_ID, NOON, NOON.plusHours(1)));
+
+        assertThat(repository.existsSameTypeOverlapping(SHOP_ID, ScheduleExceptionType.CLOSE,
+                NOON, NOON.plusHours(2), lunch.getId())).isFalse();
+    }
+
     private static ShopScheduleException close(long shopId, LocalDateTime startsAt, LocalDateTime endsAt) {
         return ShopScheduleException.builder()
                 .shopId(shopId)

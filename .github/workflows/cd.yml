@@ -192,6 +192,11 @@ jobs:
               --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
               -t "$IMAGE" .
           else
+            if [ -z "${VITE_KAKAO_MAP_APP_KEY:-}" ]; then
+              echo "Repository variable VITE_KAKAO_MAP_APP_KEY is missing"
+              exit 1
+            fi
+
             docker build \
               --build-arg VITE_API_BASE_URL=/api \
               --build-arg VITE_KAKAO_MAP_APP_KEY="$VITE_KAKAO_MAP_APP_KEY" \

@@ -4,8 +4,12 @@ import styles from '../ShopDetailPage.module.css';
 
 const money = (value) => `${value.toLocaleString('ko-KR')}원`;
 
-/** 판매 중인 시술 중 하나를 고른다. 목록은 정상 가격만 보여주고, 시각별 할인 가격은 예약 요약에서 서버 값으로 보여준다 */
-export default function TreatmentPicker({ treatments, selectedId, onSelect }) {
+/**
+ * 판매 중인 시술 중 하나를 고른다. 목록은 정상 가격만 보여주고, 시각별 할인 가격은 예약 요약에서 서버 값으로 보여준다
+ *
+ * @param emptyMessage 고를 시술이 없을 때 안내 문구
+ */
+export default function TreatmentPicker({ treatments, selectedId, onSelect, emptyMessage }) {
   return (
     <Panel as="section" padded>
       <div className="b-row b-panel-heading">
@@ -13,7 +17,7 @@ export default function TreatmentPicker({ treatments, selectedId, onSelect }) {
         <Badge tone="neutral">{treatments.length}개</Badge>
       </div>
       {treatments.length === 0 ? (
-        <p className={styles.empty}>지금 예약할 수 있는 시술이 없습니다.</p>
+        <p className={styles.empty}>{emptyMessage}</p>
       ) : (
         <ul className={styles.treatments}>
           {treatments.map((treatment) => {
