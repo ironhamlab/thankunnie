@@ -4,6 +4,7 @@ import { useScheduleStore } from '@/store/useScheduleStore';
 import { addDays, datePart, timePart, todayKst } from '@/utils/scheduleDate';
 import AvailableTimesPanel from '@/pages/owner/components/AvailableTimesPanel';
 import BusinessHoursPanel from '@/pages/owner/components/BusinessHoursPanel';
+import DayReservationsPanel from '@/pages/owner/components/DayReservationsPanel';
 import ScheduleExceptionDialog from '@/pages/owner/components/ScheduleExceptionDialog';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
@@ -114,13 +115,16 @@ export default function SchedulePage() {
               hours={businessHours}
               onSaved={() => setReloadKey((key) => key + 1)}
             />
-            <AvailableTimesPanel
-              date={selectedDate}
-              minDate={today}
-              maxDate={lastDate}
-              onDateChange={setSelectedDate}
-              reloadKey={reloadKey}
-            />
+            <div className="b-stack">
+              <AvailableTimesPanel
+                date={selectedDate}
+                minDate={today}
+                maxDate={lastDate}
+                onDateChange={setSelectedDate}
+                reloadKey={reloadKey}
+              />
+              <DayReservationsPanel date={selectedDate} />
+            </div>
           </div>
           <Panel as="section" className="b-table-panel">
             <div className="b-pad">
