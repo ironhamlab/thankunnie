@@ -5,8 +5,12 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -33,6 +37,7 @@ import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.domain.reservation.dto.response.ReservationSummaryResponse;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.service.ReservationQueryService;
+import com.ucamp.app.domain.reservation.service.ReservationService;
 
 @WebMvcTest(controllers = MyReservationController.class)
 @Import(SecurityConfig.class)
@@ -46,6 +51,9 @@ class MyReservationControllerTest {
 
     @MockitoBean
     private ReservationQueryService reservationQueryService;
+
+    @MockitoBean
+    private ReservationService reservationService;
 
     @Test
     @DisplayName("목록은 날짜 필터를 받아 페이지로 반환한다")
@@ -81,5 +89,32 @@ class MyReservationControllerTest {
     void getReservations_anonymous_returnsUnauthorized() throws Exception {
         mockMvc.perform(get(URL)).andExpect(status().isUnauthorized());
         verifyNoInteractions(reservationQueryService);
+    }
+
+    @Test
+    @DisplayName("점유 풀기는 본문 없이 204 를 반환한다")
+    void releaseHold_customer_returnsNoContent() throws Exception {
+        mockMvc.perform(post(URL + "/5/release").header(StubAuthFilter.HEADER_NAME, "CUSTOMER_1"))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+        verify(reservationService).releaseHold(any(AuthUser.class), eq(5L));
+    }
+
+    @Test
+    @DisplayName("이미 확정된 예약의 점유 풀기는 409 를 반환한다")
+    void releaseHold_confirmed_returnsConflict() throws Exception {
+        willThrow(new BusinessException(ErrorCode.RESERVATION_ALREADY_CONFIRMED))
+                .given(reservationService).releaseHold(any(AuthUser.class), eq(5L));
+
+        mockMvc.perform(post(URL + "/5/release").header(StubAuthFilter.HEADER_NAME, "CUSTOMER_1"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("RESERVATION_002"));
+    }
+
+    @Test
+    @DisplayName("비로그인 점유 풀기는 401 을 반환한다")
+    void releaseHold_anonymous_returnsUnauthorized() throws Exception {
+        mockMvc.perform(post(URL + "/5/release")).andExpect(status().isUnauthorized());
+        verifyNoInteractions(reservationService);
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,6 +23,7 @@ import com.ucamp.app.domain.reservation.dto.response.ReservationDetailResponse;
 import com.ucamp.app.domain.reservation.dto.response.ReservationSummaryResponse;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.service.ReservationQueryService;
+import com.ucamp.app.domain.reservation.service.ReservationService;
 
 /**
  * 고객 내 예약 API (B-09). 로그인한 고객 본인의 예약만 조회한다.
@@ -32,9 +34,12 @@ import com.ucamp.app.domain.reservation.service.ReservationQueryService;
 public class MyReservationController {
 
     private final ReservationQueryService reservationQueryService;
+    private final ReservationService reservationService;
 
-    public MyReservationController(ReservationQueryService reservationQueryService) {
+    public MyReservationController(ReservationQueryService reservationQueryService,
+            ReservationService reservationService) {
         this.reservationQueryService = reservationQueryService;
+        this.reservationService = reservationService;
     }
 
     @Operation(summary = "내 예약 목록",
@@ -57,5 +62,13 @@ public class MyReservationController {
             @LoginUser AuthUser loginUser, @PathVariable Long reservationId) {
         return ResponseEntity.ok(ApiResponse.success(
                 reservationQueryService.getMyReservation(loginUser, reservationId)));
+    }
+
+    @Operation(summary = "내 점유 풀기",
+            description = "결제 화면을 떠날 때 결제 대기(HOLD) 예약을 EXPIRED 로 바꾼다. 이미 만료됐으면 그대로 성공")
+    @PostMapping("/{reservationId}/release")
+    public ResponseEntity<Void> releaseHold(@LoginUser AuthUser loginUser, @PathVariable Long reservationId) {
+        reservationService.releaseHold(loginUser, reservationId);
+        return ResponseEntity.noContent().build();
     }
 }
