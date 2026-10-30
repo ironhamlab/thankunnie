@@ -20,6 +20,8 @@ import com.ucamp.app.domain.notification.entity.NotificationSubscription;
 import com.ucamp.app.domain.notification.entity.SubscriptionStatus;
 import com.ucamp.app.domain.notification.entity.SubscriptionType;
 import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepository;
+import com.ucamp.app.domain.user.entity.TermsCode;
+import com.ucamp.app.domain.user.service.TermsAgreementService;
 
 /**
  * 알림 구독 업무.
@@ -32,9 +34,12 @@ public class NotificationService {
 
     private final NotificationSubscriptionRepository notificationSubscriptionRepository;
     private final Clock clock;
+    private final TermsAgreementService termsAgreementService;
 
     /**
      * 업장 구독 또는 카테고리·지역 구독을 등록한다.
+     * 알림 문자 수신 동의(SMS_NOTIFICATION)가 없으면 TERMS_SMS_AGREEMENT_REQUIRED 를 던진다.
+     * 프론트는 이 에러를 받으면 동의 모달을 띄운 뒤 다시 요청한다.
      *
      * @param loginUser 로그인한 고객
      * @param request   구독 등록 요청
@@ -44,6 +49,7 @@ public class NotificationService {
     public NotificationSubscriptionResponse subscribe(AuthUser loginUser,
             NotificationSubscriptionCreateRequest request) {
         loginUser.requireRole(UserRole.CUSTOMER);
+        termsAgreementService.requireAgreed(loginUser.userId(), TermsCode.SMS_NOTIFICATION);
         validateNotExpired(request.localEndTime());
         // 대상·시간 형식을 먼저 검사한 뒤 중복을 본다 (잘못된 요청이 409 로 나가면 안 됨)
         NotificationSubscription subscription = NotificationSubscription.builder()

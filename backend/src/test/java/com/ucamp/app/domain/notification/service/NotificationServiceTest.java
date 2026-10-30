@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -35,6 +36,8 @@ import com.ucamp.app.domain.notification.entity.NotificationSubscription;
 import com.ucamp.app.domain.notification.entity.SubscriptionStatus;
 import com.ucamp.app.domain.notification.entity.SubscriptionType;
 import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepository;
+import com.ucamp.app.domain.user.entity.TermsCode;
+import com.ucamp.app.domain.user.service.TermsAgreementService;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceTest {
@@ -49,11 +52,14 @@ class NotificationServiceTest {
     @Mock
     private NotificationSubscriptionRepository repository;
 
+    @Mock
+    private TermsAgreementService termsAgreementService;
+
     private NotificationService notificationService;
 
     @BeforeEach
     void setUp() {
-        notificationService = new NotificationService(repository, CLOCK);
+        notificationService = new NotificationService(repository, CLOCK, termsAgreementService);
     }
 
     @Test
@@ -115,6 +121,31 @@ class NotificationServiceTest {
                 createRequest(SubscriptionType.CATEGORY_REGION, null, 10L, "SEOUL_GANGNAM", start, end)),
                 ErrorCode.SUBSCRIPTION_DUPLICATE);
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("알림 문자 수신 동의가 없으면 TERMS_SMS_AGREEMENT_REQUIRED 예외가 발생하고 저장하지 않는다")
+    void subscribe_withoutSmsAgreement_throwsAgreementRequired() {
+        willThrow(new BusinessException(ErrorCode.TERMS_SMS_AGREEMENT_REQUIRED))
+                .given(termsAgreementService).requireAgreed(CUSTOMER.userId(), TermsCode.SMS_NOTIFICATION);
+
+        assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
+                createRequest(SubscriptionType.STORE, 1L, null, null, start, end)),
+                ErrorCode.TERMS_SMS_AGREEMENT_REQUIRED);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("구독 등록 시 알림 문자 수신 동의를 검사한다")
+    void subscribe_checksSmsAgreement() {
+        given(repository.existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTime(
+                eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(1L),
+                eq(toLocal(start)), eq(toLocal(end)))).willReturn(false);
+        given(repository.save(any(NotificationSubscription.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        notificationService.subscribe(CUSTOMER, createRequest(SubscriptionType.STORE, 1L, null, null, start, end));
+
+        verify(termsAgreementService).requireAgreed(CUSTOMER.userId(), TermsCode.SMS_NOTIFICATION);
     }
 
     @Test

@@ -46,7 +46,10 @@ import com.ucamp.app.domain.shop.entity.Shop;
 import com.ucamp.app.domain.treatment.dto.request.TreatmentSaveRequest;
 import com.ucamp.app.domain.treatment.entity.Treatment;
 import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
+import com.ucamp.app.domain.treatment.entity.TreatmentType;
 import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
+import com.ucamp.app.domain.user.entity.TermsCode;
+import com.ucamp.app.domain.user.service.TermsAgreementService;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 @ExtendWith(MockitoExtension.class)
@@ -76,6 +79,9 @@ class ReservationServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private TermsAgreementService termsAgreementService;
+
     private ReservationService reservationService;
 
     @BeforeEach
@@ -83,7 +89,7 @@ class ReservationServiceTest {
         Clock clock = Clock.fixed(NOW.atZone(BookingPolicy.ZONE).toInstant(), BookingPolicy.ZONE);
         reservationService = new ReservationService(
                 reservationRepository, treatmentRepository, availabilityService, shopLock, userLock, clock,
-                eventPublisher);
+                eventPublisher, termsAgreementService);
     }
 
     @Test
@@ -216,7 +222,7 @@ class ReservationServiceTest {
                 NOW.atZone(BookingPolicy.ZONE).toInstant(), afterLock.atZone(BookingPolicy.ZONE).toInstant());
         ReservationService service = new ReservationService(
                 reservationRepository, treatmentRepository, availabilityService, shopLock, userLock, clock,
-                eventPublisher);
+                eventPublisher, termsAgreementService);
         givenTreatment(TreatmentStatus.ACTIVE);
         given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
 
@@ -251,10 +257,53 @@ class ReservationServiceTest {
         LocalDateTime now = NOW.plusMinutes(10);
         ReservationService service = new ReservationService(reservationRepository, treatmentRepository,
                 availabilityService, shopLock, userLock,
-                Clock.fixed(now.atZone(BookingPolicy.ZONE).toInstant(), BookingPolicy.ZONE), eventPublisher);
+                Clock.fixed(now.atZone(BookingPolicy.ZONE).toInstant(), BookingPolicy.ZONE), eventPublisher,
+                termsAgreementService);
 
         assertErrorCode(() -> service.createReservation(CUSTOMER, request(NOW.plusMinutes(30))),
                 ErrorCode.VACANCY_BOOKING_CLOSED);
+    }
+
+    @Test
+    @DisplayName("모델 시술인데 촬영 동의가 없으면 잠금 전에 TERMS_MODEL_PHOTO_AGREEMENT_REQUIRED 예외가 발생한다")
+    void createReservation_modelWithoutPhotoAgreement_throwsBeforeLock() {
+        Treatment treatment = treatment(TreatmentStatus.ACTIVE);
+        ReflectionTestUtils.setField(treatment, "treatmentType", TreatmentType.MODEL);
+        given(treatmentRepository.findById(TREATMENT_ID)).willReturn(Optional.of(treatment));
+        willThrow(new BusinessException(ErrorCode.TERMS_MODEL_PHOTO_AGREEMENT_REQUIRED))
+                .given(termsAgreementService).requireAgreed(CUSTOMER.userId(), TermsCode.MODEL_PHOTO);
+
+        assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11))),
+                ErrorCode.TERMS_MODEL_PHOTO_AGREEMENT_REQUIRED);
+        verify(userLock, never()).lock(any());
+        verify(shopLock, never()).lock(any());
+        verify(reservationRepository, never()).save(any(Reservation.class));
+    }
+
+    @Test
+    @DisplayName("모델 시술은 촬영 동의가 있으면 그대로 점유 예약을 만든다")
+    void createReservation_modelWithPhotoAgreement_savesHold() {
+        Treatment treatment = treatment(TreatmentStatus.ACTIVE);
+        ReflectionTestUtils.setField(treatment, "treatmentType", TreatmentType.MODEL);
+        given(treatmentRepository.findById(TREATMENT_ID)).willReturn(Optional.of(treatment));
+        given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        ReservationCreateResponse response = reservationService.createReservation(
+                CUSTOMER, request(NOW.plusHours(11)));
+
+        assertThat(response.status()).isEqualTo(ReservationStatus.HOLD);
+        verify(termsAgreementService).requireAgreed(CUSTOMER.userId(), TermsCode.MODEL_PHOTO);
+    }
+
+    @Test
+    @DisplayName("일반 시술은 촬영 동의를 검사하지 않는다")
+    void createReservation_normalTreatment_skipsPhotoAgreement() {
+        givenTreatment(TreatmentStatus.ACTIVE);
+        given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11)));
+
+        verify(termsAgreementService, never()).requireAgreed(any(), any());
     }
 
     @Test

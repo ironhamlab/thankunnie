@@ -299,6 +299,7 @@ export default function App() {
 | VACANCY_006 | 409 | 매장의 다른 예약과 시간이 겹침 |
 | VACANCY_013 | 409 | 영업하지 않는 시간이거나 닫힌 시간 |
 | VACANCY_016 | 409 | 본인의 다른 예약과 시간이 겹침 |
+| TERMS_004 | 409 | 모델 시술인데 촬영(`MODEL_PHOTO`) 동의가 없음. 동의 모달 → `PUT /api/v1/users/me/terms-agreements/MODEL_PHOTO` → 예약 생성 재요청 (`terms.md`) |
 | RESERVATION_006 | 409 | 다른 시간의 결제 대기 예약이 있는데 그 예약 ID를 `replaceReservationId`로 보내지 않고 생성 |
 | RESERVATION_001 | 404 | 없는 예약 또는 다른 고객의 예약 (점유 풀기) |
 | RESERVATION_002 | 409 | 이미 확정된 예약 (점유 풀기·교체) |

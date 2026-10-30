@@ -57,9 +57,11 @@
 
 ## 다른 도메인에서 동의 검사 (UNNIE-147)
 
+아래 두 곳에 연결되어 있다.
+
 `TermsAgreementService.requireAgreed(userId, code)` 를 호출한다. 동의하지 않았으면 `SMS_NOTIFICATION` 은 `TERMS_003`, `MODEL_PHOTO` 는 `TERMS_004`(409)를 던진다.
 
 | 호출 위치 | 검사 |
 |---|---|
-| 구독 등록 | `requireAgreed(userId, SMS_NOTIFICATION)` |
-| 예약 생성 (모델 시술만) | `requireAgreed(userId, MODEL_PHOTO)` |
+| 구독 등록 (`NotificationService.subscribe`) | `requireAgreed(userId, SMS_NOTIFICATION)`. 구독 수정·해제는 검사하지 않음 |
+| 예약 생성 (`ReservationService.createReservation`, 모델 시술만) | `requireAgreed(userId, MODEL_PHOTO)`. 회원·매장 잠금 전에 검사 |
