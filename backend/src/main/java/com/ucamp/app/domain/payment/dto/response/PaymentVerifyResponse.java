@@ -7,6 +7,8 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 
 public record PaymentVerifyResponse(
+        Long reservationId,
+        Long depositPaymentId,
         String impUid,
         String merchantUid,
         Long amount,
@@ -14,8 +16,10 @@ public record PaymentVerifyResponse(
         String payMethod,
         OffsetDateTime paidAt) {
 
-    public static PaymentVerifyResponse from(PortOnePayment payment) {
+    public static PaymentVerifyResponse of(PortOnePayment payment, Long reservationId, Long depositPaymentId) {
         return new PaymentVerifyResponse(
+                reservationId,
+                depositPaymentId,
                 payment.impUid(),
                 payment.merchantUid(),
                 payment.amount(),
