@@ -1,10 +1,3 @@
-.symbol {
-  font-family: 'Material Symbols Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-feature-settings: 'liga';
-  line-height: 1;
-}
 .banner {
   padding: 32px 32px 16px;
   border: 1px solid var(--color-border);
@@ -133,81 +126,6 @@
   gap: 24px;
   margin: 24px 0;
 }
-.categories h2 {
-  margin-bottom: 10px;
-}
-.categoryGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-.category {
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-  min-width: 0;
-  min-height: 184px;
-  padding: 20px;
-  background: #ffebf0;
-  border: 1px solid #e2bdc380;
-  border-radius: 24px;
-  box-shadow: 0 4px 20px -2px #ff40810d;
-  transition:
-    background 0.2s,
-    transform 0.2s;
-}
-.category:hover,
-.category[aria-pressed='true'] {
-  background: #ffdce5;
-  transform: translateY(-2px);
-}
-.categoryTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-  width: 100%;
-  margin-bottom: 18px;
-}
-.categoryIcon {
-  overflow: hidden;
-  white-space: nowrap;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  background: white;
-  border-radius: 50%;
-  font-size: 24px;
-  color: var(--color-primary);
-  box-shadow: 0 1px 3px #0001;
-}
-.categoryIcon.isFilled {
-  background: var(--color-primary);
-  color: #fff;
-}
-.categoryTop small {
-  font-size: 10px;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-.category:nth-child(-n + 2) small {
-  border-radius: var(--radius-xl);
-  padding: 2px 5px;
-  color: var(--color-primary);
-  background: #ffffffb3;
-  font-weight: 700;
-}
-.category > strong {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 3px;
-}
-.categoryDescription {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-}
 .sectionHeading {
   display: flex;
   align-items: center;
@@ -229,145 +147,7 @@
   color: var(--color-primary);
   flex-shrink: 0;
 }
-.dealGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
-}
-.dealCard {
-  min-width: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  background: white;
-  border: 1px solid #e2bdc380;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 4px 20px -2px #ff408114;
-}
-.dealPhoto {
-  position: relative;
-  aspect-ratio: 16/10;
-  overflow: hidden;
-  background: var(--color-surface);
-}
-.dealPhoto > img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s;
-}
-.dealCard:hover .dealPhoto > img {
-  transform: scale(1.05);
-}
-.urgency {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  padding: 6px 12px;
-  background: linear-gradient(90deg, #ba1a1a, var(--color-primary));
-  color: white;
-  border: 1px solid #ffffff4d;
-  border-radius: 30px;
-  font-weight: 800;
-  font-size: 13px;
-  box-shadow: 0 4px 8px #0002;
-}
-.urgency.isSoon {
-  background: #ff7a00;
-}
-.countdown {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: #263143ed;
-  color: white;
-  border: 1px solid #fff3;
-  border-radius: var(--radius-md);
-}
-.countdown > span {
-  color: #fd6483;
-  font-size: 11px;
-  font-weight: 700;
-}
-.countdown > b {
-  font-family: monospace;
-  font-size: 14px;
-  letter-spacing: 1px;
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: #0006;
-}
-.dealBody {
-  padding: 16px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-.dealMeta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 5px;
-  font-size: 11px;
-}
-.dealMeta > span {
-  color: var(--color-text-muted);
-}
-:global(.home-redesign) .dealBody h3 {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 5px 0;
-}
-.dealTime {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  margin-bottom: 12px !important;
-}
-.dealTime > span {
-  margin: 0 5px;
-  color: var(--color-text-muted);
-}
-.dealTime strong {
-  color: var(--color-primary);
-}
-.dealPrice {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 6px;
-  border-top: 1px solid #e2bdc34d;
-  padding-top: 10px;
-  margin-top: auto;
-}
-.dealPrice del {
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-.dealPrice em,
-.dealPrice b {
-  font-size: 20px;
-  font-weight: 800;
-}
-.dealPrice :global(.b-button) {
-  font-size: 12px;
-  padding: 8px 12px;
-}
 @media (max-width: 1200px) {
-  .category {
-    padding: 16px;
-  }
-  .categoryTop {
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 12px;
-  }
-  .category {
-    min-height: 184px;
-  }
   .demo {
     flex-basis: 250px;
   }
@@ -379,15 +159,6 @@
   .discover {
     grid-template-columns: 1fr;
   }
-  .categoryTop {
-    flex-wrap: nowrap;
-  }
-  .category {
-    min-height: 160px;
-  }
-  .categoryGrid {
-    gap: 16px;
-  }
   .bannerContent {
     flex-direction: column;
     align-items: stretch;
@@ -395,9 +166,6 @@
   .demo {
     flex: auto;
     max-width: 400px;
-  }
-  .dealGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 767px) {
@@ -410,20 +178,6 @@
   .eyebrow small {
     font-size: 9px;
   }
-  .categoryGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-  .category {
-    border-radius: var(--radius-lg);
-    min-height: 160px;
-  }
-  .categoryTop small {
-    font-size: 9px;
-  }
-  .dealGrid {
-    grid-template-columns: 1fr;
-  }
   .sectionHeading {
     align-items: flex-start;
   }
@@ -433,7 +187,42 @@
   .sectionHeading p {
     font-size: 12px;
   }
-  .dealPhoto {
-    aspect-ratio: 16/10;
+}
+.categoryTabs {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 20px;
+  overflow-x: auto;
+}
+.categoryTabs button {
+  flex-shrink: 0;
+  min-width: 88px;
+  padding: 10px 22px;
+  border: 1px solid #e2bdc3;
+  border-radius: var(--radius-pill);
+  background: white;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+.categoryTabs button[aria-selected='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+.shopGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 1000px) {
+  .shopGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767px) {
+  .shopGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 }
