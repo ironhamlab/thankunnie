@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
+import { useLogout } from '@/hooks/useLogout';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDesignStore } from '@/store/useDesignStore';
 import Badge from '@/components/common/Badge';
@@ -15,14 +16,10 @@ import styles from './OwnerLayout.module.css';
 export default function OwnerLayout() {
   const shop = useDesignStore((s) => s.shop);
   const token = useAuthStore((s) => s.token);
-  const clearSession = useAuthStore((s) => s.clearSession);
   const location = useLocation();
-  const navigate = useNavigate();
+  const logout = useLogout();
 
-  const handleLogout = () => {
-    clearSession();
-    navigate(ROUTES.HOME);
-  };
+  const handleLogout = () => logout(ROUTES.HOME);
 
   return (
     <div className="beauty-app">

@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.16'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
 }
 
 group = 'com.ucamp'
@@ -53,6 +54,31 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
     systemProperty 'user.timezone', 'Asia/Seoul'
+    // 테스트가 끝나면 커버리지 리포트를 만든다 (기준 미달로 빌드를 실패시키지는 않는다)
+    finalizedBy 'jacocoTestReport'
+}
+
+jacoco {
+    toolVersion = '0.8.12'
+}
+
+// 설정·요청/응답 DTO·실행 진입점은 커버리지 대상에서 뺀다. Lombok 생성 코드는 lombok.config 로 자동 제외된다
+def jacocoExcludes = [
+        'com/ucamp/app/Application*',
+        'com/ucamp/app/config/**',
+        'com/ucamp/app/**/dto/**',
+]
+
+tasks.named('jacocoTestReport') {
+    dependsOn 'test'
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+    classDirectories.setFrom(files(classDirectories.files.collect {
+        fileTree(dir: it, exclude: jacocoExcludes)
+    }))
 }
 
 // 스키마 기준 파일(docs/erd)을 복사해 로컬·테스트 H2 가 같은 DDL 로 테이블을 만들게 한다
