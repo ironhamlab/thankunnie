@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   EXAMPLE_CATEGORIES,
   EXAMPLE_SUBSCRIPTIONS,
@@ -17,6 +17,9 @@ import ClockIcon from '@/components/icons/ClockIcon';
 import InfoIcon from '@/components/icons/InfoIcon';
 import SubscriptionEditDialog from './SubscriptionEditDialog';
 import styles from './SubscriptionList.module.css';
+
+const LEAVE_MS = 320;
+const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const monthDay = (dateTime) => {
   const [, month, day] = datePart(dateTime).split('-');
@@ -43,7 +46,12 @@ export default function SubscriptionList({ embedded = false }) {
   const removeSubscription = useNotificationStore((state) => state.removeSubscription);
   const [examples, setExamples] = useState(EXAMPLE_SUBSCRIPTIONS);
   const [editing, setEditing] = useState(null);
-  const [result, setResult] = useState(null);
+  const [leavingId, setLeavingId] = useState(null);
+  const [error, setError] = useState(null);
+  const [savedMessage, setSavedMessage] = useState(null);
+  const leaveTimer = useRef(null);
+
+  useEffect(() => () => window.clearTimeout(leaveTimer.current), []);
 
   useEffect(() => {
     loadSubscriptions();
@@ -64,24 +72,45 @@ export default function SubscriptionList({ embedded = false }) {
       ? shopTitleOf(item)
       : `${categoryNameOf(item.categoryId)} · ${regionNameOf(item.regionCode)}`;
 
-  const handleRemove = async (subscriptionId) => {
+  const finishRemove = async (subscriptionId) => {
     if (useExamples) {
       setExamples((prev) => prev.filter((item) => item.subscriptionId !== subscriptionId));
-      setResult({ tone: 'success', message: '구독을 해제했습니다.' });
+      setLeavingId(null);
       return;
     }
-    const { ok, error } = await removeSubscription(subscriptionId);
-    setResult(
-      ok
-        ? { tone: 'success', message: '구독을 해제했습니다.' }
-        : { tone: 'error', message: error.message },
+    const { ok, error: removeError } = await removeSubscription(subscriptionId);
+    setLeavingId(null);
+    if (!ok) setError(removeError.message);
+  };
+
+  const handleRemove = (subscriptionId) => {
+    if (leavingId != null || saving) return;
+    setError(null);
+    setSavedMessage(null);
+    if (reduceMotion()) {
+      finishRemove(subscriptionId);
+      return;
+    }
+    setLeavingId(subscriptionId);
+    leaveTimer.current = window.setTimeout(() => finishRemove(subscriptionId), LEAVE_MS);
+  };
+
+  const savedTitleOf = (subscription, request) =>
+    subscription.subscriptionType === 'STORE'
+      ? shopTitleOf({ ...subscription, shopId: request.shopId })
+      : `${categoryNameOf(request.categoryId)} · ${regionNameOf(request.regionCode)}`;
+
+  const handleSaved = (subscription, request) => {
+    setError(null);
+    setSavedMessage(
+      `${savedTitleOf(subscription, request)} · ${formatHope(request.startTime, request.endTime)} 으로 수정했어요`,
     );
   };
 
-  const handleExampleSaved = (subscriptionId, request) => {
+  const handleExampleSaved = (subscription, request) => {
     setExamples((prev) =>
       prev.map((item) => {
-        if (item.subscriptionId !== subscriptionId) return item;
+        if (item.subscriptionId !== subscription.subscriptionId) return item;
         return {
           ...item,
           shopId: request.shopId,
@@ -96,7 +125,7 @@ export default function SubscriptionList({ embedded = false }) {
         };
       }),
     );
-    setResult({ tone: 'success', message: '알림 조건을 수정했습니다.' });
+    handleSaved(subscription, request);
   };
 
   return (
@@ -114,9 +143,22 @@ export default function SubscriptionList({ embedded = false }) {
         </Notice>
       )}
 
-      {result && (
-        <Alert as="p" tone={result.tone} role="status">
-          {result.message}
+      {savedMessage && (
+        <Alert className={styles.result} tone="success" role="status">
+          <span className={styles.resultText}>{savedMessage}</span>
+          <button
+            type="button"
+            className={styles.resultClose}
+            aria-label="닫기"
+            onClick={() => setSavedMessage(null)}
+          >
+            ✕
+          </button>
+        </Alert>
+      )}
+      {error && (
+        <Alert className={styles.error} tone="error" role="alert">
+          {error}
         </Alert>
       )}
       {listStatus === 'loading' && <p role="status">알림 구독을 불러오는 중입니다.</p>}
@@ -131,7 +173,12 @@ export default function SubscriptionList({ embedded = false }) {
         {items.map((item) => {
           const isStore = item.subscriptionType === 'STORE';
           return (
-            <Panel as="article" padded className={styles.card} key={item.subscriptionId}>
+            <Panel
+              as="article"
+              padded
+              className={leavingId === item.subscriptionId ? styles.cardLeaving : styles.card}
+              key={item.subscriptionId}
+            >
               <div className={styles.head}>
                 <Badge className={isStore ? styles.storeBadge : styles.categoryBadge}>
                   {isStore ? '업장' : '카테고리·지역'}
@@ -148,7 +195,7 @@ export default function SubscriptionList({ embedded = false }) {
                   type="button"
                   size="small"
                   className={styles.editButton}
-                  disabled={saving}
+                  disabled={saving || leavingId != null}
                   onClick={() => setEditing(item)}
                 >
                   조건 수정
@@ -157,7 +204,7 @@ export default function SubscriptionList({ embedded = false }) {
                   type="button"
                   variant="primary"
                   size="small"
-                  disabled={saving}
+                  disabled={saving || leavingId != null}
                   onClick={() => handleRemove(item.subscriptionId)}
                 >
                   구독 해제
@@ -182,8 +229,8 @@ export default function SubscriptionList({ embedded = false }) {
           onClose={() => setEditing(null)}
           onSaved={
             useExamples
-              ? (request) => handleExampleSaved(editing.subscriptionId, request)
-              : () => setResult({ tone: 'success', message: '알림 조건을 수정했습니다.' })
+              ? (request) => handleExampleSaved(editing, request)
+              : (request) => handleSaved(editing, request)
           }
           localOnly={useExamples}
         />

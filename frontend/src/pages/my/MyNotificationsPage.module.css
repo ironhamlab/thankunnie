@@ -23,3 +23,21 @@
   color: var(--color-primary);
   font-weight: 700;
 }
+.panel {
+  animation: tabStep 320ms ease;
+}
+@keyframes tabStep {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}
