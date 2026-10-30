@@ -265,7 +265,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("문자 수신 동의 없이 찜에 희망 시간을 넣으면 TERMS_SMS_AGREEMENT_REQUIRED 예외가 발생하고 시간이 바뀌지 않는다")
+    @DisplayName("문자 수신 동의 없이 찜에 희망 시간을 넣으면 TERMS_SMS_AGREEMENT_REQUIRED 예외가 발생하고 중복 검사 전에 멈춘다")
     void updateSubscription_favoriteWithoutSmsAgreement_throwsAgreementRequired() {
         NotificationSubscription subscription = NotificationSubscription.builder()
                 .userId(CUSTOMER.userId())
@@ -282,7 +282,8 @@ class NotificationServiceTest {
         assertErrorCode(() -> notificationService.updateSubscription(CUSTOMER, 10L,
                 new NotificationSubscriptionUpdateRequest(1L, null, null, start, end)),
                 ErrorCode.TERMS_SMS_AGREEMENT_REQUIRED);
-        // 중복 검사 전에 멈춘다. 바꾼 조건은 예외로 트랜잭션이 롤백되어 저장되지 않는다
+        // 중복 검사 전에 멈추는 것까지만 확인한다. 바꾼 조건이 저장되지 않는 것은 운영에서 트랜잭션 롤백이 보장하며,
+        // 이 단위 테스트는 스프링 트랜잭션 없이 서비스를 직접 만들어 롤백 자체는 검증하지 않는다
         verify(repository, never()).existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
                 any(), any(), any(), any(), any(), any());
     }
