@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
+import { TERMS_CODE } from '@/constants/terms';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import { useTermsStore } from '@/store/useTermsStore';
 import { getDevTestUser } from '@/utils/devTestUser';
-import { buildStoreRequest, isShopSubscribed, storeSubscriptionsOf } from '@/utils/notificationRules';
+import {
+  buildStoreRequest,
+  isShopSubscribed,
+  storeSubscriptionsOf,
+} from '@/utils/notificationRules';
 import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
 import StoreHopeForm from '@/components/notification/StoreHopeForm';
@@ -13,8 +19,10 @@ import styles from '../ShopDetailPage.module.css';
 /**
  * 매장 찜. 아직 찜하지 않았으면 빈자리 알림 여부를 묻는다.
  * 아니요는 희망 시간 없는 업장 구독으로 저장한다. 새로고침해도 남고, 알림은 가지 않는다.
- * 예는 이 팝업에서 희망 시간을 넣어 업장 구독을 추가한다.
+ * 예는 문자 수신 동의를 확인(없으면 동의 모달)한 뒤 이 팝업에서 희망 시간을 넣어 업장 구독을 추가한다.
+ * 문자 수신에 동의하지 않으면 아니요와 같이 희망 시간 없는 구독(찜)만 저장한다.
  * 이미 찜이거나 알림 중이면 최근 업장 구독 하나만 해제한다. 남은 구독이 있으면 하트는 유지된다.
+ * 로그인하지 않았으면 로그인 화면으로 보낸다.
  */
 export default function FavoriteButton({ shopId, shopName }) {
   const navigate = useNavigate();
@@ -26,10 +34,14 @@ export default function FavoriteButton({ shopId, shopName }) {
   const loadSubscriptions = useNotificationStore((state) => state.loadSubscriptions);
   const addSubscription = useNotificationStore((state) => state.addSubscription);
   const removeSubscription = useNotificationStore((state) => state.removeSubscription);
+  const ensureAgreement = useTermsStore((state) => state.ensureAgreement);
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [formError, setFormError] = useState(null);
   const [step, setStep] = useState(null);
+  // 문자 수신 동의 확인(동의 모달)이 끝날 때까지 찜 버튼·예 선택을 다시 실행하지 못하게 막는다.
+  // 겹치면 새 동의 요청이 이전 요청을 '닫음'으로 끝내 사용자가 거절하지 않았는데 찜만 저장될 수 있다
+  const [agreeing, setAgreeing] = useState(false);
   // PrivateRoute 와 같이 개발 서버 테스트 계정도 로그인으로 본다
   const loggedIn = Boolean(token || getDevTestUser());
 
@@ -47,6 +59,7 @@ export default function FavoriteButton({ shopId, shopName }) {
   };
 
   const handleClick = async () => {
+    if (agreeing) return;
     if (!loggedIn) {
       navigate(ROUTES.LOGIN, { state: { from: location } });
       return;
@@ -80,6 +93,24 @@ export default function FavoriteButton({ shopId, shopName }) {
     closeDialog();
   };
 
+  // 알림 조건을 입력하기 전에 문자 수신 동의부터 받는다. 질문 창을 닫고 동의 모달만 보이게 한다
+  const handleAccept = async () => {
+    if (agreeing) return;
+    setAgreeing(true);
+    setStep(null);
+    try {
+      const agreed = await ensureAgreement(TERMS_CODE.SMS_NOTIFICATION);
+      if (!agreed) {
+        await handleDecline();
+        return;
+      }
+      setFormError(null);
+      setStep('form');
+    } finally {
+      setAgreeing(false);
+    }
+  };
+
   const handleCreate = async ({ startTime, endTime }) => {
     setFormError(null);
     const result = await addSubscription(buildStoreRequest(shopId, { startTime, endTime }));
@@ -98,7 +129,7 @@ export default function FavoriteButton({ shopId, shopName }) {
           className={favorite ? 'is-selected' : undefined}
           aria-pressed={Boolean(favorite)}
           aria-label={favorite ? '찜 해제' : '찜하기'}
-          disabled={saving || (loggedIn && listStatus === 'loading')}
+          disabled={saving || agreeing || (loggedIn && listStatus === 'loading')}
           onClick={handleClick}
         >
           <span aria-hidden="true">{favorite ? '♥' : '♡'}</span>찜
@@ -135,7 +166,7 @@ export default function FavoriteButton({ shopId, shopName }) {
                 <Button type="button" onClick={handleDecline}>
                   아니요
                 </Button>
-                <Button type="button" className={styles.confirmYes} onClick={() => setStep('form')}>
+                <Button type="button" className={styles.confirmYes} onClick={handleAccept}>
                   예
                 </Button>
               </div>

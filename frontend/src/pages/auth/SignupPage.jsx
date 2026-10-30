@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ACCOUNT_TYPE } from '@/constants/accountType';
 import { ROUTES } from '@/constants/routes';
+import { SIGNUP_HIDDEN_TERMS } from '@/constants/terms';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useTermsStore } from '@/store/useTermsStore';
 import {
   collectErrors,
   validateLoginId,
@@ -16,6 +18,7 @@ import Button from '@/components/common/Button';
 import AccountFields from './components/AccountFields';
 import AuthCard from './components/AuthCard';
 import AuthField from './components/AuthField';
+import TermsAgreementFields from './components/TermsAgreementFields';
 import styles from './SignupPage.module.css';
 
 const EMPTY_FORM = { loginId: '', password: '', passwordConfirm: '', name: '', phone: '' };
@@ -23,6 +26,8 @@ const EMPTY_FORM = { loginId: '', password: '', passwordConfirm: '', name: '', p
 /**
  * 고객 회원가입 (REQ-003). 가입하면 바로 로그인되어 홈으로 이동한다.
  * 휴대폰 번호는 관심 매장·조건 구독의 문자 알림 수신 번호로 쓰인다.
+ * 필수 약관은 모두 동의해야 하고, 선택 약관(문자 수신)은 동의한 경우에만 보낸다.
+ * 모델 촬영 동의는 가입 화면에 보이지 않고 첫 모델 시술 예약 때 받는다.
  */
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -32,8 +37,26 @@ export default function SignupPage() {
   const clearError = useAuthStore((state) => state.clearError);
   const [form, setForm] = useState(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState({});
+  const allTerms = useTermsStore((state) => state.terms);
+  const termsStatus = useTermsStore((state) => state.status);
+  const termsError = useTermsStore((state) => state.error);
+  const loadTerms = useTermsStore((state) => state.loadTerms);
+  const [agreedTerms, setAgreedTerms] = useState([]);
+  const terms = useMemo(
+    () => allTerms.filter((item) => !SIGNUP_HIDDEN_TERMS.includes(item.code)),
+    [allTerms],
+  );
 
   useEffect(() => clearError, [clearError]);
+
+  useEffect(() => {
+    loadTerms();
+  }, [loadTerms]);
+
+  const handleTermsChange = (codes) => {
+    setAgreedTerms(codes);
+    setFieldErrors((prev) => ({ ...prev, terms: '' }));
+  };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -49,6 +72,9 @@ export default function SignupPage() {
       passwordConfirm: validatePasswordConfirm(form.password, form.passwordConfirm),
       name: validateRequired(form.name, '이름'),
       phone: validateMobilePhone(form.phone),
+      terms: terms.some((item) => item.required && !agreedTerms.includes(item.code))
+        ? '필수 약관에 모두 동의해 주세요.'
+        : '',
     });
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) {
@@ -60,6 +86,7 @@ export default function SignupPage() {
         password: form.password,
         name: form.name.trim(),
         phone: form.phone,
+        agreedTerms,
       });
       navigate(ROUTES.HOME, { replace: true });
     } catch {
@@ -68,6 +95,7 @@ export default function SignupPage() {
   };
 
   const isSubmitting = status === 'loading';
+  const isTermsReady = termsStatus === 'succeeded';
 
   return (
     <AuthCard
@@ -96,12 +124,28 @@ export default function SignupPage() {
           hint="빈자리·예약 확정·취소 문자를 받을 번호예요. 번호가 없으면 문자는 가지 않습니다."
           error={fieldErrors.phone}
         />
+        {isTermsReady && (
+          <TermsAgreementFields
+            terms={terms}
+            agreed={agreedTerms}
+            onChange={handleTermsChange}
+            error={fieldErrors.terms}
+          />
+        )}
+        {termsStatus === 'failed' && (
+          <Alert as="p" tone="error" role="alert">
+            {termsError.message}{' '}
+            <Button size="small" type="button" onClick={loadTerms}>
+              다시 불러오기
+            </Button>
+          </Alert>
+        )}
         {error && (
           <Alert as="p" tone="error" role="alert">
             {error.message}
           </Alert>
         )}
-        <Button variant="primary" type="submit" wide disabled={isSubmitting}>
+        <Button variant="primary" type="submit" wide disabled={isSubmitting || !isTermsReady}>
           {isSubmitting ? '가입하는 중…' : '가입하기'}
         </Button>
       </form>
