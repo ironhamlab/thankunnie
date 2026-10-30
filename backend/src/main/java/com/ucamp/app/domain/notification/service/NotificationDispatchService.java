@@ -379,10 +379,16 @@ public class NotificationDispatchService {
                 eventId, userId, DO_NOT_RESEND);
     }
 
+    // 본문은 같고, 앞에만 임박! / 초임박! / 땡! 을 붙인다.
     private String buildMessage(NotificationEvent event) {
         String shopName = recipientContactRepository.findShopNameById(event.getShopId()).orElse("매장");
         String startsAtText = event.getSlotStartsAt().format(SLOT_START_TEXT);
-        return "땡!" + shopName + "-" + startsAtText + " 땡잡을 기회가 생겼어요!";
+        String prefix = switch (event.getEventType()) {
+            case IMMINENT -> "임박! ";
+            case LAST_MINUTE -> "초임박! ";
+            case REOPENED -> "땡! ";
+        };
+        return prefix + shopName + "-" + startsAtText + " 땡잡을 기회가 생겼어요!";
     }
 
     private void applySendResult(NotificationDispatch job, SmsSendResult result) {
