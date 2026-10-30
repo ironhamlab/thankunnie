@@ -10,7 +10,7 @@ import { EXCEPTION_TYPES } from '@/constants/scheduleException';
 import styles from './ScheduleExceptionForm.module.css';
 
 /**
- * 시간 닫기·빈자리 열기 입력란. 30분 칸을 눌러 시간을 고르고,
+ * 빈자리 닫기·열기 입력란. 30분 칸을 눌러 시간을 고르고,
  * 예약이 걸린 시간 닫기·닫아 둔 시간 열기·지난 시각은 저장 전에 알려준다.
  */
 export default function ScheduleExceptionForm({
