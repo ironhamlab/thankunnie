@@ -55,7 +55,9 @@ public record ExploreShopDetailResponse(
     /**
      * 판매 중인 시술.
      *
-     * @param price 일반 판매가. 초임박 구간 가격은 시작 시각을 고른 뒤 빈자리 상세에서 확인한다
+     * @param price          일반 판매가. 초임박 구간 가격은 시작 시각을 고른 뒤 빈자리 상세에서 확인한다
+     * @param modelCondition 모델 모집 참여 조건. NORMAL 이면 null
+     * @param photoNotice    모델 모집 촬영 안내. NORMAL 이면 null
      */
     public record ShopTreatment(
             Long treatmentId,
@@ -66,6 +68,7 @@ public record ExploreShopDetailResponse(
             int regularPrice,
             int price,
             String modelCondition,
+            String photoNotice,
             String imageUrl) {
 
         static ShopTreatment from(ExploreShopTreatmentCandidate candidate) {
@@ -78,6 +81,7 @@ public record ExploreShopDetailResponse(
                     candidate.regularPrice(),
                     candidate.price(),
                     candidate.modelCondition(),
+                    candidate.photoNotice(),
                     candidate.imageUrl());
         }
     }

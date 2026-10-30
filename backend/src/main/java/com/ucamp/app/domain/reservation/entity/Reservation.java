@@ -113,6 +113,38 @@ public class Reservation extends BaseTimeEntity {
     }
 
     /**
+     * 고객이 결제 화면을 떠나거나 다른 시간으로 바꿀 때 점유를 푼다. 행을 지우지 않고 EXPIRED 로 바꾼다.
+     * 아직 만료 전이면 만료 시각도 지금으로 당겨, 만료 처리 전에도 시간을 잡고 있지 않게 한다.
+     * 동시에 확정되지 않도록 예약 행을 잠근 뒤 호출한다.
+     *
+     * @param now 푸는 시각 (예약 행 잠금 뒤 읽은 현재 시각)
+     * @throws BusinessException 이미 확정이면 RESERVATION_ALREADY_CONFIRMED,
+     *                           취소 처리 중·취소 완료면 RESERVATION_NOT_HOLD. 이미 EXPIRED 면 아무것도 하지 않는다
+     */
+    public void release(LocalDateTime now) {
+        if (status == ReservationStatus.EXPIRED) {
+            return;
+        }
+        if (status == ReservationStatus.CONFIRMED) {
+            throw new BusinessException(ErrorCode.RESERVATION_ALREADY_CONFIRMED);
+        }
+        if (status != ReservationStatus.HOLD) {
+            throw new BusinessException(ErrorCode.RESERVATION_NOT_HOLD);
+        }
+        this.status = ReservationStatus.EXPIRED;
+        if (now.isBefore(holdExpiresAt)) {
+            this.holdExpiresAt = now;
+        }
+    }
+
+    /**
+     * 같은 시술·같은 시작 시각의 점유인지 확인한다. 같은 시간을 다시 누르면 새로 만들지 않고 기존 점유를 돌려주는 데 쓴다.
+     */
+    public boolean isSameSlot(Long treatmentId, LocalDateTime startsAt) {
+        return this.treatmentId.equals(treatmentId) && this.startsAt.equals(startsAt);
+    }
+
+    /**
      * 확정할 수 있는지 상태를 바꾸지 않고 검사한다.
      * 다른 검사(결제 마감 등)를 함께 마친 뒤 confirm 을 부르려는 쪽에서 먼저 호출한다.
      *

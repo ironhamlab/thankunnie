@@ -68,6 +68,18 @@ class ExploreShopDetailServiceTest {
     }
 
     @Test
+    @DisplayName("모델 모집 시술은 참여 조건과 촬영 안내를 함께 돌려준다")
+    void getShop_modelTreatment_returnsModelNotices() {
+        jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '탈색 이력이 없는 분',"
+                + " PHOTO_NOTICE = '전후 사진 촬영' WHERE TREATMENT_ID = 2");
+
+        ShopTreatment treatment = exploreShopDetailService.getShop(1L).treatments().get(1);
+
+        assertThat(treatment.modelCondition()).isEqualTo("탈색 이력이 없는 분");
+        assertThat(treatment.photoNotice()).isEqualTo("전후 사진 촬영");
+    }
+
+    @Test
     @DisplayName("저장하지 않은 요일은 휴무로 채운다")
     void getShop_missingBusinessDay_closed() {
         jdbcTemplate.update("DELETE FROM SHOP_BUSINESS_HOUR WHERE SHOP_ID = 1 AND DAY_OF_WEEK = 'MON'");

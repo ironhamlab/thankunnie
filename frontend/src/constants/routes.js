@@ -8,6 +8,8 @@ export const ROUTES = {
   SERVICE_DETAIL: '/services/:id',
   // 매장 상세: 매장 정보 → 시술 선택 → 날짜·시간 선택
   SHOP_DETAIL: '/shops/:shopId',
+  // 시술 모델 모집 상세: 매장 상세와 같은 흐름으로 그 매장의 모델 시술만 보여주고 참여 조건·촬영 안내를 함께 보여준다
+  MODEL_RECRUIT_DETAIL: '/shops/:shopId/models',
   // 지도 메인: 지도 범위의 빈자리 매장 핀과 매장 목록 (C 담당)
   MAP: '/map',
   RESERVE: '/reserve/:id',

@@ -78,6 +78,29 @@ export const useReservationStore = create((set, get) => ({
     }
   },
 
+  // 결제 화면을 떠날 때 부른다. 실패해도 이동은 막지 않으므로(5분 뒤 자동 만료) 오류를 던지지 않고 결과만 돌려준다.
+  releaseHold: async (reservationId) => {
+    try {
+      await reservationApi.releaseHold(reservationId);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  // 다른 시간을 눌렀다가 결제 대기 중인 예약이 있다는 답(RESERVATION_006)을 받았을 때 그 예약을 찾는다.
+  // 결제 화면 상세 상태를 덮어쓰지 않도록 store 에는 넣지 않고 결과(요약)만 돌려준다.
+  // 서버가 1인 1점유 검사와 같은 기준(만료 전 HOLD)으로 찾으므로 만료 처리 전인 HOLD 를 잘못 보여주지 않는다.
+  // 예약이 없으면 null, 조회에 실패하면 오류를 던진다 (실패를 "없음"으로 보고 묻지 않고 바꾸지 않도록)
+  findMyHold: async () => {
+    try {
+      const hold = await reservationApi.getMyCurrentHold();
+      return hold?.summary ?? null;
+    } catch (error) {
+      throw toError(error);
+    }
+  },
+
   clearDetail: () =>
     set((state) => ({
       detail: null,

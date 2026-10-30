@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.UserRole;
@@ -30,8 +31,10 @@ import com.ucamp.app.common.response.PageResponse;
 import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.reservation.dto.response.ReservationDetailResponse;
 import com.ucamp.app.domain.reservation.dto.response.ReservationSummaryResponse;
+import com.ucamp.app.domain.reservation.entity.Reservation;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationQueryRepository;
+import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.reservation.repository.ReservationSearch;
 import com.ucamp.app.domain.reservation.repository.ReservationView;
 
@@ -42,13 +45,63 @@ class ReservationQueryServiceTest {
     private static final AuthUser CUSTOMER = new AuthUser(1L, UserRole.CUSTOMER, null);
 
     private ReservationQueryRepository reservationQueryRepository;
+    private ReservationRepository reservationRepository;
     private ReservationQueryService reservationQueryService;
 
     @BeforeEach
     void setUp() {
         reservationQueryRepository = mock(ReservationQueryRepository.class);
+        reservationRepository = mock(ReservationRepository.class);
         Clock clock = Clock.fixed(NOW.atZone(TimeUtils.KST).toInstant(), TimeUtils.KST);
-        reservationQueryService = new ReservationQueryService(reservationQueryRepository, clock);
+        reservationQueryService = new ReservationQueryService(reservationQueryRepository, reservationRepository,
+                clock);
+    }
+
+    @Test
+    @DisplayName("현재 점유는 만료 시각이 남은 본인 HOLD 의 상세를 돌려주고, 만료 시각이 지난 HOLD 는 건너뛴다")
+    void getMyCurrentHold_skipsStaleHold() {
+        Reservation stale = hold(NOW);
+        ReflectionTestUtils.setField(stale, "id", 7L);
+        Reservation active = hold(NOW.plusMinutes(3));
+        ReflectionTestUtils.setField(active, "id", 8L);
+        given(reservationRepository.findByUserIdAndStatus(1L, ReservationStatus.HOLD))
+                .willReturn(List.of(stale, active));
+        given(reservationQueryRepository.findOne(8L, null, 1L))
+                .willReturn(Optional.of(view(ReservationStatus.HOLD, NOW.plusHours(2))));
+
+        ReservationDetailResponse result = reservationQueryService.getMyCurrentHold(CUSTOMER);
+
+        assertThat(result.summary().status()).isEqualTo(ReservationStatus.HOLD);
+        verify(reservationQueryRepository).findOne(8L, null, 1L);
+    }
+
+    @Test
+    @DisplayName("유효한 점유가 없으면 현재 점유는 null 이다")
+    void getMyCurrentHold_none_returnsNull() {
+        given(reservationRepository.findByUserIdAndStatus(1L, ReservationStatus.HOLD))
+                .willReturn(List.of(hold(NOW.minusMinutes(1))));
+
+        assertThat(reservationQueryService.getMyCurrentHold(CUSTOMER)).isNull();
+        verifyNoInteractions(reservationQueryRepository);
+    }
+
+    @Test
+    @DisplayName("고객이 아니면 현재 점유를 조회할 수 없다")
+    void getMyCurrentHold_owner_throwsForbidden() {
+        assertThatThrownBy(() -> reservationQueryService.getMyCurrentHold(OWNER))
+                .extracting("errorCode").isEqualTo(ErrorCode.FORBIDDEN);
+    }
+
+    private static Reservation hold(LocalDateTime holdExpiresAt) {
+        return Reservation.builder()
+                .userId(1L)
+                .treatmentId(1L)
+                .startsAt(NOW.plusHours(2))
+                .endsAt(NOW.plusHours(3))
+                .appliedPrice(30_000)
+                .deposit(20_000)
+                .holdExpiresAt(holdExpiresAt)
+                .build();
     }
 
     @Test

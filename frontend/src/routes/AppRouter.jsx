@@ -66,6 +66,10 @@ export default function AppRouter() {
           <Route element={<MainLayout />}>
             <Route path={ROUTES.HOME} element={<HomePage />} />
             <Route path={ROUTES.SHOP_DETAIL} element={<ShopDetailPage />} />
+            <Route
+              path={ROUTES.MODEL_RECRUIT_DETAIL}
+              element={<ShopDetailPage key="model" model />}
+            />
             <Route path={ROUTES.MAP} element={<MapPage />} />
             <Route path={ROUTES.RESERVE} element={<ReservationPage />} />
             <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />

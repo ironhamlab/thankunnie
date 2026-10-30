@@ -12,6 +12,8 @@
 | POST | `/api/v1/reservations` | 예약 생성(점유) | 고객 | 201 |
 | GET | `/api/v1/my/reservations` | 내 예약 목록 | 고객 | 200 |
 | GET | `/api/v1/my/reservations/{reservationId}` | 내 예약 상세 | 고객 | 200 |
+| GET | `/api/v1/my/reservations/current-hold` | 내 현재 점유 | 고객 | 200 |
+| POST | `/api/v1/my/reservations/{reservationId}/release` | 내 점유 풀기 | 고객 | 204 |
 | GET | `/api/v1/owner/reservations` | 본인 매장 예약 목록 | 사장님 | 200 |
 | GET | `/api/v1/owner/reservations/{reservationId}` | 본인 매장 예약 상세 | 사장님 | 200 |
 
@@ -33,7 +35,7 @@
 | `treatmentId` | O | 판매 중(ACTIVE)인 시술 ID |
 | `startsAt` | O | 시작 일시. 30분 단위, 오늘부터 60일 이내, 시작 20분 전까지 |
 
-고객 요청사항은 이 요청에서 받지 않는다. 결제 화면에서 받아 예약 확정 때 저장한다 ([요청사항 저장](#요청사항-저장-예약-쪽-구현-완료-결제-연결-대기) 참고).
+고객 요청사항은 이 요청에서 받지 않는다. 결제 화면에서 받아 예약 확정 때 저장한다 ([요청사항 저장](#요청사항-저장) 참고).
 
 응답 `data` (201):
 
@@ -125,7 +127,7 @@
 | CANCELLED | 취소 완료 |
 | EXPIRED | 점유 만료. 5분 안에 결제하지 않았거나, 결제 화면을 떠나 점유를 풀었음 |
 
-## 점유 풀기·교체 규칙 (설계 확정, 미구현)
+## 점유 풀기·교체 규칙 (UNNIE-138 구현)
 
 결제 화면을 떠난 고객이 시간을 계속 잡고 있지 않도록, 그리고 한 고객이 여러 시간을 잡지 않도록 정한 규칙이다.
 
@@ -139,7 +141,7 @@
 | R6 | 고객 한 명은 점유를 1개만 가진다. 점유가 있는데 다른 시간을 누르면 확인창 후 교체한다. 같은 시술·같은 시간을 누르면 기존 점유를 그대로 돌려준다(만료 시각 유지). 교체에 실패하면 기존 점유가 남는다 |
 | R7 | 결제 화면은 탭이 다시 보일 때와 결제 직전에 예약 상태를 다시 조회한다. 다른 탭에서 풀렸거나 교체됐으면 만료 안내를 보여준다 |
 
-### 점유 풀기 `POST /api/v1/my/reservations/{reservationId}/release` (예정)
+### 점유 풀기 `POST /api/v1/my/reservations/{reservationId}/release`
 
 - 고객 본인의 예약만. 다른 사람의 예약·없는 예약은 `RESERVATION_001`(404).
 - 예약 행을 잠근 뒤 상태를 다시 확인한다 (결제 확정과 동시에 와도 한쪽만 반영).
@@ -150,23 +152,39 @@
 - 프론트는 실패해도 이동은 막지 않는다. 남은 점유는 5분 뒤 만료된다.
 - 알림 영향 없음: 빈자리 재공개(REOPENED) 알림은 CANCELLED만 대상이다. 풀린 시간은 임박·초임박 알림 스캔에서 빈자리로 다시 잡힌다.
 
-### 예약 생성의 점유 교체 (R6, 예정)
+### 예약 생성의 점유 교체 (R6)
 
-요청에 `replaceHold`(선택, 기본 false)를 추가한다.
+요청에 `replaceReservationId`(선택)를 추가한다. 고객이 확인창에서 보고 풀기로 한 기존 점유 예약 ID다.
 
-1. 회원 잠금(`UserLock`) 뒤 이 고객의 유효한 HOLD를 찾는다.
+```json
+{
+  "treatmentId": 1,
+  "startsAt": "2026-10-31T16:00:00+09:00",
+  "replaceReservationId": 1002
+}
+```
+
+1. 회원 잠금(`UserLock`) 뒤 이 고객의 유효한 HOLD(만료 전)를 행 잠금으로 찾는다.
 2. 없으면 지금과 같이 만든다.
-3. 있고 같은 시술·같은 시작 시각이면 `replaceHold`와 관계없이 기존 점유를 그대로 돌려준다.
+3. 있고 같은 시술·같은 시작 시각이면 `replaceReservationId`와 관계없이 기존 점유를 그대로 돌려준다.
    만료 시각을 늘리지 않아 반복 클릭으로 무한 점유할 수 없다.
-4. 있고 다른 시술·시각이며 `replaceHold`가 false면 `RESERVATION_006`(409).
+4. 있고 다른 시술·시각이며 `replaceReservationId`가 없거나 지금 점유의 ID와 다르면 `RESERVATION_006`(409).
+   확인창을 띄운 뒤 다른 탭에서 점유가 바뀌었으면 사용자가 본 것과 다른 점유를 풀지 않고 다시 묻게 한다.
    오류 응답은 공통 형식(코드·메시지)만 담는다.
-5. 있고 다른 시술·시각이며 `replaceHold`가 true면 기존 점유 행을 잠그고 HOLD인지 다시 확인한 뒤 EXPIRED로 바꾸고,
+5. 있고 다른 시술·시각이며 `replaceReservationId`가 지금 점유의 ID와 같으면 기존 점유를 EXPIRED로 바꾸고,
    가용 시간을 검사해 새 점유를 만든다.
 6. 5는 한 트랜잭션이다. 새 시간이 이미 차 있어 실패하면 전체가 롤백되어 기존 점유가 남는다.
 
-매장 상세 화면은 `RESERVATION_006`을 받으면 내 예약 목록(`GET /api/v1/my/reservations?status=HOLD`)으로 기존 점유를 찾아
+### 현재 점유 조회 `GET /api/v1/my/reservations/current-hold`
+
+- 고객이 지금 잡고 있는 결제 대기 예약(HOLD, 만료 시각 전)의 상세를 돌려준다. 응답 모양은 내 예약 상세와 같다.
+- 없으면 200이고 `data`가 null이다.
+- 1인 1점유 검사와 같은 기준이라, 만료 정리(60초 주기) 전인 HOLD는 보여주지 않는다.
+
+매장 상세 화면은 `RESERVATION_006`을 받으면 현재 점유 조회로 기존 점유를 찾아
 "결제 대기 중인 예약(매장·시각)이 있어요. 이 시간으로 바꿀까요?" 확인창을 띄운다.
-[이 시간으로 바꾸기] → `replaceHold=true`로 재요청, [기존 예약 결제하기] → 기존 예약의 `/checkout?reservationId=`로 이동.
+[이 시간으로 바꾸기] → 그 예약 ID를 `replaceReservationId`로 재요청, [기존 예약 결제하기] → 기존 예약의 `/checkout?reservationId=`로 이동.
+조회에 실패하면 바꾸지 않고 오류를 보여준다. 점유가 없으면(그 사이 만료) 바꾸기 없이 한 번 다시 보낸다.
 
 ### 이동 감지 방식 (프론트)
 
@@ -197,10 +215,49 @@ export default function App() {
 
 ### 협의 필요
 
-- 결제 담당: R5 결제 진행 중 표시, R7 결제 직전 재확인, 풀린 예약에 결제가 들어온 경우 환불 처리
+- 결제 담당: R5 결제 진행 중 표시, R7 결제 직전 재확인 (프론트 결제 연결 작업). 풀린 예약에 결제가 들어온 경우 환불 처리는 [결제 확인](#결제-확인--예약-확정-unnie-142)에서 자동 취소로 처리
 - 매장 상세 담당: `RESERVATION_006` 확인창
 
-## 요청사항 저장 (예약 쪽 구현 완료, 결제 연결 대기)
+## 결제 확인 → 예약 확정 (UNNIE-142)
+
+`POST /api/v1/payments/verify` (고객 로그인 필요)
+
+결제창(포트원 V1, KG이니시스)이 끝나면 프론트가 결제 고유번호와 예약 ID를 보낸다. 서버는 결제를 확인하고 예약을 확정한다.
+
+```json
+{
+  "impUid": "imp_123456789012",
+  "reservationId": 10,
+  "customerRequest": "손톱은 라운드로 부탁드려요"
+}
+```
+
+- 결제창 주문번호(`merchant_uid`)는 `reservation-{reservationId}-{고유값}` 으로 만든다. 서버는 이 앞부분으로 결제와 예약의 짝을 확인한다.
+- 결제 금액은 예약의 `deposit`(예약금)과 같아야 한다.
+- 처리 순서
+  1. 고객이 아니면 `FORBIDDEN`
+  2. 포트원에서 결제 조회 → 상태가 `paid` 가 아니면 `PAYMENT_006`, 주문번호가 이 예약 것이 아니면 `PAYMENT_007`
+  3. 한 트랜잭션에서 예약 확정(`confirmReservation`, 요청사항 저장 포함)과 예약금결제(PAID) 저장
+  4. 확정할 수 없으면 결제를 **바로 포트원에서 전액 취소**하고 확정 오류를 그대로 돌려준다:
+     `RESERVATION_002`(이미 확정), `RESERVATION_003`(점유 만료), `RESERVATION_004`, `RESERVATION_005`(금액 불일치), `VACANCY_002`(결제 마감).
+     모두 예약 주인을 확인한 뒤에 나는 오류다.
+     `RESERVATION_001`(없는 예약·다른 고객의 예약)은 취소하지 않는다. 다른 고객이 남의 결제를 취소시키지 못하게 하려는 것이며, 이런 결제는 운영자가 확인해 수동 환불한다.
+     요청사항이 1,000자를 넘는 `COMMON_400` 은 고쳐서 같은 결제로 다시 확인할 수 있으므로 취소하지 않는다.
+     자동 취소가 실패하면 서버 로그(`수동 확인 필요`)에 남긴다.
+- 같은 결제를 다시 보내면(새로고침·중복 클릭) 다시 확정하지 않고 같은 결과를 돌려준다. 동시에 두 번 와서 한쪽이 먼저 확정한 경우도 성공으로 본다.
+  이때도 예약 주인을 확인하며, 다른 고객이 보내면 `RESERVATION_001` 이다.
+
+응답 `ApiResponse<PaymentVerifyResponse>`
+
+| 필드 | 설명 |
+|---|---|
+| `reservationId` | 확정된 예약 ID. 결과 화면 이동에 쓴다 |
+| `depositPaymentId` | 저장된 예약금결제 ID |
+| `impUid`, `merchantUid`, `amount`, `status`, `payMethod`, `paidAt` | 포트원 결제 정보 (`paidAt` 은 +09:00) |
+
+## 요청사항 저장
+
+결제 연결은 UNNIE-142에서 완료했다.
 
 원장님께 남길 요청사항은 예약 화면(`/reserve`)이 아니라 결제 화면(`/checkout`)에서 입력받는다.
 예약을 만든 뒤 요청사항만 고치는 API는 두지 않고, **결제 확인 요청에 함께 보내 결제가 확인될 때 저장**한다.
@@ -221,12 +278,11 @@ export default function App() {
   `Reservation.confirm(paidAmount, now, customerRequest)`
   - 앞뒤 공백을 제거해 저장한다. null이거나 공백뿐이면 저장하지 않는다(null).
   - 1,000자를 넘으면 `COMMON_400`(INVALID_INPUT)이며 확정·저장하지 않는다.
-- **결제 쪽 연결 (결제 담당, 미구현)**: `PaymentVerifyRequest`에 `customerRequest`를 추가하고,
+- **결제 쪽 연결 (완료, UNNIE-142)**: `PaymentVerifyRequest`에 `customerRequest`를 추가하고,
   결제 확인을 마친 뒤 위 `confirmReservation`에 그대로 넘긴다.
 - 기존 `CUSTOMER_REQUEST` 컬럼(`VARCHAR2(1000)`)을 사용하므로 스키마 변경은 없다.
 - 예약 생성 요청(`ReservationCreateRequest`)에서는 `customerRequest`를 뺐다.
-- 현재 상태: 프론트는 결제 화면에서 요청사항을 입력받아 상태로 들고 있다. 결제 요청·결제 확인 API 연결은
-  결제 담당 작업에서 진행한다.
+- 현재 상태: 서버 연결은 완료. 프론트 결제 화면의 결제창·결제 확인 API 연결은 UNNIE-143에서 진행한다.
 
 ## 오류
 
@@ -243,6 +299,10 @@ export default function App() {
 | VACANCY_006 | 409 | 매장의 다른 예약과 시간이 겹침 |
 | VACANCY_013 | 409 | 영업하지 않는 시간이거나 닫힌 시간 |
 | VACANCY_016 | 409 | 본인의 다른 예약과 시간이 겹침 |
+| RESERVATION_006 | 409 | 다른 시간의 결제 대기 예약이 있는데 그 예약 ID를 `replaceReservationId`로 보내지 않고 생성 |
+| RESERVATION_001 | 404 | 없는 예약 또는 다른 고객의 예약 (점유 풀기) |
+| RESERVATION_002 | 409 | 이미 확정된 예약 (점유 풀기·교체) |
+| RESERVATION_004 | 409 | 취소 처리 중·취소 완료 예약 (점유 풀기·교체) |
 
 결제 확정 단계의 오류(RESERVATION_001~005, VACANCY_002)는 결제 확인 API에서 발생한다.
 

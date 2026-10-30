@@ -14,5 +14,6 @@ public record ExploreShopTreatmentCandidate(
         int regularPrice,
         int price,
         String modelCondition,
+        String photoNotice,
         String imageUrl) {
 }

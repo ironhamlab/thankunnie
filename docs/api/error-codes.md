@@ -40,7 +40,7 @@
 | `RESERVATION_003` | 409 | 결제 대기 시간이 만료되었습니다. | 점유 만료(EXPIRED) 예약, 또는 만료 처리 전이라도 점유 만료 시각이 지난 예약을 확정 |
 | `RESERVATION_004` | 409 | 결제 대기 중인 예약이 아닙니다. | 취소 처리 중·취소 완료 예약을 확정 |
 | `RESERVATION_005` | 400 | 결제 금액이 예약금과 다릅니다. | 확정 시 결제 금액 ≠ 예약의 예약금(deposit) |
-| `RESERVATION_006` | 409 | 결제 대기 중인 예약이 있습니다. | (예정) 본인의 유효한 점유(HOLD)가 있는데 `replaceHold` 없이 다른 시간 예약 클릭 |
+| `RESERVATION_006` | 409 | 결제 대기 중인 예약이 있습니다. | 본인의 유효한 점유(HOLD)가 있는데 그 예약 ID를 `replaceReservationId`로 보내지 않고 다른 시술·시각 예약 클릭 (같은 시술·시각은 기존 점유를 돌려줌) |
 
 ## NOTIFICATION
 
@@ -82,6 +82,8 @@
 | `PAYMENT_003` | 409 | 환불할 수 없는 결제 상태입니다. | 결제 완료(PAID)·부분 환불(PART_REFUNDED)이 아닌 결제 환불 (이미 환불됨, 환불 처리 중(REFUND_PENDING) 등) |
 | `PAYMENT_004` | 400 | 환불 금액이 올바르지 않습니다. | 환불 금액이 0원 이하이거나 남은 결제 금액보다 큼 |
 | `PAYMENT_005` | 504 | 환불 결과를 확인하고 있습니다. 잠시 후 결제 상태를 확인해 주세요. | 포트원 환불 요청 후 응답을 받지 못했거나, 포트원 환불 후 DB 반영에 실패함. 결제는 REFUND_PENDING 으로 남는다 |
+| `PAYMENT_006` | 400 | 결제가 완료되지 않았습니다. | 결제 확인(`POST /payments/verify`) 때 포트원 결제 상태가 paid 가 아님 (ready, failed, cancelled) |
+| `PAYMENT_007` | 400 | 예약과 맞지 않는 결제입니다. | 결제 주문번호(merchant_uid)가 `reservation-{reservationId}-` 로 시작하지 않음, 또는 같은 imp_uid 가 다른 예약에 이미 저장됨 |
 
 ## TREATMENT
 
