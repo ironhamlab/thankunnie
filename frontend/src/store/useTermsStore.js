@@ -1,0 +1,77 @@
+import { create } from 'zustand';
+import { termsApi } from '@/api/termsApi';
+import { AGREEMENT_REQUIRED_ERRORS } from '@/constants/terms';
+
+const toError = (error, fallback) => ({
+  code: error?.code ?? 'UNKNOWN_ERROR',
+  message: error?.message ?? fallback,
+});
+
+/**
+ * 약관 목록(회원가입 화면)과 동의 모달 상태.
+ * 동의 모달은 App 에 하나만 두고(TermsAgreementDialog), requestAgreement 가 사용자의 선택을 Promise 로 돌려준다.
+ */
+export const useTermsStore = create((set, get) => ({
+  terms: [],
+  status: 'idle',
+  error: null,
+
+  loadTerms: async () => {
+    set({ status: 'loading', error: null });
+    try {
+      const terms = await termsApi.getTerms();
+      set({ terms: terms ?? [], status: 'succeeded' });
+    } catch (error) {
+      set({ status: 'failed', error: toError(error, '약관을 불러오지 못했습니다.') });
+    }
+  },
+
+  // 열려 있는 동의 모달: { termsCode, resolve, saving, error }
+  pending: null,
+
+  /** 동의 모달을 띄우고, 동의해서 저장까지 끝나면 true·닫으면 false 를 돌려준다 */
+  requestAgreement: (termsCode) =>
+    new Promise((resolve) => {
+      // 이미 열린 모달이 있으면 먼저 닫힌 것으로 처리한다
+      get().pending?.resolve(false);
+      set({ pending: { termsCode, resolve, saving: false, error: null } });
+    }),
+
+  confirmAgreement: async () => {
+    const { pending } = get();
+    if (!pending || pending.saving) return;
+    set({ pending: { ...pending, saving: true, error: null } });
+    try {
+      await termsApi.agree(pending.termsCode);
+      set({ pending: null });
+      pending.resolve(true);
+    } catch (error) {
+      set({ pending: { ...pending, saving: false, error: toError(error, '동의를 저장하지 못했습니다.') } });
+    }
+  },
+
+  cancelAgreement: () => {
+    const { pending } = get();
+    if (!pending) return;
+    set({ pending: null });
+    pending.resolve(false);
+  },
+}));
+
+/**
+ * 요청이 약관 미동의(TERMS_003·TERMS_004)로 막히면 동의 모달을 띄우고, 동의하면 한 번 다시 보낸다.
+ * 동의하지 않으면 원래 오류를 그대로 던진다. 다른 오류는 그대로 던진다.
+ *
+ * @param {() => Promise<any>} action 다시 보낼 수 있는 요청
+ */
+export async function withTermsAgreement(action) {
+  try {
+    return await action();
+  } catch (error) {
+    const termsCode = AGREEMENT_REQUIRED_ERRORS[error?.code];
+    if (!termsCode) throw error;
+    const agreed = await useTermsStore.getState().requestAgreement(termsCode);
+    if (!agreed) throw error;
+    return action();
+  }
+}

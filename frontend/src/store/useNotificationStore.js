@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { notificationApi } from '@/api/notificationApi';
+import { withTermsAgreement } from '@/store/useTermsStore';
 
 const toError = (error, fallback) => ({
   code: error?.code ?? 'UNKNOWN_ERROR',
@@ -57,7 +58,8 @@ export const useNotificationStore = create((set, get) => ({
   addSubscription: async (request) => {
     set({ saving: true });
     try {
-      const created = await notificationApi.createSubscription(request);
+      // 문자 수신 동의가 없으면(TERMS_003) 동의 모달을 띄우고, 동의하면 한 번 다시 등록한다
+      const created = await withTermsAgreement(() => notificationApi.createSubscription(request));
       set((state) => ({ subscriptions: [created, ...state.subscriptions], saving: false }));
       get().reloadIfLoading();
       return { ok: true };
