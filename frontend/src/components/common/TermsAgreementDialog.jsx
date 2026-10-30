@@ -20,7 +20,14 @@ export default function TermsAgreementDialog() {
   const content = TERMS_CONTENT[pending.termsCode];
 
   return (
-    <Dialog title={dialog?.title ?? '약관 동의'} onClose={cancelAgreement}>
+    // 저장 중에는 닫기 버튼을 숨기고 Esc 로도 닫지 않는다. 닫으면 저장 결과와 화면이 어긋난다
+    <Dialog
+      title={dialog?.title ?? '약관 동의'}
+      hideClose={pending.saving}
+      onClose={() => {
+        if (!pending.saving) cancelAgreement();
+      }}
+    >
       <div className={styles.root}>
         {dialog?.description && <p className={styles.description}>{dialog.description}</p>}
         {content && (

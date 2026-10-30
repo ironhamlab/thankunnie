@@ -39,6 +39,9 @@ export default function FavoriteButton({ shopId, shopName }) {
   const [notice, setNotice] = useState(null);
   const [formError, setFormError] = useState(null);
   const [step, setStep] = useState(null);
+  // 문자 수신 동의 확인(동의 모달)이 끝날 때까지 찜 버튼·예 선택을 다시 실행하지 못하게 막는다.
+  // 겹치면 새 동의 요청이 이전 요청을 '닫음'으로 끝내 사용자가 거절하지 않았는데 찜만 저장될 수 있다
+  const [agreeing, setAgreeing] = useState(false);
   // PrivateRoute 와 같이 개발 서버 테스트 계정도 로그인으로 본다
   const loggedIn = Boolean(token || getDevTestUser());
 
@@ -56,6 +59,7 @@ export default function FavoriteButton({ shopId, shopName }) {
   };
 
   const handleClick = async () => {
+    if (agreeing) return;
     if (!loggedIn) {
       navigate(ROUTES.LOGIN, { state: { from: location } });
       return;
@@ -91,14 +95,20 @@ export default function FavoriteButton({ shopId, shopName }) {
 
   // 알림 조건을 입력하기 전에 문자 수신 동의부터 받는다. 질문 창을 닫고 동의 모달만 보이게 한다
   const handleAccept = async () => {
+    if (agreeing) return;
+    setAgreeing(true);
     setStep(null);
-    const agreed = await ensureAgreement(TERMS_CODE.SMS_NOTIFICATION);
-    if (!agreed) {
-      handleDecline();
-      return;
+    try {
+      const agreed = await ensureAgreement(TERMS_CODE.SMS_NOTIFICATION);
+      if (!agreed) {
+        await handleDecline();
+        return;
+      }
+      setFormError(null);
+      setStep('form');
+    } finally {
+      setAgreeing(false);
     }
-    setFormError(null);
-    setStep('form');
   };
 
   const handleCreate = async ({ startTime, endTime }) => {
@@ -119,7 +129,7 @@ export default function FavoriteButton({ shopId, shopName }) {
           className={favorite ? 'is-selected' : undefined}
           aria-pressed={Boolean(favorite)}
           aria-label={favorite ? '찜 해제' : '찜하기'}
-          disabled={saving || (loggedIn && listStatus === 'loading')}
+          disabled={saving || agreeing || (loggedIn && listStatus === 'loading')}
           onClick={handleClick}
         >
           <span aria-hidden="true">{favorite ? '♥' : '♡'}</span>찜

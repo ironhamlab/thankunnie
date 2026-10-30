@@ -76,9 +76,10 @@ export const useTermsStore = create((set, get) => ({
     return get().requestAgreement(termsCode);
   },
 
+  // 저장 중에는 닫지 않는다 (모달도 닫기를 막지만, 다른 경로로 불려도 저장 결과와 어긋나지 않게 한다)
   cancelAgreement: () => {
     const { pending } = get();
-    if (!pending) return;
+    if (!pending || pending.saving) return;
     set({ pending: null });
     pending.resolve(false);
   },
