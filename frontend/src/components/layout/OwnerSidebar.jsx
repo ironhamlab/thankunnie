@@ -1,7 +1,7 @@
 import { Link, NavLink } from 'react-router-dom';
-import Asset from '@/components/common/Asset';
 import { ROUTES } from '@/constants/routes';
-import { useDesignStore } from '@/store/useDesignStore';
+import { useShopStore } from '@/store/useShopStore';
+import RepresentativeImage from '@/pages/owner/components/RepresentativeImage';
 import Button from '@/components/common/Button';
 import StoreIcon from '@/components/icons/StoreIcon';
 import ScissorsIcon from '@/components/icons/ScissorsIcon';
@@ -20,7 +20,7 @@ const NAVIGATION = [
  * 사장님 센터 사이드바
  */
 export default function OwnerSidebar() {
-  const shop = useDesignStore((s) => s.shop);
+  const shop = useShopStore((s) => s.shop);
 
   return (
     <aside className={styles.root}>
@@ -28,13 +28,14 @@ export default function OwnerSidebar() {
         <strong>땡잡은 언니</strong>
         <small>사장님 센터</small>
       </Link>
-      <div className={styles.shop}>
-        <Asset name="12-1798-0.png" alt="매장 대표 이미지" />
-        <div>
-          <strong>{shop.name}</strong>
-          <small className="b-green-text">● 영업 중</small>
+      {shop && (
+        <div className={styles.shop}>
+          <RepresentativeImage kind="shop" imageUrl={shop.imageUrl} name={shop.name} />
+          <div>
+            <strong>{shop.name}</strong>
+          </div>
         </div>
-      </div>
+      )}
       <Button as={Link} variant="primary" wide to={ROUTES.OWNER_VACANCIES}>
         ⊕ 빈자리 열기·닫기
       </Button>
@@ -48,9 +49,8 @@ export default function OwnerSidebar() {
       </nav>
       <div className={styles.bottom}>
         <NavLink to={ROUTES.OWNER} end>
-          마이페이지
+          운영 현황
         </NavLink>
-        <small>땡잡은 언니 파트너스 · 모의 테스트</small>
       </div>
     </aside>
   );

@@ -1,0 +1,25 @@
+.values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 6px;
+}
+.values > * + * {
+  padding-left: 20px;
+  border-left: 1px solid var(--color-border);
+}
+.valueLabel {
+  display: block;
+  color: var(--color-text-secondary);
+}
+.values h2 {
+  margin-top: 2px;
+}
+.note {
+  display: block;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+.action {
+  margin-top: 10px;
+  font-size: 13px;
+}
