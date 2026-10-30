@@ -92,7 +92,7 @@ class ReservationServiceTest {
         given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
 
         ReservationCreateResponse response = reservationService.createReservation(
-                CUSTOMER, request(NOW.plusHours(11), "손톱이 짧아요"));
+                CUSTOMER, request(NOW.plusHours(11)));
 
         ArgumentCaptor<Reservation> captor = ArgumentCaptor.forClass(Reservation.class);
         verify(reservationRepository).save(captor.capture());
@@ -104,7 +104,7 @@ class ReservationServiceTest {
         assertThat(saved.getAppliedPrice()).isEqualTo(30_000);
         assertThat(saved.getDeposit()).isEqualTo(BookingPolicy.MAX_DEPOSIT_AMOUNT);
         assertThat(saved.getHoldExpiresAt()).isEqualTo(NOW.plusMinutes(5));
-        assertThat(saved.getCustomerRequest()).isEqualTo("손톱이 짧아요");
+        assertThat(saved.getCustomerRequest()).isNull();
         assertThat(response.treatmentId()).isEqualTo(TREATMENT_ID);
         assertThat(response.startsAt()).isEqualTo(OffsetDateTime.parse("2026-11-01T20:00:00+09:00"));
         verify(shopLock).lock(SHOP_ID);
@@ -117,7 +117,7 @@ class ReservationServiceTest {
         given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
 
         ReservationCreateResponse response = reservationService.createReservation(
-                CUSTOMER, request(NOW.plusHours(2), null));
+                CUSTOMER, request(NOW.plusHours(2)));
 
         assertThat(response.appliedPrice()).isEqualTo(18_000);
         assertThat(response.deposit()).isEqualTo(18_000);
@@ -130,7 +130,7 @@ class ReservationServiceTest {
         given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
 
         ReservationCreateResponse response = reservationService.createReservation(CUSTOMER,
-                new ReservationCreateRequest(TREATMENT_ID, OffsetDateTime.parse("2026-11-01T11:00:00Z"), null));
+                new ReservationCreateRequest(TREATMENT_ID, OffsetDateTime.parse("2026-11-01T11:00:00Z")));
 
         assertThat(response.startsAt()).isEqualTo(OffsetDateTime.parse("2026-11-01T20:00:00+09:00"));
     }
@@ -141,7 +141,7 @@ class ReservationServiceTest {
         givenTreatment(TreatmentStatus.ACTIVE);
         given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
 
-        reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11), null));
+        reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11)));
 
         InOrder inOrder = inOrder(userLock, shopLock, availabilityService, reservationRepository);
         inOrder.verify(userLock).lock(CUSTOMER.userId());
@@ -159,7 +159,7 @@ class ReservationServiceTest {
         willThrow(new BusinessException(ErrorCode.VACANCY_TIME_TAKEN))
                 .given(availabilityService).validateAvailable(SHOP_ID, NOW.plusHours(11), 60);
 
-        assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11), null)),
+        assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11))),
                 ErrorCode.VACANCY_TIME_TAKEN);
         verify(reservationRepository, never()).save(any());
     }
@@ -171,7 +171,7 @@ class ReservationServiceTest {
         willThrow(new BusinessException(ErrorCode.VACANCY_NOT_OPEN_TIME))
                 .given(availabilityService).validateAvailable(SHOP_ID, NOW.plusHours(11), 60);
 
-        assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11), null)),
+        assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11))),
                 ErrorCode.VACANCY_NOT_OPEN_TIME);
         verify(reservationRepository, never()).save(any());
     }
@@ -184,7 +184,7 @@ class ReservationServiceTest {
                 CUSTOMER.userId(), NOW.plusHours(11), NOW.plusHours(12)))
                 .willReturn(List.of(userReservation(NOW.plusMinutes(5))));
 
-        assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11), null)),
+        assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11))),
                 ErrorCode.VACANCY_USER_TIME_OVERLAP);
         verify(reservationRepository, never()).save(any());
     }
@@ -199,7 +199,7 @@ class ReservationServiceTest {
         given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
 
         ReservationCreateResponse response = reservationService.createReservation(
-                CUSTOMER, request(NOW.plusHours(11), null));
+                CUSTOMER, request(NOW.plusHours(11)));
 
         assertThat(response.status()).isEqualTo(ReservationStatus.HOLD);
     }
@@ -219,7 +219,7 @@ class ReservationServiceTest {
         givenTreatment(TreatmentStatus.ACTIVE);
         given(reservationRepository.save(any(Reservation.class))).willAnswer(invocation -> invocation.getArgument(0));
 
-        ReservationCreateResponse response = service.createReservation(CUSTOMER, request(NOW.plusHours(11), null));
+        ReservationCreateResponse response = service.createReservation(CUSTOMER, request(NOW.plusHours(11)));
 
         assertThat(response.holdExpiresAt())
                 .isEqualTo(afterLock.plusMinutes(5).atZone(BookingPolicy.ZONE).toOffsetDateTime());
@@ -230,7 +230,7 @@ class ReservationServiceTest {
     void createReservation_treatmentMissing_throwsNotFound() {
         given(treatmentRepository.findById(TREATMENT_ID)).willReturn(Optional.empty());
 
-        assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11), null)),
+        assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11))),
                 ErrorCode.TREATMENT_NOT_FOUND);
     }
 
@@ -239,7 +239,7 @@ class ReservationServiceTest {
     void createReservation_inactiveTreatment_throwsNotFound() {
         givenTreatment(TreatmentStatus.INACTIVE);
 
-        assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11), null)),
+        assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11))),
                 ErrorCode.TREATMENT_NOT_FOUND);
     }
 
@@ -252,7 +252,7 @@ class ReservationServiceTest {
                 availabilityService, shopLock, userLock,
                 Clock.fixed(now.atZone(BookingPolicy.ZONE).toInstant(), BookingPolicy.ZONE), eventPublisher);
 
-        assertErrorCode(() -> service.createReservation(CUSTOMER, request(NOW.plusMinutes(30), null)),
+        assertErrorCode(() -> service.createReservation(CUSTOMER, request(NOW.plusMinutes(30))),
                 ErrorCode.VACANCY_BOOKING_CLOSED);
     }
 
@@ -260,19 +260,21 @@ class ReservationServiceTest {
     @DisplayName("고객이 아니면 FORBIDDEN 예외가 발생한다")
     void createReservation_owner_throwsForbidden() {
         assertErrorCode(() -> reservationService.createReservation(
-                TestUser.OWNER_1.toAuthUser(), request(NOW.plusHours(11), null)), ErrorCode.FORBIDDEN);
+                TestUser.OWNER_1.toAuthUser(), request(NOW.plusHours(11))), ErrorCode.FORBIDDEN);
     }
 
     @Test
-    @DisplayName("본인 점유를 예약금만큼 결제하면 예약 행을 잠가 조회한 뒤 CONFIRMED 로 확정한다")
+    @DisplayName("본인 점유를 예약금만큼 결제하면 예약 행을 잠가 조회한 뒤 CONFIRMED 로 확정하고 요청사항을 저장한 뒤 확정 이벤트를 발행한다")
     void confirmReservation_validHold_confirms() {
         Reservation hold = userReservation(NOW.plusMinutes(5));
         given(reservationRepository.findByIdForUpdate(RESERVATION_ID)).willReturn(Optional.of(hold));
 
-        Reservation confirmed = reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000);
+        Reservation confirmed = reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000,
+                "손톱은 라운드로 부탁드려요");
 
         assertThat(confirmed.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
         assertThat(confirmed.getConfirmedAt()).isEqualTo(NOW);
+        assertThat(confirmed.getCustomerRequest()).isEqualTo("손톱은 라운드로 부탁드려요");
         verify(eventPublisher).publishEvent(new ReservationConfirmedEvent(RESERVATION_ID));
     }
 
@@ -283,9 +285,9 @@ class ReservationServiceTest {
                 .willReturn(Optional.empty())
                 .willReturn(Optional.of(userReservation(NOW.plusMinutes(5))));
 
-        assertErrorCode(() -> reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000),
+        assertErrorCode(() -> reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000, null),
                 ErrorCode.RESERVATION_NOT_FOUND);
-        assertErrorCode(() -> reservationService.confirmReservation(999L, RESERVATION_ID, 20_000),
+        assertErrorCode(() -> reservationService.confirmReservation(999L, RESERVATION_ID, 20_000, null),
                 ErrorCode.RESERVATION_NOT_FOUND);
     }
 
@@ -304,7 +306,7 @@ class ReservationServiceTest {
                 .build();
         given(reservationRepository.findByIdForUpdate(RESERVATION_ID)).willReturn(Optional.of(hold));
 
-        assertErrorCode(() -> reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000),
+        assertErrorCode(() -> reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID, 20_000, null),
                 ErrorCode.VACANCY_PAYMENT_CLOSED);
         assertThat(hold.getStatus()).isEqualTo(ReservationStatus.HOLD);
         verify(eventPublisher, never()).publishEvent(any());
@@ -345,9 +347,8 @@ class ReservationServiceTest {
                 .build();
     }
 
-    private static ReservationCreateRequest request(LocalDateTime startsAt, String customerRequest) {
-        return new ReservationCreateRequest(TREATMENT_ID,
-                startsAt.atZone(BookingPolicy.ZONE).toOffsetDateTime(), customerRequest);
+    private static ReservationCreateRequest request(LocalDateTime startsAt) {
+        return new ReservationCreateRequest(TREATMENT_ID, startsAt.atZone(BookingPolicy.ZONE).toOffsetDateTime());
     }
 
     private static void assertErrorCode(Runnable action, ErrorCode errorCode) {

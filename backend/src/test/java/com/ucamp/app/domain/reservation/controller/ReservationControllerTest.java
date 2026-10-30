@@ -36,7 +36,7 @@ class ReservationControllerTest {
 
     private static final String URL = "/api/v1/reservations";
     private static final String VALID_BODY = """
-            {"treatmentId": 1, "startsAt": "2026-11-01T20:00:00+09:00", "customerRequest": "손톱이 짧아요"}
+            {"treatmentId": 1, "startsAt": "2026-11-01T20:00:00+09:00"}
             """;
 
     @Autowired

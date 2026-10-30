@@ -1,5 +1,6 @@
 package com.ucamp.app.domain.reservation.dto.response;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 import com.ucamp.app.common.util.TimeUtils;
@@ -16,6 +17,7 @@ import com.ucamp.app.domain.reservation.repository.ReservationView;
  * @param reservedAt      예약 클릭(생성) 시각
  * @param payment         최근 결제, 결제 전이면 null
  * @param cancel          취소, 취소 전이면 null
+ * @param serverTime      응답을 만든 서버 시각. 화면이 기기 시계 차이를 보정해 점유 남은 시간을 셀 때 쓴다
  */
 public record ReservationDetailResponse(
         ReservationSummaryResponse summary,
@@ -25,9 +27,11 @@ public record ReservationDetailResponse(
         OffsetDateTime confirmedAt,
         OffsetDateTime reservedAt,
         Payment payment,
-        Cancel cancel) {
+        Cancel cancel,
+        OffsetDateTime serverTime) {
 
-    public static ReservationDetailResponse from(ReservationView view, boolean cancellable) {
+    public static ReservationDetailResponse from(ReservationView view, boolean cancellable,
+            LocalDateTime serverTime) {
         Payment payment = view.paymentStatus() == null ? null : new Payment(
                 view.paymentStatus(),
                 view.paymentAmount(),
@@ -49,7 +53,8 @@ public record ReservationDetailResponse(
                 TimeUtils.toOffset(view.confirmedAt()),
                 TimeUtils.toOffset(view.createdAt()),
                 payment,
-                cancel);
+                cancel,
+                TimeUtils.toOffset(serverTime));
     }
 
     /**

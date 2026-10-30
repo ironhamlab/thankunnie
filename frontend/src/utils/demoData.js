@@ -22,9 +22,13 @@ const depositPayment = ({
   approvedAt,
   refundedAt,
 });
+// treatmentId: 실제 서버 시술 번호(docs/erd/02_init_data_dml.sql). 없는 시술은 예약 요청을 보낼 수 없는 시연용이다.
+// nail → 1(언니네 네일 젤네일 원컬러)은 예약 흐름 확인용 임시 연결로, 매장명·가격이 서버와 다르다.
+// 빈자리 상세 API가 들어오면 화면이 서버 시술 정보를 직접 쓰도록 바꾸고 이 연결을 없앤다.
 export const SERVICES = [
   {
     id: 'nail',
+    treatmentId: 1,
     name: '젤 네일 원컬러 + 케어',
     shop: '살롱 드 르네',
     location: '강남역 도보 3분',

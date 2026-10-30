@@ -1,0 +1,76 @@
+.root {
+  position: relative;
+  height: 100%;
+  min-height: 420px;
+  overflow: hidden;
+  background: #dbe7ff;
+  border: 1px solid #c4d7fc;
+  border-radius: 24px;
+}
+/* 카카오맵 위에 띄우는 매장 핀. 위치는 지도 오버레이가 정한다 */
+.pin {
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-xl);
+  padding: 6px 10px;
+  background: white;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 5px #0002;
+  cursor: pointer;
+}
+.pin:global(.is-selected) {
+  background: var(--color-primary);
+  color: white;
+}
+.count {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: #fffffff0;
+  font-size: 12px;
+  font-weight: 600;
+}
+.panel {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  background: #fffffff5;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 6px #0001;
+}
+.panel > div {
+  min-width: 0;
+}
+.panel p {
+  margin: 2px 0;
+  font-size: 13px;
+  color: var(--color-primary);
+}
+.panel small {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.panel :global(.b-button) {
+  flex-shrink: 0;
+}
+.fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}

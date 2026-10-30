@@ -24,6 +24,8 @@ export const useReservationStore = create((set, get) => ({
   detailStatus: 'idle',
   detailError: null,
   detailRequestId: 0,
+  // 서버 시각 - 기기 시각(ms). 기기 시계가 틀려도 점유 남은 시간을 서버 기준으로 세기 위해 응답을 받은 순간 잰다
+  detailClockOffset: 0,
 
   // 필터를 빠르게 바꾸면 요청이 겹치므로 마지막 요청의 응답만 반영한다.
   loadReservations: async (scope, filters) => {
@@ -53,12 +55,26 @@ export const useReservationStore = create((set, get) => ({
     try {
       const detail = await API_BY_SCOPE[scope].detail(reservationId);
       if (get().detailRequestId === requestId) {
-        set({ detail, detailStatus: 'succeeded' });
+        const serverTime = Date.parse(detail?.serverTime);
+        set({
+          detail,
+          detailStatus: 'succeeded',
+          detailClockOffset: Number.isNaN(serverTime) ? 0 : serverTime - Date.now(),
+        });
       }
     } catch (error) {
       if (get().detailRequestId === requestId) {
         set({ detail: null, detailStatus: 'failed', detailError: toError(error) });
       }
+    }
+  },
+
+  // 예약 생성은 화면마다 따로 진행 상태를 보여주므로 결과만 돌려주고 store 상태는 바꾸지 않는다.
+  createReservation: async (request) => {
+    try {
+      return await reservationApi.createReservation(request);
+    } catch (error) {
+      throw toError(error);
     }
   },
 
@@ -68,5 +84,6 @@ export const useReservationStore = create((set, get) => ({
       detailStatus: 'idle',
       detailError: null,
       detailRequestId: state.detailRequestId + 1,
+      detailClockOffset: 0,
     })),
 }));

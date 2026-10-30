@@ -59,7 +59,7 @@ public class ReservationQueryService {
         loginUser.requireRole(UserRole.OWNER);
         ReservationView view = reservationQueryRepository.findOne(reservationId, loginUser.shopId(), null)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
-        return ReservationDetailResponse.from(view, isCancellable(view));
+        return ReservationDetailResponse.from(view, isCancellable(view), LocalDateTime.now(clock));
     }
 
     /**
@@ -79,7 +79,7 @@ public class ReservationQueryService {
         loginUser.requireRole(UserRole.CUSTOMER);
         ReservationView view = reservationQueryRepository.findOne(reservationId, null, loginUser.userId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
-        return ReservationDetailResponse.from(view, isCancellable(view));
+        return ReservationDetailResponse.from(view, isCancellable(view), LocalDateTime.now(clock));
     }
 
     private PageResponse<ReservationSummaryResponse> findPage(ReservationSearch search, int page, int size) {
