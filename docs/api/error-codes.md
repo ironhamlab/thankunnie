@@ -73,6 +73,8 @@
 | `PAYMENT_003` | 409 | 환불할 수 없는 결제 상태입니다. | 결제 완료(PAID)·부분 환불(PART_REFUNDED)이 아닌 결제 환불 (이미 환불됨, 환불 처리 중(REFUND_PENDING) 등) |
 | `PAYMENT_004` | 400 | 환불 금액이 올바르지 않습니다. | 환불 금액이 0원 이하이거나 남은 결제 금액보다 큼 |
 | `PAYMENT_005` | 504 | 환불 결과를 확인하고 있습니다. 잠시 후 결제 상태를 확인해 주세요. | 포트원 환불 요청 후 응답을 받지 못했거나, 포트원 환불 후 DB 반영에 실패함. 결제는 REFUND_PENDING 으로 남는다 |
+| `PAYMENT_006` | 400 | 결제가 완료되지 않았습니다. | 결제 확인(`POST /payments/verify`) 때 포트원 결제 상태가 paid 가 아님 (ready, failed, cancelled) |
+| `PAYMENT_007` | 400 | 예약과 맞지 않는 결제입니다. | 결제 주문번호(merchant_uid)가 `reservation-{reservationId}-` 로 시작하지 않음, 또는 같은 imp_uid 가 다른 예약에 이미 저장됨 |
 
 ## TREATMENT
 
