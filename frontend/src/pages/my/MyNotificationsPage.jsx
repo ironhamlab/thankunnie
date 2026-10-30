@@ -5,6 +5,8 @@ import SubscriptionList from '@/components/notification/SubscriptionList';
 import ClockIcon from '@/components/icons/ClockIcon';
 import HeartIcon from '@/components/icons/HeartIcon';
 import NotificationIcon from '@/components/icons/NotificationIcon';
+import { useNotificationStore } from '@/store/useNotificationStore';
+import headerStyles from '@/components/layout/Header.module.css';
 import styles from './MyNotificationsPage.module.css';
 
 const TABS = [
@@ -20,6 +22,16 @@ const TABS = [
  */
 export default function MyNotificationsPage() {
   const [tab, setTab] = useState('subscriptions');
+  const favoriteShops = useNotificationStore((state) => state.favoriteShops);
+  const subscriptions = useNotificationStore((state) => state.subscriptions);
+  // 알림 없이 찜만 한 매장 수. 0이면 뱃지를 숨긴다
+  const pendingFavoriteCount = favoriteShops.filter(
+    (shop) =>
+      !subscriptions.some(
+        (item) =>
+          item.subscriptionType === 'STORE' && Number(item.shopId) === Number(shop.shopId),
+      ),
+  ).length;
 
   return (
     <div className={`b-container b-page ${styles.root}`}>
@@ -37,6 +49,11 @@ export default function MyNotificationsPage() {
           >
             <Icon size={16} />
             {label}
+            {id === 'favorites' && pendingFavoriteCount > 0 && (
+              <b className={headerStyles.count} aria-label={`${pendingFavoriteCount}개`}>
+                {pendingFavoriteCount}
+              </b>
+            )}
           </button>
         ))}
       </div>
