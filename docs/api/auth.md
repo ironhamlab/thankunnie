@@ -46,7 +46,8 @@
   "loginId": "unnie01",
   "password": "password1!",
   "name": "김언니",
-  "phone": "01012345678"
+  "phone": "01012345678",
+  "agreedTerms": ["AGE_14", "SERVICE", "PRIVACY", "THIRD_PARTY", "SMS_NOTIFICATION"]
 }
 ```
 
@@ -56,8 +57,9 @@
 | password | 8~64자, UTF-8 72바이트 이하 (BCrypt 한도. 한글은 24자까지) |
 | name | 필수, 50자 이하 |
 | phone | 휴대폰 번호(010·011·016~019), 하이픈 선택. `010-1234-5678` 형식으로 저장. 문자 알림 수신 번호 |
+| agreedTerms | 필수. 동의한 약관 코드 배열. 필수 약관(`AGE_14`·`SERVICE`·`PRIVACY`·`THIRD_PARTY`)은 모두 포함, 선택 약관은 동의한 것만. 중복은 무시. 코드 목록은 `GET /api/v1/terms` (`terms.md`) |
 
-오류: 형식 위반 `COMMON_400`, 아이디 중복 `AUTH_001`(409)
+오류: 형식 위반·`agreedTerms` 누락 `COMMON_400`, 필수 약관 누락 `TERMS_002`(400), 없는 약관 코드 `TERMS_001`(404), 아이디 중복 `AUTH_001`(409)
 
 ## POST /api/v1/auth/login — 고객·관리자 로그인
 

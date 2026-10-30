@@ -25,6 +25,12 @@ public enum ErrorCode {
     AUTH_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "AUTH_002", "아이디 또는 비밀번호가 올바르지 않습니다."),
     AUTH_INACTIVE_ACCOUNT(HttpStatus.FORBIDDEN, "AUTH_003", "사용할 수 없는 계정입니다."),
 
+    // TERMS
+    TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "TERMS_001", "약관을 찾을 수 없습니다."),
+    TERMS_REQUIRED_NOT_AGREED(HttpStatus.BAD_REQUEST, "TERMS_002", "필수 약관에 모두 동의해야 합니다."),
+    TERMS_SMS_AGREEMENT_REQUIRED(HttpStatus.CONFLICT, "TERMS_003", "알림 문자 수신 동의가 필요합니다."),
+    TERMS_MODEL_PHOTO_AGREEMENT_REQUIRED(HttpStatus.CONFLICT, "TERMS_004", "모델 시술 촬영 동의가 필요합니다."),
+
     // RESERVATION
     RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "RESERVATION_001", "예약을 찾을 수 없습니다."),
     RESERVATION_ALREADY_CONFIRMED(HttpStatus.CONFLICT, "RESERVATION_002", "이미 확정된 예약입니다."),

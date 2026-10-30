@@ -13,7 +13,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class SchemaInitTest {
 
-    private static final int TABLE_COUNT = 16;
+    private static final int TABLE_COUNT = 18;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
