@@ -92,6 +92,8 @@ export default function ShopDetailPage({ model = false }) {
   const pickedTime = selected('time');
   const selectedTime = TIME_PATTERN.test(pickedTime ?? '') ? pickedTime : null;
   // 처음 들어오면 예약하기를 먼저 보여준다
+  // 모델 모집은 안내 사항 확인 체크를 해야 예약할 수 있다. 시술을 바꾸면 다시 체크한다
+  const agreed = selected('agreed') === 'Y';
   const pickedView = selected('view');
   const view = VIEWS.includes(pickedView) ? pickedView : 'reserve';
   // 2단계는 예약 화면에서 시술을 고른 뒤에만 보인다. 시술 변경을 누르면 step=1 로 돌아간다
@@ -201,7 +203,9 @@ export default function ShopDetailPage({ model = false }) {
                       : '지금 예약할 수 있는 시술이 없습니다.'
                   }
                   selectedId={treatment?.treatmentId}
-                  onSelect={(treatmentId) => updateParams({ treatmentId, step: null, time: null })}
+                  onSelect={(treatmentId) =>
+                    updateParams({ treatmentId, step: null, time: null, agreed: null })
+                  }
                 />
               )}
               {step === 2 && (
@@ -215,7 +219,13 @@ export default function ShopDetailPage({ model = false }) {
                       시술 변경
                     </Button>
                   </div>
-                  {model && <ModelRecruitPanel treatment={treatment} />}
+                  {model && (
+                    <ModelRecruitPanel
+                      treatment={treatment}
+                      agreed={agreed}
+                      onAgreeChange={(checked) => updateParams({ agreed: checked ? 'Y' : null })}
+                    />
+                  )}
                   <SlotPicker
                     firstDate={today}
                     lastDate={lastDate}
@@ -236,7 +246,14 @@ export default function ShopDetailPage({ model = false }) {
         </div>
         {step === 2 && (
           <aside className={`b-stack ${styles.aside}`}>
-            <BookingSummary treatment={treatment} date={selectedDate} time={time} />
+            <BookingSummary
+              treatment={treatment}
+              date={selectedDate}
+              time={time}
+              blockedMessage={
+                model && !agreed ? '모델 모집 안내 사항을 확인하고 체크해 주세요.' : null
+              }
+            />
           </aside>
         )}
       </div>

@@ -3,8 +3,12 @@ import styles from '../ShopDetailPage.module.css';
 
 /**
  * 고른 모델 시술의 참여 조건과 촬영 안내. 두 값은 모델 시술 등록 시 필수지만, 비어 오면 안내 문구로 대신한다.
+ * 아래 확인 체크를 해야 예약을 진행할 수 있다.
+ *
+ * @param agreed        안내 사항 확인 체크 여부
+ * @param onAgreeChange 체크를 바꾸면 체크 여부를 받는 콜백
  */
-export default function ModelRecruitPanel({ treatment }) {
+export default function ModelRecruitPanel({ treatment, agreed, onAgreeChange }) {
   return (
     <Panel as="section" padded aria-label="모델 모집 안내">
       <h2 className="b-panel-heading">모델 모집 안내</h2>
@@ -17,6 +21,17 @@ export default function ModelRecruitPanel({ treatment }) {
         <h3>촬영 안내</h3>
         <p>{treatment.photoNotice || '등록된 촬영 안내가 없습니다.'}</p>
       </div>
+      <label className={styles.agree}>
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(event) => onAgreeChange(event.target.checked)}
+        />
+        <span>
+          <strong>[필수] 위 참여 조건과 촬영 안내를 모두 확인했습니다</strong>
+          <small>참여 조건을 충족하지 않으면 매장에서 시술이 취소될 수 있습니다.</small>
+        </span>
+      </label>
     </Panel>
   );
 }

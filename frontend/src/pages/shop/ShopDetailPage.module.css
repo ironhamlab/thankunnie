@@ -195,6 +195,29 @@
   margin: 0;
   white-space: pre-line;
 }
+/* 결제 화면의 필수 동의 체크와 같은 모양으로 둔다 */
+.agree {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  cursor: pointer;
+}
+.agree input {
+  accent-color: var(--color-primary);
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.agree small {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
 .treatments {
   display: grid;
   gap: 10px;

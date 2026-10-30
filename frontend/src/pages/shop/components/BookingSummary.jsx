@@ -12,8 +12,12 @@ const money = (value) => `${value.toLocaleString('ko-KR')}원`;
 // 가격 구간은 서버(PriceTier)가 정한다. 일반 구간은 따로 표시하지 않는다
 const TIER_LABELS = { IMMINENT: '임박', LAST_MINUTE: '초임박 특가' };
 
-/** 고른 시술·시각의 가격과 예약 가능 여부를 빈자리 상세(C-03)로 다시 조회해 보여준다 */
-export default function BookingSummary({ treatment, date, time }) {
+/**
+ * 고른 시술·시각의 가격과 예약 가능 여부를 빈자리 상세(C-03)로 다시 조회해 보여준다
+ *
+ * @param blockedMessage 예약 전에 화면에서 먼저 해야 할 일이 있으면 그 안내. 있으면 예약하기를 막는다
+ */
+export default function BookingSummary({ treatment, date, time, blockedMessage }) {
   const detail = useVacancyDetailStore((state) => state.detail);
   const status = useVacancyDetailStore((state) => state.status);
   const error = useVacancyDetailStore((state) => state.error);
@@ -105,6 +109,9 @@ export default function BookingSummary({ treatment, date, time }) {
           )}
         </>
       )}
+      {current && detail.bookable && blockedMessage && (
+        <Notice role="status">{blockedMessage}</Notice>
+      )}
       {reserveError && (
         <Alert tone="error" role="alert">
           {reserveError}
@@ -114,7 +121,7 @@ export default function BookingSummary({ treatment, date, time }) {
       <Button
         variant="primary"
         wide
-        disabled={!current || !detail.bookable || loading}
+        disabled={!current || !detail.bookable || Boolean(blockedMessage) || loading}
         onClick={() => reserve(treatmentId, date, time)}
       >
         {loading ? '예약하는 중...' : '예약하기'}
