@@ -38,12 +38,13 @@ public class PaymentConfirmService {
      * 같은 결제가 이미 저장돼 있으면 다시 확정하지 않고 저장된 결제 ID 를 돌려준다.
      *
      * @return 예약금결제 ID
-     * @throws BusinessException 같은 결제가 다른 예약에 이미 쓰였으면 PAYMENT_RESERVATION_MISMATCH, 그 밖에는 예약 확정 오류
+     * @throws BusinessException 같은 결제가 다른 예약에 이미 쓰였으면 PAYMENT_RESERVATION_MISMATCH,
+     *                           저장된 결제의 예약이 요청한 고객의 것이 아니면 RESERVATION_NOT_FOUND, 그 밖에는 예약 확정 오류
      */
     @Transactional
     public Long confirm(Long userId, Long reservationId, String impUid, int paidAmount,
                         String customerRequest, LocalDateTime approvedAt) {
-        Optional<Long> saved = findSaved(impUid, reservationId);
+        Optional<Long> saved = findSaved(impUid, reservationId, userId);
         if (saved.isPresent()) {
             return saved.get();
         }
@@ -62,16 +63,22 @@ public class PaymentConfirmService {
     }
 
     /**
-     * 이 결제가 이 예약으로 이미 저장돼 있으면 예약금결제 ID 를 돌려준다.
+     * 이 결제가 이 고객의 이 예약으로 이미 저장돼 있으면 예약금결제 ID 를 돌려준다.
+     * 다른 고객이 결제 고유번호와 예약 ID 만으로 남의 결제 정보를 받지 못하게 예약 주인을 확인한다.
      *
-     * @throws BusinessException 다른 예약에 저장된 결제면 PAYMENT_RESERVATION_MISMATCH
+     * @throws BusinessException 다른 예약에 저장된 결제면 PAYMENT_RESERVATION_MISMATCH,
+     *                           예약이 요청한 고객의 것이 아니면 RESERVATION_NOT_FOUND (예약 상세 조회와 같은 응답)
      */
     @Transactional(readOnly = true)
-    public Optional<Long> findSaved(String impUid, Long reservationId) {
+    public Optional<Long> findSaved(String impUid, Long reservationId, Long userId) {
         return depositPaymentRepository.findByPgTransactionKey(impUid)
                 .map(payment -> {
-                    if (!payment.getReservation().getId().equals(reservationId)) {
+                    Reservation reservation = payment.getReservation();
+                    if (!reservation.getId().equals(reservationId)) {
                         throw new BusinessException(ErrorCode.PAYMENT_RESERVATION_MISMATCH);
+                    }
+                    if (!reservation.getUserId().equals(userId)) {
+                        throw new BusinessException(ErrorCode.RESERVATION_NOT_FOUND);
                     }
                     return payment.getDepositPaymentId();
                 });

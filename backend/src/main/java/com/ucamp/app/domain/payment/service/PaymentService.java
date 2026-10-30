@@ -9,6 +9,7 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,9 +33,10 @@ public class PaymentService {
     private static final String AUTO_REFUND_REASON = "예약을 확정할 수 없어 결제를 자동 취소합니다";
 
     // 결제는 됐지만 예약을 확정할 수 없는 경우. 돈만 빠져나가지 않도록 결제를 바로 취소한다.
+    // 모두 예약 주인을 확인한 뒤에만 나는 오류라, 요청한 고객이 그 예약의 결제를 취소하는 셈이다.
+    // RESERVATION_NOT_FOUND(없는 예약·남의 예약)는 넣지 않는다. 넣으면 다른 고객이 남의 결제를 취소시킬 수 있다.
     // 요청사항이 너무 긴 경우(INVALID_INPUT)는 고쳐서 같은 결제로 다시 확인할 수 있으므로 취소하지 않는다
     private static final Set<ErrorCode> AUTO_REFUND_ERRORS = Set.of(
-            ErrorCode.RESERVATION_NOT_FOUND,
             ErrorCode.RESERVATION_ALREADY_CONFIRMED,
             ErrorCode.RESERVATION_HOLD_EXPIRED,
             ErrorCode.RESERVATION_NOT_HOLD,
@@ -85,7 +87,7 @@ public class PaymentService {
             return PaymentVerifyResponse.of(payment, reservationId, depositPaymentId);
         } catch (BusinessException e) {
             // 같은 결제가 동시에 두 번 들어와 다른 요청이 먼저 확정했으면 실패가 아니다. 이때 취소하면 정상 결제가 환불된다
-            Optional<Long> saved = confirmService.findSaved(payment.impUid(), reservationId);
+            Optional<Long> saved = confirmService.findSaved(payment.impUid(), reservationId, loginUser.userId());
             if (saved.isPresent()) {
                 return PaymentVerifyResponse.of(payment, reservationId, saved.get());
             }
@@ -111,6 +113,10 @@ public class PaymentService {
         } catch (BusinessException cancelError) {
             log.error("예약 확정 실패 후 결제 자동 취소 실패, 수동 확인 필요: impUid={}, amount={}, reason={}, cancelError={}",
                     payment.impUid(), amount, reason, cancelError.getErrorCode());
+        } catch (RestClientException cancelError) {
+            // 2xx 응답 본문을 읽지 못한 경우 등. 실제 취소 여부를 알 수 없으므로 원래 오류를 지키고 수동 확인으로 남긴다
+            log.error("예약 확정 실패 후 결제 자동 취소 결과 확인 불가, 수동 확인 필요: impUid={}, amount={}, reason={}",
+                    payment.impUid(), amount, reason, cancelError);
         }
     }
 

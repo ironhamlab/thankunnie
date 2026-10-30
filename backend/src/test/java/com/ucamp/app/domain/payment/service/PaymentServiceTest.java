@@ -21,6 +21,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.ResourceAccessException;
 
 import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.UserRole;
@@ -214,7 +215,7 @@ class PaymentServiceTest {
         portOnePayment("paid", "reservation-10-1730000000000");
         given(confirmService.confirm(anyLong(), anyLong(), anyString(), anyInt(), any(), any()))
                 .willThrow(new BusinessException(ErrorCode.RESERVATION_HOLD_EXPIRED));
-        given(confirmService.findSaved("imp_123", RESERVATION_ID)).willReturn(Optional.empty());
+        given(confirmService.findSaved("imp_123", RESERVATION_ID, 1L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> paymentService.verify(CUSTOMER, verifyRequest()))
                 .extracting("errorCode")
@@ -228,7 +229,7 @@ class PaymentServiceTest {
         portOnePayment("paid", "reservation-10-1730000000000");
         given(confirmService.confirm(anyLong(), anyLong(), anyString(), anyInt(), any(), any()))
                 .willThrow(new BusinessException(ErrorCode.RESERVATION_DEPOSIT_MISMATCH));
-        given(confirmService.findSaved("imp_123", RESERVATION_ID)).willReturn(Optional.empty());
+        given(confirmService.findSaved("imp_123", RESERVATION_ID, 1L)).willReturn(Optional.empty());
         willThrow(new BusinessException(ErrorCode.PAYMENT_PORTONE_ERROR))
                 .given(portOneClient).cancelPayment(anyString(), anyInt(), anyString());
 
@@ -238,12 +239,41 @@ class PaymentServiceTest {
     }
 
     @Test
+    @DisplayName("자동 취소 중 응답을 읽지 못해도 원래 확정 실패 사유를 알린다")
+    void verify_cancelResponseUnreadable_stillThrowsConfirmError() {
+        portOnePayment("paid", "reservation-10-1730000000000");
+        given(confirmService.confirm(anyLong(), anyLong(), anyString(), anyInt(), any(), any()))
+                .willThrow(new BusinessException(ErrorCode.RESERVATION_HOLD_EXPIRED));
+        given(confirmService.findSaved("imp_123", RESERVATION_ID, 1L)).willReturn(Optional.empty());
+        willThrow(new ResourceAccessException("응답 읽기 실패"))
+                .given(portOneClient).cancelPayment(anyString(), anyInt(), anyString());
+
+        assertThatThrownBy(() -> paymentService.verify(CUSTOMER, verifyRequest()))
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.RESERVATION_HOLD_EXPIRED);
+    }
+
+    @Test
+    @DisplayName("없는 예약이거나 다른 고객의 예약이면 남의 결제를 취소하지 않고 RESERVATION_001 이다")
+    void verify_reservationNotFound_keepsPayment() {
+        portOnePayment("paid", "reservation-10-1730000000000");
+        given(confirmService.confirm(anyLong(), anyLong(), anyString(), anyInt(), any(), any()))
+                .willThrow(new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
+        given(confirmService.findSaved("imp_123", RESERVATION_ID, 1L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.verify(CUSTOMER, verifyRequest()))
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.RESERVATION_NOT_FOUND);
+        verify(portOneClient, never()).cancelPayment(anyString(), anyInt(), anyString());
+    }
+
+    @Test
     @DisplayName("같은 결제를 동시에 두 번 보내 다른 요청이 먼저 확정했으면 취소하지 않고 성공으로 돌려준다")
     void verify_confirmedByOtherRequest_returnsSaved() {
         portOnePayment("paid", "reservation-10-1730000000000");
         given(confirmService.confirm(anyLong(), anyLong(), anyString(), anyInt(), any(), any()))
                 .willThrow(new BusinessException(ErrorCode.RESERVATION_ALREADY_CONFIRMED));
-        given(confirmService.findSaved("imp_123", RESERVATION_ID)).willReturn(Optional.of(7L));
+        given(confirmService.findSaved("imp_123", RESERVATION_ID, 1L)).willReturn(Optional.of(7L));
 
         PaymentVerifyResponse response = paymentService.verify(CUSTOMER, verifyRequest());
 
@@ -257,7 +287,7 @@ class PaymentServiceTest {
         portOnePayment("paid", "reservation-10-1730000000000");
         given(confirmService.confirm(anyLong(), anyLong(), anyString(), anyInt(), any(), any()))
                 .willThrow(new BusinessException(ErrorCode.INVALID_INPUT));
-        given(confirmService.findSaved("imp_123", RESERVATION_ID)).willReturn(Optional.empty());
+        given(confirmService.findSaved("imp_123", RESERVATION_ID, 1L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> paymentService.verify(CUSTOMER, verifyRequest()))
                 .extracting("errorCode")

@@ -49,8 +49,13 @@ class PaymentConfirmServiceTest {
     }
 
     private DepositPayment savedPayment(long reservationId) {
+        return savedPayment(reservationId, 1L);
+    }
+
+    private DepositPayment savedPayment(long reservationId, long userId) {
         DepositPayment payment = mock(DepositPayment.class);
         Reservation reservation = reservation(reservationId);
+        given(reservation.getUserId()).willReturn(userId);
         given(payment.getReservation()).willReturn(reservation);
         given(payment.getDepositPaymentId()).willReturn(7L);
         return payment;
@@ -100,6 +105,19 @@ class PaymentConfirmServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.PAYMENT_RESERVATION_MISMATCH);
+    }
+
+    @Test
+    @DisplayName("같은 결제가 다른 고객의 예약으로 저장돼 있으면 결제 ID 를 주지 않고 RESERVATION_001 이다")
+    void confirm_savedForOtherCustomer_throws() {
+        DepositPayment payment = savedPayment(10L, 2L);
+        given(depositPaymentRepository.findByPgTransactionKey("imp_123")).willReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> confirmService.confirm(1L, 10L, "imp_123", 20000, null, APPROVED_AT))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.RESERVATION_NOT_FOUND);
+        verify(reservationService, never()).confirmReservation(anyLong(), anyLong(), anyInt(), anyString());
     }
 
     @Test
