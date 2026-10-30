@@ -345,7 +345,7 @@ class NotificationDispatchServiceTest {
 
         assertThat(sent).isEqualTo(1);
         assertThat(notificationDispatchRepository.count()).isZero();
-        verify(solapiSmsClient).send(eq("010-1111-1111"), eq("새 빈자리 2건이 생겼습니다."));
+        verify(solapiSmsClient).send(eq("010-1111-1111"), eq("땡 잡을 기회 2건이 생겼어요!"));
         assertThat(categoryRegionPendingQueue.pendingEventIds(subscription.getId())).isEmpty();
         assertThat(categoryRegionPendingQueue.lastSentAt(subscription.getId())).isEqualTo(NOW);
     }
@@ -365,7 +365,7 @@ class NotificationDispatchServiceTest {
         int sent = notificationDispatchService.flushCategoryRegionSummaries();
 
         assertThat(sent).isEqualTo(1);
-        verify(solapiSmsClient).send(eq("010-1111-1111"), eq("새 빈자리 1건이 생겼습니다."));
+        verify(solapiSmsClient).send(eq("010-1111-1111"), eq("땡 잡을 기회 1건이 생겼어요!"));
         assertThat(categoryRegionPendingQueue.lastSentAt(subscription.getId())).isEqualTo(NOW);
     }
 
@@ -571,7 +571,7 @@ class NotificationDispatchServiceTest {
 
         assertThat(sent).isEqualTo(1);
         assertThat(notificationDispatchRepository.count()).isZero();
-        verify(solapiSmsClient).send(eq("010-1111-1111"), eq("새 빈자리 1건이 생겼습니다."));
+        verify(solapiSmsClient).send(eq("010-1111-1111"), eq("땡 잡을 기회 1건이 생겼어요!"));
     }
 
     @Test
@@ -805,7 +805,7 @@ class NotificationDispatchServiceTest {
         assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.SENT);
         assertThat(saved.getFailReason()).isNull();
         // 본문 시각은 연도 포함 한국어 형식이다. 기본 toString(2026-10-22T15:00)을 쓰지 않는다.
-        verify(solapiSmsClient).send(anyString(), contains("2026년 10월 22일 15:00 시작 빈자리가 생겼습니다."));
+        verify(solapiSmsClient).send(anyString(), contains("2026년 10월 22일 15:00"));
     }
 
     @Test
