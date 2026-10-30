@@ -109,14 +109,15 @@ export const useNotificationStore = create((set, get) => ({
     try {
       // 문자 수신 동의가 없으면(TERMS_003) 동의 모달을 띄우고, 동의하면 한 번 다시 등록한다
       const created = await withTermsAgreement(() => notificationApi.createSubscription(request));
-      // 방금 등록한 구독을 맨 앞에 둔다. 실패로 비워 둔 목록도 이 응답부터 다시 보여 준다.
+      // 목록을 온전히 받지 못한 상태면 새 구독만으로 성공 처리하지 않고 서버 목록을 다시 받는다
+      const listLoaded = get().listStatus === 'succeeded';
       set((state) => ({
         subscriptions: [created, ...state.subscriptions],
-        listStatus: 'succeeded',
-        listError: null,
         saving: false,
       }));
-      get().reloadIfLoading();
+      if (!listLoaded) {
+        await get().loadSubscriptions();
+      }
       return { ok: true };
     } catch (error) {
       set({ saving: false });
