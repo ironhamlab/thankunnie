@@ -29,6 +29,7 @@ export default function CustomerProfilePage() {
   const profileStatus = useUserStore((s) => s.profileStatus);
   const profileError = useUserStore((s) => s.profileError);
   const loadProfile = useUserStore((s) => s.loadProfile);
+  const resetProfile = useUserStore((s) => s.resetProfile);
   const loadReservations = useReservationStore((s) => s.loadReservations);
   const reservations = useReservationStore((s) => s.reservations);
   const pageInfo = useReservationStore((s) => s.pageInfo);
@@ -38,10 +39,15 @@ export default function CustomerProfilePage() {
   const subscriptions = useNotificationStore((s) => s.subscriptions);
   const subscriptionStatus = useNotificationStore((s) => s.listStatus);
 
+  // 로그아웃 뒤 다른 계정에 이전 개인정보가 보이지 않도록 화면을 벗어나면 지운다
   useEffect(() => {
     loadProfile();
+    return resetProfile;
+  }, [loadProfile, resetProfile]);
+
+  useEffect(() => {
     loadReservations('my', upcomingFilters());
-  }, [loadProfile, loadReservations]);
+  }, [loadReservations]);
 
   // 찜은 희망 시간 없는 업장 구독으로 저장된다. 한 매장에 구독이 여러 건이어도 한 번만 센다
   const favoriteShopIds = new Set(
@@ -69,7 +75,7 @@ export default function CustomerProfilePage() {
                   </p>
                 </>
               )}
-              {profileStatus === 'loading' && !profile && (
+              {profileStatus === 'loading' && (
                 <p role="status">회원 정보를 불러오는 중입니다.</p>
               )}
               {profileStatus === 'failed' && (

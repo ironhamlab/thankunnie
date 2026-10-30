@@ -14,9 +14,15 @@ export const useUserStore = create((set, get) => ({
   profileRequestId: 0,
 
   // 테스트 계정 전환 등으로 겹친 조회는 마지막 요청의 응답만 반영한다
+  // 다른 계정의 개인정보가 남아 보이지 않도록 조회를 시작할 때 이전 값을 지운다
   loadProfile: async () => {
     const requestId = get().profileRequestId + 1;
-    set({ profileRequestId: requestId, profileStatus: 'loading', profileError: null });
+    set({
+      profile: null,
+      profileRequestId: requestId,
+      profileStatus: 'loading',
+      profileError: null,
+    });
     try {
       const profile = await userApi.getMyProfile();
       if (get().profileRequestId === requestId) {
@@ -33,4 +39,13 @@ export const useUserStore = create((set, get) => ({
       });
     }
   },
+
+  // 진행 중인 조회의 응답도 버리도록 요청 번호를 올린다
+  resetProfile: () =>
+    set((state) => ({
+      profile: null,
+      profileStatus: 'idle',
+      profileError: null,
+      profileRequestId: state.profileRequestId + 1,
+    })),
 }));
