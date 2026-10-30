@@ -1,9 +1,6 @@
 .root {
   max-width: 920px;
 }
-.embedded {
-  margin-top: 24px;
-}
 .tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
