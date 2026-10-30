@@ -26,27 +26,39 @@ export const useTermsStore = create((set, get) => ({
     }
   },
 
-  // 열려 있는 동의 모달: { termsCode, resolve, saving, error }
+  // 열려 있는 동의 모달: { id, termsCode, resolve, saving, error }
   pending: null,
+  pendingId: 0,
 
   /** 동의 모달을 띄우고, 동의해서 저장까지 끝나면 true·닫으면 false 를 돌려준다 */
   requestAgreement: (termsCode) =>
     new Promise((resolve) => {
       // 이미 열린 모달이 있으면 먼저 닫힌 것으로 처리한다
       get().pending?.resolve(false);
-      set({ pending: { termsCode, resolve, saving: false, error: null } });
+      const id = get().pendingId + 1;
+      set({ pendingId: id, pending: { id, termsCode, resolve, saving: false, error: null } });
     }),
 
   confirmAgreement: async () => {
     const { pending } = get();
     if (!pending || pending.saving) return;
     set({ pending: { ...pending, saving: true, error: null } });
+    // 저장 중에 모달을 닫았거나 다른 동의 모달이 열렸으면, 이 요청의 결과는 지금 모달에 반영하지 않는다
+    const isCurrent = () => get().pending?.id === pending.id;
     try {
       await termsApi.agree(pending.termsCode);
+      if (!isCurrent()) return;
       set({ pending: null });
       pending.resolve(true);
     } catch (error) {
-      set({ pending: { ...pending, saving: false, error: toError(error, '동의를 저장하지 못했습니다.') } });
+      if (!isCurrent()) return;
+      set({
+        pending: {
+          ...pending,
+          saving: false,
+          error: toError(error, '동의를 저장하지 못했습니다.'),
+        },
+      });
     }
   },
 
