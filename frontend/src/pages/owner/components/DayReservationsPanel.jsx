@@ -47,7 +47,7 @@ export default function DayReservationsPanel({ date }) {
       {listStatus === 'failed' && <p role="alert">예약을 불러오지 못했습니다.</p>}
       {listStatus === 'succeeded' && !reservations.length && (
         // 공통 빈 상태(EmptyState)는 높이가 커서, 옆 패널에서는 한 줄로 알린다. 예약이 있으면 한 건에 한 줄씩 늘어난다
-        <p className="b-muted">이 날은 예약이 없습니다.</p>
+        <p className="b-muted b-center">이 날은 예약이 없습니다.</p>
       )}
       {listStatus === 'succeeded' && reservations.length > 0 && (
         <div className="b-stack">

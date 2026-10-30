@@ -136,7 +136,11 @@
   .type.open[aria-checked='true'] {
     padding: 13px;
   }
-  /* 모바일에서는 카드 제목만으로 구분하고 설명은 줄인다 */
+  /* 모바일에서는 카드 제목만으로 구분하고 설명은 줄인다. 제목만 남으니 가운데에 둔다 */
+  .type {
+    align-items: center;
+    text-align: center;
+  }
   .type small {
     display: none;
   }

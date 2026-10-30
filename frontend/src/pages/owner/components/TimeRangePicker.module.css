@@ -1,7 +1,7 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 .hint {
   margin: 0;
@@ -9,46 +9,68 @@
   font-weight: 700;
   color: var(--color-primary);
 }
+.legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.swatch {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: white;
+}
+.period + .period {
+  margin-top: 14px;
+}
+.period h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
-  gap: 6px;
+  /* 한 줄 6칸(3시간)으로 고정해 넓은 화면에서도 가로로 늘어지지 않게 한다 */
+  grid-template-columns: repeat(6, minmax(0, 84px));
+  gap: 8px;
 }
 .slot {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  min-height: 44px;
-  padding: 6px 2px;
+  height: 44px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   background: white;
   color: inherit;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 15px;
   cursor: pointer;
-}
-.slot small {
-  min-height: 12px;
-  font-size: 10px;
-  font-weight: 600;
 }
 .slot:hover:not(:disabled) {
   border-color: var(--color-primary);
 }
 .slot:disabled {
+  color: var(--color-text-muted);
+  opacity: 0.5;
   cursor: not-allowed;
-  opacity: 0.4;
 }
 .booked {
   background: var(--color-surface);
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
 }
 .closed {
   border-color: var(--color-danger);
-  color: var(--color-danger);
   background: #fff1f2;
+  color: var(--color-danger);
 }
 .off {
   border-style: dashed;
@@ -57,25 +79,16 @@
 .passed {
   color: var(--color-text-muted);
 }
-.selected {
+.selected,
+.selected:hover:not(:disabled) {
   border-color: var(--color-primary);
   background: var(--color-primary);
   color: white;
-}
-.selected small {
-  color: rgba(255, 255, 255, 0.85);
-}
-.first {
-  box-shadow: inset 3px 0 0 rgba(255, 255, 255, 0.6);
-}
-.last {
-  box-shadow: inset -3px 0 0 rgba(255, 255, 255, 0.6);
-}
-.first.last {
-  box-shadow: none;
+  font-weight: 700;
 }
 .more {
   align-self: flex-start;
+  min-height: 36px;
   padding: 6px 0;
   border: 0;
   background: none;
@@ -86,13 +99,9 @@
   cursor: pointer;
 }
 @media (max-width: 540px) {
-  /* 칸이 많아 모바일에서는 영업 외·마감 글자를 빼고 색으로만 구분한다 (닫음·예약됨은 남긴다) */
-  .off small,
-  .passed small,
-  .slot:disabled small {
-    display: none;
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-  .slot,
   .more {
     min-height: 44px;
   }

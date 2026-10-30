@@ -1,4 +1,5 @@
-import { timePart } from '@/utils/scheduleDate';
+import { datePart, timePart } from '@/utils/scheduleDate';
+import { formatDayLabel } from '@/utils/scheduleSlots';
 import Button from '@/components/common/Button';
 import styles from './CloseOverlapNotice.module.css';
 
@@ -12,16 +13,16 @@ export default function CloseOverlapNotice({ closes, disabled, onDelete }) {
   }
   return (
     <section className={styles.root} role="alert">
-      <strong>닫아 둔 시간이 겹쳐요</strong>
+      <strong>{formatDayLabel(datePart(closes[0].startsAt))} 닫아 둔 시간이 겹쳐요</strong>
       <p>닫기가 열기보다 우선이라, 아래 닫기를 지워야 그 시간에 예약을 받아요.</p>
       <ul>
         {closes.map((close) => (
           <li key={close.exceptionId}>
-            <span>
+            <span className={styles.item}>
               <b>
                 {timePart(close.startsAt)}~{timePart(close.endsAt)}
-              </b>{' '}
-              닫기{close.reason && ` · ${close.reason}`}
+              </b>
+              <small>닫기{close.reason && ` · ${close.reason}`}</small>
             </span>
             {/* 창의 폼 안에 있어 type 을 주지 않으면 저장(submit)까지 함께 실행된다 */}
             <Button
