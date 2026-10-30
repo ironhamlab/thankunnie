@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
+import { TERMS_CODE } from '@/constants/terms';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import { useTermsStore } from '@/store/useTermsStore';
 import { getDevTestUser } from '@/utils/devTestUser';
 import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
@@ -11,7 +13,8 @@ import styles from '../ShopDetailPage.module.css';
 
 /**
  * 매장 찜. 아직 찜하지 않았으면 빈자리 알림 여부를 묻는다.
- * 아니요는 알림 없이 찜만 한다. 예는 이 팝업에서 알림 조건을 추가하고, 찜 목록에는 넣지 않는다.
+ * 아니요는 알림 없이 찜만 한다. 예는 문자 수신 동의를 확인(없으면 동의 모달)한 뒤 이 팝업에서 알림 조건을 추가하고,
+ * 찜 목록에는 넣지 않는다. 문자 수신에 동의하지 않으면 아니요와 같이 찜만 한다.
  * 이미 찜이거나 알림 중이면 둘 다 해제한다. 로그인하지 않았으면 로그인 화면으로 보낸다.
  */
 export default function FavoriteButton({ shopId, shopName }) {
@@ -27,6 +30,7 @@ export default function FavoriteButton({ shopId, shopName }) {
   const removeFavoriteShop = useNotificationStore((state) => state.removeFavoriteShop);
   const addSubscription = useNotificationStore((state) => state.addSubscription);
   const removeSubscription = useNotificationStore((state) => state.removeSubscription);
+  const ensureAgreement = useTermsStore((state) => state.ensureAgreement);
   const [error, setError] = useState(null);
   const [formError, setFormError] = useState(null);
   const [step, setStep] = useState(null);
@@ -72,6 +76,18 @@ export default function FavoriteButton({ shopId, shopName }) {
   const handleDecline = () => {
     addFavoriteShop({ shopId, shopName });
     closeDialog();
+  };
+
+  // 알림 조건을 입력하기 전에 문자 수신 동의부터 받는다. 질문 창을 닫고 동의 모달만 보이게 한다
+  const handleAccept = async () => {
+    setStep(null);
+    const agreed = await ensureAgreement(TERMS_CODE.SMS_NOTIFICATION);
+    if (!agreed) {
+      handleDecline();
+      return;
+    }
+    setFormError(null);
+    setStep('form');
   };
 
   const handleCreate = async ({ startTime, endTime }) => {
@@ -133,7 +149,7 @@ export default function FavoriteButton({ shopId, shopName }) {
                 <Button type="button" onClick={handleDecline}>
                   아니요
                 </Button>
-                <Button type="button" className={styles.confirmYes} onClick={() => setStep('form')}>
+                <Button type="button" className={styles.confirmYes} onClick={handleAccept}>
                   예
                 </Button>
               </div>

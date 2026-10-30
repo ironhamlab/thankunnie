@@ -50,6 +50,20 @@ export const useTermsStore = create((set, get) => ({
     }
   },
 
+  /**
+   * 이미 동의했으면 바로 true, 아니면 동의 모달을 띄워 결과를 돌려준다.
+   * 요청 전에 동의를 먼저 받고 싶은 화면(찜 → 알림 받기)에서 쓴다. 계정 전환을 고려해 매번 서버에서 확인한다.
+   */
+  ensureAgreement: async (termsCode) => {
+    try {
+      const agreements = await termsApi.getMyAgreements();
+      if ((agreements ?? []).some((item) => item.code === termsCode)) return true;
+    } catch {
+      // 확인하지 못했으면 동의 모달을 띄운다. 동의 API 는 이미 동의했어도 안전하다
+    }
+    return get().requestAgreement(termsCode);
+  },
+
   cancelAgreement: () => {
     const { pending } = get();
     if (!pending) return;
