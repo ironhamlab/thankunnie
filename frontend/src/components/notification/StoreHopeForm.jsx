@@ -1,21 +1,13 @@
 import { useState } from 'react';
 import { ERROR_MESSAGES } from '@/constants/errorMessages';
-import { addDays, toKstDateTime, todayKst } from '@/utils/scheduleDate';
+import { addDays, defaultHopePeriod, toKstDateTime, todayKst } from '@/utils/scheduleDate';
 import Button from '@/components/common/Button';
 import styles from './SubscriptionCreateForm.module.css';
 
 const HOPE_DAYS = 30;
 const toStamp = (date, time) => `${date}T${time}`;
 
-const emptyTimeForm = () => {
-  const startDate = todayKst();
-  return {
-    startDate,
-    startTime: '14:00',
-    endDate: addDays(startDate, 2),
-    endTime: '20:00',
-  };
-};
+const emptyTimeForm = () => defaultHopePeriod();
 
 /**
  * 업장 알림 희망 시간. 카테고리·지역 조건 추가와 같은 입력 칸을 쓴다.

@@ -276,7 +276,9 @@ export default function CheckoutPage() {
                   휴대폰 번호
                   <input value={customerPhone ?? ''} readOnly />
                   <small>
-                    가입할 때 저장한 번호입니다. 예약이 확정되면 이 번호로 문자가 갑니다.
+                    {customerPhone?.trim()
+                      ? '가입할 때 저장한 번호입니다. 예약이 확정되면 이 번호로 문자가 갑니다.'
+                      : '저장된 휴대폰 번호가 없어 예약 확정 문자를 보내지 않습니다.'}
                   </small>
                 </label>
                 <label className="b-span-two">

@@ -63,8 +63,13 @@ export default function SubscriptionEditDialog({ subscription, categories, onClo
       form.startDate > maxDate ||
       form.endDate < minDate ||
       form.endDate > maxDate);
+  const startChanged =
+    form.startDate !== datePart(subscription.startTime) ||
+    form.startTime !== timePart(subscription.startTime);
   const startPast =
-    hasFullStamp && new Date(toKstDateTime(form.startDate, form.startTime)).getTime() <= Date.now();
+    hasFullStamp &&
+    startChanged &&
+    new Date(toKstDateTime(form.startDate, form.startTime)).getTime() <= Date.now();
   const expired =
     hasFullStamp && new Date(toKstDateTime(form.endDate, form.endTime)).getTime() <= Date.now();
   const canSubmit = hasFullStamp && !invalidTime && !outOfRange && !expired && !startPast;

@@ -4,7 +4,7 @@ import { EXAMPLE_CATEGORIES } from '@/constants/notificationExamples';
 import { REGION_GROUPS } from '@/constants/regions';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { buildCategoryRegionRequest } from '@/utils/notificationRules';
-import { addDays, toKstDateTime, todayKst } from '@/utils/scheduleDate';
+import { addDays, defaultHopePeriod, toKstDateTime, todayKst } from '@/utils/scheduleDate';
 import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
 import Notice from '@/components/common/Notice';
@@ -15,17 +15,11 @@ import styles from './SubscriptionCreateForm.module.css';
 const HOPE_DAYS = 30;
 const toStamp = (date, time) => `${date}T${time}`;
 
-const emptyForm = () => {
-  const startDate = todayKst();
-  return {
-    categoryId: '',
-    regionCode: '',
-    startDate,
-    startTime: '14:00',
-    endDate: addDays(startDate, 2),
-    endTime: '20:00',
-  };
-};
+const emptyForm = () => ({
+  categoryId: '',
+  regionCode: '',
+  ...defaultHopePeriod(),
+});
 
 /**
  * 카테고리·지역 알림 구독 등록. 시술·지역·희망 시작·종료를 골라 등록한다.
