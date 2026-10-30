@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { money } from '@/utils/demoData';
 import { earliestLabel, shopPagePath } from '@/utils/exploreVacancy';
 import { datePart } from '@/utils/scheduleDate';
 import ExploreMap from '@/components/map/ExploreMap';
@@ -12,8 +13,9 @@ const MAP_BOUNDS_PADDING = { top: 60, right: 110, bottom: 150, left: 100 };
 /**
  * 검색 조건에 맞는 빈자리가 있는 매장 위치 (C-02). 목록의 매장이 다 보이게 범위를 맞추고, 축소하면 가까운 핀을 묶는다.
  * 목록에서 펼친 매장이 지도에서도 선택되고, 지도에서 고른 매장은 매장 페이지로 가거나 목록에서 펼쳐 시간을 볼 수 있다.
+ * 모델 모집 목록(model)이거나 모델 시술 빈자리만 있는 매장(modelOnly)이면 모델 모집 상세로 간다.
  */
-export default function ShopLocationMap({ shops, status, expandedShopId, onShowShop }) {
+export default function ShopLocationMap({ shops, status, expandedShopId, onShowShop, model }) {
   const [pickedId, setPickedId] = useState(null);
   const [mapUnavailable, setMapUnavailable] = useState(false);
   // 목록에서 펼친 매장을 우선 보여주고, 그다음 지도에서 누른 매장을 보여준다
@@ -52,6 +54,19 @@ export default function ShopLocationMap({ shops, status, expandedShopId, onShowS
                 {earliestLabel(selected)}부터 · 빈자리 {selected.vacancyCount}개
               </p>
               <small>{selected.address}</small>
+              {/* 일반·모델이 섞인 매장은 매장 보기가 일반 시술로 가므로 모델 빈자리는 따로 연결한다 */}
+              {!model && !selected.modelOnly && selected.modelVacancyCount > 0 && (
+                <Link
+                  className={styles.modelLink}
+                  to={shopPagePath(selected.shopId, {
+                    date: datePart(selected.earliestStartsAt),
+                    model: true,
+                  })}
+                >
+                  ✦ 모델 모집 빈자리 {selected.modelVacancyCount}개 ·{' '}
+                  {money(selected.modelMinSalePrice)}~ ›
+                </Link>
+              )}
             </div>
             <div className={styles.actions}>
               <Button
@@ -59,6 +74,7 @@ export default function ShopLocationMap({ shops, status, expandedShopId, onShowS
                 variant="primary"
                 to={shopPagePath(selected.shopId, {
                   date: datePart(selected.earliestStartsAt),
+                  model: model || selected.modelOnly,
                 })}
               >
                 매장 보기

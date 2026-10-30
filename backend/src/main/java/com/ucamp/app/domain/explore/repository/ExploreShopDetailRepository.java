@@ -34,7 +34,7 @@ public interface ExploreShopDetailRepository extends Repository<Treatment, Long>
     String FIND_TREATMENTS = """
             select new com.ucamp.app.domain.explore.repository.ExploreShopTreatmentCandidate(
                    t.treatmentId, t.name, t.description, t.treatmentType, t.durationMinutes,
-                   t.regularPrice, t.price, t.modelCondition, t.imageUrl)
+                   t.regularPrice, t.price, t.modelCondition, t.photoNotice, t.imageUrl)
             from Treatment t
             where t.shop.shopId = :shopId
               and t.status = \
