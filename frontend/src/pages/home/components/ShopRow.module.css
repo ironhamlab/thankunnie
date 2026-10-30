@@ -25,6 +25,10 @@
 }
 .info strong {
   font-size: 16px;
+  /* 좁은 목록(지도 화면 옆 패널)에서도 매장명이 글자 단위로 꺾이지 않게 한 줄로 줄인다 */
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .area,
 .time {

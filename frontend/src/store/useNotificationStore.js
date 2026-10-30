@@ -15,6 +15,8 @@ export const useNotificationStore = create((set, get) => ({
   categories: [],
   categoryStatus: 'idle',
   saving: false,
+  // 알림 구독 없이 찜만 한 매장. 서버 찜 API가 없어 이 화면 세션에서만 유지한다
+  favoriteShops: [],
 
   // 등록·해제보다 늦게 도착한 이전 조회가 목록을 덮지 않도록 마지막 요청의 응답만 반영한다
   loadSubscriptions: async () => {
@@ -98,6 +100,26 @@ export const useNotificationStore = create((set, get) => ({
       set({ saving: false });
       return { ok: false, error: toError(error, '알림 조건을 해제하지 못했습니다.') };
     }
+  },
+
+  addFavoriteShop: (shop) => {
+    set((state) => {
+      if (state.favoriteShops.some((item) => Number(item.shopId) === Number(shop.shopId))) {
+        return state;
+      }
+      return {
+        favoriteShops: [
+          ...state.favoriteShops,
+          { shopId: shop.shopId, shopName: shop.shopName },
+        ],
+      };
+    });
+  },
+
+  removeFavoriteShop: (shopId) => {
+    set((state) => ({
+      favoriteShops: state.favoriteShops.filter((item) => Number(item.shopId) !== Number(shopId)),
+    }));
   },
 
   // 변경 전에 보낸 조회가 아직 진행 중이면 그 응답은 버리고 서버 목록을 새로 받는다

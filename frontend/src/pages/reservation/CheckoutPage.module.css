@@ -41,6 +41,7 @@
 .check input {
   accent-color: var(--color-primary);
   margin-top: 4px;
+  flex-shrink: 0;
 }
 .check small {
   display: block;
