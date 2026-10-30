@@ -51,6 +51,9 @@ public record NotificationSubscriptionResponse(
     }
 
     private static OffsetDateTime toOffsetTime(LocalDateTime time) {
+        if (time == null) {
+            return null;
+        }
         return time.atZone(ZONE_SEOUL).toOffsetDateTime();
     }
 }

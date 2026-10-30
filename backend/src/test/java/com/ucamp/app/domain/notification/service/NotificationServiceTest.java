@@ -200,6 +200,67 @@ class NotificationServiceTest {
     }
 
     @Test
+    @DisplayName("업장 찜은 희망 시간 없이 저장되고 알림 시간은 비어 있다")
+    void subscribe_storeWithoutTime_savesFavorite() {
+        given(repository.existsByUserIdAndStatusAndShopIdAndStartTimeIsNullAndEndTimeIsNull(
+                eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(1L))).willReturn(false);
+        given(repository.save(any(NotificationSubscription.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        NotificationSubscriptionResponse response = notificationService.subscribe(CUSTOMER,
+                createRequest(SubscriptionType.STORE, 1L, null, null, null, null));
+
+        assertThat(response.shopId()).isEqualTo(1L);
+        assertThat(response.startTime()).isNull();
+        assertThat(response.endTime()).isNull();
+        assertThat(response.status()).isEqualTo(SubscriptionStatus.ACTIVE);
+    }
+
+    @Test
+    @DisplayName("같은 매장의 시간 없는 찜이 있으면 다시 등록할 수 없다")
+    void subscribe_duplicateFavorite_throwsDuplicate() {
+        given(repository.existsByUserIdAndStatusAndShopIdAndStartTimeIsNullAndEndTimeIsNull(
+                eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(1L))).willReturn(true);
+
+        assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
+                createRequest(SubscriptionType.STORE, 1L, null, null, null, null)),
+                ErrorCode.SUBSCRIPTION_DUPLICATE);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("카테고리 구독은 희망 시간 없이 등록할 수 없다")
+    void subscribe_categoryRegionWithoutTime_throwsInvalidTime() {
+        assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
+                createRequest(SubscriptionType.CATEGORY_REGION, null, 10L, "SEOUL_GANGNAM", null, null)),
+                ErrorCode.SUBSCRIPTION_INVALID_TIME);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("시간 없는 업장 찜에 희망 시간을 넣으면 그 구독의 시간이 바뀐다")
+    void updateSubscription_favorite_setsHopeTime() {
+        NotificationSubscription subscription = NotificationSubscription.builder()
+                .userId(CUSTOMER.userId())
+                .subscriptionType(SubscriptionType.STORE)
+                .shopId(1L)
+                .startTime(null)
+                .endTime(null)
+                .build();
+        ReflectionTestUtils.setField(subscription, "id", 10L);
+        given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(subscription));
+        given(repository.existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
+                eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(1L),
+                eq(toLocal(start)), eq(toLocal(end)), eq(10L))).willReturn(false);
+
+        NotificationSubscriptionResponse response = notificationService.updateSubscription(CUSTOMER, 10L,
+                new NotificationSubscriptionUpdateRequest(1L, null, null, start, end));
+
+        assertThat(response.startTime()).isEqualTo(start);
+        assertThat(response.endTime()).isEqualTo(end);
+        assertThat(subscription.getStartTime()).isEqualTo(toLocal(start));
+    }
+
+    @Test
     @DisplayName("종료 시각이 이미 지났으면 시간 오류다")
     void subscribe_expiredEndTime_throwsInvalidTime() {
         OffsetDateTime pastStart = OffsetDateTime.now(CLOCK).minusDays(2);

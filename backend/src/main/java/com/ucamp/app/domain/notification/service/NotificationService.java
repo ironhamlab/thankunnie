@@ -155,8 +155,11 @@ public class NotificationService {
         return subscription;
     }
 
-    // 희망 종료는 현재보다 뒤여야 한다. 같거나 지난 시각은 만료다.
+    // 희망 종료는 현재보다 뒤여야 한다. 같거나 지난 시각은 만료다. 시간이 없는 업장 찜은 만료가 아니다.
     private void validateNotExpired(LocalDateTime endTime) {
+        if (endTime == null) {
+            return;
+        }
         LocalDateTime current = now();
         if (endTime.isBefore(current) || endTime.isEqual(current)) {
             throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TIME);
@@ -173,7 +176,17 @@ public class NotificationService {
             Long categoryId, String regionCode, LocalDateTime startTime, LocalDateTime endTime,
             Long excludeId) {
         boolean duplicated;
-        if (subscriptionType == SubscriptionType.STORE) {
+        if (subscriptionType == SubscriptionType.STORE && startTime == null && endTime == null) {
+            if (excludeId == null) {
+                duplicated = notificationSubscriptionRepository
+                        .existsByUserIdAndStatusAndShopIdAndStartTimeIsNullAndEndTimeIsNull(
+                                userId, SubscriptionStatus.ACTIVE, shopId);
+            } else {
+                duplicated = notificationSubscriptionRepository
+                        .existsByUserIdAndStatusAndShopIdAndStartTimeIsNullAndEndTimeIsNullAndIdNot(
+                                userId, SubscriptionStatus.ACTIVE, shopId, excludeId);
+            }
+        } else if (subscriptionType == SubscriptionType.STORE) {
             if (excludeId == null) {
                 duplicated = notificationSubscriptionRepository
                         .existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTime(

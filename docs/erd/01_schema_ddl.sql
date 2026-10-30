@@ -277,8 +277,8 @@ CREATE TABLE NOTIFICATION_SUBSCRIPTION (
     SUBSCRIPTION_TYPE   VARCHAR2(20 CHAR)   NOT NULL,   -- STORE(매장), CATEGORY_REGION(카테고리+지역)
     CATEGORY_ID         NUMBER(19),                     -- CATEGORY_REGION 구독만
     REGION_CODE         VARCHAR2(20 CHAR),              -- CATEGORY_REGION 구독만
-    START_TIME          TIMESTAMP(0)        NOT NULL,   -- 알림 희망 시작
-    END_TIME            TIMESTAMP(0)        NOT NULL,   -- 알림 희망 종료
+    START_TIME          TIMESTAMP(0),                   -- 알림 희망 시작. 업장 찜만 비울 수 있고, 비우면 알림을 보내지 않는다
+    END_TIME            TIMESTAMP(0),                   -- 알림 희망 종료. 시작과 함께 비우거나 함께 넣는다
     STATUS              VARCHAR2(10 CHAR)   DEFAULT 'ACTIVE' NOT NULL,  -- ACTIVE, INACTIVE
     CREATED_AT          TIMESTAMP(3)        NOT NULL,
     UPDATED_AT          TIMESTAMP(3)        NOT NULL,

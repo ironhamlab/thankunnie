@@ -66,10 +66,12 @@ public class NotificationSubscription extends BaseTimeEntity {
     @Column(name = "REGION_CODE", length = 20)
     private String regionCode;
 
-    @Column(name = "START_TIME", nullable = false)
+    /** 업장 찜은 비울 수 있다. 비우면 알림을 보내지 않는다. */
+    @Column(name = "START_TIME")
     private LocalDateTime startTime;
 
-    @Column(name = "END_TIME", nullable = false)
+    /** 업장 찜은 비울 수 있다. 시작과 함께 비우거나 함께 넣는다. */
+    @Column(name = "END_TIME")
     private LocalDateTime endTime;
 
     @Enumerated(EnumType.STRING)
@@ -80,7 +82,7 @@ public class NotificationSubscription extends BaseTimeEntity {
     private NotificationSubscription(Long userId, SubscriptionType subscriptionType, Long shopId,
             Long categoryId, String regionCode, LocalDateTime startTime, LocalDateTime endTime) {
         validateTarget(subscriptionType, shopId, categoryId, regionCode);
-        validateTime(startTime, endTime);
+        validateTime(subscriptionType, startTime, endTime);
         this.userId = userId;
         this.subscriptionType = subscriptionType;
         this.shopId = shopId;
@@ -103,7 +105,7 @@ public class NotificationSubscription extends BaseTimeEntity {
     public void changeCondition(Long shopId, Long categoryId, String regionCode,
             LocalDateTime startTime, LocalDateTime endTime) {
         validateTarget(subscriptionType, shopId, categoryId, regionCode);
-        validateTime(startTime, endTime);
+        validateTime(subscriptionType, startTime, endTime);
         this.shopId = shopId;
         this.categoryId = categoryId;
         this.regionCode = regionCode;
@@ -145,12 +147,19 @@ public class NotificationSubscription extends BaseTimeEntity {
         }
     }
 
-    /** 희망 시간은 시작이 종료보다 앞이어야 한다. 비어 있거나 같으면 거절한다. */
-    private static void validateTime(LocalDateTime startTime, LocalDateTime endTime) {
-        if (startTime == null || endTime == null) {
-            throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TIME);
+    /**
+     * 업장 찜은 희망 시간을 둘 다 비울 수 있다. 비우면 알림 대상이 아니다.
+     * 시간을 넣으면 시작이 종료보다 앞이어야 한다. 하나만 비우거나 카테고리 구독의 빈 시간은 거절한다.
+     */
+    private static void validateTime(SubscriptionType subscriptionType, LocalDateTime startTime,
+            LocalDateTime endTime) {
+        if (startTime == null && endTime == null) {
+            if (subscriptionType != SubscriptionType.STORE) {
+                throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TIME);
+            }
+            return;
         }
-        if (!startTime.isBefore(endTime)) {
+        if (startTime == null || endTime == null || !startTime.isBefore(endTime)) {
             throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TIME);
         }
     }
