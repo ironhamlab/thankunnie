@@ -237,3 +237,16 @@
     display: none;
   }
 }
+/* 카카오맵 위에 띄우는 매장 핀. 위치는 지도 오버레이가 정한다 */
+.kakaoPin {
+  position: static;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.kakaoPin:global(.is-selected) {
+  background: var(--color-primary);
+  color: #fff;
+}
+.root .preview {
+  z-index: 2;
+}

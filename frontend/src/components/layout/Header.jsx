@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useCurrentRole } from '@/hooks/useCurrentRole';
+import { useLogout } from '@/hooks/useLogout';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDesignStore } from '@/store/useDesignStore';
 import SearchIcon from '@/components/icons/SearchIcon';
@@ -32,10 +33,12 @@ const NOTIFICATIONS = [
 ];
 
 /**
- * 지금 주소에 해당하는 메뉴를 고른다. 빈자리 탐색·타임세일은 같은 홈 주소에 붙은 값(?view, ?sale)으로 구분한다.
+ * 지금 주소에 해당하는 메뉴를 고른다. 시술 모델 모집·빈자리 탐색·타임세일은 같은 홈 주소에 붙은 값(?type, ?view, ?sale)으로 구분한다.
+ * 모델 모집도 ?view=list 를 쓰므로 빈자리 탐색보다 먼저 본다.
  */
 function getActiveMenu({ pathname, search }) {
   const params = new URLSearchParams(search);
+  if (pathname === ROUTES.HOME && params.get('type') === 'MODEL') return 'model';
   if (pathname === ROUTES.HOME && params.get('sale') === '1') return 'sale';
   if (pathname === ROUTES.HOME && (params.has('view') || params.has('search'))) return 'search';
   if (pathname === ROUTES.MY_RESERVATIONS) return 'reservations';
@@ -53,7 +56,7 @@ export default function Header() {
   const activeMenu = getActiveMenu(location);
   const token = useAuthStore((s) => s.token);
   const role = useCurrentRole();
-  const clearSession = useAuthStore((s) => s.clearSession);
+  const logout = useLogout();
   const search = useDesignStore((s) => s.search);
   const setSearch = useDesignStore((s) => s.setSearch);
   const [open, setOpen] = useState(false);
@@ -81,10 +84,7 @@ export default function Header() {
     setSearch(search.trim());
     navigate(`${ROUTES.HOME}?search=1`);
   };
-  const handleLogout = () => {
-    clearSession();
-    navigate(ROUTES.HOME);
-  };
+  const handleLogout = () => logout(ROUTES.HOME);
   const current = (menu) => (activeMenu === menu ? 'page' : undefined);
   return (
     <>
@@ -108,9 +108,8 @@ export default function Header() {
           </form>
 
           <nav aria-label="고객 메뉴">
-            <Link to={`${ROUTES.HOME}?view=list`} aria-current={current('search')}>
-              <SearchIcon size={16} />
-              빈자리 탐색
+            <Link to={`${ROUTES.HOME}?view=list&type=MODEL`} aria-current={current('model')}>
+              시술 모델 모집
             </Link>
             <Link to={`${ROUTES.HOME}?sale=1`} aria-current={current('sale')}>
               <TimerIcon size={16} />
@@ -215,8 +214,8 @@ export default function Header() {
       </header>
 
       <nav className={styles.mobileNav} aria-label="모바일 고객 메뉴">
-        <Link to={`${ROUTES.HOME}?view=list`} aria-current={current('search')}>
-          <span aria-hidden="true">⌖</span>빈자리 탐색
+        <Link to={`${ROUTES.HOME}?view=list&type=MODEL`} aria-current={current('model')}>
+          <span aria-hidden="true">✦</span>모델 모집
         </Link>
         <Link to={`${ROUTES.HOME}?sale=1`} aria-current={current('sale')}>
           <BoltIcon size={20} />

@@ -1,0 +1,175 @@
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ROUTES } from '@/constants/routes';
+import { money } from '@/utils/demoData';
+import { useExploreStore } from '@/store/useExploreStore';
+import { todayKst } from '@/utils/scheduleDate';
+import Button from '@/components/common/Button';
+import styles from './ImminentCarousel.module.css';
+
+// 캐러셀에 넣을 최대 개수. 더 보려면 전체보기(타임세일 목록)로 넘긴다
+const MAX_SLIDES = 10;
+// 자동으로 넘기는 간격. 매장·시간·가격을 읽을 시간을 주려고 3초보다 조금 길게 둔다
+const AUTO_PLAY_MS = 3500;
+const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+// 이 거리(px) 이상 옆으로 밀면 넘긴다. 세로 스크롤하다 살짝 흔들린 것은 넘기지 않는다
+const SWIPE_MIN_PX = 40;
+
+/**
+ * 홈 오늘 임박 빈자리 캐러셀. 오늘 시작하는 임박·초임박 특가를 빠른 시작순으로 한 장씩 보여준다.
+ * 저절로 넘기되, 마우스를 올리거나 키보드로 안의 버튼에 초점이 있으면 누르려던 카드가 바뀌지 않게 멈춘다.
+ * 휴대폰에서는 옆으로 밀어 넘기고, 손을 대고 있는 동안만 멈춘다. 끝에서 넘기면 처음으로 돌아간다.
+ * 기기에서 동작 줄이기를 켰으면 자동으로 넘기지 않는다.
+ */
+export default function ImminentCarousel() {
+  const vacancies = useExploreStore((s) => s.imminentVacancies);
+  const status = useExploreStore((s) => s.imminentStatus);
+  const loadImminentVacancies = useExploreStore((s) => s.loadImminentVacancies);
+  const [index, setIndex] = useState(0);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [touching, setTouching] = useState(false);
+  const touchStartX = useRef(null);
+  const today = todayKst();
+
+  useEffect(() => {
+    loadImminentVacancies({
+      startDate: today,
+      endDate: today,
+      priceTier: 'IMMINENT',
+      size: MAX_SLIDES,
+    });
+  }, [today, loadImminentVacancies]);
+
+  const count = vacancies.length;
+  // 목록이 다시 와서 개수가 줄어도 범위를 넘지 않게 한다
+  const current = count ? vacancies[Math.min(index, count - 1)] : null;
+  const move = (step) => setIndex((value) => (Math.min(value, count - 1) + step + count) % count);
+  const autoPlay = count > 1 && !hovered && !focused && !touching && !prefersReducedMotion();
+
+  // 장이 바뀔 때마다 다시 센다. 손으로 넘긴 직후에 바로 다음 장으로 넘어가지 않게 한다
+  useEffect(() => {
+    if (!autoPlay) return undefined;
+    const timer = window.setTimeout(
+      () => setIndex((value) => (Math.min(value, count - 1) + 1) % count),
+      AUTO_PLAY_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [autoPlay, count, index]);
+
+  return (
+    <section id="home-imminent" className={styles.root} aria-label="오늘 임박 빈자리">
+      <div className={styles.heading}>
+        <h2>
+          <span aria-hidden="true">ϟ</span> 오늘 마감 임박
+        </h2>
+        <Link to={`${ROUTES.HOME}?sale=1`}>전체보기 ›</Link>
+      </div>
+      {current ? (
+        <div
+          className={styles.slider}
+          aria-roledescription="캐러셀"
+          // 터치는 손을 떼도 마우스가 나갔다는 신호가 없어 멈춘 채로 남으므로 마우스일 때만 본다
+          onPointerEnter={(event) => event.pointerType === 'mouse' && setHovered(true)}
+          onPointerLeave={(event) => event.pointerType === 'mouse' && setHovered(false)}
+          // 터치로 버튼을 눌러도 초점이 남으므로 키보드 초점일 때만 멈춘다
+          onFocus={(event) => event.target.matches(':focus-visible') && setFocused(true)}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
+          }}
+          onTouchStart={(event) => {
+            touchStartX.current = event.touches[0].clientX;
+            setTouching(true);
+          }}
+          onTouchEnd={(event) => {
+            const distance = event.changedTouches[0].clientX - (touchStartX.current ?? 0);
+            if (Math.abs(distance) >= SWIPE_MIN_PX) move(distance < 0 ? 1 : -1);
+            touchStartX.current = null;
+            setTouching(false);
+          }}
+          onTouchCancel={() => setTouching(false)}
+        >
+          {/* 저절로 넘어가는 동안 화면 낭독기가 매번 읽지 않도록 멈췄을 때만 알린다 */}
+          <article className={styles.card} aria-live={autoPlay ? 'off' : 'polite'} key={current.id}>
+            <div className={styles.photo}>
+              <img src={current.image} alt={`${current.shop} ${current.category} 시술`} />
+              <span
+                className={`${styles.urgency} ${current.urgency !== '초임박 특가' ? styles.isSoon : ''}`}
+              >
+                ● {current.urgency}
+              </span>
+              <span className={styles.closes}>
+                ◷ 예약 마감 <b>{current.closesAt}</b>
+              </span>
+            </div>
+            <div className={styles.body}>
+              <div className={styles.meta}>
+                <strong>{current.shop}</strong>
+                <span>{current.category}</span>
+              </div>
+              <h3>{current.name}</h3>
+              <p className={styles.time}>
+                <Link className={styles.slotLink} to={current.shopPath}>
+                  {current.day} <strong>{current.time}</strong>
+                </Link>{' '}
+                시작 · {current.duration}분 소요
+              </p>
+              <p className={styles.location}>⌖ {current.location}</p>
+              <div className={styles.price}>
+                <div>
+                  {current.discount > 0 && <del>{money(current.original)}</del>}
+                  <div>
+                    {current.discount > 0 && <em>{current.discount}%</em>}{' '}
+                    <b>{money(current.price)}</b>
+                  </div>
+                </div>
+                <Button as={Link} variant="primary" to={current.shopPath}>
+                  이 시간 예약하기
+                </Button>
+              </div>
+            </div>
+          </article>
+          {count > 1 && (
+            <div className={styles.controls}>
+              <button type="button" aria-label="이전 빈자리" onClick={() => move(-1)}>
+                ‹
+              </button>
+              <div className={styles.dots}>
+                {vacancies.map((item, dot) => (
+                  <button
+                    type="button"
+                    key={item.id}
+                    aria-label={`${dot + 1}번째 빈자리`}
+                    aria-pressed={item.id === current.id}
+                    onClick={() => setIndex(dot)}
+                  />
+                ))}
+              </div>
+              <span>
+                <b>{vacancies.indexOf(current) + 1}</b> / {count}
+              </span>
+              <button type="button" aria-label="다음 빈자리" onClick={() => move(1)}>
+                ›
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className={styles.empty}>
+          <strong>
+            {status === 'loading' || status === 'idle'
+              ? '오늘 임박 빈자리를 찾는 중이에요'
+              : status === 'failed'
+                ? '빈자리를 불러오지 못했어요'
+                : '오늘 마감 임박 빈자리가 아직 없어요'}
+          </strong>
+          {status === 'succeeded' && (
+            <p>
+              <Link to={`${ROUTES.HOME}?view=list`}>다른 날짜 빈자리 보기 ›</Link>
+            </p>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
