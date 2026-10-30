@@ -114,6 +114,73 @@ class ReservationTest {
         assertThat(overLimit.getCustomerRequest()).isNull();
     }
 
+    @Test
+    @DisplayName("만료 전 점유를 풀면 EXPIRED 가 되고 만료 시각이 지금으로 당겨진다")
+    void release_activeHold_expiresNow() {
+        Reservation reservation = hold(NOW.plusMinutes(5));
+
+        reservation.release(NOW);
+
+        assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.EXPIRED);
+        assertThat(reservation.getHoldExpiresAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    @DisplayName("만료 시각이 이미 지난 점유를 풀면 EXPIRED 가 되고 만료 시각은 그대로다")
+    void release_holdPastExpiry_keepsExpiry() {
+        Reservation reservation = hold(NOW.minusMinutes(1));
+
+        reservation.release(NOW);
+
+        assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.EXPIRED);
+        assertThat(reservation.getHoldExpiresAt()).isEqualTo(NOW.minusMinutes(1));
+    }
+
+    @Test
+    @DisplayName("이미 EXPIRED 인 예약을 풀면 아무것도 바꾸지 않는다")
+    void release_expired_noChange() {
+        Reservation reservation = withStatus(ReservationStatus.EXPIRED);
+
+        reservation.release(NOW);
+
+        assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.EXPIRED);
+        assertThat(reservation.getHoldExpiresAt()).isEqualTo(NOW.plusMinutes(5));
+    }
+
+    @Test
+    @DisplayName("확정된 예약을 풀면 RESERVATION_ALREADY_CONFIRMED 예외가 발생한다")
+    void release_confirmed_throws() {
+        Reservation reservation = hold(NOW.plusMinutes(5));
+        reservation.confirm(DEPOSIT, NOW, null);
+
+        assertReleaseError(reservation, ErrorCode.RESERVATION_ALREADY_CONFIRMED);
+        assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ReservationStatus.class, names = {"CANCEL_PENDING", "CANCELLED"})
+    @DisplayName("취소 처리 중·취소 완료 예약을 풀면 RESERVATION_NOT_HOLD 예외가 발생한다")
+    void release_cancelled_throwsNotHold(ReservationStatus status) {
+        assertReleaseError(withStatus(status), ErrorCode.RESERVATION_NOT_HOLD);
+    }
+
+    @Test
+    @DisplayName("같은 시술·같은 시작 시각일 때만 같은 자리로 본다")
+    void isSameSlot() {
+        Reservation reservation = hold(NOW.plusMinutes(5));
+
+        assertThat(reservation.isSameSlot(1L, NOW.plusHours(3))).isTrue();
+        assertThat(reservation.isSameSlot(2L, NOW.plusHours(3))).isFalse();
+        assertThat(reservation.isSameSlot(1L, NOW.plusHours(3).plusMinutes(30))).isFalse();
+    }
+
+    private static void assertReleaseError(Reservation reservation, ErrorCode errorCode) {
+        assertThatThrownBy(() -> reservation.release(NOW))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(errorCode);
+    }
+
     private static Reservation hold(LocalDateTime holdExpiresAt) {
         return Reservation.builder()
                 .userId(1L)

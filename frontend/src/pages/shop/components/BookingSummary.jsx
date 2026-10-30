@@ -4,6 +4,7 @@ import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import Notice from '@/components/common/Notice';
 import Panel from '@/components/common/Panel';
+import HoldReplaceDialog from '@/components/reservation/HoldReplaceDialog';
 import { useVacancyDetailStore } from '@/store/useVacancyDetailStore';
 import useReserve from '@/hooks/useReserve';
 import styles from '../ShopDetailPage.module.css';
@@ -19,7 +20,14 @@ export default function BookingSummary({ treatment, date, time }) {
   const error = useVacancyDetailStore((state) => state.error);
   const loadDetail = useVacancyDetailStore((state) => state.loadDetail);
   const clearDetail = useVacancyDetailStore((state) => state.clearDetail);
-  const { reserve, loading, error: reserveError } = useReserve();
+  const {
+    reserve,
+    loading,
+    error: reserveError,
+    pendingHold,
+    replaceHold,
+    cancelReplace,
+  } = useReserve();
   const treatmentId = treatment?.treatmentId;
   const startsAt = time ? `${date}T${time}:00` : null;
 
@@ -119,6 +127,14 @@ export default function BookingSummary({ treatment, date, time }) {
       >
         {loading ? '예약하는 중...' : '예약하기'}
       </Button>
+      {pendingHold && (
+        <HoldReplaceDialog
+          hold={pendingHold}
+          loading={loading}
+          onReplace={replaceHold}
+          onClose={cancelReplace}
+        />
+      )}
     </Panel>
   );
 }
