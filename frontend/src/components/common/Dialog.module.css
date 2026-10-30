@@ -17,3 +17,21 @@
 .root p {
   margin: 12px 0 20px;
 }
+.step {
+  animation: dialogStep 320ms ease;
+}
+@keyframes dialogStep {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .step {
+    animation: none;
+  }
+}
