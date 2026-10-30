@@ -213,6 +213,8 @@ class NotificationServiceTest {
         assertThat(response.startTime()).isNull();
         assertThat(response.endTime()).isNull();
         assertThat(response.status()).isEqualTo(SubscriptionStatus.ACTIVE);
+        // 시간 없는 찜은 문자가 나가지 않으므로 문자 수신 동의를 검사하지 않는다
+        verify(termsAgreementService, never()).requireAgreed(any(), any());
     }
 
     @Test
@@ -258,6 +260,28 @@ class NotificationServiceTest {
         assertThat(response.startTime()).isEqualTo(start);
         assertThat(response.endTime()).isEqualTo(end);
         assertThat(subscription.getStartTime()).isEqualTo(toLocal(start));
+        verify(termsAgreementService).requireAgreed(CUSTOMER.userId(), TermsCode.SMS_NOTIFICATION);
+    }
+
+    @Test
+    @DisplayName("문자 수신 동의 없이 찜에 희망 시간을 넣으면 TERMS_SMS_AGREEMENT_REQUIRED 예외가 발생하고 시간이 바뀌지 않는다")
+    void updateSubscription_favoriteWithoutSmsAgreement_throwsAgreementRequired() {
+        NotificationSubscription subscription = NotificationSubscription.builder()
+                .userId(CUSTOMER.userId())
+                .subscriptionType(SubscriptionType.STORE)
+                .shopId(1L)
+                .startTime(null)
+                .endTime(null)
+                .build();
+        ReflectionTestUtils.setField(subscription, "id", 10L);
+        given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(subscription));
+        willThrow(new BusinessException(ErrorCode.TERMS_SMS_AGREEMENT_REQUIRED))
+                .given(termsAgreementService).requireAgreed(CUSTOMER.userId(), TermsCode.SMS_NOTIFICATION);
+
+        assertErrorCode(() -> notificationService.updateSubscription(CUSTOMER, 10L,
+                new NotificationSubscriptionUpdateRequest(1L, null, null, start, end)),
+                ErrorCode.TERMS_SMS_AGREEMENT_REQUIRED);
+        assertThat(subscription.getStartTime()).isNull();
     }
 
     @Test

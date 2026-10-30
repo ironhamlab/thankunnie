@@ -16,7 +16,7 @@
 | `SERVICE` | 서비스 이용약관 | Y | 회원가입 |
 | `PRIVACY` | 개인정보 수집·이용 (아이디·이름·전화번호, 예약 확인·매장 연락 목적) | Y | 회원가입 |
 | `THIRD_PARTY` | 개인정보 제3자 제공 (예약한 매장에 이름·전화번호 제공) | Y | 회원가입 |
-| `SMS_NOTIFICATION` | 관심 시간 알림 문자 수신 | N | 회원가입 또는 구독 등록 시 동의 모달 |
+| `SMS_NOTIFICATION` | 관심 시간 알림 문자 수신 | N | 회원가입, 또는 희망 시간이 있는 구독 등록·수정 시 동의 모달 |
 | `MODEL_PHOTO` | 모델 시술 촬영·결과물 활용 | N | 첫 모델 시술 예약 시 동의 모달 (가입 화면에는 노출하지 않음) |
 
 - 동의는 항상 코드별 **최신 버전** 기준이다. 약관을 개정해 같은 코드의 새 버전 행을 넣으면 이전 버전에만 동의한 회원은 미동의로 판단된다.
@@ -74,5 +74,5 @@
 
 | 호출 위치 | 검사 |
 |---|---|
-| 구독 등록 (`NotificationService.subscribe`) | `requireAgreed(userId, SMS_NOTIFICATION)`. 구독 수정·해제는 검사하지 않음 |
+| 구독 등록·수정 (`NotificationService.subscribe`, `updateSubscription`) | 희망 시간이 있을 때만 `requireAgreed(userId, SMS_NOTIFICATION)`. 희망 시간 없는 업장 찜은 문자가 나가지 않아 검사하지 않음. 찜에 희망 시간을 넣어 알림을 켜는 수정도 검사함. 해제는 검사하지 않음 |
 | 예약 생성 (`ReservationService.createReservation`, 모델 시술만) | `requireAgreed(userId, MODEL_PHOTO)`. 회원·매장 잠금 전에 검사 |
