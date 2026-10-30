@@ -14,14 +14,26 @@ const dayCodeOf = (date) => {
   return DAY_CODES[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
 };
 
-// 그날의 [시작, 종료) 분 구간. 다음 날 0시에 끝나는 일정은 하루 끝까지로 본다
+/**
+ * 일정을 그날 [00:00, 24:00) 로 잘라 분 구간 [시작, 종료) 로 돌려준다. 그날과 겹치지 않으면 null.
+ * 전날 시작했거나 다음 날 끝나는(다음 날 0시 포함) 일정도 그날 몫만 남긴다.
+ */
+export const clipToDate = (item, date) => {
+  const startDate = datePart(item.startsAt);
+  const endDate = datePart(item.endsAt);
+  if (startDate > date || endDate < date) {
+    return null;
+  }
+  const start = startDate < date ? 0 : toMinutes(timePart(item.startsAt));
+  const end = endDate > date ? MINUTES_PER_DAY : toMinutes(timePart(item.endsAt));
+  return start < end ? [start, end] : null;
+};
+
 const exceptionRanges = (exceptions, date, type) =>
   exceptions
-    .filter((item) => item.exceptionType === type && datePart(item.startsAt) === date)
-    .map((item) => [
-      toMinutes(timePart(item.startsAt)),
-      datePart(item.endsAt) === date ? toMinutes(timePart(item.endsAt)) : MINUTES_PER_DAY,
-    ]);
+    .filter((item) => item.exceptionType === type)
+    .map((item) => clipToDate(item, date))
+    .filter(Boolean);
 
 /** 그날 요일의 영업시간 { openTime, closeTime }. 휴무거나 영업시간이 없으면 null */
 export const dayHoursOf = (businessHours, date) => {
@@ -33,16 +45,19 @@ export const dayHoursOf = (businessHours, date) => {
 export const formatDayLabel = (date) =>
   `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}(${DAY_LABELS[dayCodeOf(date)]})`;
 
-/** 고른 [시작, 종료) 와 겹치는 그날의 닫기. 열기보다 닫기가 우선이라 열어도 예약을 받지 않는다 */
-export const overlappingCloses = (exceptions, date, startTime, endTime, excludeId) =>
-  exceptions.filter(
-    (item) =>
-      item.exceptionType === 'CLOSE' &&
-      item.exceptionId !== excludeId &&
-      datePart(item.startsAt) === date &&
-      timePart(item.startsAt) < endTime &&
-      (datePart(item.endsAt) !== date || timePart(item.endsAt) > startTime),
-  );
+/**
+ * 그날 고른 [시작, 종료) 와 겹치는 닫기. 열기보다 닫기가 우선이라 열어도 예약을 받지 않는다.
+ * 종료는 하루 끝을 '24:00' 으로 넘길 수 있고, 전날부터 이어진 닫기도 그날 몫으로 잘라 비교한다.
+ */
+export const overlappingCloses = (exceptions, date, startTime, endTime, excludeId) => {
+  const start = toMinutes(startTime);
+  const end = toMinutes(endTime);
+  return exceptions.filter((item) => {
+    const range =
+      item.exceptionType === 'CLOSE' && item.exceptionId !== excludeId && clipToDate(item, date);
+    return Boolean(range) && range[0] < end && range[1] > start;
+  });
+};
 
 /** 닫았거나 예약이 있거나 접수 마감이 지난 칸. 열어도 고객에게 팔 수 없어 미리보기에서 뺀다 */
 export const unsellableTimes = (slots) =>

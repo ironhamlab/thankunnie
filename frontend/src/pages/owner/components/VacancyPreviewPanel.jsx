@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
+import { useTreatmentStore } from '@/store/useTreatmentStore';
 import { formatMoney } from '@/utils/reservationFormat';
 import { discountRate, priceTierAt, startTimesWithin } from '@/utils/vacancyPreview';
 import Badge from '@/components/common/Badge';
@@ -17,15 +19,17 @@ const TIER_BADGES = {
 /**
  * 빈자리 열기 미리보기. 연 시간대에 어떤 시술이 몇 시에, 얼마에 고객 빈자리 목록에 보이는지 화면에서 미리 계산한다.
  */
-export default function VacancyPreviewPanel({
-  treatments,
-  status,
-  error,
-  date,
-  startTime,
-  endTime,
-  blockedTimes,
-}) {
+export default function VacancyPreviewPanel({ date, startTime, endTime, blockedTimes }) {
+  const loadActiveTreatments = useTreatmentStore((state) => state.loadActiveTreatments);
+  const treatments = useTreatmentStore((state) => state.activeTreatments);
+  const status = useTreatmentStore((state) => state.selectionStatus);
+  const error = useTreatmentStore((state) => state.selectionError);
+
+  useEffect(() => {
+    // 실패는 store 의 selectionStatus·selectionError 로 아래에 보여준다
+    loadActiveTreatments().catch(() => {});
+  }, [loadActiveTreatments]);
+
   const items = treatments.map((treatment) => {
     const times = startTimesWithin(startTime, endTime, treatment.durationMinutes, blockedTimes);
     const tier = times.length ? priceTierAt(date, times[0]) : null;

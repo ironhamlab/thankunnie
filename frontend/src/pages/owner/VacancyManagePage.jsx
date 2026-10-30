@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { VACANCY_POLICY as P } from '@/constants/vacancyPolicy';
 import { useScheduleStore } from '@/store/useScheduleStore';
-import { useTreatmentStore } from '@/store/useTreatmentStore';
 import useDaySlots from '@/hooks/useDaySlots';
-import { addDays, todayKst, toKstDateTime } from '@/utils/scheduleDate';
+import { addDays, datePart, todayKst, toKstDateTime } from '@/utils/scheduleDate';
 import { formatDayLabel, unsellableTimes } from '@/utils/scheduleSlots';
 import { formOf, minStartOf, newForm } from '@/utils/scheduleForm';
 import AvailableTimesPanel from '@/pages/owner/components/AvailableTimesPanel';
 import DayReservationsPanel from '@/pages/owner/components/DayReservationsPanel';
-import { EXCEPTION_TYPES } from '@/constants/scheduleException';
+import { EXCEPTION_TYPES, MULTI_DAY_EDIT_BLOCKED } from '@/constants/scheduleException';
 import ScheduleExceptionForm from '@/pages/owner/components/ScheduleExceptionForm';
 import ScheduleExceptionList from '@/pages/owner/components/ScheduleExceptionList';
 import VacancyPreviewPanel from '@/pages/owner/components/VacancyPreviewPanel';
@@ -37,10 +36,6 @@ export default function VacancyManagePage() {
   const isBusy = useScheduleStore(
     (state) => state.mutationStatus === 'loading' || state.isRefreshing,
   );
-  const loadActiveTreatments = useTreatmentStore((state) => state.loadActiveTreatments);
-  const treatments = useTreatmentStore((state) => state.activeTreatments);
-  const treatmentStatus = useTreatmentStore((state) => state.selectionStatus);
-  const treatmentError = useTreatmentStore((state) => state.selectionError);
   const [form, setForm] = useState(() =>
     newForm(params.get('type') === 'CLOSE' ? 'CLOSE' : 'OPEN'),
   );
@@ -55,11 +50,6 @@ export default function VacancyManagePage() {
   useEffect(() => {
     loadSchedule();
   }, [loadSchedule]);
-
-  useEffect(() => {
-    // 실패는 store 의 selectionStatus·selectionError 로 미리보기에 보여준다
-    loadActiveTreatments().catch(() => {});
-  }, [loadActiveTreatments]);
 
   const update = (next) => {
     setErrorMessage('');
@@ -94,10 +84,26 @@ export default function VacancyManagePage() {
   };
 
   // 겹침 안내의 닫기 지우기. 실패하면 저장 버튼 위에 이유를 보여준다
-  const handleDeleteClose = (exceptionId) =>
-    deleteException(exceptionId).catch((error) => setErrorMessage(error.message));
+  const handleDeleteClose = (exceptionId) => {
+    // 다시 시도해 성공하면 이전 실패 안내가 남지 않게 먼저 지운다
+    setErrorMessage('');
+    return deleteException(exceptionId).catch((error) => setErrorMessage(error.message));
+  };
+
+  // 목록에서 날짜를 고르면 새 등록으로 시작한다. 수정 중이던 일정이 다른 날짜로 바뀌지 않게 한다
+  const handleSelectDate = (date) => {
+    setEditingId(null);
+    setErrorMessage('');
+    setForm((prev) => newForm(prev.exceptionType, date));
+    changeTab('form');
+  };
 
   const handleEdit = (exception) => {
+    // 이 화면은 하루 안 일정만 다룬다. 여러 날에 걸친 일정을 하루로 줄여 저장하지 않게 막는다
+    if (datePart(exception.startsAt) !== datePart(exception.endsAt)) {
+      setNotice({ tone: 'error', text: MULTI_DAY_EDIT_BLOCKED });
+      return;
+    }
     setErrorMessage('');
     changeTab('form');
     setEditingId(exception.exceptionId);
@@ -169,9 +175,6 @@ export default function VacancyManagePage() {
             <DayReservationsPanel date={form.date} />
             {form.exceptionType === 'OPEN' && (
               <VacancyPreviewPanel
-                treatments={treatments}
-                status={treatmentStatus}
-                error={treatmentError}
                 date={form.date}
                 startTime={form.startTime}
                 endTime={form.endTime}
@@ -187,10 +190,7 @@ export default function VacancyManagePage() {
           businessHours={businessHours}
           editingId={editingId}
           disabled={isBusy}
-          onSelectDate={(date) => {
-            update({ date });
-            changeTab('form');
-          }}
+          onSelectDate={handleSelectDate}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />

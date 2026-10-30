@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { TIME_OPTIONS, toMinutes, toTime } from '@/utils/vacancyPreview';
 import styles from './TimeRangePicker.module.css';
 
-// 영업시간이 늦게 시작해도 오전부터 고를 수 있게 9시부터 보여준다
+// 영업하지 않는 날 접힌 상태에서 보여줄 첫 칸
 const DEFAULT_FROM = '09:00';
 // 열기·닫기는 하루 안에서 끝나야 해서 23:00 칸(~23:30)까지만 고른다
 const LAST_START = '23:00';
+const FIRST_START = '00:00';
 // HH:mm 를 분만큼 옮긴다 (하루 범위 안)
 const shift = (time, minutes) =>
   toTime(Math.min(Math.max(toMinutes(time) + minutes, 0), 23 * 60 + 30));
@@ -40,17 +41,15 @@ export default function TimeRangePicker({ slots, startTime, endTime, minStart, o
   const [picking, setPicking] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const statusOf = new Map(slots.map((slot) => [slot.time, slot.status]));
-  const fullFrom = slots[0] && slots[0].time < DEFAULT_FROM ? slots[0].time : DEFAULT_FROM;
-  // 기본은 영업 범위 앞뒤 1시간만 보여준다. 고른 구간은 접혀 있어도 늘 보이게 한다
-  const near = slots.length > 0 && !showAll;
+  // 접었을 때는 영업 범위 앞뒤 1시간(영업이 없는 날은 9시부터), 펼치면 0시부터 보여준다. 고른 구간은 늘 보이게 한다
   const minTime = (a, b) => (a < b ? a : b);
   const maxTime = (a, b) => (a > b ? a : b);
-  const from = near ? minTime(maxTime(fullFrom, shift(slots[0].time, -60)), startTime) : fullFrom;
-  const to = near
-    ? maxTime(minTime(LAST_START, shift(slots.at(-1).time, 60)), shift(endTime, -30))
-    : LAST_START;
+  const nearFrom = slots.length ? shift(slots[0].time, -60) : DEFAULT_FROM;
+  const nearTo = slots.length ? minTime(LAST_START, shift(slots.at(-1).time, 60)) : LAST_START;
+  const from = showAll ? FIRST_START : minTime(nearFrom, startTime);
+  const to = showAll ? LAST_START : maxTime(nearTo, shift(endTime, -30));
   const times = TIME_OPTIONS.filter((time) => time >= from && time <= to);
-  const canExpand = slots.length > 0 && (showAll || from > fullFrom || to < LAST_START);
+  const canExpand = showAll || from > FIRST_START || to < LAST_START;
   const legend = LEGEND_STATUSES.filter((status) =>
     times.some(
       (time) => statusOf.get(time) === status || (status === 'OFF' && !statusOf.has(time)),
@@ -125,7 +124,7 @@ export default function TimeRangePicker({ slots, startTime, endTime, minStart, o
       </div>
       {canExpand && (
         <button type="button" className={styles.more} onClick={() => setShowAll(!showAll)}>
-          {showAll ? '영업시간 주변만 보기' : `전체 시간 보기 (${fullFrom}~${LAST_START})`}
+          {showAll ? '영업시간 주변만 보기' : '전체 시간 보기 (0시~23시 30분)'}
         </button>
       )}
     </div>

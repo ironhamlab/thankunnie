@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { datePart, timePart, todayKst } from '@/utils/scheduleDate';
-import { dayHoursOf, formatDayLabel, overlappingCloses } from '@/utils/scheduleSlots';
-import { toMinutes } from '@/utils/vacancyPreview';
+import { clipToDate, dayHoursOf, formatDayLabel, overlappingCloses } from '@/utils/scheduleSlots';
+import { toMinutes, toTime } from '@/utils/vacancyPreview';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
@@ -12,13 +12,6 @@ const TYPE_BADGES = {
   OPEN: ['열기', 'b-green'],
   CLOSE: ['닫기', 'b-neutral'],
 };
-const MINUTES_PER_DAY = 24 * 60;
-
-// 다음 날 0시에 끝나는 일정은 하루 끝(24:00)으로 본다
-const endMinutesOf = (exception) =>
-  datePart(exception.endsAt) === datePart(exception.startsAt)
-    ? toMinutes(timePart(exception.endsAt))
-    : MINUTES_PER_DAY;
 
 // 시작 시각 순으로 온 목록을 날짜별로 묶는다
 const groupByDate = (exceptions) => {
@@ -33,12 +26,13 @@ const groupByDate = (exceptions) => {
 /**
  * 그날 영업시간과 일정 범위를 한 줄 막대로 그린다. 닫기는 열기 위에 칠해 닫기 우선을 그대로 보여준다.
  */
-function DayBar({ hours, items }) {
+function DayBar({ date, hours, items }) {
   const ranges = items.map((item) => ({
     id: item.exceptionId,
     type: item.exceptionType,
-    start: toMinutes(timePart(item.startsAt)),
-    end: endMinutesOf(item),
+    // 날짜별로 묶어 그날 시작한 일정이므로 늘 그날 몫이 있다
+    start: clipToDate(item, date)[0],
+    end: clipToDate(item, date)[1],
   }));
   const business = hours && { start: toMinutes(hours.openTime), end: toMinutes(hours.closeTime) };
   const all = business ? [...ranges, business] : ranges;
@@ -121,18 +115,16 @@ export default function ScheduleExceptionList({
                 {hours ? `영업 ${hours.openTime}~${hours.closeTime}` : '휴무일'}
               </small>
             </header>
-            <DayBar hours={hours} items={items} />
+            <DayBar date={date} hours={hours} items={items} />
             <ul className={styles.rows}>
               {items.map((exception) => {
                 const [label, badge] = TYPE_BADGES[exception.exceptionType];
+                // 전날부터 이어진 닫기도 찾도록 그날 묶음이 아니라 전체 일정과 비교하고, 다음 날 0시 종료는 24:00 으로 본다
+                const [rangeStart, rangeEnd] = clipToDate(exception, date);
                 const blocked =
                   exception.exceptionType === 'OPEN' &&
-                  overlappingCloses(
-                    items,
-                    date,
-                    timePart(exception.startsAt),
-                    timePart(exception.endsAt),
-                  ).length > 0;
+                  overlappingCloses(exceptions, date, toTime(rangeStart), toTime(rangeEnd)).length >
+                    0;
                 const reasonOpen =
                   Boolean(exception.reason) && openReasonIds.has(exception.exceptionId);
                 return (
