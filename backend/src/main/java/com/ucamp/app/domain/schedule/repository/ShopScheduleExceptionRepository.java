@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
 import com.ucamp.app.domain.schedule.entity.ShopScheduleException;
 
 public interface ShopScheduleExceptionRepository extends JpaRepository<ShopScheduleException, Long> {
@@ -24,6 +25,22 @@ public interface ShopScheduleExceptionRepository extends JpaRepository<ShopSched
             """)
     List<ShopScheduleException> findOverlapping(@Param("shopId") Long shopId,
             @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /**
+     * 매장에 [startsAt, endsAt) 와 겹치는 같은 종류(열기·닫기)의 일정이 있는지. 수정할 때는 자기 자신(excludeId)을 뺀다.
+     */
+    @Query("""
+            SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END
+            FROM ShopScheduleException e
+            WHERE e.shopId = :shopId
+              AND e.exceptionType = :type
+              AND e.startsAt < :endsAt
+              AND e.endsAt > :startsAt
+              AND (:excludeId IS NULL OR e.id <> :excludeId)
+            """)
+    boolean existsSameTypeOverlapping(@Param("shopId") Long shopId, @Param("type") ScheduleExceptionType type,
+            @Param("startsAt") LocalDateTime startsAt, @Param("endsAt") LocalDateTime endsAt,
+            @Param("excludeId") Long excludeId);
 
     /**
      * 사장님이 예약을 취소하며 그 시간을 닫았는지(예약 ID 가 있는 일정이 있는지). 취소 완료 시 재공개 이벤트 발행 여부를 정한다.
