@@ -1,15 +1,24 @@
-import { BrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import DevTestUserSwitch from '@/components/common/DevTestUserSwitch';
 import AppRouter from '@/routes/AppRouter';
+
+// 결제 화면을 떠날 때 확인창을 띄우는 useBlocker 가 data router 에서만 동작해 createBrowserRouter 를 쓴다.
+// 실제 경로는 AppRouter 의 <Routes> 가 그대로 맡는다.
+const router = createBrowserRouter([
+  {
+    path: '*',
+    element: (
+      <>
+        <AppRouter />
+        <DevTestUserSwitch />
+      </>
+    ),
+  },
+]);
 
 /**
  * 루트 컴포넌트: Router 조립
  */
 export default function App() {
-  return (
-    <BrowserRouter>
-      <AppRouter />
-      <DevTestUserSwitch />
-    </BrowserRouter>
-  );
+  return <RouterProvider router={router} />;
 }

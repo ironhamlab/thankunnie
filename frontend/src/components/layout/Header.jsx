@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useCurrentRole } from '@/hooks/useCurrentRole';
+import { useLogout } from '@/hooks/useLogout';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDesignStore } from '@/store/useDesignStore';
 import SearchIcon from '@/components/icons/SearchIcon';
@@ -55,7 +56,7 @@ export default function Header() {
   const activeMenu = getActiveMenu(location);
   const token = useAuthStore((s) => s.token);
   const role = useCurrentRole();
-  const clearSession = useAuthStore((s) => s.clearSession);
+  const logout = useLogout();
   const search = useDesignStore((s) => s.search);
   const setSearch = useDesignStore((s) => s.setSearch);
   const [open, setOpen] = useState(false);
@@ -83,10 +84,7 @@ export default function Header() {
     setSearch(search.trim());
     navigate(`${ROUTES.HOME}?search=1`);
   };
-  const handleLogout = () => {
-    clearSession();
-    navigate(ROUTES.HOME);
-  };
+  const handleLogout = () => logout(ROUTES.HOME);
   const current = (menu) => (activeMenu === menu ? 'page' : undefined);
   return (
     <>

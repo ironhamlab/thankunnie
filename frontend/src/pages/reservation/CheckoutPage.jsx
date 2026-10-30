@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { generatePath, Link, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { SERVICES, money } from '@/utils/demoData';
+import { money } from '@/utils/demoData';
 import { datePart, timePart } from '@/utils/scheduleDate';
 import { useReservationStore } from '@/store/useReservationStore';
 import Asset from '@/components/common/Asset';
@@ -148,9 +148,8 @@ export default function CheckoutPage() {
   }
 
   const { summary, holdExpiresAt, customerPhone } = detail;
-  // 시간 선택 화면은 아직 시연용 시술 주소(/reserve/nail 등)를 쓰므로 서버 시술 번호로 되돌아갈 주소를 찾는다
-  const service = SERVICES.find((s) => s.treatmentId === summary.treatmentId);
-  const reserveLink = service ? generatePath(ROUTES.RESERVE, { id: service.id }) : ROUTES.HOME;
+  // 시간은 매장 상세에서 다시 고른다
+  const shopLink = generatePath(ROUTES.SHOP_DETAIL, { shopId: summary.shopId });
 
   if (summary.status === 'CONFIRMED') {
     return (
@@ -219,7 +218,7 @@ export default function CheckoutPage() {
                 <strong>임시 확보 시간이 끝났어요.</strong> 같은 시간이 아직 비어 있으면 다시 선택할
                 수 있어요.
               </span>
-              <Link className={styles.holdBarAction} to={reserveLink}>
+              <Link className={styles.holdBarAction} to={shopLink}>
                 시간 다시 선택 →
               </Link>
             </>
@@ -245,7 +244,7 @@ export default function CheckoutPage() {
       </div>
 
       <div className="b-container b-page">
-        <Link className="b-back" to={reserveLink}>
+        <Link className="b-back" to={shopLink}>
           ← 시간 다시 선택하기
         </Link>
         <div className="b-columns">
@@ -347,7 +346,7 @@ export default function CheckoutPage() {
               </Alert>
             )}
             {expired ? (
-              <Button as={Link} variant="primary" wide to={reserveLink}>
+              <Button as={Link} variant="primary" wide to={shopLink}>
                 시간 다시 선택하기
               </Button>
             ) : (
@@ -368,7 +367,7 @@ export default function CheckoutPage() {
             아직 비어 있으면 다시 선택할 수 있어요.
           </p>
           <div className={`b-flex ${styles.dialogActions}`}>
-            <Button as={Link} variant="primary" to={reserveLink}>
+            <Button as={Link} variant="primary" to={shopLink}>
               시간 다시 선택
             </Button>
             <Button as={Link} to={ROUTES.HOME}>
