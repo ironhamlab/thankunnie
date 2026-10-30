@@ -30,7 +30,7 @@ export default function ShopHeader({ shop, view, onSelect }) {
             <h1>{shop.shopName}</h1>
             <p className={styles.address}>{address}</p>
           </div>
-          <FavoriteButton shopId={shop.shopId} />
+          <FavoriteButton shopId={shop.shopId} shopName={shop.shopName} />
         </div>
         <ul className={styles.menu} aria-label="매장 메뉴">
           {MENUS.map(({ key, title }) => (
