@@ -51,6 +51,10 @@ export const useExploreStore = create((set, get) => ({
   searchShops: [],
   searchShopsStatus: 'idle',
   searchShopsError: null,
+  // 지도 화면(/map)의 지도 범위 매장 요약 (C-02)
+  mapPageShops: [],
+  mapPageShopsStatus: 'idle',
+  mapPageShopsError: null,
 
   // 검색 화면에서 펼친 매장의 빈자리 (C-01). { [shopId]: { requestId, status, vacancies, error } }
   shopVacancies: {},
@@ -75,6 +79,16 @@ export const useExploreStore = create((set, get) => ({
     { data: 'shops', status: 'shopsStatus', error: 'shopsError' },
     fetchShops,
   ),
+
+  /** 지도 화면: 지도를 옮길 때마다 범위가 바뀌므로 펼쳐 둔 빈자리는 그대로 두고 매장 목록만 다시 받는다 */
+  loadMapPageShops: simpleLoader(
+    set,
+    { data: 'mapPageShops', status: 'mapPageShopsStatus', error: 'mapPageShopsError' },
+    fetchShops,
+  ),
+
+  /** 필터를 바꾸면 이전 조건으로 펼쳐 둔 빈자리를 버린다 */
+  resetShopVacancies: () => set({ shopVacancies: {} }),
 
   /** 검색 조건을 바꾸면 매장 목록을 다시 받고, 이전 조건으로 펼쳐 둔 빈자리는 버린다 */
   loadSearchShops: async (params) => {

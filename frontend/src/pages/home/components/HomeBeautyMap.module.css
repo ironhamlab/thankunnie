@@ -76,83 +76,6 @@
   background: var(--color-primary);
   color: white;
 }
-.roads {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.6;
-}
-.roads i {
-  display: block;
-  position: absolute;
-  background: #ffffff88;
-}
-.roads i:nth-child(1) {
-  width: 120%;
-  height: 28px;
-  top: 33%;
-  left: -10%;
-  transform: rotate(-12deg);
-}
-.roads i:nth-child(2) {
-  width: 32px;
-  height: 110%;
-  top: -5%;
-  right: 33%;
-  transform: rotate(8deg);
-}
-.roads i:nth-child(3) {
-  width: 144px;
-  height: 112px;
-  border-radius: var(--radius-lg);
-  bottom: 40px;
-  left: 40px;
-  border: 1px solid white;
-}
-.roads i:nth-child(4) {
-  width: 112px;
-  height: 96px;
-  border-radius: var(--radius-lg);
-  top: 48px;
-  right: 48px;
-  border: 1px solid white;
-}
-.pin {
-  position: absolute;
-  z-index: 2;
-  border: 1px solid var(--color-primary);
-  border-radius: var(--radius-xl);
-  padding: 6px 10px;
-  background: white;
-  font-size: 11px !important;
-  font-weight: 700;
-  box-shadow: 0 2px 5px #0002;
-}
-.pin::after {
-  content: '';
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  background: inherit;
-  border-right: inherit;
-  border-bottom: inherit;
-  bottom: -6px;
-  left: 48%;
-  transform: rotate(45deg);
-}
-.pin:global(.is-active) {
-  background: var(--color-primary);
-  color: #fff;
-}
-.landmark {
-  position: absolute;
-  bottom: 34%;
-  left: 29%;
-  background: #ffffffc9;
-  border-radius: var(--radius-xl);
-  padding: 3px 8px;
-  font-size: 10px;
-}
 .disclaimer {
   position: absolute;
   bottom: 94px;
@@ -237,16 +160,12 @@
     display: none;
   }
 }
-/* 카카오맵 위에 띄우는 매장 핀. 위치는 지도 오버레이가 정한다 */
-.kakaoPin {
-  position: static;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.kakaoPin:global(.is-selected) {
-  background: var(--color-primary);
-  color: #fff;
-}
 .root .preview {
   z-index: 2;
+}
+/* 지도 화면(/map)으로 가는 길 */
+.mapLink {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary);
 }
