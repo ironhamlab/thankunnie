@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { money } from '@/utils/demoData';
 import { earliestLabel, shopPagePath } from '@/utils/exploreVacancy';
 import { datePart } from '@/utils/scheduleDate';
-import KakaoMap from '@/components/map/KakaoMap';
+import ExploreMap from '@/components/map/ExploreMap';
 import Button from '@/components/common/Button';
 import styles from './ShopLocationMap.module.css';
 
@@ -11,43 +10,39 @@ import styles from './ShopLocationMap.module.css';
 const MAP_BOUNDS_PADDING = { top: 60, right: 110, bottom: 150, left: 100 };
 
 /**
- * 검색 조건에 맞는 빈자리가 있는 매장 위치 (C-02). 목록에서 펼친 매장이 지도에서도 선택되고,
- * 지도에서 고른 매장은 매장 페이지로 가거나 목록에서 펼쳐 시간을 볼 수 있다. 모델 모집 목록(model)이면 모델 모집 상세로 간다.
+ * 검색 조건에 맞는 빈자리가 있는 매장 위치 (C-02). 목록의 매장이 다 보이게 범위를 맞추고, 축소하면 가까운 핀을 묶는다.
+ * 목록에서 펼친 매장이 지도에서도 선택되고, 지도에서 고른 매장은 매장 페이지로 가거나 목록에서 펼쳐 시간을 볼 수 있다.
+ * 모델 모집 목록(model)이면 모델 모집 상세로 간다.
  */
 export default function ShopLocationMap({ shops, status, expandedShopId, onShowShop, model }) {
   const [pickedId, setPickedId] = useState(null);
+  const [mapUnavailable, setMapUnavailable] = useState(false);
   // 목록에서 펼친 매장을 우선 보여주고, 그다음 지도에서 누른 매장을 보여준다
   const selected =
     shops.find((shop) => String(shop.shopId) === expandedShopId) ??
-    shops.find((shop) => shop.shopId === pickedId) ??
+    shops.find((shop) => String(shop.shopId) === pickedId) ??
     shops[0];
-  const markers = useMemo(
-    () =>
-      shops.map((shop) => ({
-        id: shop.shopId,
-        lat: shop.latitude,
-        lng: shop.longitude,
-        label: money(shop.minSalePrice),
-        ariaLabel: `${shop.shopName} ${money(shop.minSalePrice)}부터`,
-      })),
-    [shops],
-  );
   const pick = (shopId) => {
     setPickedId(shopId);
     // 다른 매장을 펼쳐 둔 상태라면 지도에서 고른 매장을 바로 펼친다
-    if (expandedShopId && String(shopId) !== expandedShopId) onShowShop(shopId);
+    if (expandedShopId && shopId !== expandedShopId) onShowShop(shopId);
   };
+  const handleUnavailable = useCallback(() => setMapUnavailable(true), []);
   const isExpanded = selected && String(selected.shopId) === expandedShopId;
   return (
     <section className={styles.root} aria-label="매장 위치 지도">
-      <KakaoMap
-        markers={markers}
-        selectedId={selected?.shopId}
-        onSelect={pick}
-        markerClassName={styles.pin}
-        boundsPadding={MAP_BOUNDS_PADDING}
-        fallback={<p className={styles.fallback}>지도를 불러오지 못했어요</p>}
-      />
+      {mapUnavailable ? (
+        <p className={styles.fallback}>지도를 불러오지 못했어요</p>
+      ) : (
+        <ExploreMap
+          shops={shops}
+          selectedId={selected ? String(selected.shopId) : null}
+          onSelect={pick}
+          onUnavailable={handleUnavailable}
+          fitToShops
+          boundsPadding={MAP_BOUNDS_PADDING}
+        />
+      )}
       <span className={styles.count}>매장 {shops.length}곳</span>
       <div className={styles.panel}>
         {selected ? (
