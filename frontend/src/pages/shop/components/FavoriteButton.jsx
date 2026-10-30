@@ -4,6 +4,7 @@ import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { getDevTestUser } from '@/utils/devTestUser';
+import { buildStoreRequest, isShopSubscribed, storeSubscriptionsOf } from '@/utils/notificationRules';
 import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
 import StoreHopeForm from '@/components/notification/StoreHopeForm';
@@ -11,23 +12,22 @@ import styles from '../ShopDetailPage.module.css';
 
 /**
  * 매장 찜. 아직 찜하지 않았으면 빈자리 알림 여부를 묻는다.
- * 아니요는 알림 없이 찜만 한다. 예는 이 팝업에서 알림 조건을 추가하고, 찜 목록에는 넣지 않는다.
- * 이미 찜이거나 알림 중이면 둘 다 해제한다. 로그인하지 않았으면 로그인 화면으로 보낸다.
+ * 아니요는 희망 시간 없는 업장 구독으로 저장한다. 새로고침해도 남고, 알림은 가지 않는다.
+ * 예는 이 팝업에서 희망 시간을 넣어 업장 구독을 추가한다.
+ * 이미 찜이거나 알림 중이면 최근 업장 구독 하나만 해제한다. 남은 구독이 있으면 하트는 유지된다.
  */
 export default function FavoriteButton({ shopId, shopName }) {
   const navigate = useNavigate();
   const location = useLocation();
   const token = useAuthStore((state) => state.token);
   const subscriptions = useNotificationStore((state) => state.subscriptions);
-  const favoriteShops = useNotificationStore((state) => state.favoriteShops);
   const listStatus = useNotificationStore((state) => state.listStatus);
   const saving = useNotificationStore((state) => state.saving);
   const loadSubscriptions = useNotificationStore((state) => state.loadSubscriptions);
-  const addFavoriteShop = useNotificationStore((state) => state.addFavoriteShop);
-  const removeFavoriteShop = useNotificationStore((state) => state.removeFavoriteShop);
   const addSubscription = useNotificationStore((state) => state.addSubscription);
   const removeSubscription = useNotificationStore((state) => state.removeSubscription);
   const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
   const [formError, setFormError] = useState(null);
   const [step, setStep] = useState(null);
   // PrivateRoute 와 같이 개발 서버 테스트 계정도 로그인으로 본다
@@ -37,15 +37,9 @@ export default function FavoriteButton({ shopId, shopName }) {
     if (loggedIn) loadSubscriptions();
   }, [loggedIn, loadSubscriptions]);
 
-  const subscription = loggedIn
-    ? subscriptions.find(
-        (item) => item.subscriptionType === 'STORE' && Number(item.shopId) === Number(shopId),
-      )
-    : undefined;
-  const favorite =
-    loggedIn &&
-    (Boolean(subscription) ||
-      favoriteShops.some((item) => Number(item.shopId) === Number(shopId)));
+  // 최근 등록이 앞이다. 하트는 남은 업장 구독이 하나라도 있으면 켜 둔다. 해제는 맨 앞 하나만 지운다
+  const storeSubscriptions = loggedIn ? storeSubscriptionsOf(subscriptions, shopId) : [];
+  const favorite = loggedIn && isShopSubscribed(subscriptions, shopId);
 
   const closeDialog = () => {
     setStep(null);
@@ -58,38 +52,41 @@ export default function FavoriteButton({ shopId, shopName }) {
       return;
     }
     if (!favorite) {
+      setError(null);
+      setNotice(null);
       setFormError(null);
       setStep('ask');
       return;
     }
     setError(null);
-    removeFavoriteShop(shopId);
-    if (!subscription) return;
-    const result = await removeSubscription(subscription.subscriptionId);
-    if (!result.ok) setError(result.error.message);
+    setNotice(null);
+    const target = storeSubscriptions[0];
+    if (!target) return;
+    const result = await removeSubscription(target.subscriptionId);
+    if (!result.ok) {
+      setError(result.error.message);
+      return;
+    }
+    if (storeSubscriptions.length > 1) {
+      setNotice('이 매장의 다른 알림 구독은 그대로 두었습니다.');
+    }
   };
 
-  const handleDecline = () => {
-    addFavoriteShop({ shopId, shopName });
+  const handleDecline = async () => {
+    const result = await addSubscription(buildStoreRequest(shopId, null));
+    if (!result.ok) {
+      setError(result.error.message);
+    }
     closeDialog();
   };
 
   const handleCreate = async ({ startTime, endTime }) => {
     setFormError(null);
-    const result = await addSubscription({
-      subscriptionType: 'STORE',
-      shopId,
-      categoryId: null,
-      regionCode: null,
-      startTime,
-      endTime,
-    });
+    const result = await addSubscription(buildStoreRequest(shopId, { startTime, endTime }));
     if (!result.ok) {
       setFormError(result.error.message);
       return;
     }
-    // 알림을 받은 매장은 찜만 한 목록에서 뺀다
-    removeFavoriteShop(shopId);
     setStep('done');
   };
 
@@ -111,6 +108,11 @@ export default function FavoriteButton({ shopId, shopName }) {
             {error}
           </p>
         )}
+        {notice && (
+          <p role="status" className={styles.favoriteError}>
+            {notice}
+          </p>
+        )}
       </div>
       {step && (
         <Dialog
@@ -120,7 +122,7 @@ export default function FavoriteButton({ shopId, shopName }) {
               ? '땡 잡을 기회 완료!'
               : step === 'form'
                 ? '알림 조건 추가'
-                : '찜한 매장에 예약 가능한 자리가 나면 알려드릴까요?'
+                : '찜한 매장에 예약 가능한 자리가 나면 문자로 알려드릴까요?'
           }
           stepKey={step}
           hideClose={step !== 'form'}
@@ -141,7 +143,9 @@ export default function FavoriteButton({ shopId, shopName }) {
           ) : step === 'done' ? (
             <>
               <p className={styles.alertShop}>{shopName}</p>
-              <p className={styles.doneCopy}>빈자리가 나면 이 매장을 알려드릴게요.</p>
+              <p className={styles.doneCopy}>
+                희망 시간에 빈자리가 나면 가입한 휴대폰 번호로 문자가 갑니다.
+              </p>
               <div className={styles.doneActions}>
                 <Button type="button" className={styles.confirmYes} onClick={closeDialog}>
                   확인

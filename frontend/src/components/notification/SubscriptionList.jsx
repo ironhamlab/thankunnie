@@ -1,17 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  EXAMPLE_CATEGORIES,
-  EXAMPLE_SUBSCRIPTIONS,
-  shopTitleOf,
-} from '@/constants/notificationExamples';
+import { generatePath, Link } from 'react-router-dom';
 import { regionNameOf } from '@/constants/regions';
+import { ROUTES } from '@/constants/routes';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import { isPendingFavorite, shopLabel } from '@/utils/notificationRules';
 import { datePart, timePart } from '@/utils/scheduleDate';
 import Alert from '@/components/common/Alert';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
-import Notice from '@/components/common/Notice';
 import Panel from '@/components/common/Panel';
 import ClockIcon from '@/components/icons/ClockIcon';
 import InfoIcon from '@/components/icons/InfoIcon';
@@ -30,8 +27,7 @@ const formatHope = (startTime, endTime) =>
   `${monthDay(startTime)} ${timePart(startTime)} ~ ${monthDay(endTime)} ${timePart(endTime)}`;
 
 /**
- * 내 알림 구독 목록. 해제하지 않은 구독만 최근 등록 순으로 보여주고, 조건 수정과 해제를 한다.
- * 서버 목록이 비었거나 불러오지 못하면 업장·카테고리·지역 예시 카드를 보여 준다.
+ * 내 알림 구독 목록. 서버가 준 해제하지 않은 구독만 최근 등록 순으로 보여주고, 조건 수정과 해제를 한다.
  *
  * @param {boolean} [embedded] 구독 화면 탭 안에 넣을 때 바깥 여백을 빼기 위해 사용한다
  */
@@ -40,11 +36,12 @@ export default function SubscriptionList({ embedded = false }) {
   const listStatus = useNotificationStore((state) => state.listStatus);
   const listError = useNotificationStore((state) => state.listError);
   const categories = useNotificationStore((state) => state.categories);
+  const shopNames = useNotificationStore((state) => state.shopNames);
   const saving = useNotificationStore((state) => state.saving);
   const loadSubscriptions = useNotificationStore((state) => state.loadSubscriptions);
   const loadCategories = useNotificationStore((state) => state.loadCategories);
+  const loadShopNames = useNotificationStore((state) => state.loadShopNames);
   const removeSubscription = useNotificationStore((state) => state.removeSubscription);
-  const [examples, setExamples] = useState(EXAMPLE_SUBSCRIPTIONS);
   const [editing, setEditing] = useState(null);
   // 해제 애니메이션 중. 서버에서 먼저 빠져도 카드가 잠깐 남도록 스냅샷을 둔다
   const [leaving, setLeaving] = useState(null);
@@ -66,22 +63,38 @@ export default function SubscriptionList({ embedded = false }) {
     loadCategories();
   }, [loadSubscriptions, loadCategories]);
 
-  const useExamples =
-    listStatus === 'failed' || (listStatus === 'succeeded' && subscriptions.length === 0);
-  const baseItems = useExamples ? examples : subscriptions;
+  const storeShopIds = subscriptions
+    .filter((item) => item.subscriptionType === 'STORE')
+    .map((item) => Number(item.shopId))
+    .filter((id, index, list) => list.indexOf(id) === index)
+    .join(',');
+
+  useEffect(() => {
+    if (!storeShopIds) return;
+    loadShopNames(storeShopIds.split(','));
+  }, [storeShopIds, loadShopNames]);
+
+  const isLoading = listStatus === 'idle' || listStatus === 'loading';
+  const isFailed = listStatus === 'failed';
+  // 희망 시간이 없는 업장 찜은 알림 전 찜 탭에서 본다
+  const alertSubscriptions = subscriptions.filter((item) => !isPendingFavorite(item));
+  const isEmpty = listStatus === 'succeeded' && alertSubscriptions.length === 0;
+  // 실패하면 카드를 그리지 않는다. 조회 중에는 이전에 받은 목록을 유지한다
+  const baseItems = isFailed ? [] : alertSubscriptions;
   const items =
     leaving && !baseItems.some((item) => item.subscriptionId === leaving.id)
       ? [...baseItems.slice(0, leaving.index), leaving.item, ...baseItems.slice(leaving.index)]
       : baseItems;
-  const categoryOptions = categories.length ? categories : EXAMPLE_CATEGORIES;
 
   const categoryNameOf = (categoryId) =>
-    categoryOptions.find((category) => category.categoryId === categoryId)?.name ??
+    categories.find((category) => Number(category.categoryId) === Number(categoryId))?.name ??
     `카테고리 ${categoryId}`;
+
+  const shopNameOf = (shopId) => shopLabel(shopId, shopNames[String(Number(shopId))]);
 
   const titleOf = (item) =>
     item.subscriptionType === 'STORE'
-      ? shopTitleOf(item)
+      ? shopNameOf(item.shopId)
       : `${categoryNameOf(item.categoryId)} · ${regionNameOf(item.regionCode)}`;
 
   const waitLeave = (ms) =>
@@ -102,11 +115,8 @@ export default function SubscriptionList({ embedded = false }) {
     const animate = !reduceMotion();
     if (animate) setLeaving({ id: subscriptionId, item, index });
 
-    const removePromise = useExamples
-      ? Promise.resolve({ ok: true })
-      : removeSubscription(subscriptionId);
     const [result] = await Promise.all([
-      removePromise,
+      removeSubscription(subscriptionId),
       animate ? waitLeave(LEAVE_MS) : Promise.resolve(),
     ]);
 
@@ -118,16 +128,12 @@ export default function SubscriptionList({ embedded = false }) {
       setError(result.error.message);
       return;
     }
-
-    if (useExamples) {
-      setExamples((prev) => prev.filter((row) => row.subscriptionId !== subscriptionId));
-    }
     setLeaving(null);
   };
 
   const savedTitleOf = (subscription, request) =>
     subscription.subscriptionType === 'STORE'
-      ? shopTitleOf({ ...subscription, shopId: request.shopId })
+      ? shopNameOf(request.shopId)
       : `${categoryNameOf(request.categoryId)} · ${regionNameOf(request.regionCode)}`;
 
   const handleSaved = (subscription, request) => {
@@ -137,41 +143,12 @@ export default function SubscriptionList({ embedded = false }) {
     );
   };
 
-  const handleExampleSaved = (subscription, request) => {
-    setExamples((prev) =>
-      prev.map((item) => {
-        if (item.subscriptionId !== subscription.subscriptionId) return item;
-        return {
-          ...item,
-          shopId: request.shopId,
-          categoryId: request.categoryId,
-          regionCode: request.regionCode,
-          startTime: request.startTime,
-          endTime: request.endTime,
-          shopName:
-            item.subscriptionType === 'STORE'
-              ? shopTitleOf({ ...item, shopId: request.shopId })
-              : null,
-        };
-      }),
-    );
-    handleSaved(subscription, request);
-  };
-
   return (
     <div className={embedded ? styles.embedded : `b-container b-page ${styles.root}`}>
       <header className={styles.intro}>
         <h1>내 알림 구독</h1>
         <p className={styles.lead}>해제하지 않은 구독만 최근 등록 순으로 보여요.</p>
       </header>
-
-      {useExamples && listStatus !== 'loading' && (
-        <Notice className={styles.demoNotice}>
-          {listStatus === 'failed'
-            ? `${listError?.message ?? '서버에 연결할 수 없습니다.'} 업장·카테고리·지역 예시 구독을 보여 줍니다.`
-            : '등록된 구독이 없어 업장·카테고리·지역 예시 구독을 보여 줍니다.'}
-        </Notice>
-      )}
 
       {savedMessage && (
         <Alert className={styles.result} tone="success" role="status">
@@ -191,11 +168,19 @@ export default function SubscriptionList({ embedded = false }) {
           {error}
         </Alert>
       )}
-      {listStatus === 'loading' && <p role="status">알림 구독을 불러오는 중입니다.</p>}
-      {listStatus !== 'loading' && !items.length && (
+      {isLoading && <p role="status">알림 구독을 불러오는 중입니다.</p>}
+      {isFailed && (
+        <Alert tone="error" role="alert">
+          {listError?.message ?? '알림 구독을 불러오지 못했습니다.'}
+        </Alert>
+      )}
+      {isEmpty && (
         <EmptyState>
           <h2>등록된 알림 구독이 없어요</h2>
-          <p>시술·지역이나 매장의 희망 시간을 정하면 빈자리 문자를 받을 수 있어요.</p>
+          <p>
+            희망 시간을 정하면, 그 시간에 빈자리가 났을 때 가입한 휴대폰 번호로 문자를 받을 수
+            있어요.
+          </p>
         </EmptyState>
       )}
 
@@ -213,7 +198,18 @@ export default function SubscriptionList({ embedded = false }) {
                 <Badge className={isStore ? styles.storeBadge : styles.categoryBadge}>
                   {isStore ? '업장' : '카테고리·지역'}
                 </Badge>
-                <h2 className={styles.title}>{titleOf(item)}</h2>
+                {isStore ? (
+                  <h2 className={styles.title}>
+                    <Link
+                      className={styles.titleLink}
+                      to={generatePath(ROUTES.SHOP_DETAIL, { shopId: String(item.shopId) })}
+                    >
+                      {titleOf(item)}
+                    </Link>
+                  </h2>
+                ) : (
+                  <h2 className={styles.title}>{titleOf(item)}</h2>
+                )}
                 <Badge tone="success">알림 받는 중</Badge>
               </div>
               <p className={styles.period}>
@@ -248,21 +244,17 @@ export default function SubscriptionList({ embedded = false }) {
       {items.length > 0 && (
         <p className={styles.note}>
           <InfoIcon size={16} />
-          업장 구독은 희망 시간만, 카테고리·지역 구독은 시술·지역과 희망 시간만 수정됩니다.
+          업장 구독은 희망 시간만, 시술·지역 구독은 시술·지역과 희망 시간만 수정됩니다. 해제한 구독과
+          희망 종료가 지난 구독은 문자를 받지 않습니다.
         </p>
       )}
 
       {editing && (
         <SubscriptionEditDialog
           subscription={editing}
-          categories={categoryOptions}
+          categories={categories}
           onClose={() => setEditing(null)}
-          onSaved={
-            useExamples
-              ? (request) => handleExampleSaved(editing, request)
-              : (request) => handleSaved(editing, request)
-          }
-          localOnly={useExamples}
+          onSaved={(request) => handleSaved(editing, request)}
         />
       )}
     </div>

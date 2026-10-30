@@ -22,6 +22,7 @@ public interface NotificationSubscriptionRepository extends JpaRepository<Notifi
     String ACTIVE = "com.ucamp.app.domain.notification.entity.SubscriptionStatus.ACTIVE";
 
     // 빈자리 시작이 희망 시작 이상, 희망 종료 이하이고, 희망 종료가 현재보다 뒤다.
+    // 희망 시간이 비어 있는 업장 찜은 비교가 성립하지 않아 알림 대상에서 빠진다.
     String IN_HOPE_TIME = """
               and s.startTime <= :slotStartTime
               and s.endTime >= :slotStartTime
@@ -90,6 +91,18 @@ public interface NotificationSubscriptionRepository extends JpaRepository<Notifi
     boolean existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
             Long userId, SubscriptionStatus status, Long shopId,
             LocalDateTime startTime, LocalDateTime endTime, Long id);
+
+    /**
+     * 시간이 비어 있는 같은 매장 찜이 이미 있는지. null 끼리의 같음은 = 비교로 잡히지 않는다.
+     */
+    boolean existsByUserIdAndStatusAndShopIdAndStartTimeIsNullAndEndTimeIsNull(
+            Long userId, SubscriptionStatus status, Long shopId);
+
+    /**
+     * 시간이 비어 있는 같은 매장 찜이 있는지. 수정 시 자기 구독은 뺀다.
+     */
+    boolean existsByUserIdAndStatusAndShopIdAndStartTimeIsNullAndEndTimeIsNullAndIdNot(
+            Long userId, SubscriptionStatus status, Long shopId, Long id);
 
     /**
      * 카테고리·지역 구독 등록 시 중복 여부. ACTIVE 이고 회원·카테고리·지역·희망 시작·종료가 모두 같으면 true.

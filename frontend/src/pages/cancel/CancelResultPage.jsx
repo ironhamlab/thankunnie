@@ -117,7 +117,7 @@ export default function CancelResultPage({ viewer }) {
   const refundAmount = cancel?.refundAmount;
   const cancelType = cancel?.cancelType;
   const completedAt = cancel?.completedAt;
-  // 사장님 매장 사유 취소는 문자 안내가 없으므로 고객 연락처를 보여준다 (CNL-20)
+  // 매장 사유 취소도 서버가 문자를 보낸다. 번호가 없으면 생략되므로 연락처는 함께 보여 준다.
   const showCustomerContact = viewer === 'owner' && cancelType === 'SHOP_FAULT';
   const customerName = detail?.summary.customerName ?? lastResult?.customerName;
   const customerPhone = detail?.customerPhone ?? lastResult?.customerPhone;
@@ -207,7 +207,9 @@ export default function CancelResultPage({ viewer }) {
         {showCustomerContact && (phase === 'completed' || phase === 'pending') && (
           <Notice className="b-stack">
             <h3>고객에게 직접 연락해 주세요</h3>
-            <p>매장 사유 취소는 고객에게 문자가 발송되지 않습니다.</p>
+            <p>
+              취소가 완료되면 고객 휴대폰 번호로 문자가 갑니다. 번호가 없으면 문자는 생략됩니다.
+            </p>
             <div className="b-row">
               <strong>{customerName}</strong>
               <a href={`tel:${customerPhone}`}>{customerPhone}</a>
