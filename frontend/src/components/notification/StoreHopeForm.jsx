@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ERROR_MESSAGES } from '@/constants/errorMessages';
 import { addDays, toKstDateTime, todayKst } from '@/utils/scheduleDate';
 import Button from '@/components/common/Button';
 import styles from './SubscriptionCreateForm.module.css';
@@ -18,13 +19,17 @@ const emptyTimeForm = () => {
 
 /**
  * 업장 알림 희망 시간. 카테고리·지역 조건 추가와 같은 입력 칸을 쓴다.
- * 저장은 onSubmit 에 맡긴다.
+ * 희망 날짜는 오늘부터 30일 안만, 시각은 기본 time 입력(30분 단위)으로 고른다.
+ * 종료가 시작보다 같거나 이르거나 이미 지났으면 요청 전에 막는다.
  */
 export default function StoreHopeForm({ onSubmit, saving = false, className = '' }) {
   const [form, setForm] = useState(emptyTimeForm);
   const minDate = todayKst();
   const maxDate = addDays(minDate, HOPE_DAYS);
-  const change = (field) => (event) => setForm((prev) => ({ ...prev, [field]: event.target.value }));
+
+  const change = (field) => (event) => {
+    setForm((prev) => ({ ...prev, [field]: event.target.value }));
+  };
 
   const startDateEmpty = !form.startDate;
   const endDateEmpty = !form.endDate;
@@ -38,9 +43,11 @@ export default function StoreHopeForm({ onSubmit, saving = false, className = ''
   const endOutOfRange =
     Boolean(form.endDate) && (form.endDate < minDate || form.endDate > maxDate);
   const outOfRange = hasFullStamp && (startOutOfRange || endOutOfRange);
+  const startPast =
+    hasFullStamp && new Date(toKstDateTime(form.startDate, form.startTime)).getTime() <= Date.now();
   const expired =
     hasFullStamp && new Date(toKstDateTime(form.endDate, form.endTime)).getTime() <= Date.now();
-  const canSubmit = hasFullStamp && !invalidTime && !outOfRange && !expired;
+  const canSubmit = hasFullStamp && !invalidTime && !outOfRange && !startPast && !expired;
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -52,7 +59,11 @@ export default function StoreHopeForm({ onSubmit, saving = false, className = ''
   };
 
   return (
-    <form className={[styles.form, className].filter(Boolean).join(' ')} onSubmit={handleSubmit} noValidate>
+    <form
+      className={[styles.form, className].filter(Boolean).join(' ')}
+      onSubmit={handleSubmit}
+      noValidate
+    >
       <div className={styles.timeRow}>
         <div className={styles.field}>
           <label>
@@ -80,11 +91,22 @@ export default function StoreHopeForm({ onSubmit, saving = false, className = ''
         <div className={styles.field}>
           <label>
             시작 시간
-            <input required type="time" step="1800" value={form.startTime} onChange={change('startTime')} />
+            <input
+              required
+              type="time"
+              step="1800"
+              value={form.startTime}
+              onChange={change('startTime')}
+            />
           </label>
           {startTimeEmpty && (
             <p role="alert" className={styles.error}>
               시작 시간을 선택해 주세요.
+            </p>
+          )}
+          {!startTimeEmpty && startPast && (
+            <p role="alert" className={styles.error}>
+              이미 지난 시간은 선택할 수 없어요.
             </p>
           )}
         </div>
@@ -114,21 +136,22 @@ export default function StoreHopeForm({ onSubmit, saving = false, className = ''
         <div className={styles.field}>
           <label>
             종료 시간
-            <input required type="time" step="1800" value={form.endTime} onChange={change('endTime')} />
+            <input
+              required
+              type="time"
+              step="1800"
+              value={form.endTime}
+              onChange={change('endTime')}
+            />
           </label>
           {endTimeEmpty && (
             <p role="alert" className={styles.error}>
               종료 시간을 선택해 주세요.
             </p>
           )}
-          {!endTimeEmpty && invalidTime && (
+          {!endTimeEmpty && (invalidTime || expired) && (
             <p role="alert" className={styles.error}>
-              종료 시간은 시작 시간보다 뒤여야 합니다.
-            </p>
-          )}
-          {!endTimeEmpty && !invalidTime && expired && (
-            <p role="alert" className={styles.error}>
-              이미 지난 시간은 등록할 수 없어요.
+              {ERROR_MESSAGES.NOTIFICATION_003}
             </p>
           )}
         </div>

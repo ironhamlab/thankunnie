@@ -18,10 +18,6 @@
   margin-top: 8px;
   color: var(--color-text-secondary);
 }
-.demoNotice {
-  margin-bottom: 16px;
-  text-align: center;
-}
 .list {
   display: flex;
   flex-direction: column;
@@ -118,6 +114,14 @@
   flex: 1;
   min-width: 0;
   font-size: 18px;
+}
+.titleLink {
+  color: inherit;
+  text-decoration: none;
+}
+.titleLink:hover,
+.titleLink:focus-visible {
+  text-decoration: underline;
 }
 .storeBadge {
   color: var(--color-white);

@@ -275,7 +275,9 @@ export default function CheckoutPage() {
                 <label>
                   휴대폰 번호
                   <input value={customerPhone ?? ''} readOnly />
-                  <small>예약 확정 및 매장 안내 알림톡 수신 번호</small>
+                  <small>
+                    가입할 때 저장한 번호입니다. 예약이 확정되면 이 번호로 문자가 갑니다.
+                  </small>
                 </label>
                 <label className="b-span-two">
                   원장님께 남길 요청사항 (선택)

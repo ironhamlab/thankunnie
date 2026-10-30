@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { shopTitleOf } from '@/constants/notificationExamples';
 import { REGION_GROUPS } from '@/constants/regions';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import { shopLabel } from '@/utils/notificationRules';
 import { addDays, datePart, timePart, toKstDateTime, todayKst } from '@/utils/scheduleDate';
 import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
@@ -17,16 +17,10 @@ const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)')
  * 구독 조건 수정. 구독 유형은 그대로 둔다.
  * 업장 구독은 매장을 바꾸지 않고 희망 시간만, 카테고리·지역 구독은 시술·지역과 희망 시간을 바꾼다.
  * 희망 날짜는 오늘부터 30일 안만, 시각은 기본 time 입력(30분 단위)으로 고른다.
- * localOnly 이면 서버를 부르지 않고 onSaved(request) 만 호출한다.
  */
-export default function SubscriptionEditDialog({
-  subscription,
-  categories,
-  onClose,
-  onSaved,
-  localOnly = false,
-}) {
+export default function SubscriptionEditDialog({ subscription, categories, onClose, onSaved }) {
   const updateSubscription = useNotificationStore((state) => state.updateSubscription);
+  const shopNames = useNotificationStore((state) => state.shopNames);
   const saving = useNotificationStore((state) => state.saving);
   const isStore = subscription.subscriptionType === 'STORE';
   const minDate = todayKst();
@@ -69,9 +63,11 @@ export default function SubscriptionEditDialog({
       form.startDate > maxDate ||
       form.endDate < minDate ||
       form.endDate > maxDate);
+  const startPast =
+    hasFullStamp && new Date(toKstDateTime(form.startDate, form.startTime)).getTime() <= Date.now();
   const expired =
     hasFullStamp && new Date(toKstDateTime(form.endDate, form.endTime)).getTime() <= Date.now();
-  const canSubmit = hasFullStamp && !invalidTime && !outOfRange && !expired;
+  const canSubmit = hasFullStamp && !invalidTime && !outOfRange && !expired && !startPast;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -84,11 +80,6 @@ export default function SubscriptionEditDialog({
       startTime: toKstDateTime(form.startDate, form.startTime),
       endTime: toKstDateTime(form.endDate, form.endTime),
     };
-    if (localOnly) {
-      onSaved?.(request);
-      requestClose();
-      return;
-    }
     const { ok, error: saveError } = await updateSubscription(subscription.subscriptionId, request);
     if (!ok) {
       setError(saveError.message);
@@ -113,7 +104,11 @@ export default function SubscriptionEditDialog({
         {isStore ? (
           <label>
             매장
-            <input aria-label="매장" value={shopTitleOf(subscription)} readOnly />
+            <input
+              aria-label="매장"
+              value={shopLabel(subscription.shopId, shopNames[String(Number(subscription.shopId))])}
+              readOnly
+            />
           </label>
         ) : (
           <>
@@ -123,6 +118,12 @@ export default function SubscriptionEditDialog({
                 <option value="" disabled>
                   시술 선택
                 </option>
+                {form.categoryId &&
+                  !categories.some(
+                    (category) => String(category.categoryId) === String(form.categoryId),
+                  ) && (
+                    <option value={form.categoryId}>{`카테고리 ${form.categoryId}`}</option>
+                  )}
                 {categories.map((category) => (
                   <option key={category.categoryId} value={category.categoryId}>
                     {category.name}
@@ -192,6 +193,11 @@ export default function SubscriptionEditDialog({
             {startTimeEmpty && (
               <p role="alert" className={styles.error}>
                 시작 시간을 선택해 주세요.
+              </p>
+            )}
+            {!startTimeEmpty && startPast && (
+              <p role="alert" className={styles.error}>
+                이미 지난 시간은 선택할 수 없어요.
               </p>
             )}
           </div>

@@ -135,22 +135,12 @@ export default function BookingResultPage() {
         </div>
       </section>
       {success && (
-        <section className={styles.notification}>
-          <div className="b-row">
-            <h3>카카오 알림톡 자동 발송 내역</h3>
-            <small className="b-pink">● 실제 발송 없는 시연</small>
-          </div>
-          <Panel padded className="b-flex">
-            <span className={styles.talk}>TALK</span>
-            <div>
-              <strong>[땡잡은 언니] 예약 확정 안내</strong>
-              <p>
-                {booking.name}님, [{service.shop}] {booking.date} {booking.time} 예약이
-                확정되었습니다. 예약 번호와 매장 약도를 확인해 주세요.
-              </p>
-            </div>
-          </Panel>
-        </section>
+        <Notice>
+          <p>
+            예약이 확정되면 가입할 때 저장한 휴대폰 번호로 문자가 갑니다. 이 화면에 발송 목록은
+            없습니다.
+          </p>
+        </Notice>
       )}
     </div>
   );
