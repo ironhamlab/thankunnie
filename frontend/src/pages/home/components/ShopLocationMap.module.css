@@ -7,22 +7,6 @@
   border: 1px solid #c4d7fc;
   border-radius: 24px;
 }
-/* 카카오맵 위에 띄우는 매장 핀. 위치는 지도 오버레이가 정한다 */
-.pin {
-  border: 1px solid var(--color-primary);
-  border-radius: var(--radius-xl);
-  padding: 6px 10px;
-  background: white;
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-  box-shadow: 0 2px 5px #0002;
-  cursor: pointer;
-}
-.pin:global(.is-selected) {
-  background: var(--color-primary);
-  color: white;
-}
 .count {
   position: absolute;
   top: 14px;

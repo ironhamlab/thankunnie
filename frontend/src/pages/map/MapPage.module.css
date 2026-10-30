@@ -1,0 +1,136 @@
+.root {
+  padding-top: 20px;
+  padding-bottom: 40px;
+}
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.header h1 {
+  font-size: 24px;
+}
+.header p {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.categoryRow {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.categoryRow button {
+  flex-shrink: 0;
+  min-width: 80px;
+  padding: 10px 20px;
+  border: 1px solid #e2bdc3;
+  border-radius: var(--radius-pill);
+  background: white;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+.categoryRow button[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+.dateRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.saleToggle {
+  padding: 8px 16px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-pill);
+  background: white;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.saleToggle[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: white;
+}
+/* 지도를 크게 두고 오른쪽에 이 지역 매장 목록을 붙인다 */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: 20px;
+  /* 높이는 낮춰 필터와 지도가 한 화면에 들어오게 한다 */
+  height: clamp(420px, calc(100vh - 340px), 560px);
+}
+.listOnly {
+  grid-template-columns: minmax(0, 1fr);
+  height: auto;
+}
+.mapPane {
+  position: relative;
+  overflow: hidden;
+  background: #dbe7ff;
+  border: 1px solid #c4d7fc;
+  border-radius: 24px;
+}
+.refreshing {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  background: #fffffff0;
+  box-shadow: 0 2px 6px #0002;
+  font-size: 12px;
+  font-weight: 600;
+}
+.listPane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.listOnly .listPane {
+  overflow: visible;
+}
+.listPane h2 {
+  font-size: 16px;
+}
+.listPane h2 span {
+  color: var(--color-primary);
+}
+.notice {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+@media (max-width: 900px) {
+  /* 좁은 화면에서는 지도를 위에 두고 목록을 아래에 쌓는다 */
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+  .mapPane {
+    height: 55vh;
+    min-height: 320px;
+  }
+  .listPane {
+    overflow: visible;
+  }
+}

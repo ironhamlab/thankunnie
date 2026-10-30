@@ -8,6 +8,8 @@ export const ROUTES = {
   SERVICE_DETAIL: '/services/:id',
   // 매장 상세: 매장 정보 → 시술 선택 → 날짜·시간 선택
   SHOP_DETAIL: '/shops/:shopId',
+  // 지도 메인: 지도 범위의 빈자리 매장 핀과 매장 목록 (C 담당)
+  MAP: '/map',
   RESERVE: '/reserve/:id',
   CHECKOUT: '/checkout',
   BOOKING_RESULT: '/result',
