@@ -23,6 +23,12 @@ const exceptionRanges = (exceptions, date, type) =>
       datePart(item.endsAt) === date ? toMinutes(timePart(item.endsAt)) : MINUTES_PER_DAY,
     ]);
 
+/** 그날 요일의 영업시간 { openTime, closeTime }. 휴무거나 영업시간이 없으면 null */
+export const dayHoursOf = (businessHours, date) => {
+  const hours = businessHours.find((item) => item.dayOfWeek === dayCodeOf(date));
+  return hours && !hours.closed ? { openTime: hours.openTime, closeTime: hours.closeTime } : null;
+};
+
 /** 2026-10-30 → 10/30(금) */
 export const formatDayLabel = (date) =>
   `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}(${DAY_LABELS[dayCodeOf(date)]})`;

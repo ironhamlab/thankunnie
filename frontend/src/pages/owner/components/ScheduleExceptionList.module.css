@@ -1,0 +1,94 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.root h2 {
+  margin: 0;
+}
+.day {
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: white;
+}
+.dayHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.date {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.date:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+.bar {
+  position: relative;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--color-surface);
+}
+.segment {
+  position: absolute;
+  top: 0;
+  height: 12px;
+  border-radius: 3px;
+}
+.business {
+  background: var(--color-border);
+}
+.open {
+  background: var(--color-success-strong);
+}
+.close {
+  background: var(--color-danger);
+}
+.axis {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0 6px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.rows li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+}
+.rows li.editing {
+  background: var(--color-primary-faint);
+}
+.reason {
+  flex: 1;
+  color: var(--color-text-secondary);
+}
+.warning {
+  flex: 1;
+  color: var(--color-danger);
+  font-weight: 600;
+}
+.actions {
+  display: flex;
+  gap: 6px;
+}
+@media (max-width: 540px) {
+  .rows li {
+    flex-wrap: wrap;
+  }
+}

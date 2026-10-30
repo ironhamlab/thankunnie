@@ -1,65 +1,140 @@
-import { datePart, timePart } from '@/utils/scheduleDate';
-import { formatDayLabel } from '@/utils/scheduleSlots';
+import { datePart, timePart, todayKst } from '@/utils/scheduleDate';
+import { dayHoursOf, formatDayLabel, overlappingCloses } from '@/utils/scheduleSlots';
+import { toMinutes } from '@/utils/vacancyPreview';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
 import EmptyState from '@/components/common/EmptyState';
+import styles from './ScheduleExceptionList.module.css';
 
 const TYPE_BADGES = {
   OPEN: ['열기', 'b-green'],
   CLOSE: ['닫기', 'b-neutral'],
 };
+const MINUTES_PER_DAY = 24 * 60;
+
+// 다음 날 0시에 끝나는 일정은 하루 끝(24:00)으로 본다
+const endMinutesOf = (exception) =>
+  datePart(exception.endsAt) === datePart(exception.startsAt)
+    ? toMinutes(timePart(exception.endsAt))
+    : MINUTES_PER_DAY;
+
+// 시작 시각 순으로 온 목록을 날짜별로 묶는다
+const groupByDate = (exceptions) => {
+  const groups = new Map();
+  exceptions.forEach((exception) => {
+    const date = datePart(exception.startsAt);
+    groups.set(date, [...(groups.get(date) ?? []), exception]);
+  });
+  return [...groups.entries()];
+};
 
 /**
- * 등록한 빈자리 열기·닫기 목록 (오늘부터 60일). 날짜나 수정을 누르면 등록 탭이 그 날짜·일정으로 열린다.
+ * 그날 영업시간과 일정 범위를 한 줄 막대로 그린다. 닫기는 열기 위에 칠해 닫기 우선을 그대로 보여준다.
+ */
+function DayBar({ hours, items }) {
+  const ranges = items.map((item) => ({
+    id: item.exceptionId,
+    type: item.exceptionType,
+    start: toMinutes(timePart(item.startsAt)),
+    end: endMinutesOf(item),
+  }));
+  const business = hours && { start: toMinutes(hours.openTime), end: toMinutes(hours.closeTime) };
+  const all = business ? [...ranges, business] : ranges;
+  const from = Math.min(...all.map((range) => range.start));
+  const to = Math.max(...all.map((range) => range.end));
+  const position = ({ start, end }) => ({
+    left: `${((start - from) / (to - from)) * 100}%`,
+    width: `${((end - start) / (to - from)) * 100}%`,
+  });
+  const hourLabel = (minutes) => `${Math.floor(minutes / 60)}시`;
+  // 열기를 먼저, 닫기를 나중에 그려 겹친 곳은 닫기 색이 보이게 한다
+  const ordered = [
+    ...ranges.filter((range) => range.type === 'OPEN'),
+    ...ranges.filter((range) => range.type === 'CLOSE'),
+  ];
+
+  return (
+    <div aria-hidden="true">
+      <div className={styles.bar}>
+        {business && (
+          <span className={`${styles.segment} ${styles.business}`} style={position(business)} />
+        )}
+        {ordered.map((range) => (
+          <span
+            key={range.id}
+            className={`${styles.segment} ${styles[range.type.toLowerCase()]}`}
+            style={position(range)}
+          />
+        ))}
+      </div>
+      <div className={styles.axis}>
+        <span>{hourLabel(from)}</span>
+        <span>{hourLabel(to)}</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 등록한 빈자리 열기·닫기 일정 (오늘부터 60일)을 날짜별로 묶어 보여준다.
+ * 날짜를 누르면 등록 탭이 그 날짜로, 수정을 누르면 그 일정으로 열린다.
  */
 export default function ScheduleExceptionList({
   exceptions,
+  businessHours,
   editingId,
   disabled,
   onSelectDate,
   onEdit,
   onDelete,
 }) {
+  const today = todayKst();
+
   return (
-    <Panel as="section" className="b-table-panel">
-      <div className="b-pad">
-        <h2>
-          열기·닫기 일정 <small className="b-muted">(오늘부터 60일, {exceptions.length}건)</small>
-        </h2>
-      </div>
-      <div className="b-table-scroll">
-        <table>
-          <thead>
-            <tr>
-              {['구분', '날짜', '시간', '사유', '관리'].map((header) => (
-                <th key={header}>{header}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {exceptions.map((exception) => {
-              const [label, badge] = TYPE_BADGES[exception.exceptionType];
-              const date = datePart(exception.startsAt);
-              return (
-                <tr
-                  key={exception.exceptionId}
-                  className={exception.exceptionId === editingId ? 'is-active' : ''}
-                >
-                  <td>
+    <Panel as="section" padded className={styles.root}>
+      <h2>
+        열기·닫기 일정 <small className="b-muted">(오늘부터 60일, {exceptions.length}건)</small>
+      </h2>
+      {!exceptions.length && <EmptyState as="p">등록된 열기·닫기 일정이 없습니다.</EmptyState>}
+      {groupByDate(exceptions).map(([date, items]) => {
+        const hours = dayHoursOf(businessHours, date);
+        return (
+          <article key={date} className={styles.day}>
+            <header className={styles.dayHeader}>
+              <button type="button" className={styles.date} onClick={() => onSelectDate(date)}>
+                {formatDayLabel(date)}
+              </button>
+              <small className="b-muted">
+                {date === today && '오늘 · '}
+                {hours ? `영업 ${hours.openTime}~${hours.closeTime}` : '휴무일'}
+              </small>
+            </header>
+            <DayBar hours={hours} items={items} />
+            <ul className={styles.rows}>
+              {items.map((exception) => {
+                const [label, badge] = TYPE_BADGES[exception.exceptionType];
+                const blocked =
+                  exception.exceptionType === 'OPEN' &&
+                  overlappingCloses(
+                    items,
+                    date,
+                    timePart(exception.startsAt),
+                    timePart(exception.endsAt),
+                  ).length > 0;
+                return (
+                  <li
+                    key={exception.exceptionId}
+                    className={exception.exceptionId === editingId ? styles.editing : ''}
+                  >
                     <Badge className={badge}>{label}</Badge>
-                  </td>
-                  <td>
-                    <Button size="small" type="button" onClick={() => onSelectDate(date)}>
-                      {formatDayLabel(date)}
-                    </Button>
-                  </td>
-                  <td>
-                    {timePart(exception.startsAt)} ~ {timePart(exception.endsAt)}
-                  </td>
-                  <td>{exception.reason ?? '-'}</td>
-                  <td>
-                    <div className="b-flex">
+                    <strong>
+                      {timePart(exception.startsAt)}~{timePart(exception.endsAt)}
+                    </strong>
+                    <span className={blocked ? styles.warning : styles.reason}>
+                      {blocked ? '닫기가 우선이라 예약을 받지 않아요' : (exception.reason ?? '-')}
+                    </span>
+                    <span className={styles.actions}>
                       <Button
                         size="small"
                         type="button"
@@ -76,15 +151,14 @@ export default function ScheduleExceptionList({
                       >
                         삭제
                       </Button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      {!exceptions.length && <EmptyState as="p">등록된 열기·닫기 일정이 없습니다.</EmptyState>}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </article>
+        );
+      })}
     </Panel>
   );
 }

@@ -28,6 +28,7 @@ export default function VacancyManagePage() {
   const tab = params.get('tab') === 'list' ? 'list' : 'form';
   const changeTab = (next) => setParams(next === 'list' ? { tab: 'list' } : {}, { replace: true });
   const exceptions = useScheduleStore((state) => state.exceptions);
+  const businessHours = useScheduleStore((state) => state.businessHours);
   const refreshFailed = useScheduleStore((state) => state.refreshFailed);
   const saveException = useScheduleStore((state) => state.saveException);
   const deleteException = useScheduleStore((state) => state.deleteException);
@@ -182,6 +183,7 @@ export default function VacancyManagePage() {
       {tab === 'list' && (
         <ScheduleExceptionList
           exceptions={exceptions}
+          businessHours={businessHours}
           editingId={editingId}
           disabled={isBusy}
           onSelectDate={(date) => {
