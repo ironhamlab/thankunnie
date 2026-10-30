@@ -37,6 +37,7 @@ import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepo
 import com.ucamp.app.domain.notification.repository.RecipientContactRepository;
 import com.ucamp.app.domain.notification.repository.ShopCategoryRegionRepository;
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
+import com.ucamp.app.domain.notification.service.CategoryRegionPendingQueue;
 import com.ucamp.app.domain.notification.service.NotificationDispatchService;
 import com.ucamp.app.domain.notification.service.SubscriptionMatchService;
 import com.ucamp.app.domain.vacancy.repository.ShopStatusQueryRepository;
@@ -47,7 +48,7 @@ import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 @Import({NotificationDispatchScheduler.class, NotificationDispatchService.class, SubscriptionMatchService.class,
         ShopCategoryRegionRepository.class, VacancySlotRepository.class, RecipientContactRepository.class,
         AvailabilityService.class, ShopStatusQueryRepository.class, FakeSolapiSmsClientConfig.class,
-        NotificationDispatchSchedulerTest.FixedClock.class})
+        CategoryRegionPendingQueue.class, NotificationDispatchSchedulerTest.FixedClock.class})
 @ActiveProfiles("test")
 class NotificationDispatchSchedulerTest {
 
@@ -74,8 +75,12 @@ class NotificationDispatchSchedulerTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private CategoryRegionPendingQueue categoryRegionPendingQueue;
+
     @BeforeEach
     void setUp() {
+        categoryRegionPendingQueue.clear();
         NotificationFixture.category(jdbcTemplate, 10L, "NAIL");
         NotificationFixture.shop(jdbcTemplate, SHOP_ID, 10L, "SEOUL_GANGNAM", "ACTIVE");
         NotificationFixture.user(jdbcTemplate, USER_ID);
@@ -226,6 +231,33 @@ class NotificationDispatchSchedulerTest {
         assertThat(notificationDispatchRepository.findAll())
                 .extracting(NotificationDispatch::getStatus)
                 .containsExactly(NotificationDispatchStatus.SKIPPED);
+    }
+
+    @Test
+    @DisplayName("묶음 스케줄은 60분이 지난 카테고리 구독만 문자 한 통으로 비우고 발송 줄은 만들지 않는다")
+    void flushCategoryRegionSummaries_dueSubscription_sendsWithoutDispatch() {
+        NotificationFixture.exception(jdbcTemplate, 1L, SHOP_ID, null, "OPEN", SLOT_START, SLOT_START.plusHours(1));
+        NotificationSubscription subscription = notificationSubscriptionRepository.save(categoryRegion(USER_ID));
+        NotificationEvent event = saveEvent();
+        categoryRegionPendingQueue.markSent(subscription.getId(), NOW.minusMinutes(60));
+        categoryRegionPendingQueue.addPendingEvent(subscription.getId(), event.getId());
+
+        scheduler.flushCategoryRegionSummaries();
+
+        assertThat(notificationDispatchRepository.count()).isZero();
+        assertThat(categoryRegionPendingQueue.pendingEventIds(subscription.getId())).isEmpty();
+        assertThat(categoryRegionPendingQueue.lastSentAt(subscription.getId())).isEqualTo(NOW);
+    }
+
+    private static NotificationSubscription categoryRegion(long userId) {
+        return NotificationSubscription.builder()
+                .userId(userId)
+                .subscriptionType(SubscriptionType.CATEGORY_REGION)
+                .categoryId(10L)
+                .regionCode("SEOUL_GANGNAM")
+                .startTime(NOW)
+                .endTime(NOW.plusHours(6))
+                .build();
     }
 
     private NotificationEvent saveEvent() {
