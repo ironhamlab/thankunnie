@@ -51,13 +51,14 @@ function ResultProblem({ title, children, actions }) {
 
 /**
  * 예약금 결제 결과 화면. 주소의 reservationId 로 서버에서 예약을 불러와 보여주므로 새로고침해도 같은 결과가 나온다.
- * 모바일 결제창은 결제 후 이 화면으로 페이지를 옮기며(imp_uid, imp_success), 여기서 결제 확인을 이어서 한다.
+ * 모바일 결제창은 결제 후 이 화면으로 페이지를 옮기며(imp_uid, error_code), 여기서 결제 확인을 이어서 한다.
  */
 export default function BookingResultPage() {
   const [params, setParams] = useSearchParams();
   const reservationId = params.get('reservationId');
   const impUid = params.get('imp_uid');
-  const impFailed = params.get('imp_success') === 'false';
+  // 실패는 error_code 로 판단한다. imp_success 는 V1 문서에서 빠진 옛 값이라 false 일 때만 실패로 본다
+  const impFailed = Boolean(params.get('error_code')) || params.get('imp_success') === 'false';
   const impErrorMessage = params.get('error_msg');
   const loadReservation = useReservationStore((s) => s.loadReservation);
   const clearDetail = useReservationStore((s) => s.clearDetail);

@@ -257,8 +257,13 @@ export default function CheckoutPage() {
       // 다른 탭에서 풀린 예약에 결제하지 않도록 결제 직전에 서버 상태를 다시 받는다 (R7).
       // 점유가 아니면 화면이 만료 안내로 바뀐다
       await loadReservation('my', reservationId);
-      const current = useReservationStore.getState().detail;
-      if (current?.summary?.status !== 'HOLD') {
+      const { detail: current, detailClockOffset } = useReservationStore.getState();
+      // 서버는 만료 처리 전까지 시간이 지난 점유도 HOLD 로 돌려줄 수 있으므로, 다시 받은 서버 시각 기준으로 만료도 확인한다.
+      // 만료면 결제창을 열지 않는다 (열면 승인 후 서버가 자동 취소한다)
+      if (
+        current?.summary?.status !== 'HOLD' ||
+        Date.now() + detailClockOffset >= new Date(current.holdExpiresAt).getTime()
+      ) {
         return;
       }
       const IMP = await loadPortOne();
@@ -276,7 +281,9 @@ export default function CheckoutPage() {
         // 모바일은 결제창이 페이지를 옮기므로 결과 화면에서 결제 확인을 이어서 한다
         m_redirect_url: `${window.location.origin}${resultPath}`,
       });
-      if (!rsp.success) {
+      // 실패는 error_code 로 판단한다. success 는 V1 문서에서 빠진 옛 값이라 false 일 때만 실패로 본다.
+      // 그 밖의 응답은 서버가 포트원에 결제 상태를 다시 조회해 판단한다
+      if (rsp.error_code || rsp.success === false || !rsp.imp_uid) {
         takePendingRequest(reservationId);
         setError(
           rsp.error_msg
