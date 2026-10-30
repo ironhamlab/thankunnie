@@ -9,6 +9,7 @@ import EmptyState from '@/components/common/EmptyState';
 import ShopHeader from './components/ShopHeader';
 import ShopInfoPanel from './components/ShopInfoPanel';
 import TreatmentPicker from './components/TreatmentPicker';
+import ModelRecruitPanel from './components/ModelRecruitPanel';
 import SlotPicker from './components/SlotPicker';
 import BookingSummary from './components/BookingSummary';
 import styles from './ShopDetailPage.module.css';
@@ -19,6 +20,7 @@ const BUSINESS_DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_PATTERN = /^\d{2}:\d{2}$/;
 const VIEWS = ['info', 'reserve'];
+const MODEL_LIST_PATH = `${ROUTES.HOME}?view=list&type=MODEL`;
 
 const businessDay = (date) => BUSINESS_DAYS[new Date(`${date}T00:00:00Z`).getUTCDay()];
 
@@ -27,8 +29,13 @@ const businessDay = (date) => BUSINESS_DAYS[new Date(`${date}T00:00:00Z`).getUTC
  * 예약은 1단계 시술 선택 → 2단계 날짜·30분 단위 시간 선택 순서로 진행한다.
  * 선택값(view, treatmentId, step, date, time)은 화면 상태로만 두며, 주소는 /shops/:shopId 로 유지한다.
  * 탐색 화면(마감 임박·시간 버튼·매장 카드)에서 ?date=&treatmentId=&startsAt= 로 들어오면 처음 선택값으로만 쓴다.
+ *
+ * 매장 상세는 일반 시술만, 모델 모집 상세(model, /shops/:shopId/models)는 모델 시술만 같은 흐름으로 보여준다.
+ * 모델 모집은 2단계에서 고른 시술의 참여 조건·촬영 안내를 함께 보여준다.
+ *
+ * @param model 모델 모집 상세로 보여줄지
  */
-export default function ShopDetailPage() {
+export default function ShopDetailPage({ model = false }) {
   const { shopId } = useParams();
   const [params] = useSearchParams();
   // 주소로 넘어온 시술·날짜·시간을 처음 선택으로 잡는다. 형식·범위·판매 중 여부는 아래에서 다시 검사한다
@@ -61,9 +68,13 @@ export default function ShopDetailPage() {
   }, [shopId, validShopId, loadShop, clearShop]);
 
   const loaded = status === 'succeeded' && shop && String(shop.shopId) === shopId;
-  const treatment = loaded
-    ? shop.treatments.find((item) => String(item.treatmentId) === selected('treatmentId'))
-    : undefined;
+  const treatmentType = model ? 'MODEL' : 'NORMAL';
+  const treatments = loaded
+    ? shop.treatments.filter((item) => item.treatmentType === treatmentType)
+    : [];
+  const treatment = treatments.find(
+    (item) => String(item.treatmentId) === selected('treatmentId'),
+  );
   const today = todayKst();
   const lastDate = addDays(today, BOOKING_MAX_DAYS - 1);
   const isClosed = (date) => {
@@ -112,8 +123,8 @@ export default function ShopDetailPage() {
           </Alert>
         )}
         {!isMissing && <Button onClick={() => loadShop(shopId)}>다시 시도</Button>}
-        <Button as={Link} to={ROUTES.HOME}>
-          빈자리 목록으로
+        <Button as={Link} to={model ? MODEL_LIST_PATH : ROUTES.HOME}>
+          {model ? '모델 모집 목록으로' : '빈자리 목록으로'}
         </Button>
       </EmptyState>
     );
@@ -143,7 +154,11 @@ export default function ShopDetailPage() {
       <nav aria-label="현재 위치" className={styles.breadcrumb}>
         <Link to={ROUTES.HOME}>홈</Link>
         <span>›</span>
-        <span>{shop.categoryName}</span>
+        {model ? (
+          <Link to={MODEL_LIST_PATH}>시술 모델 모집</Link>
+        ) : (
+          <span>{shop.categoryName}</span>
+        )}
         <span>›</span>
         <strong>{shop.shopName}</strong>
       </nav>
@@ -179,7 +194,12 @@ export default function ShopDetailPage() {
               </ol>
               {step === 1 && (
                 <TreatmentPicker
-                  treatments={shop.treatments}
+                  treatments={treatments}
+                  emptyMessage={
+                    model
+                      ? '지금 모집 중인 모델 시술이 없습니다.'
+                      : '지금 예약할 수 있는 시술이 없습니다.'
+                  }
                   selectedId={treatment?.treatmentId}
                   onSelect={(treatmentId) => updateParams({ treatmentId, step: null, time: null })}
                 />
@@ -195,6 +215,7 @@ export default function ShopDetailPage() {
                       시술 변경
                     </Button>
                   </div>
+                  {model && <ModelRecruitPanel treatment={treatment} />}
                   <SlotPicker
                     firstDate={today}
                     lastDate={lastDate}

@@ -1,33 +1,14 @@
-import Badge from '@/components/common/Badge';
 import Panel from '@/components/common/Panel';
 import styles from '../ShopDetailPage.module.css';
 
-const money = (value) => `${value.toLocaleString('ko-KR')}원`;
-
 /**
- * 모델 모집 시술 안내. 시술 정보 아래에 사장님이 등록한 참여 조건과 촬영 안내를 보여준다.
- * 두 값은 모델 시술 등록 시 필수지만, 비어 오면 안내 문구로 대신한다.
+ * 고른 모델 시술의 참여 조건과 촬영 안내. 두 값은 모델 시술 등록 시 필수지만, 비어 오면 안내 문구로 대신한다.
  */
 export default function ModelRecruitPanel({ treatment }) {
   return (
     <Panel as="section" padded aria-label="모델 모집 안내">
-      <div className="b-row b-panel-heading">
-        <h2 className={styles.treatmentName}>
-          {treatment.name}
-          <Badge>모델 모집</Badge>
-        </h2>
-      </div>
+      <h2 className="b-panel-heading">모델 모집 안내</h2>
       {treatment.description && <p className={styles.intro}>{treatment.description}</p>}
-      <dl className={styles.shopInfo}>
-        <div>
-          <dt>소요 시간</dt>
-          <dd>{treatment.durationMinutes}분</dd>
-        </div>
-        <div>
-          <dt>정상 가격</dt>
-          <dd>{money(treatment.regularPrice)}</dd>
-        </div>
-      </dl>
       <div className={`b-highlight ${styles.modelNotice}`}>
         <h3>참여 조건</h3>
         <p>{treatment.modelCondition || '등록된 참여 조건이 없습니다.'}</p>

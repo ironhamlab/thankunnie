@@ -284,6 +284,7 @@ export default function VacancySearch() {
                       detail={String(shop.shopId) === expandedId ? detail : undefined}
                       onToggle={() => toggleShop(shop.shopId)}
                       onRetry={() => loadShopVacancies(String(shop.shopId), filter)}
+                      model={modelOnly}
                     />
                   </div>
                 ))}
@@ -329,6 +330,7 @@ export default function VacancySearch() {
             status={status}
             expandedShopId={expandedId}
             onShowShop={(id) => updateOption('shop', id ? String(id) : '')}
+            model={modelOnly}
           />
         </aside>
       </div>

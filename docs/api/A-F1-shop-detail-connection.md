@@ -63,15 +63,17 @@
 ## 시술 모델 모집 상세 (UNNIE-52)
 
 ```text
-/shops/:shopId/models/:treatmentId   매장 상세와 같은 머리(이미지·매장명·메뉴)
-  ├ 예약하기 (기본)                  모집 안내(시술·소요 시간·정상 가격, 참여 조건, 촬영 안내)
-  │                                  + 날짜·시간 선택, 오른쪽 예약 요약 (시술 선택 단계 없음)
+/shops/:shopId/models                매장 상세와 같은 머리(이미지·매장명·메뉴)
+  ├ 예약하기 (기본)
+  │   → 1단계 시술 선택              그 매장의 판매 중인 MODEL 시술만
+  │   → 2단계 날짜·시간              선택한 시술 + [시술 변경], 모델 모집 안내(설명·참여 조건·촬영 안내),
+  │                                  달력·시작 시각, 오른쪽 예약 요약
   └ 상세정보                         매장 상세와 같음
 ```
 
-- 같은 매장 상세 API를 쓰고, 주소의 시술이 판매 중인 MODEL 시술이 아니면 "모집 중인 시술을 찾을 수 없습니다"와 매장 보기·모집 목록 버튼을 보여준다.
-- 탐색 목록(C-01)의 빈자리가 MODEL이면 `utils/exploreVacancy.js`의 `modelRecruitPath()`로 이 화면에 연결한다. 처음 선택값은 `?date=&startsAt=`로 받는다.
-- 매장 상세의 시술 선택에서 모델 시술을 고르면 기존처럼 매장 상세 흐름으로 예약한다.
+- 매장 상세(`/shops/:shopId`)는 NORMAL 시술만, 모델 모집 상세는 MODEL 시술만 보여준다. 같은 `ShopDetailPage`를 `model` 값으로 나눠 쓰며 API도 같다.
+- 처음 선택값은 매장 상세와 같이 `?date=&treatmentId=&startsAt=`로 받는다.
+- `utils/exploreVacancy.js`의 `shopPagePath(shopId, { ..., model: true })`로 이 주소를 만든다. 탐색 목록의 MODEL 빈자리 시간 버튼과, 모델 모집 목록(`?type=MODEL`)의 매장 카드·지도 "매장 보기"가 이 화면으로 간다.
 
 ## 시간 슬롯
 

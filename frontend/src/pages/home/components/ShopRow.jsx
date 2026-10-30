@@ -19,15 +19,16 @@ import styles from './ShopRow.module.css';
  * @param detail   펼친 매장의 빈자리 { status, vacancies }. 아직 안 받았으면 undefined
  * @param onToggle 펼치기·접기
  * @param onRetry  빈자리를 다시 받기
+ * @param model    모델 모집 목록이면 매장 대신 모델 모집 상세로 보낸다
  */
-export default function ShopRow({ shop, expanded, detail, onToggle, onRetry }) {
+export default function ShopRow({ shop, expanded, detail, onToggle, onRetry, model }) {
   const panelId = `shop-${shop.shopId}-vacancies`;
   return (
     <article className={`${styles.root} ${expanded ? styles.expanded : ''}`}>
       <div className={styles.summary}>
         <Link
           className={styles.shopLink}
-          to={shopPagePath(shop.shopId, { date: datePart(shop.earliestStartsAt) })}
+          to={shopPagePath(shop.shopId, { date: datePart(shop.earliestStartsAt), model })}
         >
           <img className={styles.thumb} src={shopImage(shop.imageUrl)} alt="" />
           <span className={styles.info}>

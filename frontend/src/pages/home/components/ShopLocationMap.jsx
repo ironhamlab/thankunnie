@@ -12,9 +12,9 @@ const MAP_BOUNDS_PADDING = { top: 60, right: 110, bottom: 150, left: 100 };
 
 /**
  * 검색 조건에 맞는 빈자리가 있는 매장 위치 (C-02). 목록에서 펼친 매장이 지도에서도 선택되고,
- * 지도에서 고른 매장은 매장 페이지로 가거나 목록에서 펼쳐 시간을 볼 수 있다.
+ * 지도에서 고른 매장은 매장 페이지로 가거나 목록에서 펼쳐 시간을 볼 수 있다. 모델 모집 목록(model)이면 모델 모집 상세로 간다.
  */
-export default function ShopLocationMap({ shops, status, expandedShopId, onShowShop }) {
+export default function ShopLocationMap({ shops, status, expandedShopId, onShowShop, model }) {
   const [pickedId, setPickedId] = useState(null);
   // 목록에서 펼친 매장을 우선 보여주고, 그다음 지도에서 누른 매장을 보여준다
   const selected =
@@ -65,6 +65,7 @@ export default function ShopLocationMap({ shops, status, expandedShopId, onShowS
                 variant="primary"
                 to={shopPagePath(selected.shopId, {
                   date: datePart(selected.earliestStartsAt),
+                  model,
                 })}
               >
                 매장 보기
