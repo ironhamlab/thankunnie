@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { datePart, timePart, todayKst } from '@/utils/scheduleDate';
 import { dayHoursOf, formatDayLabel, overlappingCloses } from '@/utils/scheduleSlots';
 import { toMinutes } from '@/utils/vacancyPreview';
@@ -79,6 +80,7 @@ function DayBar({ hours, items }) {
 /**
  * 등록한 빈자리 열기·닫기 일정 (오늘부터 60일)을 날짜별로 묶어 보여준다.
  * 날짜를 누르면 등록 탭이 그 날짜로, 수정을 누르면 그 일정으로 열린다.
+ * 사유는 기본으로 접어 두고 시간 옆 ▼ 로 펼친다. 닫기와 겹친 열기 경고는 늘 보여준다.
  */
 export default function ScheduleExceptionList({
   exceptions,
@@ -90,6 +92,15 @@ export default function ScheduleExceptionList({
   onDelete,
 }) {
   const today = todayKst();
+  const [openReasonIds, setOpenReasonIds] = useState(() => new Set());
+  const toggleReason = (exceptionId) =>
+    setOpenReasonIds((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(exceptionId)) {
+        next.add(exceptionId);
+      }
+      return next;
+    });
 
   return (
     <Panel as="section" padded className={styles.root}>
@@ -122,17 +133,29 @@ export default function ScheduleExceptionList({
                     timePart(exception.startsAt),
                     timePart(exception.endsAt),
                   ).length > 0;
+                const reasonOpen =
+                  Boolean(exception.reason) && openReasonIds.has(exception.exceptionId);
                 return (
                   <li
                     key={exception.exceptionId}
                     className={exception.exceptionId === editingId ? styles.editing : ''}
                   >
-                    <Badge className={badge}>{label}</Badge>
-                    <strong>
-                      {timePart(exception.startsAt)}~{timePart(exception.endsAt)}
-                    </strong>
-                    <span className={blocked ? styles.warning : styles.reason}>
-                      {blocked ? '닫기가 우선이라 예약을 받지 않아요' : (exception.reason ?? '-')}
+                    <Badge className={`${badge} ${styles.badge}`}>{label}</Badge>
+                    <span className={styles.time}>
+                      <strong>
+                        {timePart(exception.startsAt)}~{timePart(exception.endsAt)}
+                      </strong>
+                      {exception.reason && (
+                        <button
+                          type="button"
+                          className={styles.toggle}
+                          aria-expanded={reasonOpen}
+                          aria-label={reasonOpen ? '사유 접기' : '사유 보기'}
+                          onClick={() => toggleReason(exception.exceptionId)}
+                        >
+                          {reasonOpen ? '▲' : '▼'}
+                        </button>
+                      )}
                     </span>
                     <span className={styles.actions}>
                       <Button
@@ -152,6 +175,15 @@ export default function ScheduleExceptionList({
                         삭제
                       </Button>
                     </span>
+                    {blocked && (
+                      <span className={styles.warning}>닫기가 우선이라 예약을 받지 않아요</span>
+                    )}
+                    {!blocked && reasonOpen && (
+                      <>
+                        <span className={styles.reasonLabel}>사유:</span>
+                        <span className={styles.reason}>{exception.reason}</span>
+                      </>
+                    )}
                   </li>
                 );
               })}
