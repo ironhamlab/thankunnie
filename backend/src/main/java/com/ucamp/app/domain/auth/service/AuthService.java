@@ -24,6 +24,7 @@ import com.ucamp.app.domain.shop.repository.ShopCategoryRepository;
 import com.ucamp.app.domain.user.entity.AppUser;
 import com.ucamp.app.domain.user.entity.AppUserRole;
 import com.ucamp.app.domain.user.repository.AppUserRepository;
+import com.ucamp.app.domain.user.service.TermsAgreementService;
 
 /**
  * 고객·사장님 회원가입과 로그인. 성공하면 액세스 토큰을 발급한다.
@@ -44,26 +45,29 @@ public class AuthService {
     private final ShopCategoryRepository shopCategoryRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
+    private final TermsAgreementService termsAgreementService;
     // 없는 아이디로 로그인할 때 비교할 해시. 같은 인코더로 만들어 실제 계정과 비교 비용이 같다
     private final String dummyPasswordHash;
 
     public AuthService(AppUserRepository appUserRepository, ShopAccountRepository shopAccountRepository,
             ShopCategoryRepository shopCategoryRepository, PasswordEncoder passwordEncoder,
-            JwtProvider jwtProvider) {
+            JwtProvider jwtProvider, TermsAgreementService termsAgreementService) {
         this.appUserRepository = appUserRepository;
         this.shopAccountRepository = shopAccountRepository;
         this.shopCategoryRepository = shopCategoryRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtProvider = jwtProvider;
+        this.termsAgreementService = termsAgreementService;
         this.dummyPasswordHash = passwordEncoder.encode(DUMMY_PASSWORD);
     }
 
-    /** 고객으로 가입하고 바로 로그인한다. */
+    /** 고객으로 가입하고 바로 로그인한다. 약관 동의도 같은 트랜잭션에서 저장한다. */
     @Transactional
     public AuthTokenResponse signupCustomer(AuthCustomerSignupRequest request) {
         if (appUserRepository.existsByLoginId(request.loginId())) {
             throw new BusinessException(ErrorCode.AUTH_DUPLICATE_LOGIN_ID);
         }
+        termsAgreementService.validateSignupAgreements(request.agreedTerms());
         AppUser user = AppUser.builder()
                 .loginId(request.loginId())
                 .passwordHash(passwordEncoder.encode(request.password()))
@@ -72,6 +76,7 @@ public class AuthService {
                 .role(AppUserRole.USER)
                 .build();
         AppUser saved = saveUniqueLoginId(() -> appUserRepository.saveAndFlush(user));
+        termsAgreementService.agreeOnSignup(saved.getUserId(), request.agreedTerms());
         return issue(saved.toAuthUser());
     }
 

@@ -41,6 +41,40 @@ CREATE TABLE APP_USER (
 CREATE SEQUENCE SEQ_APP_USER START WITH 1000 INCREMENT BY 1;
 
 -- ---------------------------------------------------------------------
+-- 약관 (코드·버전 단위 마스터. 본문은 프론트에서 관리)
+-- ---------------------------------------------------------------------
+CREATE TABLE TERMS (
+    TERMS_ID        NUMBER(19)          NOT NULL,
+    CODE            VARCHAR2(30 CHAR)   NOT NULL,   -- AGE_14, SERVICE, PRIVACY, THIRD_PARTY, SMS_NOTIFICATION, MODEL_PHOTO
+    VERSION         NUMBER(10)          NOT NULL,
+    TITLE           VARCHAR2(100 CHAR)  NOT NULL,
+    IS_REQUIRED     CHAR(1)             NOT NULL,   -- Y, N (Y: 회원가입 필수 동의)
+    CREATED_AT      TIMESTAMP(3)        NOT NULL,
+    UPDATED_AT      TIMESTAMP(3)        NOT NULL,
+    CONSTRAINT PK_TERMS PRIMARY KEY (TERMS_ID),
+    CONSTRAINT UK_TERMS_CODE_VERSION UNIQUE (CODE, VERSION)
+);
+CREATE SEQUENCE SEQ_TERMS START WITH 1000 INCREMENT BY 1;
+
+-- ---------------------------------------------------------------------
+-- 회원 약관 동의 (회원·약관 버전당 1행. WITHDRAWN_AT 은 철회 대비로 MVP 에서는 항상 NULL)
+-- ---------------------------------------------------------------------
+CREATE TABLE USER_TERMS_AGREEMENT (
+    AGREEMENT_ID    NUMBER(19)          NOT NULL,
+    USER_ID         NUMBER(19)          NOT NULL,
+    TERMS_ID        NUMBER(19)          NOT NULL,
+    AGREED_AT       TIMESTAMP(3)        NOT NULL,
+    WITHDRAWN_AT    TIMESTAMP(3),
+    CREATED_AT      TIMESTAMP(3)        NOT NULL,
+    UPDATED_AT      TIMESTAMP(3)        NOT NULL,
+    CONSTRAINT PK_USER_TERMS_AGREEMENT PRIMARY KEY (AGREEMENT_ID),
+    CONSTRAINT UK_USER_TERMS_AGREEMENT UNIQUE (USER_ID, TERMS_ID),
+    CONSTRAINT FK_USER_TERMS_AGREEMENT_USER FOREIGN KEY (USER_ID) REFERENCES APP_USER (USER_ID),
+    CONSTRAINT FK_USER_TERMS_AGREEMENT_TERMS FOREIGN KEY (TERMS_ID) REFERENCES TERMS (TERMS_ID)
+);
+CREATE SEQUENCE SEQ_USER_TERMS_AGREEMENT START WITH 1000 INCREMENT BY 1;
+
+-- ---------------------------------------------------------------------
 -- 매장 (사장님 로그인 정보 포함, 계정당 매장 1개)
 -- ---------------------------------------------------------------------
 CREATE TABLE SHOP (
