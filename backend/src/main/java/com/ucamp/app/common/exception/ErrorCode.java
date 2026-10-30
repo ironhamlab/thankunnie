@@ -55,6 +55,7 @@ public enum ErrorCode {
     VACANCY_BUSINESS_TIME_REQUIRED(HttpStatus.BAD_REQUEST, "VACANCY_014", "영업일은 시작·종료 시각을 입력해야 합니다."),
     VACANCY_INVALID_DURATION(HttpStatus.BAD_REQUEST, "VACANCY_015", "시술 소요 시간이 올바르지 않습니다."),
     VACANCY_USER_TIME_OVERLAP(HttpStatus.CONFLICT, "VACANCY_016", "같은 시간에 진행 중인 예약이 있습니다."),
+    VACANCY_SCHEDULE_EXCEPTION_OVERLAP(HttpStatus.CONFLICT, "VACANCY_017", "같은 시간에 이미 등록한 열기·닫기 일정이 있습니다."),
 
     // PAYMENT
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT_001", "결제 정보를 찾을 수 없습니다."),

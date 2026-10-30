@@ -119,6 +119,47 @@ class ShopScheduleExceptionServiceTest {
     }
 
     @Test
+    @DisplayName("같은 종류의 일정과 시간이 겹치면 등록하지 않는다")
+    void createException_sameTypeOverlap_throwsOverlap() {
+        given(shopScheduleExceptionRepository.existsSameTypeOverlapping(owner.shopId(),
+                ScheduleExceptionType.OPEN, LocalDateTime.of(2026, 10, 25, 14, 0),
+                LocalDateTime.of(2026, 10, 25, 16, 0), null)).willReturn(true);
+
+        assertThatThrownBy(() -> service.createException(owner, openRequest(14, 16)))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_SCHEDULE_EXCEPTION_OVERLAP);
+        verify(shopScheduleExceptionRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("겹침 검사는 매장을 잠근 뒤에 해서 연달아 눌러도 한 건만 저장된다")
+    void createException_checksOverlapAfterLock() {
+        given(shopScheduleExceptionRepository.save(any(ShopScheduleException.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        service.createException(owner, closeRequest(12, 13));
+
+        InOrder inOrder = inOrder(shopLock, shopScheduleExceptionRepository);
+        inOrder.verify(shopLock).lock(owner.shopId());
+        inOrder.verify(shopScheduleExceptionRepository).existsSameTypeOverlapping(owner.shopId(),
+                ScheduleExceptionType.CLOSE, LocalDateTime.of(2026, 10, 25, 12, 0),
+                LocalDateTime.of(2026, 10, 25, 13, 0), null);
+    }
+
+    @Test
+    @DisplayName("수정은 자기 자신을 뺀 같은 종류 일정과 겹치면 막는다")
+    void updateException_sameTypeOverlapExceptItself_throwsOverlap() {
+        given(shopScheduleExceptionRepository.findById(1L)).willReturn(Optional.of(existing(owner.shopId())));
+        given(shopScheduleExceptionRepository.existsSameTypeOverlapping(owner.shopId(),
+                ScheduleExceptionType.CLOSE, LocalDateTime.of(2026, 10, 25, 14, 0),
+                LocalDateTime.of(2026, 10, 25, 16, 0), 1L)).willReturn(true);
+
+        assertThatThrownBy(() -> service.updateException(owner, 1L, closeRequest(14, 16)))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_SCHEDULE_EXCEPTION_OVERLAP);
+    }
+
+    @Test
     @DisplayName("본인 매장 일정은 수정한 값으로 응답한다")
     void updateException_ownShop_changesValues() {
         given(shopScheduleExceptionRepository.findById(1L)).willReturn(Optional.of(existing(owner.shopId())));
