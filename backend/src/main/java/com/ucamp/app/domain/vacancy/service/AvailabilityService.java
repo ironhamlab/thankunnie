@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
+import com.ucamp.app.common.policy.BookingPolicy;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.schedule.entity.BusinessDay;
 import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
@@ -94,6 +95,24 @@ public class AvailabilityService {
         TimeRange range = new TimeRange(startsAt, startsAt.plusMinutes(durationMinutes));
         Schedule schedule = loadSchedule(shopId, range.start(), range.end(), now);
         return AvailabilityCalculator.isFree(range, schedule.openRanges(), schedule.blockedRanges());
+    }
+
+    /**
+     * 날짜에 영업시간·시간대 열기로 열려 있고 닫기로 막히지 않은 시간이 하루 중 조금이라도 있는지 판단한다
+     * (사장님 대시보드: 휴무와 만석 구분용). 예약과 현재 시각은 보지 않으며 30분 단위로 확인한다.
+     */
+    public boolean hasOpenTime(Long shopId, LocalDate date) {
+        LocalDateTime from = date.atStartOfDay();
+        LocalDateTime to = date.plusDays(1).atStartOfDay();
+        Schedule schedule = loadSchedule(shopId, from, to, LocalDateTime.now(clock));
+        for (LocalDateTime start = from; start.isBefore(to);
+                start = start.plusMinutes(BookingPolicy.TIME_UNIT_MINUTES)) {
+            TimeRange unit = new TimeRange(start, start.plusMinutes(BookingPolicy.TIME_UNIT_MINUTES));
+            if (AvailabilityCalculator.isFree(unit, schedule.openRanges(), schedule.closedRanges())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // 시술 데이터가 잘못돼 0분 이하가 오면 구간을 만들 수 없어 500 이 되므로 업무 오류로 바꾼다

@@ -8,7 +8,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -27,6 +26,7 @@ import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.StubAuthFilter;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.domain.reservation.dto.response.ReservationDashboardResponse;
+import com.ucamp.app.domain.reservation.dto.response.ReservationPeriodSummary;
 import com.ucamp.app.domain.reservation.dto.response.ReservationStatsResponse;
 import com.ucamp.app.domain.reservation.service.ReservationDashboardService;
 
@@ -44,27 +44,24 @@ class OwnerDashboardControllerTest {
     private ReservationDashboardService reservationDashboardService;
 
     @Test
-    @DisplayName("사장님 대시보드는 오늘·이번 달 지표를 반환한다")
+    @DisplayName("사장님 대시보드는 오늘 지표와 이번 달 요약을 반환한다")
     void getDashboard_owner_returnsDashboard() throws Exception {
         ReservationDashboardResponse response = new ReservationDashboardResponse(
                 LocalDate.of(2026, 11, 2),
-                new ReservationDashboardResponse.Today(1, 1,
-                        List.of(at(15, 0), at(15, 30)),
+                new ReservationDashboardResponse.Today(1, 1, false, 60,
                         List.of(new ReservationDashboardResponse.AvailableRange(at(15, 0), at(16, 0)))),
-                new ReservationDashboardResponse.Month(LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30),
-                        2, 60000L, 1, 1, 0, 0, 0, 1, 15000L));
+                summary(LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30)));
         given(reservationDashboardService.getOwnerDashboard(any(AuthUser.class))).willReturn(response);
 
         mockMvc.perform(get(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.date").value("2026-11-02"))
-                .andExpect(jsonPath("$.data.today.confirmedCount").value(1))
-                .andExpect(jsonPath("$.data.today.availableStartTimes[1]").value("2026-11-02T15:30:00+09:00"))
+                .andExpect(jsonPath("$.data.today.closed").value(false))
+                .andExpect(jsonPath("$.data.today.availableMinutes").value(60))
                 .andExpect(jsonPath("$.data.today.availableRanges[0].endsAt").value("2026-11-02T16:00:00+09:00"))
                 .andExpect(jsonPath("$.data.month.from").value("2026-11-01"))
-                .andExpect(jsonPath("$.data.month.expectedSales").value(60000))
-                .andExpect(jsonPath("$.data.month.rebookedCount").value(1))
-                .andExpect(jsonPath("$.data.month.rebookedSales").value(15000));
+                .andExpect(jsonPath("$.data.month.bookedAmount").value(60000))
+                .andExpect(jsonPath("$.data.month.customerCancelRate").value(25.0));
     }
 
     @Test
@@ -75,27 +72,24 @@ class OwnerDashboardControllerTest {
     }
 
     @Test
-    @DisplayName("기간 통계는 날짜 파라미터를 받아 합계·추이·시술별·시간대별 지표를 반환한다")
+    @DisplayName("기간 통계는 날짜 파라미터를 받아 요약·날짜별·시술별 지표를 반환한다")
     void getStats_owner_returnsStats() throws Exception {
         LocalDate from = LocalDate.of(2026, 11, 1);
         LocalDate to = LocalDate.of(2026, 11, 2);
-        ReservationStatsResponse response = new ReservationStatsResponse(from, to,
-                new ReservationStatsResponse.Summary(2, 60000L, 1, 1, 15000L, 0, 0L),
+        ReservationStatsResponse response = new ReservationStatsResponse(summary(from, to),
                 List.of(new ReservationStatsResponse.Daily(from, 0, 0L, 0),
                         new ReservationStatsResponse.Daily(to, 1, 30000L, 0)),
-                List.of(new ReservationStatsResponse.Treatment(1L, "젤네일 원컬러", 2, 60000L, 0)),
-                List.of(new ReservationStatsResponse.Hourly(DayOfWeek.MONDAY, 14, 1)));
+                List.of(new ReservationStatsResponse.Treatment(1L, "젤네일 원컬러", 2, 60000L)));
         given(reservationDashboardService.getOwnerStats(any(AuthUser.class), eq(from), eq(to))).willReturn(response);
 
         mockMvc.perform(get(URL + "/stats").header(StubAuthFilter.HEADER_NAME, "OWNER_1")
                         .param("from", "2026-11-01").param("to", "2026-11-02"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.summary.sales").value(60000))
+                .andExpect(jsonPath("$.data.summary.to").value("2026-11-02"))
+                .andExpect(jsonPath("$.data.summary.retainedDepositAmount").value(20000))
                 .andExpect(jsonPath("$.data.daily.length()").value(2))
-                .andExpect(jsonPath("$.data.daily[1].date").value("2026-11-02"))
-                .andExpect(jsonPath("$.data.treatments[0].treatmentName").value("젤네일 원컬러"))
-                .andExpect(jsonPath("$.data.hourly[0].dayOfWeek").value("MONDAY"))
-                .andExpect(jsonPath("$.data.hourly[0].hour").value(14));
+                .andExpect(jsonPath("$.data.daily[1].bookedAmount").value(30000))
+                .andExpect(jsonPath("$.data.treatments[0].treatmentName").value("젤네일 원컬러"));
     }
 
     @Test
@@ -104,6 +98,10 @@ class OwnerDashboardControllerTest {
         mockMvc.perform(get(URL + "/stats").header(StubAuthFilter.HEADER_NAME, "OWNER_1").param("from", "2026-13-01"))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(reservationDashboardService);
+    }
+
+    private static ReservationPeriodSummary summary(LocalDate from, LocalDate to) {
+        return new ReservationPeriodSummary(from, to, 2, 60000L, 1, 1, 25.0, 20000L, 0L, 0L, 0L, null, 0, 0L);
     }
 
     private static OffsetDateTime at(int hour, int minute) {

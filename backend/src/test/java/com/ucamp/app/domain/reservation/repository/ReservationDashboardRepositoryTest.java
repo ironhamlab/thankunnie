@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 import jakarta.persistence.EntityManager;
 
@@ -21,8 +20,8 @@ import com.ucamp.app.config.TimeConfig;
 import com.ucamp.app.domain.cancel.entity.CancelType;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 
-// 초기 데이터 11월 매장 1: 확정 1(11/2 14:00, 30,000)·5(11/3 18:00, 30,000), 취소 완료 3(11/5 11:00, 10/22 10:00 완료), 만료 6
-// 매장 2: 취소 처리 중 4(11/7). 재판매 건은 테스트마다 추가한다
+// 초기 데이터 매장 1: 확정 1(11/2 14:00)·5(11/3 18:00), 취소 완료 3(11/5 11:00, 18,000 납부·18,000 환불), 만료 6
+// 매장 2: 취소 처리 중 4(11/7)
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(TimeConfig.class)
@@ -32,7 +31,6 @@ class ReservationDashboardRepositoryTest {
 
     private static final LocalDateTime NOV_START = LocalDateTime.of(2026, 11, 1, 0, 0);
     private static final LocalDateTime DEC_START = LocalDateTime.of(2026, 12, 1, 0, 0);
-    private static final LocalDateTime NOV_2 = LocalDateTime.of(2026, 11, 2, 0, 0);
 
     @Autowired
     private ReservationDashboardRepository reservationDashboardRepository;
@@ -41,115 +39,92 @@ class ReservationDashboardRepositoryTest {
     private EntityManager entityManager;
 
     @Test
-    @DisplayName("이번 달 확정 건수·예상 매출과 오늘 확정·남은 확정 건수를 센다")
-    void countReservations_shop1_countsConfirmedAndToday() {
-        ReservationDashboardCounts beforeStart = reservationDashboardRepository.countReservations(
-                1L, NOV_START, DEC_START, NOV_2, NOV_2.withHour(13));
-        ReservationDashboardCounts afterStart = reservationDashboardRepository.countReservations(
-                1L, NOV_START, DEC_START, NOV_2, NOV_2.withHour(14));
+    @DisplayName("확정·취소 완료 예약만 시작 시각 순으로 담고, 취소 정보와 남은 예약금을 붙인다")
+    void findRows_shop1_confirmedAndCancelledInStartOrder() {
+        List<ReservationDashboardRow> rows = reservationDashboardRepository.findRows(1L, NOV_START, DEC_START);
 
-        assertThat(beforeStart.confirmedCount()).isEqualTo(2);
-        assertThat(beforeStart.expectedSales()).isEqualTo(60000);
-        assertThat(beforeStart.cancelPendingCount()).isZero();
-        assertThat(beforeStart.todayConfirmedCount()).isEqualTo(1);
-        assertThat(beforeStart.todayUpcomingCount()).isEqualTo(1);
-        // 시작 시각이 되면 남은 예약에서 빠지고 오늘 확정 건수는 그대로다
-        assertThat(afterStart.todayConfirmedCount()).isEqualTo(1);
-        assertThat(afterStart.todayUpcomingCount()).isZero();
+        // 만료 6 은 빠진다
+        assertThat(rows).extracting(ReservationDashboardRow::reservationId).containsExactly(1L, 5L, 3L);
+        ReservationDashboardRow confirmed = rows.get(0);
+        assertThat(confirmed.status()).isEqualTo(ReservationStatus.CONFIRMED);
+        assertThat(confirmed.treatmentName()).isEqualTo("젤네일 원컬러");
+        assertThat(confirmed.endsAt()).isEqualTo(LocalDateTime.of(2026, 11, 2, 15, 0));
+        assertThat(confirmed.holdExpiresAt()).isEqualTo(LocalDateTime.of(2026, 10, 20, 10, 5));
+        assertThat(confirmed.createdAt()).isEqualTo(LocalDateTime.of(2026, 10, 20, 10, 0));
+        assertThat(confirmed.appliedPrice()).isEqualTo(30000);
+        assertThat(confirmed.cancelType()).isNull();
+        assertThat(confirmed.retainedDeposit()).isZero();
+
+        ReservationDashboardRow cancelled = rows.get(2);
+        assertThat(cancelled.status()).isEqualTo(ReservationStatus.CANCELLED);
+        assertThat(cancelled.cancelType()).isEqualTo(CancelType.CUSTOMER);
+        assertThat(cancelled.cancelCompletedAt()).isEqualTo(LocalDateTime.of(2026, 10, 22, 10, 0));
+        // 전액 환불이라 남은 예약금 0
+        assertThat(cancelled.retainedDeposit()).isZero();
+        assertThat(cancelled.closedAfterCancel()).isFalse();
     }
 
     @Test
-    @DisplayName("다른 매장 예약과 기간 밖 예약은 세지 않는다")
-    void countReservations_scopeAndPeriod_applied() {
-        ReservationDashboardCounts shop2 = reservationDashboardRepository.countReservations(
-                2L, NOV_START, DEC_START, NOV_2, NOV_2);
-        ReservationDashboardCounts october = reservationDashboardRepository.countReservations(
-                1L, LocalDateTime.of(2026, 10, 1, 0, 0), NOV_START, LocalDateTime.of(2026, 10, 29, 0, 0),
-                LocalDateTime.of(2026, 10, 29, 12, 0));
+    @DisplayName("일부 환불 취소는 납부 예약금 - 환불액이 남고, 취소하며 닫은 시간이면 표시한다")
+    void findRows_partialRefundAndClosed_retainedAndFlagged() {
+        insertCancelledWithClose();
 
-        assertThat(shop2.confirmedCount()).isZero();
-        assertThat(shop2.cancelPendingCount()).isEqualTo(1);
-        assertThat(october.confirmedCount()).isZero();
-        assertThat(october.expectedSales()).isZero();
+        ReservationDashboardRow row = reservationDashboardRepository.findRows(1L, NOV_START, DEC_START).stream()
+                .filter(candidate -> candidate.reservationId() == 7L)
+                .findFirst().orElseThrow();
+
+        assertThat(row.cancelType()).isEqualTo(CancelType.CUSTOMER_REQUEST);
+        assertThat(row.retainedDeposit()).isEqualTo(15000);
+        assertThat(row.closedAfterCancel()).isTrue();
     }
 
     @Test
-    @DisplayName("취소 완료 건을 유형별로 세고, 취소 처리 중 건은 빼며, 없는 유형은 0 이다")
-    void countCancelledByType_countsCompletedOnly() {
-        Map<CancelType, Integer> shop1 = reservationDashboardRepository.countCancelledByType(1L, NOV_START, DEC_START);
-        Map<CancelType, Integer> shop2 = reservationDashboardRepository.countCancelledByType(2L, NOV_START, DEC_START);
-
-        assertThat(shop1).containsEntry(CancelType.CUSTOMER, 1)
-                .containsEntry(CancelType.SHOP_FAULT, 0)
-                .containsEntry(CancelType.CUSTOMER_REQUEST, 0);
-        assertThat(shop2.values()).allMatch(count -> count == 0);
+    @DisplayName("다른 매장, 취소 처리 중, 조회 구간 밖 예약은 담지 않는다 (구간은 시작 포함·끝 제외)")
+    void findRows_scopeStatusAndRange_applied() {
+        assertThat(reservationDashboardRepository.findRows(2L, NOV_START, DEC_START)).isEmpty();
+        assertThat(reservationDashboardRepository.findRows(1L,
+                LocalDateTime.of(2026, 11, 2, 14, 0), LocalDateTime.of(2026, 11, 3, 18, 0)))
+                .extracting(ReservationDashboardRow::reservationId).containsExactly(1L);
     }
 
-    @Test
-    @DisplayName("취소 완료 후 같은 시간에 들어온 확정 예약만 재판매로 센다")
-    void countRebooked_countsConfirmedAfterCancelCompleted() {
-        // 취소 완료(10/22 10:00) 뒤 생성, 시간 겹침 → 재판매
-        insertReservation(7L, 2L, "CONFIRMED", "2026-11-05 11:00:00", "2026-11-05 11:30:00", 15000,
-                "2026-10-23 09:00:00");
-        // 취소 완료 전에 생성 → 재판매 아님
-        insertReservation(8L, 2L, "CONFIRMED", "2026-11-05 11:00:00", "2026-11-05 11:30:00", 18000,
-                "2026-10-22 09:00:00");
-        // 취소 완료 뒤 생성이지만 시간이 겹치지 않음 (끝 시각 = 다음 시작 시각) → 재판매 아님
-        insertReservation(9L, 2L, "CONFIRMED", "2026-11-05 11:30:00", "2026-11-05 12:00:00", 18000,
-                "2026-10-23 09:00:00");
-        // 겹치지만 만료 → 재판매 아님
-        insertReservation(10L, 2L, "EXPIRED", "2026-11-05 11:00:00", "2026-11-05 11:30:00", 18000,
-                "2026-10-23 10:00:00");
-
-        ReservationRebookStats shop1 = reservationDashboardRepository.countRebooked(1L, NOV_START, DEC_START);
-        ReservationRebookStats shop2 = reservationDashboardRepository.countRebooked(2L, NOV_START, DEC_START);
-
-        assertThat(shop1.count()).isEqualTo(1);
-        assertThat(shop1.sales()).isEqualTo(15000);
-        assertThat(shop2.count()).isZero();
-        assertThat(shop2.sales()).isZero();
-    }
-
-    @Test
-    @DisplayName("통계 행은 확정·취소 완료만 시작 시각 순으로 담고 재판매 여부를 표시한다")
-    void findStatsRows_confirmedAndCancelled_withRebookFlag() {
-        insertReservation(7L, 2L, "CONFIRMED", "2026-11-05 11:00:00", "2026-11-05 11:30:00", 15000,
-                "2026-10-23 09:00:00");
-
-        List<ReservationStatsRow> rows = reservationDashboardRepository.findStatsRows(1L, NOV_START, DEC_START);
-
-        // 만료 6 은 빠진다. 같은 시작 시각이면 예약 ID 순 (취소 3 → 재판매 7)
-        assertThat(rows).extracting(ReservationStatsRow::status).containsExactly(
-                ReservationStatus.CONFIRMED, ReservationStatus.CONFIRMED,
-                ReservationStatus.CANCELLED, ReservationStatus.CONFIRMED);
-        assertThat(rows).extracting(ReservationStatsRow::rebooked).containsExactly(false, false, false, true);
-        assertThat(rows.get(0).treatmentName()).isEqualTo("젤네일 원컬러");
-        assertThat(rows.get(0).holdExpiresAt()).isEqualTo(LocalDateTime.of(2026, 10, 20, 10, 5));
-        assertThat(rows.get(3).appliedPrice()).isEqualTo(15000);
-    }
-
-    private void insertReservation(Long id, Long treatmentId, String status, String startsAt, String endsAt,
-            int appliedPrice, String createdAt) {
-        LocalDateTime created = time(createdAt);
+    private void insertCancelledWithClose() {
+        LocalDateTime createdAt = LocalDateTime.of(2026, 10, 25, 9, 0);
+        LocalDateTime completedAt = LocalDateTime.of(2026, 11, 8, 9, 0);
         entityManager.createNativeQuery("""
                 INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT,
                                          APPLIED_PRICE, DEPOSIT, HOLD_EXPIRES_AT, CREATED_AT, UPDATED_AT)
-                VALUES (:id, 2, :treatmentId, :status, :startsAt, :endsAt, :appliedPrice, :deposit,
-                        :holdExpiresAt, :createdAt, :createdAt)
+                VALUES (7, 2, 1, 'CANCELLED', :startsAt, :endsAt, 30000, 20000, :holdExpiresAt, :createdAt, :completedAt)
                 """)
-                .setParameter("id", id)
-                .setParameter("treatmentId", treatmentId)
-                .setParameter("status", status)
-                .setParameter("startsAt", time(startsAt))
-                .setParameter("endsAt", time(endsAt))
-                .setParameter("appliedPrice", appliedPrice)
-                .setParameter("deposit", Math.min(appliedPrice, 20000))
-                .setParameter("holdExpiresAt", created.plusMinutes(5))
-                .setParameter("createdAt", created)
+                .setParameter("startsAt", LocalDateTime.of(2026, 11, 9, 14, 0))
+                .setParameter("endsAt", LocalDateTime.of(2026, 11, 9, 15, 0))
+                .setParameter("holdExpiresAt", createdAt.plusMinutes(5))
+                .setParameter("createdAt", createdAt)
+                .setParameter("completedAt", completedAt)
                 .executeUpdate();
-    }
-
-    private static LocalDateTime time(String value) {
-        return LocalDateTime.parse(value.replace(' ', 'T'));
+        entityManager.createNativeQuery("""
+                INSERT INTO DEPOSIT_PAYMENT (DEPOSIT_PAYMENT_ID, RESERVATION_ID, PG_PROVIDER, STATUS, AMOUNT,
+                                             REFUNDED_AMOUNT, CREATED_AT, UPDATED_AT)
+                VALUES (100, 7, 'PORTONE', 'PART_REFUNDED', 20000, 5000, :createdAt, :completedAt)
+                """)
+                .setParameter("createdAt", createdAt)
+                .setParameter("completedAt", completedAt)
+                .executeUpdate();
+        entityManager.createNativeQuery("""
+                INSERT INTO RESERVATION_CANCEL (CANCEL_ID, RESERVATION_ID, USER_ID, CANCEL_TYPE, POLICY_REFUND_AMOUNT,
+                                                REFUND_AMOUNT, STATUS, REQUESTED_AT, COMPLETED_AT, CREATED_AT, UPDATED_AT)
+                VALUES (100, 7, 2, 'CUSTOMER_REQUEST', 0, 5000, 'COMPLETED', :completedAt, :completedAt,
+                        :completedAt, :completedAt)
+                """)
+                .setParameter("completedAt", completedAt)
+                .executeUpdate();
+        entityManager.createNativeQuery("""
+                INSERT INTO SHOP_SCHEDULE_EXCEPTION (EXCEPTION_ID, SHOP_ID, RESERVATION_ID, EXCEPTION_TYPE,
+                                                     STARTS_AT, ENDS_AT, CREATED_AT, UPDATED_AT)
+                VALUES (100, 1, 7, 'CLOSE', :startsAt, :endsAt, :completedAt, :completedAt)
+                """)
+                .setParameter("startsAt", LocalDateTime.of(2026, 11, 9, 14, 0))
+                .setParameter("endsAt", LocalDateTime.of(2026, 11, 9, 15, 0))
+                .setParameter("completedAt", completedAt)
+                .executeUpdate();
     }
 }

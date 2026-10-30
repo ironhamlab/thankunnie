@@ -34,15 +34,16 @@ public class OwnerDashboardController {
     }
 
     @Operation(summary = "사장님 메인 대시보드",
-            description = "오늘 확정·남은 예약, 이번 달(시술일 기준) 확정·예상 매출·취소 유형별·취소 처리 중·재판매 건수와 금액")
+            description = "오늘 확정·남은 예약, 휴무 여부, 남은 빈 시간대와 이번 달(시술일 기준) 요약: "
+                    + "확정 예약 금액, 고객·매장 사유 취소, 고객 취소율, 취소로 남은 예약금, 재판매 금액·회수율, 초임박 판매")
     @GetMapping
     public ResponseEntity<ApiResponse<ReservationDashboardResponse>> getDashboard(@LoginUser AuthUser loginUser) {
         return ResponseEntity.ok(ApiResponse.success(reservationDashboardService.getOwnerDashboard(loginUser)));
     }
 
     @Operation(summary = "사장님 기간 통계",
-            description = "from~to 시술일(둘 다 포함, 최대 92일). 생략 시 오늘 포함 최근 30일. "
-                    + "합계, 날짜별 추이, 시술별 성과, 요일·시간대별 확정 건수")
+            description = "from~to 시술일(둘 다 포함, 최대 92일). 생략 시 이번 달 1일~말일. "
+                    + "기간 요약, 날짜별 추이, 시술별 성과")
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<ReservationStatsResponse>> getStats(
             @LoginUser AuthUser loginUser,
