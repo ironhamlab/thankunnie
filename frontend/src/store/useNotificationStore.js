@@ -138,7 +138,10 @@ export const useNotificationStore = create((set, get) => ({
     if (rejected) return { ok: false, error: rejected };
     set({ saving: true });
     try {
-      const updated = await notificationApi.updateSubscription(subscriptionId, body);
+      // 찜에 희망 시간을 넣어 알림을 켤 때 문자 수신 동의가 없으면(TERMS_003) 동의 모달을 띄우고, 동의하면 한 번 다시 저장한다
+      const updated = await withTermsAgreement(() =>
+        notificationApi.updateSubscription(subscriptionId, body),
+      );
       set((state) => ({
         subscriptions: state.subscriptions.map((item) =>
           sameSubscriptionId(item.subscriptionId, subscriptionId) ? updated : item,
