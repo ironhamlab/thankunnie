@@ -27,10 +27,87 @@
   flex-direction: column;
   gap: 16px;
 }
-.card {
+.card,
+.cardLeaving {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+.cardLeaving {
+  animation: cardOut 320ms ease forwards;
+  pointer-events: none;
+}
+@keyframes cardOut {
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.result,
+.error {
+  margin: 8px 0 28px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+.result {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  animation: resultIn 320ms ease;
+}
+.resultText {
+  flex: 1;
+  min-width: 0;
+}
+.resultClose {
+  flex-shrink: 0;
+  margin: -4px -6px -4px 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  opacity: 0.7;
+  padding: 4px 8px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.resultClose:hover,
+.resultClose:focus-visible {
+  opacity: 1;
+  background: #007b6214;
+}
+@keyframes resultIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.editDialog {
+  animation: editIn 320ms ease;
+}
+.editDialogClosing {
+  animation: editOut 280ms ease forwards;
+}
+@keyframes editIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes editOut {
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 .head {
   display: flex;
@@ -112,6 +189,14 @@
   margin: 0;
   font-size: 12px;
   color: var(--color-danger);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cardLeaving,
+  .result,
+  .editDialog,
+  .editDialogClosing {
+    animation: none;
+  }
 }
 @media (max-width: 767px) {
   .head {
