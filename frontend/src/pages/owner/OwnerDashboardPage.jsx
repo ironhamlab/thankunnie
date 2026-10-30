@@ -28,9 +28,9 @@ const cards = [
     ScissorsIcon,
   ],
   [
-    ROUTES.OWNER_SLOTS,
-    '빈자리 관리 & 즉시 등록',
-    '당일 캔슬 즉시 타임세일 슬롯 배정 및 노출 개시',
+    ROUTES.OWNER_VACANCIES,
+    '빈자리 열기·닫기',
+    '손님을 더 받을 시간을 빈자리로 열고, 점심·개인 일정은 닫기',
     BoltIcon,
   ],
   [
