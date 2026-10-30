@@ -123,7 +123,7 @@ export default function FavoriteButton({ shopId, shopName }) {
                 : '찜한 매장에 예약 가능한 자리가 나면 알려드릴까요?'
           }
           stepKey={step}
-          hideClose
+          hideClose={step !== 'form'}
           onClose={closeDialog}
         >
           {step === 'ask' ? (

@@ -33,9 +33,14 @@ export default function StoreHopeForm({ onSubmit, saving = false, className = ''
   const hasFullStamp = Boolean(form.startDate && form.startTime && form.endDate && form.endTime);
   const invalidTime =
     hasFullStamp && toStamp(form.endDate, form.endTime) <= toStamp(form.startDate, form.startTime);
+  const startOutOfRange =
+    Boolean(form.startDate) && (form.startDate < minDate || form.startDate > maxDate);
+  const endOutOfRange =
+    Boolean(form.endDate) && (form.endDate < minDate || form.endDate > maxDate);
+  const outOfRange = hasFullStamp && (startOutOfRange || endOutOfRange);
   const expired =
     hasFullStamp && new Date(toKstDateTime(form.endDate, form.endTime)).getTime() <= Date.now();
-  const canSubmit = hasFullStamp && !invalidTime && !expired;
+  const canSubmit = hasFullStamp && !invalidTime && !outOfRange && !expired;
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -66,6 +71,11 @@ export default function StoreHopeForm({ onSubmit, saving = false, className = ''
               희망 시작일을 선택해 주세요.
             </p>
           )}
+          {!startDateEmpty && startOutOfRange && (
+            <p role="alert" className={styles.error}>
+              날짜는 오늘부터 {HOPE_DAYS}일 안에서 선택해 주세요.
+            </p>
+          )}
         </div>
         <div className={styles.field}>
           <label>
@@ -93,6 +103,11 @@ export default function StoreHopeForm({ onSubmit, saving = false, className = ''
           {endDateEmpty && (
             <p role="alert" className={styles.error}>
               희망 종료일을 선택해 주세요.
+            </p>
+          )}
+          {!endDateEmpty && endOutOfRange && (
+            <p role="alert" className={styles.error}>
+              날짜는 오늘부터 {HOPE_DAYS}일 안에서 선택해 주세요.
             </p>
           )}
         </div>

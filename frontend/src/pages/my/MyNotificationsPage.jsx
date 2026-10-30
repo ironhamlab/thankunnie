@@ -27,10 +27,12 @@ export default function MyNotificationsPage() {
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
+            id={`tab-${id}`}
             type="button"
             role="tab"
             className={styles.tab}
             aria-selected={tab === id}
+            aria-controls="notification-tabpanel"
             onClick={() => setTab(id)}
           >
             <Icon size={16} />
@@ -38,7 +40,13 @@ export default function MyNotificationsPage() {
           </button>
         ))}
       </div>
-      <div key={tab} className={styles.panel} role="tabpanel">
+      <div
+        key={tab}
+        id="notification-tabpanel"
+        className={styles.panel}
+        role="tabpanel"
+        aria-labelledby={`tab-${tab}`}
+      >
         {tab === 'subscriptions' && <SubscriptionList embedded />}
         {tab === 'favorites' && <FavoriteShopList />}
         {tab === 'conditions' && <SubscriptionCreateForm />}

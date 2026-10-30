@@ -46,12 +46,20 @@ export default function SubscriptionList({ embedded = false }) {
   const removeSubscription = useNotificationStore((state) => state.removeSubscription);
   const [examples, setExamples] = useState(EXAMPLE_SUBSCRIPTIONS);
   const [editing, setEditing] = useState(null);
-  const [leavingId, setLeavingId] = useState(null);
+  // 해제 애니메이션 중. 서버에서 먼저 빠져도 카드가 잠깐 남도록 스냅샷을 둔다
+  const [leaving, setLeaving] = useState(null);
   const [error, setError] = useState(null);
   const [savedMessage, setSavedMessage] = useState(null);
   const leaveTimer = useRef(null);
+  const mounted = useRef(true);
 
-  useEffect(() => () => window.clearTimeout(leaveTimer.current), []);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      window.clearTimeout(leaveTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     loadSubscriptions();
@@ -60,7 +68,11 @@ export default function SubscriptionList({ embedded = false }) {
 
   const useExamples =
     listStatus === 'failed' || (listStatus === 'succeeded' && subscriptions.length === 0);
-  const items = useExamples ? examples : subscriptions;
+  const baseItems = useExamples ? examples : subscriptions;
+  const items =
+    leaving && !baseItems.some((item) => item.subscriptionId === leaving.id)
+      ? [...baseItems.slice(0, leaving.index), leaving.item, ...baseItems.slice(leaving.index)]
+      : baseItems;
   const categoryOptions = categories.length ? categories : EXAMPLE_CATEGORIES;
 
   const categoryNameOf = (categoryId) =>
@@ -72,27 +84,45 @@ export default function SubscriptionList({ embedded = false }) {
       ? shopTitleOf(item)
       : `${categoryNameOf(item.categoryId)} · ${regionNameOf(item.regionCode)}`;
 
-  const finishRemove = async (subscriptionId) => {
-    if (useExamples) {
-      setExamples((prev) => prev.filter((item) => item.subscriptionId !== subscriptionId));
-      setLeavingId(null);
-      return;
-    }
-    const { ok, error: removeError } = await removeSubscription(subscriptionId);
-    setLeavingId(null);
-    if (!ok) setError(removeError.message);
-  };
+  const waitLeave = (ms) =>
+    new Promise((resolve) => {
+      leaveTimer.current = window.setTimeout(resolve, ms);
+    });
 
-  const handleRemove = (subscriptionId) => {
-    if (leavingId != null || saving) return;
+  // 해제는 바로 보내고, 카드 사라짐 애니메이션은 그와 따로 맞춘다
+  const handleRemove = async (subscriptionId) => {
+    if (leaving != null || saving) return;
     setError(null);
     setSavedMessage(null);
-    if (reduceMotion()) {
-      finishRemove(subscriptionId);
+
+    const index = items.findIndex((item) => item.subscriptionId === subscriptionId);
+    const item = items[index];
+    if (!item) return;
+
+    const animate = !reduceMotion();
+    if (animate) setLeaving({ id: subscriptionId, item, index });
+
+    const removePromise = useExamples
+      ? Promise.resolve({ ok: true })
+      : removeSubscription(subscriptionId);
+    const [result] = await Promise.all([
+      removePromise,
+      animate ? waitLeave(LEAVE_MS) : Promise.resolve(),
+    ]);
+
+    if (!mounted.current) return;
+
+    if (!result.ok) {
+      window.clearTimeout(leaveTimer.current);
+      setLeaving(null);
+      setError(result.error.message);
       return;
     }
-    setLeavingId(subscriptionId);
-    leaveTimer.current = window.setTimeout(() => finishRemove(subscriptionId), LEAVE_MS);
+
+    if (useExamples) {
+      setExamples((prev) => prev.filter((row) => row.subscriptionId !== subscriptionId));
+    }
+    setLeaving(null);
   };
 
   const savedTitleOf = (subscription, request) =>
@@ -176,7 +206,7 @@ export default function SubscriptionList({ embedded = false }) {
             <Panel
               as="article"
               padded
-              className={leavingId === item.subscriptionId ? styles.cardLeaving : styles.card}
+              className={leaving?.id === item.subscriptionId ? styles.cardLeaving : styles.card}
               key={item.subscriptionId}
             >
               <div className={styles.head}>
@@ -195,7 +225,7 @@ export default function SubscriptionList({ embedded = false }) {
                   type="button"
                   size="small"
                   className={styles.editButton}
-                  disabled={saving || leavingId != null}
+                  disabled={saving || leaving != null}
                   onClick={() => setEditing(item)}
                 >
                   조건 수정
@@ -204,7 +234,7 @@ export default function SubscriptionList({ embedded = false }) {
                   type="button"
                   variant="primary"
                   size="small"
-                  disabled={saving || leavingId != null}
+                  disabled={saving || leaving != null}
                   onClick={() => handleRemove(item.subscriptionId)}
                 >
                   구독 해제
