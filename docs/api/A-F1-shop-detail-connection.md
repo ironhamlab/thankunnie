@@ -116,6 +116,7 @@ const toSlot = shopPagePath(vacancy.shopId, {
 
 - 매장명 오른쪽의 "찜" 버튼은 매장 알림 구독(`NOTIFICATION_SUBSCRIPTION`, `subscriptionType = STORE`)을 등록·해제한다. 마이페이지 알림 조건과 같은 데이터다.
   - 등록: `POST /api/v1/notifications/subscriptions` (`shopId`, 희망 시간은 오늘 00:00 ~ 60일 뒤 00:00)
+    - 희망 시간이 있는 구독(알림 받기 "예")은 알림 문자 수신 동의가 필요하다. 프론트는 알림 조건 입력 전에 동의 모달을 띄우고, 서버도 동의가 없으면 `TERMS_003`(409)을 돌려준다 (`terms.md`). 희망 시간 없는 찜("아니요")은 동의 없이 등록된다.
   - 해제: `DELETE /api/v1/notifications/subscriptions/{subscriptionId}`
   - 상태: `GET /api/v1/notifications/subscriptions`에서 같은 매장의 STORE 구독이 있으면 찜한 상태로 본다.
 - 로그인하지 않았으면 로그인 화면으로 보내고, 로그인 뒤 이 화면으로 돌아온다. 개발 서버 테스트 계정도 로그인으로 본다.

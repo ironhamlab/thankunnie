@@ -22,7 +22,10 @@ import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.treatment.entity.Treatment;
 import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
+import com.ucamp.app.domain.treatment.entity.TreatmentType;
 import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
+import com.ucamp.app.domain.user.entity.TermsCode;
+import com.ucamp.app.domain.user.service.TermsAgreementService;
 import com.ucamp.app.domain.vacancy.policy.PriceCalculator;
 import com.ucamp.app.domain.vacancy.policy.PriceQuote;
 import com.ucamp.app.domain.vacancy.policy.SalePolicy;
@@ -44,10 +47,12 @@ public class ReservationService {
     private final UserLock userLock;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
+    private final TermsAgreementService termsAgreementService;
 
     public ReservationService(ReservationRepository reservationRepository,
             TreatmentRepository treatmentRepository, AvailabilityService availabilityService,
-            ShopLock shopLock, UserLock userLock, Clock clock, ApplicationEventPublisher eventPublisher) {
+            ShopLock shopLock, UserLock userLock, Clock clock, ApplicationEventPublisher eventPublisher,
+            TermsAgreementService termsAgreementService) {
         this.reservationRepository = reservationRepository;
         this.treatmentRepository = treatmentRepository;
         this.availabilityService = availabilityService;
@@ -55,6 +60,7 @@ public class ReservationService {
         this.userLock = userLock;
         this.clock = clock;
         this.eventPublisher = eventPublisher;
+        this.termsAgreementService = termsAgreementService;
     }
 
     /**
@@ -69,6 +75,7 @@ public class ReservationService {
      *                           접수 마감(시작 20분 전)이 지났으면 VACANCY_BOOKING_CLOSED,
      *                           60일 이내가 아니면 VACANCY_OUT_OF_RANGE,
      *                           시술이 없거나 판매 중이 아니면 TREATMENT_NOT_FOUND,
+     *                           모델 시술인데 촬영 동의(MODEL_PHOTO)가 없으면 TERMS_MODEL_PHOTO_AGREEMENT_REQUIRED,
      *                           영업 외 시간이거나 닫힌 시간이면 VACANCY_NOT_OPEN_TIME,
      *                           매장의 다른 예약과 겹치면 VACANCY_TIME_TAKEN,
      *                           본인의 다른 예약과 겹치면 VACANCY_USER_TIME_OVERLAP,
@@ -86,6 +93,10 @@ public class ReservationService {
         Treatment treatment = treatmentRepository.findById(request.treatmentId())
                 .filter(found -> found.getStatus() == TreatmentStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TREATMENT_NOT_FOUND));
+        // 모델 시술은 촬영 동의가 있어야 예약할 수 있다. 프론트는 이 에러를 받으면 동의 모달을 띄운 뒤 다시 요청한다
+        if (treatment.getTreatmentType() == TreatmentType.MODEL) {
+            termsAgreementService.requireAgreed(loginUser.userId(), TermsCode.MODEL_PHOTO);
+        }
         Long shopId = treatment.getShop().getShopId();
         LocalDateTime endsAt = startsAt.plusMinutes(treatment.getDurationMinutes());
 
