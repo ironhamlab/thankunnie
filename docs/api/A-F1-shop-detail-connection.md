@@ -53,10 +53,25 @@
   "treatments": [{
     "treatmentId": 1, "name": "젤네일 원컬러", "description": "기본 원컬러 젤네일",
     "treatmentType": "NORMAL", "durationMinutes": 60, "regularPrice": 35000, "price": 30000,
-    "modelCondition": null, "imageUrl": null
+    "modelCondition": null, "photoNotice": null, "imageUrl": null
   }]
 }
 ```
+
+- `modelCondition`(참여 조건), `photoNotice`(촬영 안내)는 `treatmentType = MODEL`일 때만 값이 있고 NORMAL이면 null이다. `photoNotice`는 모델 모집 상세(UNNIE-52)를 위해 추가했다.
+
+## 시술 모델 모집 상세 (UNNIE-52)
+
+```text
+/shops/:shopId/models/:treatmentId   매장 상세와 같은 머리(이미지·매장명·메뉴)
+  ├ 예약하기 (기본)                  모집 안내(시술·소요 시간·정상 가격, 참여 조건, 촬영 안내)
+  │                                  + 날짜·시간 선택, 오른쪽 예약 요약 (시술 선택 단계 없음)
+  └ 상세정보                         매장 상세와 같음
+```
+
+- 같은 매장 상세 API를 쓰고, 주소의 시술이 판매 중인 MODEL 시술이 아니면 "모집 중인 시술을 찾을 수 없습니다"와 매장 보기·모집 목록 버튼을 보여준다.
+- 탐색 목록(C-01)의 빈자리가 MODEL이면 `utils/exploreVacancy.js`의 `modelRecruitPath()`로 이 화면에 연결한다. 처음 선택값은 `?date=&startsAt=`로 받는다.
+- 매장 상세의 시술 선택에서 모델 시술을 고르면 기존처럼 매장 상세 흐름으로 예약한다.
 
 ## 시간 슬롯
 

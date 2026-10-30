@@ -183,6 +183,18 @@
 .shop :global(.b-highlight) p {
   white-space: pre-line;
 }
+/* 참여 조건·촬영 안내는 여러 줄로 등록되므로 줄바꿈을 그대로 보여준다 */
+.modelNotice {
+  font-size: 13px;
+  line-height: 1.7;
+}
+.modelNotice + .modelNotice {
+  margin-top: 12px;
+}
+.modelNotice p {
+  margin: 0;
+  white-space: pre-line;
+}
 .treatments {
   display: grid;
   gap: 10px;

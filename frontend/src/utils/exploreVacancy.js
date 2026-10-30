@@ -55,6 +55,21 @@ export function shopPagePath(shopId, { date, treatmentId, startsAt } = {}) {
   return query.size ? `${path}?${query}` : path;
 }
 
+/**
+ * 시술 모델 모집 상세(/shops/:shopId/models/:treatmentId) 주소. 시작 시각을 고른 곳은 그 날짜·시간이 골라진 채로 열린다.
+ *
+ * @param shopId      매장 ID
+ * @param treatmentId 모델 시술 ID
+ * @param selection   { date, startsAt } 중 아는 값
+ */
+export function modelRecruitPath(shopId, treatmentId, { date, startsAt } = {}) {
+  const path = generatePath(ROUTES.MODEL_RECRUIT_DETAIL, { shopId, treatmentId });
+  const query = new URLSearchParams();
+  if (date) query.set('date', date);
+  if (startsAt) query.set('startsAt', startsAt);
+  return query.size ? `${path}?${query}` : path;
+}
+
 /** 이미지가 없으면 기본 시술 그림을 쓴다 */
 export const vacancyImage = (imageUrl) => imageUrl || defaultTreatmentImage;
 
@@ -103,11 +118,17 @@ export function toVacancyCard(item, today = todayKst()) {
     discount: item.discountRate,
     urgency: URGENCY[item.priceTier] ?? URGENCY.NORMAL,
     image: vacancyImage(item.imageUrl),
-    // 이 시술 · 시각이 골라진 매장 페이지
-    shopPath: shopPagePath(item.shopId, {
-      date: datePart(item.startsAt),
-      treatmentId: item.treatmentId,
-      startsAt: item.startsAt,
-    }),
+    // 이 시술 · 시각이 골라진 매장 페이지. 모델 시술은 참여 조건·촬영 안내가 보이는 모집 상세로 간다
+    shopPath:
+      item.treatmentType === 'MODEL'
+        ? modelRecruitPath(item.shopId, item.treatmentId, {
+            date: datePart(item.startsAt),
+            startsAt: item.startsAt,
+          })
+        : shopPagePath(item.shopId, {
+            date: datePart(item.startsAt),
+            treatmentId: item.treatmentId,
+            startsAt: item.startsAt,
+          }),
   };
 }

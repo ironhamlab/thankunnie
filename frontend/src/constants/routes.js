@@ -8,6 +8,8 @@ export const ROUTES = {
   SERVICE_DETAIL: '/services/:id',
   // 매장 상세: 매장 정보 → 시술 선택 → 날짜·시간 선택
   SHOP_DETAIL: '/shops/:shopId',
+  // 시술 모델 모집 상세: 매장 상세에 모델 시술 하나를 고정하고 참여 조건·촬영 안내를 함께 보여준다
+  MODEL_RECRUIT_DETAIL: '/shops/:shopId/models/:treatmentId',
   RESERVE: '/reserve/:id',
   CHECKOUT: '/checkout',
   BOOKING_RESULT: '/result',

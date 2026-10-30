@@ -14,6 +14,7 @@ const SignupPage = lazy(() => import('@/pages/auth/SignupPage'));
 const ShopSignupPage = lazy(() => import('@/pages/auth/ShopSignupPage'));
 const NotFoundPage = lazy(() => import('@/pages/not-found/NotFoundPage'));
 const ShopDetailPage = lazy(() => import('@/pages/shop/ShopDetailPage'));
+const ModelRecruitDetailPage = lazy(() => import('@/pages/shop/ModelRecruitDetailPage'));
 const ReservationPage = lazy(() => import('@/pages/reservation/ReservationPage'));
 const CheckoutPage = lazy(() => import('@/pages/reservation/CheckoutPage'));
 const BookingResultPage = lazy(() => import('@/pages/reservation/BookingResultPage'));
@@ -66,6 +67,7 @@ export default function AppRouter() {
           <Route element={<MainLayout />}>
             <Route path={ROUTES.HOME} element={<HomePage />} />
             <Route path={ROUTES.SHOP_DETAIL} element={<ShopDetailPage />} />
+            <Route path={ROUTES.MODEL_RECRUIT_DETAIL} element={<ModelRecruitDetailPage />} />
             <Route path={ROUTES.RESERVE} element={<ReservationPage />} />
             <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />
             <Route path={ROUTES.BOOKING_RESULT} element={<BookingResultPage />} />
