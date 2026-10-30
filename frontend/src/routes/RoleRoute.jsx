@@ -1,9 +1,8 @@
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { USER_ROLE } from '@/constants/userRole';
 import { useCurrentRole } from '@/hooks/useCurrentRole';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useLogout } from '@/hooks/useLogout';
 import { getHomePathByRole } from '@/utils/authRedirect';
-import { isDevTestUserEnabled, setDevTestUser } from '@/utils/devTestUser';
 import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
 import styles from './RoleRoute.module.css';
@@ -28,8 +27,7 @@ export default function RoleRoute({ allow, areaName, redirectPaths = [] }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const role = useCurrentRole();
-  const token = useAuthStore((state) => state.token);
-  const clearSession = useAuthStore((state) => state.clearSession);
+  const logout = useLogout();
 
   if (!role || allow.includes(role)) {
     return <Outlet />;
@@ -40,18 +38,8 @@ export default function RoleRoute({ allow, areaName, redirectPaths = [] }) {
 
   const handleBack = () => navigate(getHomePathByRole(role), { replace: true });
 
-  const handleLogout = () => {
-    // 개발 서버에서는 테스트 계정 선택도 비운다. 남아 있으면 로그아웃 후에도 그 역할로 다시 판단된다
-    if (isDevTestUserEnabled) {
-      setDevTestUser('');
-    }
-    if (token) {
-      clearSession();
-      return;
-    }
-    // 테스트 계정만 있던 경우는 스위치와 같은 방식으로 새로고침해 비로그인으로 다시 그린다
-    window.location.reload();
-  };
+  // 같은 주소에 비로그인으로 남는다. 로그인이 필요한 화면이면 PrivateRoute 가 로그인으로 보낸다
+  const handleLogout = () => logout();
 
   // 레이아웃 밖에서 띄우므로 공통 배경을 깔아 둔다
   return (
