@@ -19,6 +19,7 @@ import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.UserRole;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
+import com.ucamp.app.common.lock.UserLock;
 import com.ucamp.app.domain.user.dto.response.TermsResponse;
 import com.ucamp.app.domain.user.dto.response.UserTermsAgreementResponse;
 import com.ucamp.app.domain.user.entity.Terms;
@@ -40,12 +41,14 @@ public class TermsAgreementService {
 
     private final TermsRepository termsRepository;
     private final UserTermsAgreementRepository agreementRepository;
+    private final UserLock userLock;
     private final Clock clock;
 
     public TermsAgreementService(TermsRepository termsRepository,
-            UserTermsAgreementRepository agreementRepository, Clock clock) {
+            UserTermsAgreementRepository agreementRepository, UserLock userLock, Clock clock) {
         this.termsRepository = termsRepository;
         this.agreementRepository = agreementRepository;
+        this.userLock = userLock;
         this.clock = clock;
     }
 
@@ -59,9 +62,13 @@ public class TermsAgreementService {
     /**
      * 회원가입 요청의 동의 목록을 검사한다. 회원을 저장하기 전에 호출한다.
      * 최신 필수 약관이 하나라도 빠지면 400, 없는 약관 코드가 있으면 404.
+     * 필수 약관이 하나도 등록되어 있지 않으면(운영 DB 초기 데이터 누락) 동의 없이 가입되지 않도록 500 으로 막는다.
      */
     public void validateSignupAgreements(Collection<TermsCode> agreedCodes) {
         Map<TermsCode, Terms> latest = latestTerms();
+        if (latest.values().stream().noneMatch(Terms::isRequired)) {
+            throw new IllegalStateException("필수 약관(TERMS)이 등록되어 있지 않아 회원가입을 처리할 수 없습니다.");
+        }
         Set<TermsCode> agreed = toSet(agreedCodes);
         if (!latest.keySet().containsAll(agreed)) {
             throw new BusinessException(ErrorCode.TERMS_NOT_FOUND);
@@ -99,6 +106,7 @@ public class TermsAgreementService {
 
     /**
      * 최신 버전 약관에 동의한다. 이미 동의했으면 기존 동의를 그대로 돌려준다 (반복 요청 안전).
+     * 같은 고객의 동시 요청이 둘 다 '없음'으로 보고 INSERT 해 UK 위반(500)이 나지 않도록 회원 잠금 안에서 조회·저장한다.
      * 고객만 동의할 수 있다.
      */
     @Transactional
@@ -108,6 +116,7 @@ public class TermsAgreementService {
         if (terms == null) {
             throw new BusinessException(ErrorCode.TERMS_NOT_FOUND);
         }
+        userLock.lock(loginUser.userId());
         UserTermsAgreement agreement = agreementRepository
                 .findByUserIdAndTermsIdIn(loginUser.userId(), List.of(terms.getTermsId())).stream()
                 .findFirst()
