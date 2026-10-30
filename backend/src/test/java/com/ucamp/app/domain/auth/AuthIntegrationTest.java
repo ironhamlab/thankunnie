@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.exception.GlobalExceptionHandler;
+import com.ucamp.app.common.lock.UserLock;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.config.TimeConfig;
 import com.ucamp.app.config.WebConfig;
@@ -66,7 +67,7 @@ class AuthIntegrationTest {
     @EnableJpaRepositories(basePackageClasses = {AppUserRepository.class, ShopAccountRepository.class,
             ShopRepository.class})
     @Import({AuthController.class, AuthService.class, ShopController.class, ShopService.class,
-            TermsController.class, TermsAgreementService.class, GlobalExceptionHandler.class, SecurityConfig.class, TimeConfig.class, WebConfig.class})
+            TermsController.class, TermsAgreementService.class, UserLock.class, GlobalExceptionHandler.class, SecurityConfig.class, TimeConfig.class, WebConfig.class})
     static class AuthTestConfiguration {
     }
 
@@ -246,6 +247,19 @@ class AuthIntegrationTest {
                 .andExpect(jsonPath("$.error.code").value("TERMS_002"));
 
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM APP_USER WHERE LOGIN_ID = 'unnie10'", Integer.class))
+                .isZero();
+    }
+
+    @Test
+    @DisplayName("필수 약관이 등록되어 있지 않으면 동의 없이 가입되지 않는다 (500, 회원 미저장)")
+    void signupCustomer_withoutRequiredTermsData_rejected() throws Exception {
+        jdbc.update("DELETE FROM TERMS");
+
+        signupCustomer("unnie15", "[]")
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error.code").value("COMMON_500"));
+
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM APP_USER WHERE LOGIN_ID = 'unnie15'", Integer.class))
                 .isZero();
     }
 
