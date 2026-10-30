@@ -1,13 +1,14 @@
 import { useTermsStore } from '@/store/useTermsStore';
-import { AGREEMENT_DIALOG, TERMS_CONTENT } from '@/constants/terms';
+import { AGREEMENT_DIALOG, TERMS_CODE, TERMS_CONTENT } from '@/constants/terms';
 import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
+import NotificationIcon from '@/components/icons/NotificationIcon';
 import styles from './TermsAgreementDialog.module.css';
 
 /**
  * 선택 약관(문자 수신·모델 촬영) 동의 모달. App 에 하나만 두고 useTermsStore.requestAgreement 로 연다.
- * 구독 등록·모델 시술 예약이 동의 없이 막혔을 때(withTermsAgreement) 뜬다.
+ * 알림 조건 등록·모델 시술 예약이 동의 없이 막혔을 때(withTermsAgreement) 뜬다.
  */
 export default function TermsAgreementDialog() {
   const pending = useTermsStore((state) => state.pending);
@@ -18,17 +19,24 @@ export default function TermsAgreementDialog() {
 
   const dialog = AGREEMENT_DIALOG[pending.termsCode];
   const content = TERMS_CONTENT[pending.termsCode];
+  const isSms = pending.termsCode === TERMS_CODE.SMS_NOTIFICATION;
 
   return (
     // 저장 중에는 닫기 버튼을 숨기고 Esc 로도 닫지 않는다. 닫으면 저장 결과와 화면이 어긋난다
     <Dialog
+      className={styles.dialog}
       title={dialog?.title ?? '약관 동의'}
+      stepKey={pending.id}
+      plainClose={isSms}
       hideClose={pending.saving}
       onClose={() => {
         if (!pending.saving) cancelAgreement();
       }}
     >
       <div className={styles.root}>
+        <div className={styles.badge} aria-hidden="true">
+          {isSms ? <NotificationIcon size={20} /> : <span className={styles.badgeMark}>✦</span>}
+        </div>
         {dialog?.description && <p className={styles.description}>{dialog.description}</p>}
         {content && (
           <section className={styles.content} aria-label={content.summary}>
@@ -45,7 +53,12 @@ export default function TermsAgreementDialog() {
           <Button onClick={cancelAgreement} disabled={pending.saving}>
             다음에 할게요
           </Button>
-          <Button variant="primary" onClick={confirmAgreement} disabled={pending.saving}>
+          <Button
+            variant="primary"
+            className={styles.confirm}
+            onClick={confirmAgreement}
+            disabled={pending.saving}
+          >
             {pending.saving ? '저장하는 중…' : '동의하고 계속'}
           </Button>
         </div>

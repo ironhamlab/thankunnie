@@ -1,36 +1,46 @@
 .root {
-  max-width: 920px;
-}
-.embedded {
   margin-top: 24px;
 }
 .tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-bottom: 1px solid var(--color-border);
-  margin-bottom: 20px;
+  gap: 8px;
+  padding: 5px;
+  margin: 24px 0;
 }
 .tab {
-  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   border: 0;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  background: transparent;
-  color: var(--color-text-muted);
-  padding: 14px 8px;
-  font-size: 14px;
-}
-.tab:hover {
-  color: var(--color-primary);
+  border-radius: 6px;
+  background: white;
+  color: var(--color-text-secondary);
+  padding: 12px 5px;
+  font-size: 12px;
 }
 .tab[aria-selected='true'] {
-  border-bottom-color: var(--color-primary);
-  color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
   font-weight: 700;
+}
+.count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: var(--radius-xl);
+  background: var(--color-primary);
+  color: var(--color-white);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+.tab[aria-selected='true'] .count {
+  background: white;
+  color: var(--color-primary);
 }
 .panel {
   animation: tabStep 320ms ease;
@@ -46,16 +56,8 @@
   }
 }
 @media (max-width: 540px) {
-  /* 같은 너비로 나누면 긴 탭 이름이 두 줄이 되므로 글자 길이만큼 칸을 준다 */
-  .tabs {
-    grid-template-columns: repeat(3, auto);
-  }
   .tab {
-    flex-direction: column;
-    justify-content: flex-start;
-    gap: 6px;
     padding: 12px 4px;
-    font-size: 12px;
     line-height: 1.3;
     word-break: keep-all;
   }

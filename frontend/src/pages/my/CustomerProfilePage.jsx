@@ -157,7 +157,7 @@ export default function CustomerProfilePage() {
           </div>
         </EmptyState>
       )}
-      <MyNotificationsPage embedded />
+      <MyNotificationsPage />
     </div>
   );
 }

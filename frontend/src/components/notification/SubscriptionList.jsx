@@ -146,8 +146,8 @@ export default function SubscriptionList({ embedded = false }) {
   return (
     <div className={embedded ? styles.embedded : `b-container b-page ${styles.root}`}>
       <header className={styles.intro}>
-        <h1>내 알림 구독</h1>
-        <p className={styles.lead}>해제하지 않은 구독만 최근 등록 순으로 보여요.</p>
+        <h1>내 알림 찾기</h1>
+        <p className={styles.lead}>해제하지 않은 알림만 최근 등록 순으로 보여요.</p>
       </header>
 
       {savedMessage && (
@@ -168,15 +168,15 @@ export default function SubscriptionList({ embedded = false }) {
           {error}
         </Alert>
       )}
-      {isLoading && <p role="status">알림 구독을 불러오는 중입니다.</p>}
+      {isLoading && <p role="status">알림을 불러오는 중입니다.</p>}
       {isFailed && (
         <Alert tone="error" role="alert">
-          {listError?.message ?? '알림 구독을 불러오지 못했습니다.'}
+          {listError?.message ?? '알림을 불러오지 못했습니다.'}
         </Alert>
       )}
       {isEmpty && (
         <EmptyState>
-          <h2>등록된 알림 구독이 없어요</h2>
+          <h2>등록된 알림이 없어요</h2>
           <p>
             희망 시간을 정하면, 그 시간에 빈자리가 났을 때 가입한 휴대폰 번호로 문자를 받을 수
             있어요.
@@ -233,7 +233,7 @@ export default function SubscriptionList({ embedded = false }) {
                   disabled={saving || leaving != null}
                   onClick={() => handleRemove(item.subscriptionId)}
                 >
-                  구독 해제
+                  알림 해제
                 </Button>
               </div>
             </Panel>
@@ -244,8 +244,8 @@ export default function SubscriptionList({ embedded = false }) {
       {items.length > 0 && (
         <p className={styles.note}>
           <InfoIcon size={16} />
-          업장 구독은 희망 시간만, 시술·지역 구독은 시술·지역과 희망 시간만 수정됩니다. 해제한 구독과
-          희망 종료가 지난 구독은 문자를 받지 않습니다.
+          업장 알림은 희망 시간만, 시술·지역 알림은 시술·지역과 희망 시간만 수정됩니다. 해제한 알림과
+          희망 종료가 지난 알림은 문자를 받지 않습니다.
         </p>
       )}
 

@@ -17,6 +17,35 @@
 .root p {
   margin: 12px 0 20px;
 }
+.body {
+  position: relative;
+}
+.heading {
+  padding-right: 28px;
+}
+/* .beauty-app button { font: inherit } 보다 구체적이어야 크기가 먹는다 */
+.body .close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.body .close:hover {
+  color: var(--color-text);
+}
+.body .close svg {
+  display: block;
+}
 .step {
   animation: dialogStep 320ms ease;
 }

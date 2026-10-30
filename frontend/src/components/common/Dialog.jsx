@@ -7,6 +7,8 @@ export default function Dialog({
   onClose,
   children,
   hideClose = false,
+  /** 알림 관련 창만 테두리 없는 ✕ 를 오른쪽 위에 붙인다 */
+  plainClose = false,
   className = '',
   stepKey,
 }) {
@@ -32,15 +34,28 @@ export default function Dialog({
         onClose();
       }}
     >
-      <div className="beauty-app b-pad">
+      <div className={`beauty-app b-pad ${plainClose ? styles.body : ''}`}>
         <div key={stepKey} className={stepKey == null ? undefined : styles.step}>
-          <div className="b-row b-panel-heading">
+          <div className={`b-row b-panel-heading ${plainClose && !hideClose ? styles.heading : ''}`}>
             <h2 id={titleId}>{title}</h2>
-            {!hideClose && (
-              <Button size="small" aria-label="닫기" onClick={onClose}>
-                ✕
-              </Button>
-            )}
+            {!hideClose &&
+              (plainClose ? (
+                <button type="button" className={styles.close} aria-label="닫기" onClick={onClose}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M5 5l14 14M19 5L5 19"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.8"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              ) : (
+                <Button size="small" aria-label="닫기" onClick={onClose}>
+                  ✕
+                </Button>
+              ))}
           </div>
           {children}
         </div>

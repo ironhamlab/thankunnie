@@ -156,6 +156,7 @@ export default function FavoriteButton({ shopId, shopName }) {
                 : '찜한 매장에 예약 가능한 자리가 나면 문자로 알려드릴까요?'
           }
           stepKey={step}
+          plainClose
           hideClose={step !== 'form'}
           onClose={closeDialog}
         >

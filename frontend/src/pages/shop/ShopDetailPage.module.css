@@ -420,15 +420,6 @@
   border-bottom: 0;
   padding-bottom: 0;
 }
-.alertDialogForm :global(.b-pad) {
-  position: relative;
-}
-.alertDialogForm :global(.b-panel-heading) :global(.b-button) {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 1;
-}
 .alertDialog h2,
 .alertDialogForm h2 {
   font-size: 17px;
@@ -436,9 +427,6 @@
   text-align: center;
   word-break: keep-all;
   overflow-wrap: normal;
-}
-.alertDialogForm h2 {
-  padding-inline: 36px;
 }
 .alertShop {
   margin: 4px 0 0;
