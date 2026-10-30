@@ -6,10 +6,15 @@
 
 ```json
 {
-  "userId": 1,
-  "name": "고객일",
-  "phone": "010-1111-1111",
-  "createdAt": "2026-10-01T09:00:00+09:00"
+  "success": true,
+  "data": {
+    "userId": 1,
+    "name": "고객일",
+    "phone": "010-1111-1111",
+    "createdAt": "2026-10-01T09:00:00+09:00"
+  },
+  "error": null,
+  "timestamp": "2026-10-30T23:01:44+09:00"
 }
 ```
 
