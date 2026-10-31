@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { generatePath } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { PAYMENT_STATUS, reservationStatusOf } from '@/constants/reservationStatus';
@@ -21,6 +21,8 @@ const STATUS_FILTERS = [
   { key: 'CANCEL', label: '취소', statuses: ['CANCEL_PENDING', 'CANCELLED'] },
 ];
 const PAGE_SIZE = 10;
+// 목록과 상세가 한 단으로 쌓이는 폭 (OwnerBookingsPage.module.css 의 .grid 와 같게 둔다)
+const SINGLE_COLUMN_QUERY = '(max-width: 1200px)';
 
 const cancelPath = (reservationId) =>
   generatePath(ROUTES.OWNER_RESERVATION_CANCEL, { reservationId });
@@ -41,6 +43,7 @@ export default function OwnerBookingsPage() {
   const [filterKey, setFilterKey] = useState('ALL');
   const [page, setPage] = useState(0);
   const [selectedId, setSelectedId] = useState(null);
+  const detailRef = useRef(null);
 
   useEffect(() => {
     const { statuses } = STATUS_FILTERS.find((filter) => filter.key === filterKey);
@@ -63,6 +66,18 @@ export default function OwnerBookingsPage() {
       clearDetail();
     }
   }, [loadReservation, clearDetail, activeId, listStatus]);
+
+  // 한 단 화면에서는 상세가 목록 아래에 있어, 상세 보기를 누르면 상세로 내려가 바뀐 내용을 바로 보게 한다
+  const showDetail = (reservationId) => {
+    setSelectedId(reservationId);
+    if (window.matchMedia(SINGLE_COLUMN_QUERY).matches) {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      detailRef.current?.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
+    }
+  };
 
   // 필터를 바꾸면 첫 페이지부터 다시 본다
   const changeFilter = (update) => {
@@ -89,9 +104,9 @@ export default function OwnerBookingsPage() {
       </div>
 
       <Panel padded className="b-stack">
-        <div className="b-flex">
+        <div className={styles.filters}>
           <label>
-            시작일부터{' '}
+            시작일부터
             <input
               type="date"
               value={from}
@@ -99,7 +114,7 @@ export default function OwnerBookingsPage() {
             />
           </label>
           <label>
-            시작일까지{' '}
+            시작일까지
             <input
               type="date"
               value={to}
@@ -146,7 +161,7 @@ export default function OwnerBookingsPage() {
           {listStatus === 'succeeded' && (
             <>
               <div className="b-table-scroll">
-                <table>
+                <table className={styles.table}>
                   <thead>
                     <tr>
                       {['예약번호', '예약자', '시술', '예약 일시', '결제', '상태', '상세'].map(
@@ -164,21 +179,25 @@ export default function OwnerBookingsPage() {
                           key={item.reservationId}
                           className={activeId === item.reservationId ? 'is-active' : ''}
                         >
-                          <td>{item.reservationId}</td>
-                          <td>
+                          <td className={styles.id}>{item.reservationId}</td>
+                          <td className={styles.name}>
                             <strong>{item.customerName}</strong>
                           </td>
-                          <td>{item.treatmentName}</td>
-                          <td>{formatReservationTime(item.startsAt, item.endsAt)}</td>
-                          <td>{PAYMENT_STATUS[item.paymentStatus] ?? '결제 전'}</td>
-                          <td>
+                          <td className={styles.treatment}>{item.treatmentName}</td>
+                          <td className={styles.time}>
+                            {formatReservationTime(item.startsAt, item.endsAt)}
+                          </td>
+                          <td className={styles.payment}>
+                            {PAYMENT_STATUS[item.paymentStatus] ?? '결제 전'}
+                          </td>
+                          <td className={styles.status}>
                             <Badge className={status.tone}>{status.label}</Badge>
                           </td>
-                          <td>
+                          <td className={styles.detail}>
                             <Button
                               size="small"
                               type="button"
-                              onClick={() => setSelectedId(item.reservationId)}
+                              onClick={() => showDetail(item.reservationId)}
                             >
                               상세 보기
                             </Button>
@@ -194,7 +213,7 @@ export default function OwnerBookingsPage() {
             </>
           )}
         </Panel>
-        <aside className="b-stack">
+        <aside ref={detailRef} className="b-stack">
           {listStatus === 'succeeded' && (
             <ReservationDetailPanel viewer="owner" cancelPath={cancelPath} />
           )}
