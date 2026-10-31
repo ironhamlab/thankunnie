@@ -11,16 +11,22 @@ export const useShopStore = create((set, get) => ({
   status: 'idle',
   error: null,
   mutationStatus: 'idle',
+  loadRequestId: 0,
+  // 사장님 센터 레이아웃과 매장 정보 화면이 함께 부르고, 로그아웃 후 다른 사장님이 바로 로그인할 수도 있다.
+  // 마지막 요청의 응답만 반영해 늦게 도착한 이전 계정의 매장 정보가 덮어쓰지 않게 한다
   loadShop: async () => {
-    set({ shop: null, status: 'loading', error: null });
+    const requestId = get().loadRequestId + 1;
+    set({ loadRequestId: requestId, shop: null, status: 'loading', error: null });
+    const isCurrent = () => get().loadRequestId === requestId;
     try {
       const user = await shopApi.getCurrentUser();
+      if (!isCurrent()) return;
       if (user?.role !== 'OWNER' || !user.shopId)
         throw { message: '사장님 계정으로 로그인해 주세요.' };
       const shop = await shopApi.getShop(user.shopId);
-      set({ shop, status: 'succeeded' });
+      if (isCurrent()) set({ shop, status: 'succeeded' });
     } catch (error) {
-      set({ status: 'failed', error: failure(error) });
+      if (isCurrent()) set({ status: 'failed', error: failure(error) });
     }
   },
   saveShop: async (payload) => {

@@ -1,10 +1,9 @@
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useLogout } from '@/hooks/useLogout';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useDesignStore } from '@/store/useDesignStore';
-import Badge from '@/components/common/Badge';
+import { useShopStore } from '@/store/useShopStore';
 import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
 import OwnerSidebar from './OwnerSidebar';
@@ -14,10 +13,18 @@ import styles from './OwnerLayout.module.css';
  * 사장님 센터 레이아웃: 사이드바 + 상단 매장 정보 + 본문
  */
 export default function OwnerLayout() {
-  const shop = useDesignStore((s) => s.shop);
+  const shop = useShopStore((s) => s.shop);
+  const loadShop = useShopStore((s) => s.loadShop);
   const token = useAuthStore((s) => s.token);
   const location = useLocation();
   const logout = useLogout();
+
+  // 상단·사이드바의 매장 이름은 로그인한 사장님 매장으로 보여 준다
+  useEffect(() => {
+    if (token) {
+      loadShop();
+    }
+  }, [token, loadShop]);
 
   const handleLogout = () => logout(ROUTES.HOME);
 
@@ -27,17 +34,13 @@ export default function OwnerLayout() {
         <OwnerSidebar />
         <div className="b-owner-body">
           <header className={styles.header}>
-            <div className="b-flex">
-              <strong>{shop.name}</strong>
-              <Badge>파트너 가맹점</Badge>
-            </div>
+            <strong>{shop?.name}</strong>
             <div className="b-flex">
               {token && (
                 <Button type="button" size="small" onClick={handleLogout}>
                   로그아웃
                 </Button>
               )}
-              <span className="b-account">● [테스트] 사장님 계정 (살롱 드 르네)</span>
             </div>
           </header>
           <main className={styles.main} key={location.pathname}>

@@ -1,0 +1,45 @@
+.filters {
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.table summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.table table {
+  margin-top: 12px;
+  width: 100%;
+}
+.chartHeader {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.chartHeader h2 {
+  white-space: nowrap;
+}
+.header {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.header p {
+  font-size: 12px;
+}
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  text-align: center;
+}
+.empty p {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
