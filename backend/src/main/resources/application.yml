@@ -62,11 +62,12 @@ solapi:
   from-number: ${SOLAPI_FROM_NUMBER:}
 
 ---
-# local 프로필 H2 에만 초기 데이터(docs/erd/02_init_data_dml.sql)를 넣는다. test 는 각 테스트가 데이터를 넣는다
+# local 프로필 H2 에만 초기 데이터(docs/erd/02_init_data_dml.sql)와 시연 데이터(03_demo_data_dml.sql)를 순서대로 넣는다.
+# test 는 각 테스트가 데이터를 넣는다
 spring:
   config:
     activate:
       on-profile: local
   sql:
     init:
-      data-locations: classpath:init-data.sql
+      data-locations: classpath:init-data.sql, classpath:demo-data.sql
