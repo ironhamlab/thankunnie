@@ -5,15 +5,19 @@ import java.util.List;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,12 +29,16 @@ import com.ucamp.app.common.auth.LoginUser;
 import com.ucamp.app.common.response.ApiResponse;
 import com.ucamp.app.domain.notification.dto.request.NotificationSubscriptionCreateRequest;
 import com.ucamp.app.domain.notification.dto.request.NotificationSubscriptionUpdateRequest;
+import com.ucamp.app.domain.notification.dto.response.NotificationInboxResponse;
 import com.ucamp.app.domain.notification.dto.response.NotificationSubscriptionResponse;
+import com.ucamp.app.domain.notification.entity.NotificationInboxCategory;
+import com.ucamp.app.domain.notification.service.NotificationInboxService;
+import com.ucamp.app.domain.notification.service.NotificationInboxStreamService;
 import com.ucamp.app.domain.notification.service.NotificationService;
 
 /**
- * 알림 구독 API.
- * 업장 구독과 카테고리·지역 구독의 등록, 목록 조회, 수정, 해제를 제공한다. 고객만 사용할 수 있다.
+ * 알림 API.
+ * 구독 등록·조회·수정·해제와, 받은 알림 목록·모두 읽음·알림 스트림을 제공한다. 고객만 사용할 수 있다.
  */
 @Tag(name = "Notification", description = "알림 구독")
 @RestController
@@ -39,6 +47,8 @@ import com.ucamp.app.domain.notification.service.NotificationService;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final NotificationInboxService notificationInboxService;
+    private final NotificationInboxStreamService notificationInboxStreamService;
 
     /**
      * 업장 구독 또는 카테고리·지역 구독을 등록한다.
@@ -101,5 +111,47 @@ public class NotificationController {
     public ResponseEntity<Void> unsubscribe(@LoginUser AuthUser loginUser, @PathVariable Long subscriptionId) {
         notificationService.unsubscribe(loginUser, subscriptionId);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 본인의 받은 알림을 최신순으로 조회한다. category 가 없으면 전체를 반환한다.
+     *
+     * @param loginUser 로그인한 고객
+     * @param category  예약(RESERVATION) 또는 관심(INTEREST). 없으면 전체
+     * @return 받은 알림 목록
+     */
+    @Operation(summary = "받은 알림 목록 조회",
+            description = "category 를 생략하면 전체다. RESERVATION 은 예약 확정·취소, INTEREST 는 빈자리·임박·초임박·묶음이다")
+    @GetMapping("/inbox")
+    public ResponseEntity<ApiResponse<List<NotificationInboxResponse>>> getInbox(
+            @LoginUser AuthUser loginUser,
+            @RequestParam(required = false) NotificationInboxCategory category) {
+        return ResponseEntity.ok(ApiResponse.success(notificationInboxService.getMyInbox(loginUser, category)));
+    }
+
+    /**
+     * 고객의 알림 스트림을 연다. 응답은 JSON 이 아니라 text/event-stream 이다.
+     * 연결되면 지금 안 읽은 수를 data 로 한 번 보낸다.
+     *
+     * @param loginUser 로그인한 고객
+     * @return 열린 스트림
+     */
+    @Operation(summary = "받은 알림 스트림", description = "연결 직후 data 로 지금 안 읽은 수를 한 번 보낸다. 고객만 연결할 수 있다")
+    @GetMapping(value = "/inbox/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter stream(@LoginUser AuthUser loginUser) {
+        return notificationInboxStreamService.open(loginUser);
+    }
+
+    /**
+     * 본인의 안 읽은 알림을 모두 읽음으로 바꾼다. 이미 읽은 시각은 유지한다.
+     *
+     * @param loginUser 로그인한 고객
+     * @return 처리 후 안 읽은 알림 수
+     */
+    @Operation(summary = "받은 알림 모두 읽음")
+    @PatchMapping("/inbox/read-all")
+    public ResponseEntity<ApiResponse<Long>> markAllRead(
+            @LoginUser AuthUser loginUser) {
+        return ResponseEntity.ok(ApiResponse.success(notificationInboxService.markAllRead(loginUser)));
     }
 }

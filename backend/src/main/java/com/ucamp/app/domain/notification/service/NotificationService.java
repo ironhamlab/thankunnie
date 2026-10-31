@@ -33,6 +33,8 @@ import com.ucamp.app.domain.user.service.TermsAgreementService;
 public class NotificationService {
 
     private final NotificationSubscriptionRepository notificationSubscriptionRepository;
+    private final StoreSubscriptionDispatchService storeSubscriptionDispatchService;
+    private final CategoryRegionSubscriptionDispatchService categoryRegionSubscriptionDispatchService;
     private final Clock clock;
     private final TermsAgreementService termsAgreementService;
 
@@ -68,7 +70,9 @@ public class NotificationService {
         validateNoDuplicate(loginUser.userId(), subscription.getSubscriptionType(), subscription.getShopId(),
                 subscription.getCategoryId(), subscription.getRegionCode(), subscription.getStartTime(),
                 subscription.getEndTime(), null);
-        return NotificationSubscriptionResponse.from(notificationSubscriptionRepository.save(subscription));
+        NotificationSubscription saved = notificationSubscriptionRepository.save(subscription);
+        enqueueOpenVacancies(saved);
+        return NotificationSubscriptionResponse.from(saved);
     }
 
     /**
@@ -114,6 +118,11 @@ public class NotificationService {
         validateNoDuplicate(loginUser.userId(), subscription.getSubscriptionType(), subscription.getShopId(),
                 subscription.getCategoryId(), subscription.getRegionCode(), subscription.getStartTime(),
                 subscription.getEndTime(), subscription.getId());
+        // 희망 시간을 처음 넣을 때만 지금 열려 있는 빈자리를 본다.
+        // 이미 알림이 켜진 구독의 시간 수정은 기존 스케줄러에 맡긴다.
+        if (!wasNotifying) {
+            enqueueOpenVacancies(subscription);
+        }
         return NotificationSubscriptionResponse.from(subscription);
     }
 
@@ -152,6 +161,20 @@ public class NotificationService {
             LocalDateTime slotStartTime) {
         return notificationSubscriptionRepository.findNotifiableByCategoryRegion(
                 categoryId, regionCode, slotStartTime, now());
+    }
+
+    // 희망 시작·종료가 있을 때만 이미 열린 빈자리를 넣는다. 시간 없는 찜은 넣지 않는다.
+    private void enqueueOpenVacancies(NotificationSubscription subscription) {
+        if (subscription.getStartTime() == null || subscription.getEndTime() == null) {
+            return;
+        }
+        if (subscription.getSubscriptionType() == SubscriptionType.STORE) {
+            storeSubscriptionDispatchService.enqueue(subscription);
+            return;
+        }
+        if (subscription.getSubscriptionType() == SubscriptionType.CATEGORY_REGION) {
+            categoryRegionSubscriptionDispatchService.enqueue(subscription);
+        }
     }
 
     // 희망 시간이 하나라도 있으면 문자 알림 대상이다.

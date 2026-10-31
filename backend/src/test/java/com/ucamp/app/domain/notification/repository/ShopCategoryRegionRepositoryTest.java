@@ -53,6 +53,17 @@ class ShopCategoryRegionRepositoryTest {
     }
 
     @Test
+    @DisplayName("영업 중인 같은 카테고리·지역 매장만 ID로 가져온다")
+    void findActiveShopIds_returnsActiveShopsInThatCategoryRegion() {
+        NotificationFixture.shop(jdbcTemplate, 3L, 10L, "SEOUL_GANGNAM", "ACTIVE");
+        NotificationFixture.shop(jdbcTemplate, 4L, 10L, "SEOUL_GANGNAM", "INACTIVE");
+        NotificationFixture.shop(jdbcTemplate, 5L, 10L, "SEOUL_MAPO", "ACTIVE");
+
+        assertThat(repository.findActiveShopIds(10L, "SEOUL_GANGNAM")).containsExactly(1L, 3L);
+        assertThat(repository.findActiveShopIds(null, "SEOUL_GANGNAM")).isEmpty();
+    }
+
+    @Test
     @DisplayName("없는 매장과 매장 ID가 없으면 빈 결과를 반환한다")
     void findByShopId_missingShop_returnsEmpty() {
         assertThat(repository.findByShopId(999L)).isEmpty();

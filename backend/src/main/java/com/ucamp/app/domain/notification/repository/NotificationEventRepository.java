@@ -1,9 +1,12 @@
 package com.ucamp.app.domain.notification.repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.ucamp.app.domain.notification.entity.NotificationEvent;
 import com.ucamp.app.domain.notification.entity.NotificationEventStatus;
@@ -34,4 +37,25 @@ public interface NotificationEventRepository extends JpaRepository<NotificationE
      * @return 있으면 그 소식. 없으면 빈 값
      */
     Optional<NotificationEvent> findFirstByStatusOrderByIdAsc(NotificationEventStatus status);
+
+    /**
+     * 이 매장에서 이미 만든 알림 중, 빈자리 시작이 희망 시간 안인 것을 시작 시각 순으로 가져온다.
+     * 희망 시작·종료와 같은 시각도 포함한다. 아직 이벤트가 없는 먼 빈자리는 여기 없다.
+     *
+     * @param shopId    매장 ID
+     * @param hopeStart 희망 시작
+     * @param hopeEnd   희망 종료
+     * @return 희망 시간 안의 알림 이벤트
+     */
+    @Query("""
+            select e from NotificationEvent e
+            where e.shopId = :shopId
+              and e.slotStartsAt >= :hopeStart
+              and e.slotStartsAt <= :hopeEnd
+            order by e.slotStartsAt asc, e.id asc
+            """)
+    List<NotificationEvent> findByShopAndSlotStartInHopeTime(
+            @Param("shopId") Long shopId,
+            @Param("hopeStart") LocalDateTime hopeStart,
+            @Param("hopeEnd") LocalDateTime hopeEnd);
 }

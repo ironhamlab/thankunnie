@@ -125,6 +125,25 @@
   min-width: 17px;
   text-align: center;
 }
+.count.isIncreased {
+  animation: countPop 0.4s ease;
+}
+@keyframes countPop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.4);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .count.isIncreased {
+    animation: none;
+  }
+}
 .notifications {
   position: absolute;
   width: 360px;

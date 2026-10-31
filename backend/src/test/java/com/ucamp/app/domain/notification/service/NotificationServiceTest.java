@@ -54,13 +54,21 @@ class NotificationServiceTest {
     private NotificationSubscriptionRepository repository;
 
     @Mock
+    private StoreSubscriptionDispatchService storeSubscriptionDispatchService;
+
+    @Mock
+    private CategoryRegionSubscriptionDispatchService categoryRegionSubscriptionDispatchService;
+
+    @Mock
     private TermsAgreementService termsAgreementService;
 
     private NotificationService notificationService;
 
     @BeforeEach
     void setUp() {
-        notificationService = new NotificationService(repository, CLOCK, termsAgreementService);
+        notificationService = new NotificationService(
+                repository, storeSubscriptionDispatchService, categoryRegionSubscriptionDispatchService,
+                CLOCK, termsAgreementService);
     }
 
     @Test
@@ -80,6 +88,7 @@ class NotificationServiceTest {
         assertThat(response.startTime()).isEqualTo(start);
         assertThat(response.endTime()).isEqualTo(end);
         assertThat(response.status()).isEqualTo(SubscriptionStatus.ACTIVE);
+        verify(storeSubscriptionDispatchService).enqueue(any(NotificationSubscription.class));
     }
 
     @Test
@@ -96,6 +105,8 @@ class NotificationServiceTest {
         assertThat(response.shopId()).isNull();
         assertThat(response.categoryId()).isEqualTo(10L);
         assertThat(response.regionCode()).isEqualTo("SEOUL_GANGNAM");
+        verify(storeSubscriptionDispatchService, never()).enqueue(any());
+        verify(categoryRegionSubscriptionDispatchService).enqueue(any(NotificationSubscription.class));
     }
 
     @Test
@@ -216,6 +227,7 @@ class NotificationServiceTest {
         assertThat(response.status()).isEqualTo(SubscriptionStatus.ACTIVE);
         // 시간 없는 찜은 문자가 나가지 않으므로 문자 수신 동의를 검사하지 않는다
         verify(termsAgreementService, never()).requireAgreed(any(), any());
+        verify(storeSubscriptionDispatchService, never()).enqueue(any());
     }
 
     @Test
@@ -262,6 +274,7 @@ class NotificationServiceTest {
         assertThat(response.endTime()).isEqualTo(end);
         assertThat(subscription.getStartTime()).isEqualTo(toLocal(start));
         verify(termsAgreementService).requireAgreed(CUSTOMER.userId(), TermsCode.SMS_NOTIFICATION);
+        verify(storeSubscriptionDispatchService).enqueue(subscription);
     }
 
     @Test
@@ -286,6 +299,7 @@ class NotificationServiceTest {
         // 이 단위 테스트는 스프링 트랜잭션 없이 서비스를 직접 만들어 롤백 자체는 검증하지 않는다
         verify(repository, never()).existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
                 any(), any(), any(), any(), any(), any());
+        verify(storeSubscriptionDispatchService, never()).enqueue(any());
     }
 
     @Test
@@ -319,6 +333,7 @@ class NotificationServiceTest {
         verify(repository).existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
                 eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(2L),
                 eq(newStartLocal), eq(newEndLocal), eq(10L));
+        verify(storeSubscriptionDispatchService, never()).enqueue(any());
     }
 
     @Test

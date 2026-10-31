@@ -18,11 +18,12 @@ import com.ucamp.app.domain.notification.entity.NotificationDispatchStatus;
 public interface NotificationDispatchRepository extends JpaRepository<NotificationDispatch, Long> {
 
     /**
-     * 같은 이벤트·회원의 대기 작업이 이미 있는지 확인한다.
+     * 같은 이벤트·회원의 발송 줄이 이미 있는지 확인한다.
+     * 상태는 보지 않는다. 대기, 처리 중, 생략, 성공, 실패, 결과 불명 모두 있는 것으로 본다.
      *
      * @param eventId 알림 이벤트 ID
      * @param userId  회원 ID
-     * @return 이미 있으면 true
+     * @return 줄이 하나라도 있으면 true
      */
     boolean existsByEventIdAndUserId(Long eventId, Long userId);
 

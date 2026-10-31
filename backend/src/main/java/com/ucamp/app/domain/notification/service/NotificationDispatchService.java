@@ -22,6 +22,7 @@ import com.ucamp.app.domain.notification.client.SolapiSmsClient;
 import com.ucamp.app.domain.notification.entity.NotificationDispatch;
 import com.ucamp.app.domain.notification.entity.NotificationDispatchStatus;
 import com.ucamp.app.domain.notification.entity.NotificationEvent;
+import com.ucamp.app.domain.notification.entity.NotificationInboxCategory;
 import com.ucamp.app.domain.notification.entity.NotificationEventStatus;
 import com.ucamp.app.domain.notification.entity.NotificationEventType;
 import com.ucamp.app.domain.notification.entity.NotificationSubscription;
@@ -36,6 +37,7 @@ import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 /**
  * 알림 이벤트를 회원별 발송 대기 작업으로 저장하고, 그 작업을 하나씩 가져간다.
  * 재검사를 통과한 작업은 문자를 보내고 결과를 같은 줄에 남긴다.
+ * 문자 발송에 성공하면 받은 알림에 한 줄 남긴다. 실패·결과 불명·생략은 남기지 않는다.
  */
 @Slf4j
 @Service
@@ -66,6 +68,7 @@ public class NotificationDispatchService {
     private final AvailabilityService availabilityService;
     private final RecipientContactRepository recipientContactRepository;
     private final SolapiSmsClient solapiSmsClient;
+    private final NotificationInboxService notificationInboxService;
     private final Clock clock;
     private final ShopStatusQueryRepository shopStatusQueryRepository;
 
@@ -138,7 +141,7 @@ public class NotificationDispatchService {
         return now.isBefore(lastSentAt.plus(CATEGORY_REGION_COOLDOWN));
     }
 
-    // 같은 이벤트·회원이 이미 있으면 만들지 않는다. SENT·UNKNOWN·FAILED 여도 한 줄만 둔다.
+    // 같은 이벤트·회원이 이미 있으면 만들지 않는다. 대기·처리 중·생략·성공·실패·결과 불명도 한 줄만 둔다.
     private boolean saveDispatchIfAbsent(Long eventId, Long userId) {
         if (notificationDispatchRepository.existsByEventIdAndUserId(eventId, userId)) {
             return false;
@@ -209,6 +212,14 @@ public class NotificationDispatchService {
         log.info("카테고리 묶음 문자 발송 시작 subscriptionId={}, userId={}, count={}, to={}",
                 subscriptionId, subscription.getUserId(), openSlotCount, maskPhone(phone.get()));
         SmsSendResult result = solapiSmsClient.send(phone.get(), messageBody);
+        if (result.status() == SmsSendStatus.SUCCESS) {
+            notificationInboxService.save(
+                    subscription.getUserId(),
+                    NotificationInboxCategory.INTEREST,
+                    "빈자리 알림",
+                    messageBody,
+                    NotificationInboxService.TIME_SALE_PATH);
+        }
         logCategoryRegionSummaryResult(subscriptionId, subscription.getUserId(), result);
         // 성공이든 실패든 같은 묶음을 다음 1분에 다시 보내지 않는다.
         categoryRegionPendingQueue.clearPendingEvents(subscriptionId);
@@ -370,6 +381,14 @@ public class NotificationDispatchService {
         SmsSendResult result = solapiSmsClient.send(phone.get(), messageBody);
         applySendResult(latest, result);
         notificationDispatchRepository.save(latest);
+        if (result.status() == SmsSendStatus.SUCCESS) {
+            notificationInboxService.save(
+                    latest.getUserId(),
+                    NotificationInboxCategory.INTEREST,
+                    interestTitle(event.getEventType()),
+                    messageBody,
+                    NotificationInboxService.shopPath(event.getShopId()));
+        }
         logSendResult(latest, result);
     }
 
@@ -377,6 +396,15 @@ public class NotificationDispatchService {
     private boolean alreadySentOrUnknown(Long eventId, Long userId) {
         return notificationDispatchRepository.existsByEventIdAndUserIdAndStatusIn(
                 eventId, userId, DO_NOT_RESEND);
+    }
+
+    // 종 목록 제목. 본문과 달리 짧은 이름만 둔다.
+    private static String interestTitle(NotificationEventType eventType) {
+        return switch (eventType) {
+            case IMMINENT -> "임박 알림";
+            case LAST_MINUTE -> "초임박 알림";
+            case REOPENED -> "빈자리 알림";
+        };
     }
 
     // 본문은 같고, 앞에만 임박! / 초임박! / 땡! 을 붙인다.

@@ -33,6 +33,30 @@ public class ShopCategoryRegionRepository {
      * @param shopId 매장 ID
      * @return 매장이 있으면 카테고리와 지역코드. 없거나 ID가 없으면 empty
      */
+    /**
+     * 이 카테고리·지역에서 영업 중인 매장 ID를 읽는다.
+     *
+     * @param categoryId 카테고리 ID
+     * @param regionCode 지역코드
+     * @return 매장 ID. 없거나 조건이 비어 있으면 빈 목록
+     */
+    public List<Long> findActiveShopIds(Long categoryId, String regionCode) {
+        if (categoryId == null || regionCode == null || regionCode.isBlank()) {
+            return List.of();
+        }
+        return jdbcTemplate.query(
+                """
+                SELECT SHOP_ID
+                FROM SHOP
+                WHERE CATEGORY_ID = :categoryId
+                  AND REGION_CODE = :regionCode
+                  AND STATUS = 'ACTIVE'
+                ORDER BY SHOP_ID
+                """,
+                Map.of("categoryId", categoryId, "regionCode", regionCode),
+                (rs, rowNum) -> rs.getLong("SHOP_ID"));
+    }
+
     public Optional<ShopCategoryRegion> findByShopId(Long shopId) {
         if (shopId == null) {
             return Optional.empty();

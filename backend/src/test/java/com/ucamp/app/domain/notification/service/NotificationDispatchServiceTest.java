@@ -35,12 +35,15 @@ import com.ucamp.app.domain.notification.client.SolapiSmsClient;
 import com.ucamp.app.domain.notification.entity.NotificationDispatch;
 import com.ucamp.app.domain.notification.entity.NotificationDispatchStatus;
 import com.ucamp.app.domain.notification.entity.NotificationEvent;
+import com.ucamp.app.domain.notification.entity.NotificationInbox;
+import com.ucamp.app.domain.notification.entity.NotificationInboxCategory;
 import com.ucamp.app.domain.notification.entity.NotificationEventStatus;
 import com.ucamp.app.domain.notification.entity.NotificationEventType;
 import com.ucamp.app.domain.notification.entity.NotificationSubscription;
 import com.ucamp.app.domain.notification.entity.SubscriptionType;
 import com.ucamp.app.domain.notification.repository.NotificationDispatchRepository;
 import com.ucamp.app.domain.notification.repository.NotificationEventRepository;
+import com.ucamp.app.domain.notification.repository.NotificationInboxRepository;
 import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepository;
 import com.ucamp.app.domain.notification.repository.RecipientContactRepository;
 import com.ucamp.app.domain.notification.repository.ShopCategoryRegionRepository;
@@ -50,9 +53,10 @@ import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({NotificationDispatchService.class, SubscriptionMatchService.class, ShopCategoryRegionRepository.class,
-        VacancySlotRepository.class, RecipientContactRepository.class, AvailabilityService.class,
-        ShopStatusQueryRepository.class, CategoryRegionPendingQueue.class,
+@Import({NotificationDispatchService.class, NotificationInboxService.class, NotificationInboxConnections.class,
+        SubscriptionMatchService.class,
+        ShopCategoryRegionRepository.class, VacancySlotRepository.class, RecipientContactRepository.class,
+        AvailabilityService.class, ShopStatusQueryRepository.class, CategoryRegionPendingQueue.class,
         NotificationDispatchServiceTest.FixedClock.class})
 @ActiveProfiles("test")
 class NotificationDispatchServiceTest {
@@ -72,6 +76,9 @@ class NotificationDispatchServiceTest {
 
     @Autowired
     private NotificationDispatchRepository notificationDispatchRepository;
+
+    @Autowired
+    private NotificationInboxRepository notificationInboxRepository;
 
     @Autowired
     private NotificationSubscriptionRepository notificationSubscriptionRepository;
@@ -346,6 +353,14 @@ class NotificationDispatchServiceTest {
         assertThat(sent).isEqualTo(1);
         assertThat(notificationDispatchRepository.count()).isZero();
         verify(solapiSmsClient).send(eq("010-1111-1111"), eq("땡 잡을 기회 2건이 생겼어요!"));
+        assertThat(notificationInboxRepository.findAll()).singleElement().satisfies(inbox -> {
+            assertThat(inbox.getUserId()).isEqualTo(USER_ID);
+            assertThat(inbox.getCategory()).isEqualTo(NotificationInboxCategory.INTEREST);
+            assertThat(inbox.getTitle()).isEqualTo("빈자리 알림");
+            assertThat(inbox.getBody()).isEqualTo("땡 잡을 기회 2건이 생겼어요!");
+            assertThat(inbox.getLinkPath()).isEqualTo(NotificationInboxService.TIME_SALE_PATH);
+            assertThat(inbox.getReadAt()).isNull();
+        });
         assertThat(categoryRegionPendingQueue.pendingEventIds(subscription.getId())).isEmpty();
         assertThat(categoryRegionPendingQueue.lastSentAt(subscription.getId())).isEqualTo(NOW);
     }
@@ -517,6 +532,7 @@ class NotificationDispatchServiceTest {
 
         assertThat(sent).isEqualTo(1);
         assertThat(notificationDispatchRepository.count()).isZero();
+        assertThat(notificationInboxRepository.count()).isZero();
         assertThat(categoryRegionPendingQueue.pendingEventIds(subscription.getId())).isEmpty();
         assertThat(categoryRegionPendingQueue.lastSentAt(subscription.getId())).isEqualTo(NOW);
     }
@@ -806,6 +822,13 @@ class NotificationDispatchServiceTest {
         assertThat(saved.getFailReason()).isNull();
         // 본문 시각은 연도 포함 한국어 형식이다. 기본 toString(2026-10-22T15:00)을 쓰지 않는다.
         verify(solapiSmsClient).send(anyString(), contains("2026년 10월 22일 15:00"));
+        NotificationInbox inbox = notificationInboxRepository.findAll().get(0);
+        assertThat(inbox.getUserId()).isEqualTo(USER_ID);
+        assertThat(inbox.getCategory()).isEqualTo(NotificationInboxCategory.INTEREST);
+        assertThat(inbox.getTitle()).isEqualTo("임박 알림");
+        assertThat(inbox.getBody()).isEqualTo("임박! 매장1-2026년 10월 22일 15:00 땡잡을 기회가 생겼어요!");
+        assertThat(inbox.getLinkPath()).isEqualTo("/shops/1");
+        assertThat(inbox.getReadAt()).isNull();
     }
 
     @Test
@@ -821,6 +844,7 @@ class NotificationDispatchServiceTest {
         NotificationDispatch saved = notificationDispatchRepository.findById(job.getId()).orElseThrow();
         assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.FAILED);
         assertThat(saved.getFailReason()).contains("전화번호");
+        assertThat(notificationInboxRepository.count()).isZero();
     }
 
     @Test
@@ -837,6 +861,7 @@ class NotificationDispatchServiceTest {
         NotificationDispatch saved = notificationDispatchRepository.findById(job.getId()).orElseThrow();
         assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.FAILED);
         assertThat(saved.getFailReason()).isEqualTo("발송 거절");
+        assertThat(notificationInboxRepository.count()).isZero();
     }
 
     @Test
@@ -853,6 +878,7 @@ class NotificationDispatchServiceTest {
         NotificationDispatch saved = notificationDispatchRepository.findById(job.getId()).orElseThrow();
         assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.UNKNOWN);
         assertThat(saved.getFailReason()).isEqualTo("응답 없음");
+        assertThat(notificationInboxRepository.count()).isZero();
     }
 
     @Test
