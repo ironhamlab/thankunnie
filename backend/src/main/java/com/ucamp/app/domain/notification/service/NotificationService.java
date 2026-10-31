@@ -93,7 +93,7 @@ public class NotificationService {
     /**
      * 본인의 활성 구독에서 대상과 희망 시간을 바꾼다. 구독 유형은 유지한다.
      * 찜(희망 시간 없음)에 희망 시간을 넣어 알림을 새로 켤 때만 문자 수신 동의를 검사한다.
-     * 이미 알림이 켜진 구독의 수정은 검사하지 않는다 (약관 도입 전에 등록한 구독도 계속 수정할 수 있어야 함).
+     * 이미 알림이 켜진 구독의 수정은 동의는 검사하지 않고, 바꾼 희망 시간에 들어오는 열린 빈자리는 다시 찾는다.
      *
      * @param loginUser      로그인한 고객
      * @param subscriptionId 구독 ID
@@ -118,11 +118,9 @@ public class NotificationService {
         validateNoDuplicate(loginUser.userId(), subscription.getSubscriptionType(), subscription.getShopId(),
                 subscription.getCategoryId(), subscription.getRegionCode(), subscription.getStartTime(),
                 subscription.getEndTime(), subscription.getId());
-        // 희망 시간을 처음 넣을 때만 지금 열려 있는 빈자리를 본다.
-        // 이미 알림이 켜진 구독의 시간 수정은 기존 스케줄러에 맡긴다.
-        if (!wasNotifying) {
-            enqueueOpenVacancies(subscription);
-        }
+        // 처음 희망 시간을 넣을 때와 같이, 수정 후에도 지금 열린 빈자리 중 희망 시간에 들어오는 것을 다시 찾는다.
+        // 이미 같은 이벤트·회원으로 보낸 줄이 있으면 발송 쪽에서 다시 만들지 않는다.
+        enqueueOpenVacancies(subscription);
         return NotificationSubscriptionResponse.from(subscription);
     }
 

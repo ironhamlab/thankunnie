@@ -195,7 +195,12 @@ export default function Header() {
                     className={
                       isCountIncreased ? `${styles.count} ${styles.isIncreased}` : styles.count
                     }
-                    onAnimationEnd={() => setIsCountIncreased(false)}
+                    onAnimationEnd={(event) => {
+                      // CSS Modules 가 키프레임 이름을 바꿔도 countAttend 가 이름에 남는다
+                      if (String(event.animationName).includes('countAttend')) {
+                        setIsCountIncreased(false);
+                      }
+                    }}
                   >
                     {unreadCount}
                   </b>

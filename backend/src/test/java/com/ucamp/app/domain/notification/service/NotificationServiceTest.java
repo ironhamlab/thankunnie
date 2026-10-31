@@ -333,7 +333,7 @@ class NotificationServiceTest {
         verify(repository).existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
                 eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(2L),
                 eq(newStartLocal), eq(newEndLocal), eq(10L));
-        verify(storeSubscriptionDispatchService, never()).enqueue(any());
+        verify(storeSubscriptionDispatchService).enqueue(subscription);
     }
 
     @Test

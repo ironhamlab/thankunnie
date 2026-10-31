@@ -9,9 +9,27 @@ export const useInboxStore = create((set) => ({
   items: [],
   listStatus: 'idle',
   listError: null,
+  toasts: [],
 
   applyUnreadCount: (count) => {
     set({ unreadCount: count });
+  },
+
+  enqueueToasts: (items) => {
+    set((state) => {
+      const shown = new Set(state.toasts.map((toast) => toast.inboxId));
+      const added = items.filter((item) => item?.inboxId != null && !shown.has(item.inboxId));
+      if (added.length === 0) {
+        return state;
+      }
+      return { toasts: [...state.toasts, ...added].slice(-3) };
+    });
+  },
+
+  dismissToast: (inboxId) => {
+    set((state) => ({
+      toasts: state.toasts.filter((toast) => toast.inboxId !== inboxId),
+    }));
   },
 
   loadInbox: async () => {
@@ -33,6 +51,6 @@ export const useInboxStore = create((set) => ({
   },
 
   clear: () => {
-    set({ unreadCount: 0, items: [], listStatus: 'idle', listError: null });
+    set({ unreadCount: 0, items: [], listStatus: 'idle', listError: null, toasts: [] });
   },
 }));

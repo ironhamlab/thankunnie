@@ -1,0 +1,167 @@
+.stack {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.toast {
+  position: relative;
+  overflow: hidden;
+  pointer-events: auto;
+  display: flex;
+  align-items: stretch;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-white) 88%, transparent);
+  box-shadow:
+    0 16px 40px color-mix(in srgb, var(--color-text) 12%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-white) 40%, transparent) inset;
+  backdrop-filter: blur(16px);
+  animation: toastIn 0.48s cubic-bezier(0.22, 1.15, 0.36, 1) both;
+}
+
+.toast::before {
+  content: '';
+  width: 3px;
+  flex: none;
+  background: linear-gradient(180deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 35%, white));
+}
+
+.leaving {
+  animation: toastOut 0.32s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 8px 16px 14px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.link:hover strong {
+  color: var(--color-primary);
+}
+
+.icon {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--color-white);
+  background: var(--color-primary);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+.copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 1px;
+}
+
+.copy strong {
+  font-size: 13px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.copy span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+
+.close {
+  flex: none;
+  align-self: flex-start;
+  margin: 8px 8px 0 0;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.close:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  transform-origin: left center;
+  background: color-mix(in srgb, var(--color-primary) 70%, white);
+  animation: toastLife 6.2s linear forwards;
+}
+
+.toast:hover .progress,
+.toast:focus-within .progress {
+  animation-play-state: paused;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(28px) translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0) scale(1);
+  }
+}
+
+@keyframes toastOut {
+  to {
+    opacity: 0;
+    transform: translateX(24px) scale(0.98);
+  }
+}
+
+@keyframes toastLife {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (max-width: 767px) {
+  .stack {
+    right: 12px;
+    left: 12px;
+    width: auto;
+    bottom: calc(68px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .leaving,
+  .progress {
+    animation: none;
+  }
+}
