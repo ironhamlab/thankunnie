@@ -9,8 +9,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -69,6 +72,7 @@ public class NotificationDispatchService {
     private final RecipientContactRepository recipientContactRepository;
     private final SolapiSmsClient solapiSmsClient;
     private final NotificationInboxService notificationInboxService;
+    private final ObjectProvider<NotificationDispatchService> self;
     private final Clock clock;
     private final ShopStatusQueryRepository shopStatusQueryRepository;
 
@@ -163,68 +167,91 @@ public class NotificationDispatchService {
      *
      * @return 이번에 문자 발송을 시도한 구독 수
      */
-    @Transactional
+    @Transactional(propagation = Propagation.SUPPORTS)
     public int flushCategoryRegionSummaries() {
         LocalDateTime now = LocalDateTime.now(clock);
         int sent = 0;
+        // 이미 트랜잭션이 있으면 그 안에서 이어서 본다. 없으면 구독자마다 커밋한 뒤 알림함을 남긴다.
+        boolean joinCurrent = TransactionSynchronizationManager.isActualTransactionActive();
         for (Long subscriptionId : categoryRegionPendingQueue.subscriptionIds()) {
-            if (sendCategoryRegionSummaryIfDue(subscriptionId, now)) {
-                sent++;
+            try {
+                SummaryResult result = joinCurrent
+                        ? completeCategoryRegionSummary(subscriptionId, now)
+                        : self.getObject().completeCategoryRegionSummary(subscriptionId, now);
+                if (result.attempted()) {
+                    sent++;
+                    rememberInbox(result.inbox());
+                }
+            } catch (RuntimeException exception) {
+                log.warn("카테고리 묶음 문자 처리 실패 subscriptionId={}", subscriptionId, exception);
             }
         }
         return sent;
     }
 
+    /**
+     * 구독 하나의 묶음 문자를 보내고 메모장을 갱신한다.
+     * 호출한 쪽은 이 메서드가 끝난 뒤에 받은 알림을 저장한다.
+     *
+     * @param subscriptionId 카테고리·지역 구독 ID
+     * @param now            기준 시각
+     * @return 발송을 시도했는지와, 성공했을 때의 받은 알림
+     */
+    @Transactional
+    public SummaryResult completeCategoryRegionSummary(Long subscriptionId, LocalDateTime now) {
+        return sendCategoryRegionSummaryIfDue(subscriptionId, now);
+    }
+
     // 60분이 지나지 않았거나, 쌓인 이벤트가 없으면 아무것도 하지 않는다.
-    private boolean sendCategoryRegionSummaryIfDue(Long subscriptionId, LocalDateTime now) {
+    private SummaryResult sendCategoryRegionSummaryIfDue(Long subscriptionId, LocalDateTime now) {
         if (categoryRegionPendingQueue.lastSentAt(subscriptionId) == null) {
-            return false;
+            return SummaryResult.skipped();
         }
         if (isCategoryRegionCoolingDown(subscriptionId, now)) {
-            return false;
+            return SummaryResult.skipped();
         }
         List<Long> eventIds = categoryRegionPendingQueue.pendingEventIds(subscriptionId);
         if (eventIds.isEmpty()) {
-            return false;
+            return SummaryResult.skipped();
         }
 
         int openSlotCount = countOpenCategoryRegionSlots(subscriptionId, eventIds, now);
         if (openSlotCount == 0) {
             categoryRegionPendingQueue.clearPendingEvents(subscriptionId);
             log.info("카테고리 묶음 문자 생략(남은 빈자리 없음) subscriptionId={}", subscriptionId);
-            return false;
+            return SummaryResult.skipped();
         }
 
         NotificationSubscription subscription = notificationSubscriptionRepository.findById(subscriptionId).orElse(null);
         if (subscription == null) {
             categoryRegionPendingQueue.clearPendingEvents(subscriptionId);
-            return false;
+            return SummaryResult.skipped();
         }
         Optional<String> phone = recipientContactRepository.findPhoneByUserId(subscription.getUserId());
         if (phone.isEmpty() || !StringUtils.hasText(phone.get())) {
             // 번호가 없으면 목록을 지우지 않는다. 다음 1분에 다시 본다.
             log.warn("카테고리 묶음 문자 보류(전화번호 없음) subscriptionId={}, userId={}",
                     subscriptionId, subscription.getUserId());
-            return false;
+            return SummaryResult.skipped();
         }
 
         String messageBody = "땡 잡을 기회 " + openSlotCount + "건이 생겼어요!";
         log.info("카테고리 묶음 문자 발송 시작 subscriptionId={}, userId={}, count={}, to={}",
                 subscriptionId, subscription.getUserId(), openSlotCount, maskPhone(phone.get()));
         SmsSendResult result = solapiSmsClient.send(phone.get(), messageBody);
-        if (result.status() == SmsSendStatus.SUCCESS) {
-            notificationInboxService.save(
-                    subscription.getUserId(),
-                    NotificationInboxCategory.INTEREST,
-                    "빈자리 알림",
-                    messageBody,
-                    NotificationInboxService.TIME_SALE_PATH);
-        }
         logCategoryRegionSummaryResult(subscriptionId, subscription.getUserId(), result);
         // 성공이든 실패든 같은 묶음을 다음 1분에 다시 보내지 않는다.
         categoryRegionPendingQueue.clearPendingEvents(subscriptionId);
         categoryRegionPendingQueue.markSent(subscriptionId, now);
-        return true;
+        if (result.status() != SmsSendStatus.SUCCESS) {
+            return SummaryResult.attempted(null);
+        }
+        return SummaryResult.attempted(new SmsInbox(
+                subscription.getUserId(),
+                NotificationInboxCategory.INTEREST,
+                "빈자리 알림",
+                messageBody,
+                NotificationInboxService.TIME_SALE_PATH));
     }
 
     // 구독이 해제되지 않았고 희망 시간이 남은 이벤트만 센다. 그 슬롯이 아직 팔려야 한다.
@@ -328,31 +355,46 @@ public class NotificationDispatchService {
     }
 
     /**
-     * 재검사를 통과한 작업에 문자를 보내고 결과를 저장한다.
+     * 재검사를 통과한 작업에 문자를 보내고 결과를 저장한 뒤, 성공이면 받은 알림을 남긴다.
+     * 발송 트랜잭션을 먼저 끝내고 알림함을 저장한다. 알림함 저장이 실패해도 이미 보낸 문자는 다시 보내지 않는다.
+     *
+     * @param job 선점했고 재검사를 통과한 발송 대기 작업
+     */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public void sendClaimedJob(NotificationDispatch job) {
+        SmsInbox inbox = TransactionSynchronizationManager.isActualTransactionActive()
+                ? completeClaimedJob(job)
+                : self.getObject().completeClaimedJob(job);
+        rememberInbox(inbox);
+    }
+
+    /**
+     * 문자를 보내고 결과만 저장한다. 받은 알림은 반환만 하고, 호출한 쪽이 발송 커밋 뒤에 저장한다.
      * 성공은 SENT, 실패는 FAILED, 응답이 애매하면 UNKNOWN 이다. 실패·불명을 성공으로 바꾸지 않는다.
      * 같은 이벤트·회원에 이미 SENT 또는 UNKNOWN 이 있으면 문자를 다시 보내지 않는다.
      *
      * @param job 선점했고 재검사를 통과한 발송 대기 작업
+     * @return 문자 발송에 성공했으면 받은 알림. 아니면 null
      */
     @Transactional
-    public void sendClaimedJob(NotificationDispatch job) {
+    public SmsInbox completeClaimedJob(NotificationDispatch job) {
         if (job == null || job.getId() == null) {
-            return;
+            return null;
         }
 
         // 메모리 값만 믿지 않고 DB 최신 상태를 본다.
         NotificationDispatch latest = notificationDispatchRepository.findById(job.getId()).orElse(null);
         if (latest == null) {
-            return;
+            return null;
         }
         // 같은 이벤트·회원에 이미 SENT 또는 UNKNOWN 이면 문자를 다시 보내지 않는다.
         if (alreadySentOrUnknown(latest.getEventId(), latest.getUserId())) {
             log.info("문자 재발송 생략(이미 SENT/UNKNOWN) dispatchId={}, userId={}, eventId={}, status={}",
                     latest.getId(), latest.getUserId(), latest.getEventId(), latest.getStatus());
-            return;
+            return null;
         }
         if (latest.getStatus() != NotificationDispatchStatus.PROCESSING) {
-            return;
+            return null;
         }
 
         NotificationEvent event = notificationEventRepository.findById(latest.getEventId()).orElse(null);
@@ -362,7 +404,7 @@ public class NotificationDispatchService {
             notificationDispatchRepository.save(latest);
             log.warn("문자 발송 실패 dispatchId={}, userId={}, reason={}",
                     latest.getId(), latest.getUserId(), reason);
-            return;
+            return null;
         }
 
         Optional<String> phone = recipientContactRepository.findPhoneByUserId(latest.getUserId());
@@ -372,7 +414,7 @@ public class NotificationDispatchService {
             notificationDispatchRepository.save(latest);
             log.warn("문자 발송 실패 dispatchId={}, userId={}, reason={}",
                     latest.getId(), latest.getUserId(), reason);
-            return;
+            return null;
         }
 
         String messageBody = buildMessage(event);
@@ -381,21 +423,35 @@ public class NotificationDispatchService {
         SmsSendResult result = solapiSmsClient.send(phone.get(), messageBody);
         applySendResult(latest, result);
         notificationDispatchRepository.save(latest);
-        if (result.status() == SmsSendStatus.SUCCESS) {
-            notificationInboxService.save(
-                    latest.getUserId(),
-                    NotificationInboxCategory.INTEREST,
-                    interestTitle(event.getEventType()),
-                    messageBody,
-                    NotificationInboxService.shopPath(event.getShopId()));
-        }
         logSendResult(latest, result);
+        if (result.status() != SmsSendStatus.SUCCESS) {
+            return null;
+        }
+        return new SmsInbox(
+                latest.getUserId(),
+                NotificationInboxCategory.INTEREST,
+                interestTitle(event.getEventType()),
+                messageBody,
+                NotificationInboxService.shopPath(event.getShopId()));
     }
 
     // 같은 이벤트·회원에 성공(SENT) 또는 결과 불명(UNKNOWN)이 있으면 true. 이 둘은 재발송하지 않는다.
     private boolean alreadySentOrUnknown(Long eventId, Long userId) {
         return notificationDispatchRepository.existsByEventIdAndUserIdAndStatusIn(
                 eventId, userId, DO_NOT_RESEND);
+    }
+
+    // 발송 트랜잭션이 끝난 뒤에 호출한다. 저장이 실패해도 이미 보낸 문자는 다시 보내지 않는다.
+    private void rememberInbox(SmsInbox inbox) {
+        if (inbox == null) {
+            return;
+        }
+        try {
+            notificationInboxService.save(
+                    inbox.userId(), inbox.category(), inbox.title(), inbox.body(), inbox.linkPath());
+        } catch (RuntimeException exception) {
+            log.warn("받은 알림 저장 실패. 이미 발송한 문자는 유지한다 userId={}", inbox.userId(), exception);
+        }
     }
 
     // 종 목록 제목. 본문과 달리 짧은 이름만 둔다.
@@ -509,5 +565,26 @@ public class NotificationDispatchService {
         notificationDispatchRepository.save(job);
         log.info("문자 발송 생략(SKIPPED) dispatchId={}, userId={}, eventId={}",
                 job.getId(), job.getUserId(), job.getEventId());
+    }
+
+    /** 묶음 문자 한 건을 시도했는지와, 성공했을 때 남길 받은 알림. */
+    public record SummaryResult(boolean attempted, SmsInbox inbox) {
+
+        private static SummaryResult skipped() {
+            return new SummaryResult(false, null);
+        }
+
+        private static SummaryResult attempted(SmsInbox inbox) {
+            return new SummaryResult(true, inbox);
+        }
+    }
+
+    /** 문자 발송에 성공한 뒤 받은 알림에 남길 한 줄. */
+    public record SmsInbox(
+            Long userId,
+            NotificationInboxCategory category,
+            String title,
+            String body,
+            String linkPath) {
     }
 }

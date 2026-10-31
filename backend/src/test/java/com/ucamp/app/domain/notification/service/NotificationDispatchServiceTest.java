@@ -366,6 +366,35 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
+    @DisplayName("한 구독자 문자 발송이 실패해도 다른 구독자의 묶음 문자는 보낸다")
+    void flushCategoryRegionSummaries_oneSendThrows_continuesNextSubscriber() {
+        NotificationSubscription failed = notificationSubscriptionRepository.save(
+                categoryRegion(USER_ID, NOW.plusHours(6)));
+        NotificationSubscription sent = notificationSubscriptionRepository.save(
+                categoryRegion(OTHER_USER_ID, NOW.plusHours(6)));
+        jdbcTemplate.update("UPDATE APP_USER SET PHONE = '010-2222-2222' WHERE USER_ID = ?", OTHER_USER_ID);
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        NotificationEvent open = notificationEventRepository.saveAndFlush(event(1L));
+        categoryRegionPendingQueue.markSent(failed.getId(), NOW.minusMinutes(60));
+        categoryRegionPendingQueue.markSent(sent.getId(), NOW.minusMinutes(60));
+        categoryRegionPendingQueue.addPendingEvent(failed.getId(), open.getId());
+        categoryRegionPendingQueue.addPendingEvent(sent.getId(), open.getId());
+        given(solapiSmsClient.send(eq("010-1111-1111"), anyString()))
+                .willThrow(new IllegalStateException("발송 오류"));
+        given(solapiSmsClient.send(eq("010-2222-2222"), anyString()))
+                .willReturn(SmsSendResult.success("OK"));
+
+        int count = notificationDispatchService.flushCategoryRegionSummaries();
+
+        assertThat(count).isEqualTo(1);
+        verify(solapiSmsClient).send(eq("010-2222-2222"), eq("땡 잡을 기회 1건이 생겼어요!"));
+        assertThat(notificationInboxRepository.findAll())
+                .extracting(NotificationInbox::getUserId)
+                .containsExactly(OTHER_USER_ID);
+        assertThat(categoryRegionPendingQueue.pendingEventIds(sent.getId())).isEmpty();
+    }
+
+    @Test
     @DisplayName("이미 예약된 슬롯은 묶음 건수에서 빼고 남은 슬롯만 센다")
     void flushCategoryRegionSummaries_oneSlotClosed_countsOnlyOpenSlot() {
         NotificationSubscription subscription = notificationSubscriptionRepository.save(
