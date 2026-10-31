@@ -114,14 +114,14 @@ public class NotificationController {
     }
 
     /**
-     * 본인의 받은 알림을 최신순으로 조회한다. category 가 없으면 전체를 반환한다.
+     * 본인의 받은 알림을 최신 50건까지 조회한다. category 가 없으면 전체 종류에서 50건을 반환한다.
      *
      * @param loginUser 로그인한 고객
      * @param category  예약(RESERVATION) 또는 관심(INTEREST). 없으면 전체
-     * @return 받은 알림 목록
+     * @return 최신순 받은 알림. 최대 50건
      */
     @Operation(summary = "받은 알림 목록 조회",
-            description = "category 를 생략하면 전체다. RESERVATION 은 예약 확정·취소, INTEREST 는 빈자리·임박·초임박·묶음이다")
+            description = "최신 50건만 반환한다. category 를 생략하면 전체 종류에서 50건이다. RESERVATION 은 예약 확정·취소, INTEREST 는 빈자리·임박·초임박·묶음이다")
     @GetMapping("/inbox")
     public ResponseEntity<ApiResponse<List<NotificationInboxResponse>>> getInbox(
             @LoginUser AuthUser loginUser,

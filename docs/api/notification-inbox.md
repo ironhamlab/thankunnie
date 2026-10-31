@@ -6,7 +6,7 @@
 
 ## GET /api/v1/notifications/inbox — 받은 알림 목록
 
-최신순이다. `readAt` 이 `null` 이면 아직 읽지 않은 알림이다.
+최신 50건만 반환한다. 그보다 오래된 알림은 목록에 없다. `readAt` 이 `null` 이면 아직 읽지 않은 알림이다.
 
 ```json
 {

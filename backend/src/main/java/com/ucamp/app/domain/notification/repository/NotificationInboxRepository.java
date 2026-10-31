@@ -13,21 +13,21 @@ import com.ucamp.app.domain.notification.entity.NotificationInboxCategory;
 public interface NotificationInboxRepository extends JpaRepository<NotificationInbox, Long> {
 
     /**
-     * 한 회원의 받은 알림을 최신순으로 조회한다.
+     * 한 회원의 받은 알림을 최신 50건까지 조회한다.
      *
      * @param userId 회원 ID
-     * @return 받은 알림 목록
+     * @return 최신순 받은 알림. 최대 50건
      */
-    List<NotificationInbox> findByUserIdOrderByCreatedAtDescIdDesc(Long userId);
+    List<NotificationInbox> findTop50ByUserIdOrderByCreatedAtDescIdDesc(Long userId);
 
     /**
-     * 한 회원의 받은 알림을 종류로 걸러 최신순으로 조회한다.
+     * 한 회원의 받은 알림을 종류로 걸러 최신 50건까지 조회한다.
      *
      * @param userId   회원 ID
      * @param category 예약 또는 관심
-     * @return 받은 알림 목록
+     * @return 최신순 받은 알림. 최대 50건
      */
-    List<NotificationInbox> findByUserIdAndCategoryOrderByCreatedAtDescIdDesc(
+    List<NotificationInbox> findTop50ByUserIdAndCategoryOrderByCreatedAtDescIdDesc(
             Long userId, NotificationInboxCategory category);
 
     /**

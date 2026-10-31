@@ -73,6 +73,25 @@ class NotificationInboxQueryTest {
     }
 
     @Test
+    @DisplayName("받은 알림은 최신 50건만 반환한다")
+    void getMyInbox_returnsAtMost50Newest() {
+        for (int index = 1; index <= 51; index++) {
+            notificationInboxService.save(CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,
+                    "알림" + index, "본문", "/my-reservations");
+        }
+
+        assertThat(notificationInboxService.getMyInbox(CUSTOMER, null))
+                .extracting(NotificationInboxResponse::title)
+                .hasSize(50)
+                .first()
+                .isEqualTo("알림51");
+        assertThat(notificationInboxService.getMyInbox(CUSTOMER, NotificationInboxCategory.RESERVATION))
+                .extracting(NotificationInboxResponse::title)
+                .hasSize(50)
+                .doesNotContain("알림1");
+    }
+
+    @Test
     @DisplayName("안 읽은 수만 세고 모두 읽으면 0이 되며 이미 읽은 시각은 유지한다")
     void countUnread_andMarkAllRead_keepsFirstReadAt() {
         notificationInboxService.save(CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,

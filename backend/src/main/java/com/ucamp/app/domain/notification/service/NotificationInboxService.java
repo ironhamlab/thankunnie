@@ -59,20 +59,20 @@ public class NotificationInboxService {
     }
 
     /**
-     * 로그인한 고객 본인의 받은 알림을 최신순으로 조회한다.
-     * category 가 없으면 전체를 반환한다.
+     * 로그인한 고객 본인의 받은 알림을 최신 50건까지 조회한다.
+     * category 가 없으면 전체 종류에서 50건을 반환한다.
      *
      * @param loginUser 로그인한 고객
      * @param category  예약 또는 관심. null 이면 전체
-     * @return 받은 알림 목록
+     * @return 최신순 받은 알림. 최대 50건
      */
     public List<NotificationInboxResponse> getMyInbox(AuthUser loginUser, NotificationInboxCategory category) {
         loginUser.requireRole(UserRole.CUSTOMER);
         List<NotificationInbox> inboxes;
         if (category == null) {
-            inboxes = notificationInboxRepository.findByUserIdOrderByCreatedAtDescIdDesc(loginUser.userId());
+            inboxes = notificationInboxRepository.findTop50ByUserIdOrderByCreatedAtDescIdDesc(loginUser.userId());
         } else {
-            inboxes = notificationInboxRepository.findByUserIdAndCategoryOrderByCreatedAtDescIdDesc(
+            inboxes = notificationInboxRepository.findTop50ByUserIdAndCategoryOrderByCreatedAtDescIdDesc(
                     loginUser.userId(), category);
         }
         return inboxes.stream().map(NotificationInboxResponse::from).toList();
