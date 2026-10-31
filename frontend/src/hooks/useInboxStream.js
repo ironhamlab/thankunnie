@@ -139,6 +139,8 @@ export function useInboxStream(enabled, popoverOpen) {
           if (myId !== connectionId || current.signal.aborted) {
             return;
           }
+          // 서버가 스트림을 정상 종료해도 바로 다시 붙지 않고 잠시 기다린다.
+          await wait(RECONNECT_WAIT_MS, current.signal);
         }
       };
 
