@@ -18,7 +18,7 @@ import styles from './FavoriteShopList.module.css';
  * 알림 받기는 문자 수신 동의가 있을 때만 시간 입력을 연다. 없으면 동의 모달을 띄운다.
  * 시간을 저장하면 이 목록에서 빠지고, 그때부터 빈자리 알림을 받는다.
  */
-export default function FavoriteShopList() {
+export default function FavoriteShopList({ onBusyChange }) {
   const subscriptions = useNotificationStore((state) => state.subscriptions);
   const listStatus = useNotificationStore((state) => state.listStatus);
   const listError = useNotificationStore((state) => state.listError);
@@ -48,6 +48,8 @@ export default function FavoriteShopList() {
     loadShopNames(storeShopIds.split(','));
   }, [storeShopIds, loadShopNames]);
 
+  useEffect(() => () => onBusyChange?.(false), [onBusyChange]);
+
   const handleNotify = async (shopId) => {
     setResult(null);
     if (openId === shopId) {
@@ -56,12 +58,14 @@ export default function FavoriteShopList() {
     }
     if (agreeing) return;
     setAgreeing(true);
+    onBusyChange?.(true);
     try {
       // 서버의 최신 문자 수신 동의를 확인하고, 없으면 동의 모달에서 PUT 으로 저장한다
       const agreed = await ensureAgreement(TERMS_CODE.SMS_NOTIFICATION);
       if (agreed) setOpenId(shopId);
     } finally {
       setAgreeing(false);
+      onBusyChange?.(false);
     }
   };
 

@@ -25,6 +25,10 @@
   color: white;
   font-weight: 700;
 }
+.tab:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
 .count {
   display: inline-grid;
   place-items: center;

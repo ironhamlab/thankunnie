@@ -30,7 +30,7 @@ const emptyForm = () => ({
  * 희망 날짜는 오늘부터 30일 안만, 시각은 기본 time 입력(30분 단위)으로 고른다.
  * 종료가 시작보다 같거나 이르거나 이미 지났으면 요청 전에 막는다. 서버는 그때 NOTIFICATION_003 을 준다.
  */
-export default function SubscriptionCreateForm() {
+export default function SubscriptionCreateForm({ onBusyChange }) {
   const categories = useNotificationStore((state) => state.categories);
   const saving = useNotificationStore((state) => state.saving);
   const loadCategories = useNotificationStore((state) => state.loadCategories);
@@ -50,6 +50,8 @@ export default function SubscriptionCreateForm() {
     // 같은 시술·지역·시간이 이미 있는지 보려면 구독 목록이 스토어에 있어야 한다
     loadSubscriptions();
   }, [loadCategories, loadSubscriptions]);
+
+  useEffect(() => () => onBusyChange?.(false), [onBusyChange]);
 
   const change = (field) => (event) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }));
@@ -81,6 +83,7 @@ export default function SubscriptionCreateForm() {
     if (!canSubmit || agreeing) return;
     setResult(null);
     setAgreeing(true);
+    onBusyChange?.(true);
     try {
       // 서버의 최신 문자 수신 동의를 확인하고, 없으면 동의 모달에서 PUT 으로 저장한다
       const agreed = await ensureAgreement(TERMS_CODE.SMS_NOTIFICATION);
@@ -94,6 +97,7 @@ export default function SubscriptionCreateForm() {
       if (ok) setForm(emptyForm());
     } finally {
       setAgreeing(false);
+      onBusyChange?.(false);
     }
   };
 
