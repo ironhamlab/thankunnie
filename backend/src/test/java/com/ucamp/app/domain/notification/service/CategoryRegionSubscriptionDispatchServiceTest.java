@@ -73,6 +73,27 @@ class CategoryRegionSubscriptionDispatchServiceTest {
     }
 
     @Test
+    @DisplayName("60분 안이라도 이미 발송 줄이 있는 이벤트는 묶음에 넣지 않는다")
+    void enqueue_duringCooldown_skipsEventThatAlreadyHasDispatch() {
+        NotificationSubscription subscription = categorySubscription();
+        given(existingVacancyTargetService.findForCategoryRegion(10L, "SEOUL_GANGNAM", HOPE_START, HOPE_END))
+                .willReturn(List.of(event(10L, HOPE_START.plusHours(1))));
+        given(notificationDispatchRepository.existsByEventIdAndUserId(10L, USER_ID)).willReturn(false);
+        categoryRegionSubscriptionDispatchService.enqueue(subscription);
+
+        NotificationEvent alreadySent = event(10L, HOPE_START.plusHours(1));
+        NotificationEvent fresh = event(11L, HOPE_START.plusHours(2));
+        given(existingVacancyTargetService.findForCategoryRegion(10L, "SEOUL_GANGNAM", HOPE_START, HOPE_END))
+                .willReturn(List.of(alreadySent, fresh));
+        given(notificationDispatchRepository.existsByEventIdAndUserId(10L, USER_ID)).willReturn(true);
+        given(notificationDispatchRepository.existsByEventIdAndUserId(11L, USER_ID)).willReturn(false);
+
+        categoryRegionSubscriptionDispatchService.enqueue(subscription);
+
+        assertThat(categoryRegionPendingQueue.pendingEventIds(SUBSCRIPTION_ID)).containsExactly(11L);
+    }
+
+    @Test
     @DisplayName("같은 이벤트·회원의 줄이 있으면 다시 만들지 않는다")
     void enqueue_existingRow_doesNotSaveAgain() {
         NotificationSubscription subscription = categorySubscription();

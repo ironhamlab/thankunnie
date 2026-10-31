@@ -58,16 +58,18 @@ public class CategoryRegionSubscriptionDispatchService {
                 subscription.getStartTime(), subscription.getEndTime());
         LocalDateTime now = LocalDateTime.now(clock);
         for (NotificationEvent event : targets) {
+            // 이미 이 회원에게 발송 줄이 있으면 단건이든 묶음이든 다시 넣지 않는다.
+            if (notificationDispatchRepository.existsByEventIdAndUserId(event.getId(), subscription.getUserId())) {
+                continue;
+            }
             if (isCoolingDown(subscription.getId(), now)) {
                 categoryRegionPendingQueue.addPendingEvent(subscription.getId(), event.getId());
                 continue;
             }
-            if (!notificationDispatchRepository.existsByEventIdAndUserId(event.getId(), subscription.getUserId())) {
-                notificationDispatchRepository.save(NotificationDispatch.builder()
-                        .eventId(event.getId())
-                        .userId(subscription.getUserId())
-                        .build());
-            }
+            notificationDispatchRepository.save(NotificationDispatch.builder()
+                    .eventId(event.getId())
+                    .userId(subscription.getUserId())
+                    .build());
             categoryRegionPendingQueue.markSent(subscription.getId(), now);
         }
     }
