@@ -92,4 +92,9 @@ tasks.named('processResources') {
         include '02_init_data_dml.sql'
         rename '02_init_data_dml.sql', 'init-data.sql'
     }
+    // 시연 데이터도 local 프로필에서만 초기 데이터 다음에 넣는다. init-data.sql 로 검증하는 테스트에는 섞이지 않는다
+    from('../docs/erd') {
+        include '03_demo_data_dml.sql'
+        rename '03_demo_data_dml.sql', 'demo-data.sql'
+    }
 }
