@@ -34,8 +34,10 @@ export default function WeekHoursSummary({ days }) {
           return (
             <li key={day.dayOfWeek}>
               <span className={styles.label}>{DAY_LABELS[day.dayOfWeek]}</span>
+              {/* 일반 span 의 aria-label 은 읽히지 않아 그림 역할을 줘 영업 구간을 대체 텍스트로 전한다 */}
               <span
                 className={styles.track}
+                role="img"
                 aria-label={
                   open
                     ? `${DAY_LABELS[day.dayOfWeek]}요일 ${clockLabel(day.openTime)}부터 ${clockLabel(day.closeTime)}까지`
