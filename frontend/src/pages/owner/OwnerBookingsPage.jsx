@@ -67,9 +67,11 @@ export default function OwnerBookingsPage() {
     }
   }, [loadReservation, clearDetail, activeId, listStatus]);
 
-  // 한 단 화면에서는 상세가 목록 아래에 있어, 상세 보기를 누르면 상세로 내려가 바뀐 내용을 바로 보게 한다
+  // 상세 보기를 누르면 포커스를 상세로 옮겨, 키보드 사용자가 남은 목록 버튼을 거치지 않고 바로 상세를 읽게 한다.
+  // 한 단 화면에서는 상세가 목록 아래에 있어 상세 위치로 스크롤도 한다
   const showDetail = (reservationId) => {
     setSelectedId(reservationId);
+    detailRef.current?.focus({ preventScroll: true });
     if (window.matchMedia(SINGLE_COLUMN_QUERY).matches) {
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       detailRef.current?.scrollIntoView({
@@ -213,7 +215,7 @@ export default function OwnerBookingsPage() {
             </>
           )}
         </Panel>
-        <aside ref={detailRef} className="b-stack">
+        <aside ref={detailRef} tabIndex={-1} aria-label="예약 상세" className="b-stack">
           {listStatus === 'succeeded' && (
             <ReservationDetailPanel viewer="owner" cancelPath={cancelPath} />
           )}
