@@ -109,6 +109,46 @@ class NotificationDispatchRepositoryTest {
     }
 
     @Test
+    @DisplayName("같은 이벤트·회원은 성공·실패·대기 등 어느 상태든 이미 있는 줄이다")
+    void existsByEventIdAndUserId_anyStatus_isTrue() {
+        long eventId = saveEvent(1L).getId();
+        NotificationDispatch saved = notificationDispatchRepository.saveAndFlush(dispatch(eventId, USER_ID));
+
+        assertExistsForEveryStatus(saved, eventId, NotificationDispatchStatus.PENDING);
+
+        notificationDispatchRepository.claimPending(
+                saved.getId(),
+                NotificationDispatchStatus.PENDING,
+                NotificationDispatchStatus.PROCESSING,
+                SLOT_START);
+        assertExistsForEveryStatus(saved, eventId, NotificationDispatchStatus.PROCESSING);
+
+        saved.markSkipped();
+        notificationDispatchRepository.saveAndFlush(saved);
+        assertExistsForEveryStatus(saved, eventId, NotificationDispatchStatus.SKIPPED);
+
+        saved.markSent();
+        notificationDispatchRepository.saveAndFlush(saved);
+        assertExistsForEveryStatus(saved, eventId, NotificationDispatchStatus.SENT);
+
+        saved.markFailed("발송 실패");
+        notificationDispatchRepository.saveAndFlush(saved);
+        assertExistsForEveryStatus(saved, eventId, NotificationDispatchStatus.FAILED);
+
+        saved.markUnknown("결과 불명");
+        notificationDispatchRepository.saveAndFlush(saved);
+        assertExistsForEveryStatus(saved, eventId, NotificationDispatchStatus.UNKNOWN);
+    }
+
+    private void assertExistsForEveryStatus(NotificationDispatch saved, long eventId,
+            NotificationDispatchStatus expectedStatus) {
+        NotificationDispatch found = notificationDispatchRepository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getStatus()).isEqualTo(expectedStatus);
+        assertThat(notificationDispatchRepository.existsByEventIdAndUserId(eventId, USER_ID)).isTrue();
+        assertThat(notificationDispatchRepository.existsByEventIdAndUserId(eventId, OTHER_USER_ID)).isFalse();
+    }
+
+    @Test
     @DisplayName("같은 이벤트·회원에 SENT 또는 UNKNOWN 이 있는지 확인할 수 있다")
     void existsByEventIdAndUserIdAndStatusIn_sentOrUnknown() {
         long eventId = saveEvent(1L).getId();
@@ -183,6 +223,43 @@ class NotificationDispatchRepositoryTest {
         assertThat(second).isZero();
         assertThat(notificationDispatchRepository.findById(saved.getId()).orElseThrow().getStatus())
                 .isEqualTo(NotificationDispatchStatus.PROCESSING);
+    }
+
+    @Test
+    @DisplayName("희망 시간 안의 그 매장 이벤트만 시작 시각 순으로 가져온다")
+    void findByShopAndSlotStartInHopeTime_includesBoundsAndSameShopOnly() {
+        NotificationFixture.shop(jdbcTemplate, 2L, 10L, "SEOUL_MAPO", "ACTIVE");
+        NotificationEvent atStart = notificationEventRepository.saveAndFlush(NotificationEvent.builder()
+                .eventType(NotificationEventType.LAST_MINUTE)
+                .exceptionId(10L)
+                .shopId(SHOP_ID)
+                .slotStartsAt(SLOT_START)
+                .slotEndsAt(SLOT_START.plusHours(1))
+                .build());
+        NotificationEvent atEnd = notificationEventRepository.saveAndFlush(NotificationEvent.builder()
+                .eventType(NotificationEventType.REOPENED)
+                .shopId(SHOP_ID)
+                .slotStartsAt(SLOT_START.plusHours(2))
+                .slotEndsAt(SLOT_START.plusHours(3))
+                .build());
+        notificationEventRepository.saveAndFlush(NotificationEvent.builder()
+                .eventType(NotificationEventType.IMMINENT)
+                .exceptionId(11L)
+                .shopId(SHOP_ID)
+                .slotStartsAt(SLOT_START.minusHours(1))
+                .slotEndsAt(SLOT_START)
+                .build());
+        notificationEventRepository.saveAndFlush(NotificationEvent.builder()
+                .eventType(NotificationEventType.IMMINENT)
+                .exceptionId(12L)
+                .shopId(2L)
+                .slotStartsAt(SLOT_START.plusHours(1))
+                .slotEndsAt(SLOT_START.plusHours(2))
+                .build());
+
+        assertThat(notificationEventRepository.findByShopAndSlotStartInHopeTime(
+                SHOP_ID, SLOT_START, SLOT_START.plusHours(2)))
+                .containsExactly(atStart, atEnd);
     }
 
     private NotificationEvent saveEvent(long exceptionId) {

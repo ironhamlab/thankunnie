@@ -2,7 +2,7 @@ import Notice from '@/components/common/Notice';
 
 /**
  * 구독 화면의 문자 안내. 발송은 서버가 구독과 가입 휴대폰 번호를 읽어 한다.
- * 이 화면에는 발송 버튼과 받은 알림 목록이 없다.
+ * 이 화면에는 발송 버튼이 없다. 받은 알림은 상단 종에서 본다.
  */
 export default function SmsNotice() {
   return (
@@ -16,7 +16,7 @@ export default function SmsNotice() {
         시술·지역 알림은 문자를 만든 뒤 60분 동안 다음 빈자리를 모아 한 통으로 보냅니다. 이 간격은
         바꿀 수 없습니다.
       </p>
-      <p>앱 안 알림 목록은 생기지 않습니다.</p>
+      <p>받은 알림은 상단 종 아이콘에서도 볼 수 있습니다.</p>
     </Notice>
   );
 }

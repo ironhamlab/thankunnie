@@ -118,12 +118,42 @@
   position: absolute;
   top: -1px;
   right: -2px;
+  z-index: 1;
   background: var(--color-primary);
   color: var(--color-white);
   border-radius: var(--radius-xl);
   font-size: 10px;
   min-width: 17px;
+  line-height: 17px;
   text-align: center;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 45%, transparent);
+  transform-origin: center;
+}
+/* 개수가 늘면 통통 튀며 한 번 번쩍 보이게 한다 */
+.count.isIncreased {
+  animation: countAttend 0.55s cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+@keyframes countAttend {
+  0% {
+    transform: scale(0.55);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 50%, transparent);
+  }
+  45% {
+    transform: scale(1.35);
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+  70% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .count.isIncreased {
+    animation: none;
+  }
 }
 .notifications {
   position: absolute;

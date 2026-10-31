@@ -61,7 +61,7 @@ class RecipientContactRepositoryTest {
     }
 
     @Test
-    @DisplayName("예약 ID로 취소 문자에 넣을 고객 번호·매장 이름·예약 시작 시각을 읽는다")
+    @DisplayName("예약 ID로 취소 문자에 넣을 회원·전화번호·매장 이름·예약 시작 시각을 읽는다")
     void findCancelSmsInfo_existingReservation_returnsInfo() {
         LocalDateTime startsAt = LocalDateTime.of(2026, 11, 2, 10, 0);
         NotificationFixture.treatment(jdbcTemplate, 20L, 1L, "NORMAL");
@@ -69,9 +69,9 @@ class RecipientContactRepositoryTest {
                 startsAt, startsAt.plusHours(1), startsAt.minusDays(1));
 
         assertThat(recipientContactRepository.findCancelSmsInfo(100L))
-                .contains(new CancelSmsInfo("010-1111-1111", "매장1", startsAt));
+                .contains(new CancelSmsInfo(1L, "010-1111-1111", "매장1", startsAt));
         assertThat(recipientContactRepository.findReservationSmsInfo(100L))
-                .contains(new CancelSmsInfo("010-1111-1111", "매장1", startsAt));
+                .contains(new CancelSmsInfo(1L, "010-1111-1111", "매장1", startsAt));
     }
 
     @Test

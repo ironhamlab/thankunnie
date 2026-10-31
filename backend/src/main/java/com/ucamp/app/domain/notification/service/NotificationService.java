@@ -33,6 +33,8 @@ import com.ucamp.app.domain.user.service.TermsAgreementService;
 public class NotificationService {
 
     private final NotificationSubscriptionRepository notificationSubscriptionRepository;
+    private final StoreSubscriptionDispatchService storeSubscriptionDispatchService;
+    private final CategoryRegionSubscriptionDispatchService categoryRegionSubscriptionDispatchService;
     private final Clock clock;
     private final TermsAgreementService termsAgreementService;
 
@@ -68,7 +70,9 @@ public class NotificationService {
         validateNoDuplicate(loginUser.userId(), subscription.getSubscriptionType(), subscription.getShopId(),
                 subscription.getCategoryId(), subscription.getRegionCode(), subscription.getStartTime(),
                 subscription.getEndTime(), null);
-        return NotificationSubscriptionResponse.from(notificationSubscriptionRepository.save(subscription));
+        NotificationSubscription saved = notificationSubscriptionRepository.save(subscription);
+        enqueueOpenVacancies(saved);
+        return NotificationSubscriptionResponse.from(saved);
     }
 
     /**
@@ -89,7 +93,7 @@ public class NotificationService {
     /**
      * 본인의 활성 구독에서 대상과 희망 시간을 바꾼다. 구독 유형은 유지한다.
      * 찜(희망 시간 없음)에 희망 시간을 넣어 알림을 새로 켤 때만 문자 수신 동의를 검사한다.
-     * 이미 알림이 켜진 구독의 수정은 검사하지 않는다 (약관 도입 전에 등록한 구독도 계속 수정할 수 있어야 함).
+     * 이미 알림이 켜진 구독의 수정은 동의는 검사하지 않고, 바꾼 희망 시간에 들어오는 열린 빈자리는 다시 찾는다.
      *
      * @param loginUser      로그인한 고객
      * @param subscriptionId 구독 ID
@@ -114,6 +118,9 @@ public class NotificationService {
         validateNoDuplicate(loginUser.userId(), subscription.getSubscriptionType(), subscription.getShopId(),
                 subscription.getCategoryId(), subscription.getRegionCode(), subscription.getStartTime(),
                 subscription.getEndTime(), subscription.getId());
+        // 처음 희망 시간을 넣을 때와 같이, 수정 후에도 지금 열린 빈자리 중 희망 시간에 들어오는 것을 다시 찾는다.
+        // 이미 같은 이벤트·회원으로 보낸 줄이 있으면 발송 쪽에서 다시 만들지 않는다.
+        enqueueOpenVacancies(subscription);
         return NotificationSubscriptionResponse.from(subscription);
     }
 
@@ -152,6 +159,20 @@ public class NotificationService {
             LocalDateTime slotStartTime) {
         return notificationSubscriptionRepository.findNotifiableByCategoryRegion(
                 categoryId, regionCode, slotStartTime, now());
+    }
+
+    // 희망 시작·종료가 있을 때만 이미 열린 빈자리를 넣는다. 시간 없는 찜은 넣지 않는다.
+    private void enqueueOpenVacancies(NotificationSubscription subscription) {
+        if (subscription.getStartTime() == null || subscription.getEndTime() == null) {
+            return;
+        }
+        if (subscription.getSubscriptionType() == SubscriptionType.STORE) {
+            storeSubscriptionDispatchService.enqueue(subscription);
+            return;
+        }
+        if (subscription.getSubscriptionType() == SubscriptionType.CATEGORY_REGION) {
+            categoryRegionSubscriptionDispatchService.enqueue(subscription);
+        }
     }
 
     // 희망 시간이 하나라도 있으면 문자 알림 대상이다.

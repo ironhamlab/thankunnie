@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import EmptyState from '@/components/common/EmptyState';
+import InboxToastStack from '@/components/notification/InboxToastStack';
 import Footer from './Footer';
 import Header from './Header';
 
@@ -18,6 +19,7 @@ export default function MainLayout() {
           </Suspense>
         </main>
         <Footer />
+        <InboxToastStack />
       </div>
     </div>
   );

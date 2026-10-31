@@ -31,7 +31,7 @@ public class RecipientContactRepository {
             """;
 
     private static final String FIND_CANCEL_SMS_INFO = """
-            SELECT u.PHONE, s.NAME AS SHOP_NAME, r.STARTS_AT
+            SELECT u.USER_ID, u.PHONE, s.NAME AS SHOP_NAME, r.STARTS_AT
             FROM RESERVATION r
             JOIN APP_USER u ON u.USER_ID = r.USER_ID
             JOIN TREATMENT t ON t.TREATMENT_ID = r.TREATMENT_ID
@@ -82,7 +82,7 @@ public class RecipientContactRepository {
     }
 
     /**
-     * 취소 문자에 넣을 고객 전화번호·매장 이름·예약 시작 시각을 읽는다.
+     * 취소 문자에 넣을 회원·전화번호·매장 이름·예약 시작 시각을 읽는다.
      *
      * @param reservationId 취소된 예약 ID
      * @return 예약이 있으면 정보. 없거나 ID가 없으면 empty
@@ -92,7 +92,7 @@ public class RecipientContactRepository {
     }
 
     /**
-     * 예약 확정 문자에 넣을 고객 전화번호·매장 이름·예약 시작 시각을 읽는다.
+     * 예약 확정 문자에 넣을 회원·전화번호·매장 이름·예약 시작 시각을 읽는다.
      * 취소 문자와 같은 값을 쓴다.
      *
      * @param reservationId 확정된 예약 ID
@@ -106,6 +106,7 @@ public class RecipientContactRepository {
                 FIND_CANCEL_SMS_INFO,
                 Map.of("reservationId", reservationId),
                 (rs, rowNum) -> new CancelSmsInfo(
+                        rs.getLong("USER_ID"),
                         rs.getString("PHONE"),
                         rs.getString("SHOP_NAME"),
                         rs.getTimestamp("STARTS_AT").toLocalDateTime()));
@@ -116,12 +117,13 @@ public class RecipientContactRepository {
     }
 
     /**
-     * 취소 문자에 필요한 값.
+     * 예약 확정·취소 문자에 필요한 값.
      *
+     * @param userId   예약한 회원
      * @param phone    고객 전화번호. 없으면 null
      * @param shopName 매장 이름
      * @param startsAt 예약 시작 시각
      */
-    public record CancelSmsInfo(String phone, String shopName, LocalDateTime startsAt) {
+    public record CancelSmsInfo(Long userId, String phone, String shopName, LocalDateTime startsAt) {
     }
 }

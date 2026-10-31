@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
+import { USER_ROLE } from '@/constants/userRole';
 import { useCurrentRole } from '@/hooks/useCurrentRole';
+import { useInboxStream } from '@/hooks/useInboxStream';
 import { useLogout } from '@/hooks/useLogout';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDesignStore } from '@/store/useDesignStore';
+import { useInboxStore } from '@/store/useInboxStore';
+import { getDevTestUser } from '@/utils/devTestUser';
+import { formatDateTime } from '@/utils/reservationFormat';
 import SearchIcon from '@/components/icons/SearchIcon';
 import NotificationIcon from '@/components/icons/NotificationIcon';
 import ProfileIcon from '@/components/icons/ProfileIcon';
@@ -13,23 +18,10 @@ import CalendarIcon from '@/components/icons/CalendarIcon';
 import BoltIcon from '@/components/icons/BoltIcon';
 import styles from './Header.module.css';
 
-const NOTIFICATIONS = [
-  {
-    id: 'booking',
-    category: '예약',
-    title: '예약이 확정되었어요!',
-    text: '살롱 드 르네 · 젤 네일 원컬러 + 케어 예약 내역을 확인해 보세요.',
-    time: '방금 전',
-    to: ROUTES.MY_RESERVATIONS,
-  },
-  {
-    id: 'sale',
-    category: '타임세일',
-    title: '관심 지역에 새로운 빈자리가 열렸어요',
-    text: '놓치기 아까운 오늘의 뷰티 타임세일을 확인해 보세요.',
-    time: '5분 전',
-    to: `${ROUTES.HOME}?sale=1`,
-  },
+const INBOX_TABS = [
+  { id: 'ALL', label: '전체' },
+  { id: 'RESERVATION', label: '예약' },
+  { id: 'INTEREST', label: '관심' },
 ];
 
 /**
@@ -46,6 +38,19 @@ function getActiveMenu({ pathname, search }) {
   return null;
 }
 
+function InboxItemBody({ item }) {
+  return (
+    <>
+      <strong>
+        {item.readAt == null && <em>● </em>}
+        {item.title}
+      </strong>
+      <p>{item.body}</p>
+      <small>{formatDateTime(item.createdAt)}</small>
+    </>
+  );
+}
+
 /**
  * 고객 화면 공통 헤더. 휴대폰 폭에서는 아래 메뉴 막대도 함께 보여준다.
  */
@@ -59,10 +64,27 @@ export default function Header() {
   const search = useDesignStore((s) => s.search);
   const setSearch = useDesignStore((s) => s.setSearch);
   const [open, setOpen] = useState(false);
-  const [read, setRead] = useState(false);
-  const [tab, setTab] = useState('전체');
-  const unreadCount = read ? 0 : NOTIFICATIONS.length;
+  const [tab, setTab] = useState('ALL');
+  const [isCountIncreased, setIsCountIncreased] = useState(false);
+  // 개발 서버의 테스트 계정 스위치도 로그인으로 본다. API 토큰과 같은 기준이다.
+  const hasSession = Boolean(token) || Boolean(getDevTestUser());
+  const isCustomer = hasSession && role === USER_ROLE.CUSTOMER;
+  const unreadCount = useInboxStore((state) => state.unreadCount);
+  const items = useInboxStore((state) => state.items);
+  const listStatus = useInboxStore((state) => state.listStatus);
+  const listError = useInboxStore((state) => state.listError);
+  const loadInbox = useInboxStore((state) => state.loadInbox);
+  const markAllRead = useInboxStore((state) => state.markAllRead);
+  const previousCountRef = useRef(null);
   const popoverRef = useRef(null);
+  useInboxStream(isCustomer, open);
+  useEffect(() => {
+    const previousCount = previousCountRef.current;
+    previousCountRef.current = unreadCount;
+    if (previousCount != null && unreadCount > previousCount) {
+      setIsCountIncreased(true);
+    }
+  }, [unreadCount]);
   useEffect(() => {
     if (!open) return;
     const handleClick = (event) => {
@@ -84,6 +106,22 @@ export default function Header() {
     navigate(`${ROUTES.HOME}?search=1`);
   };
   const handleLogout = () => logout(ROUTES.HOME);
+  const handleBellClick = () => {
+    const nextOpen = !open;
+    setOpen(nextOpen);
+    if (nextOpen && isCustomer) {
+      loadInbox();
+    }
+  };
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllRead();
+      await loadInbox();
+    } catch {
+      // 모두 읽음이 실패하면 뱃지와 목록은 그대로 둔다.
+    }
+  };
+  const visibleItems = items.filter((item) => tab === 'ALL' || item.category === tab);
   const current = (menu) => (activeMenu === menu ? 'page' : undefined);
   return (
     <>
@@ -141,58 +179,98 @@ export default function Header() {
               </Link>
             )}
 
-            {/* 알림 영역 */}
+            {/* 알림 영역. 고객만 서버 알림을 본다 */}
             <div ref={popoverRef}>
               <button
+                type="button"
                 className={styles.notificationButton}
                 aria-label={unreadCount > 0 ? `알림, 읽지 않은 알림 ${unreadCount}개` : '알림'}
                 aria-expanded={open}
                 aria-controls="header-notifications"
-                onClick={() => setOpen(!open)}
+                onClick={handleBellClick}
               >
                 <NotificationIcon />
-                {unreadCount > 0 && <b className={styles.count}>{unreadCount}</b>}
+                {unreadCount > 0 && (
+                  <b
+                    className={
+                      isCountIncreased ? `${styles.count} ${styles.isIncreased}` : styles.count
+                    }
+                    onAnimationEnd={(event) => {
+                      // CSS Modules 가 키프레임 이름을 바꿔도 countAttend 가 이름에 남는다
+                      if (String(event.animationName).includes('countAttend')) {
+                        setIsCountIncreased(false);
+                      }
+                    }}
+                  >
+                    {unreadCount}
+                  </b>
+                )}
               </button>
               {open && (
                 <section
                   id="header-notifications"
                   className={styles.notifications}
-                  aria-label="실시간 알림"
+                  aria-label="알림"
                 >
                   <div className={styles.notificationsTitle}>
-                    <strong>♧ 실시간 알림 {unreadCount}</strong>
+                    <strong>알림 {unreadCount}</strong>
                     <div>
-                      <button onClick={() => setRead(true)}>
-                        {read ? '읽음 완료' : '모두 읽음'}
+                      <button
+                        type="button"
+                        onClick={handleMarkAllRead}
+                        disabled={!isCustomer || unreadCount === 0}
+                      >
+                        모두 읽음
                       </button>
-                      <button aria-label="알림 닫기" onClick={() => setOpen(false)}>
+                      <button type="button" aria-label="알림 닫기" onClick={() => setOpen(false)}>
                         ✕
                       </button>
                     </div>
                   </div>
-                  <div className={styles.notificationTabs}>
-                    {['전체', '예약', '타임세일'].map((label) => (
-                      <button
-                        key={label}
-                        aria-pressed={tab === label}
-                        onClick={() => setTab(label)}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  {NOTIFICATIONS.filter((n) => tab === '전체' || n.category === tab).map((n) => (
-                    <div className={styles.notificationItem} key={n.id}>
-                      <Link to={n.to} onClick={() => setOpen(false)}>
-                        <strong>
-                          {!read && <em>● </em>}
-                          {n.title}
-                        </strong>
-                        <p>{n.text}</p>
-                        <small>{n.time} · 예시 알림</small>
-                      </Link>
-                    </div>
-                  ))}
+                  {isCustomer ? (
+                    <>
+                      <div className={styles.notificationTabs}>
+                        {INBOX_TABS.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            aria-pressed={tab === item.id}
+                            onClick={() => setTab(item.id)}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                      {listStatus === 'loading' && visibleItems.length === 0 && (
+                        <p className={styles.notificationItem}>불러오는 중입니다.</p>
+                      )}
+                      {listStatus === 'failed' && (
+                        <p className={styles.notificationItem}>{listError}</p>
+                      )}
+                      {listStatus !== 'loading' &&
+                        listStatus !== 'failed' &&
+                        visibleItems.length === 0 && (
+                          <p className={styles.notificationItem}>알림이 없습니다.</p>
+                        )}
+                      {visibleItems.map((item) => (
+                        <div className={styles.notificationItem} key={item.inboxId}>
+                          {item.linkPath ? (
+                            <Link to={item.linkPath} onClick={() => setOpen(false)}>
+                              <InboxItemBody item={item} />
+                            </Link>
+                          ) : (
+                            <InboxItemBody item={item} />
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <p className={styles.notificationItem}>
+                      {hasSession
+                        ? '고객 계정에서 알림을 확인할 수 있습니다.'
+                        : '로그인 후 알림을 확인할 수 있습니다.'}
+                    </p>
+                  )}
                 </section>
               )}
             </div>

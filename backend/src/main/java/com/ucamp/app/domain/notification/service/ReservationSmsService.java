@@ -12,12 +12,13 @@ import lombok.extern.slf4j.Slf4j;
 import com.ucamp.app.domain.notification.client.SmsSendResult;
 import com.ucamp.app.domain.notification.client.SmsSendStatus;
 import com.ucamp.app.domain.notification.client.SolapiSmsClient;
+import com.ucamp.app.domain.notification.entity.NotificationInboxCategory;
 import com.ucamp.app.domain.notification.repository.RecipientContactRepository;
 import com.ucamp.app.domain.notification.repository.RecipientContactRepository.CancelSmsInfo;
 
 /**
  * 예약 확정 안내 문자를 고객에게 한 번 보낸다.
- * 결과는 DB 에 남기지 않고 로그로만 남긴다. 실패해도 다시 보내지 않는다.
+ * 발송에 성공하면 받은 알림에 한 줄 남긴다. 실패해도 다시 보내지 않는다.
  */
 @Slf4j
 @Service
@@ -26,8 +27,11 @@ public class ReservationSmsService {
 
     private static final DateTimeFormatter STARTS_AT_TEXT = DateTimeFormatter.ofPattern("M월 d일 HH:mm");
 
+    private static final String CONFIRMED_TITLE = "예약이 확정되었어요";
+
     private final RecipientContactRepository recipientContactRepository;
     private final SolapiSmsClient solapiSmsClient;
+    private final NotificationInboxService notificationInboxService;
 
     /**
      * @param reservationId 확정된 예약 ID
@@ -44,8 +48,15 @@ public class ReservationSmsService {
             return;
         }
 
-        SmsSendResult result = solapiSmsClient.send(info.phone(), buildMessage(info));
+        String messageBody = buildMessage(info);
+        SmsSendResult result = solapiSmsClient.send(info.phone(), messageBody);
         if (result.status() == SmsSendStatus.SUCCESS) {
+            notificationInboxService.save(
+                    info.userId(),
+                    NotificationInboxCategory.RESERVATION,
+                    CONFIRMED_TITLE,
+                    messageBody,
+                    NotificationInboxService.MY_RESERVATIONS_PATH);
             log.info("예약 확정 문자 발송 성공 reservationId={}, providerMessageId={}",
                     reservationId, result.providerMessageId());
         } else {
