@@ -46,6 +46,7 @@ export function useInboxStream(enabled, popoverOpen) {
       return undefined;
     }
 
+    let disposed = false;
     let connectionId = 0;
     let controller = null;
     let baselineReady = false;
@@ -56,11 +57,17 @@ export function useInboxStream(enabled, popoverOpen) {
     const publishCount = (count) => {
       chain = chain
         .then(async () => {
+          if (disposed) {
+            return;
+          }
           applyUnreadCount(count);
           if (popoverOpenRef.current) {
             loadInbox();
           }
           const items = await notificationApi.getInbox();
+          if (disposed) {
+            return;
+          }
           const list = items ?? [];
           if (!baselineReady) {
             list.forEach((item) => seenIds.add(item.inboxId));
@@ -149,6 +156,7 @@ export function useInboxStream(enabled, popoverOpen) {
     start();
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
+      disposed = true;
       stop();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
