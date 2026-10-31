@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { generatePath, Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
+import { TERMS_CODE } from '@/constants/terms';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import { useTermsStore } from '@/store/useTermsStore';
 import { isPendingFavorite, shopLabel } from '@/utils/notificationRules';
 import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
@@ -13,9 +15,10 @@ import styles from './FavoriteShopList.module.css';
 
 /**
  * 알림 전 찜 매장. 희망 시간이 없는 업장 구독이다.
- * 알림 받기로 그 구독에 시간을 넣으면 이 목록에서 빠지고, 그때부터 빈자리 알림을 받는다.
+ * 알림 받기는 문자 수신 동의가 있을 때만 시간 입력을 연다. 없으면 동의 모달을 띄운다.
+ * 시간을 저장하면 이 목록에서 빠지고, 그때부터 빈자리 알림을 받는다.
  */
-export default function FavoriteShopList() {
+export default function FavoriteShopList({ onBusyChange }) {
   const subscriptions = useNotificationStore((state) => state.subscriptions);
   const listStatus = useNotificationStore((state) => state.listStatus);
   const listError = useNotificationStore((state) => state.listError);
@@ -25,8 +28,10 @@ export default function FavoriteShopList() {
   const loadShopNames = useNotificationStore((state) => state.loadShopNames);
   const updateSubscription = useNotificationStore((state) => state.updateSubscription);
   const removeSubscription = useNotificationStore((state) => state.removeSubscription);
+  const ensureAgreement = useTermsStore((state) => state.ensureAgreement);
   const shops = subscriptions.filter((item) => isPendingFavorite(item));
   const [openId, setOpenId] = useState(null);
+  const [agreeing, setAgreeing] = useState(false);
   const [result, setResult] = useState(null);
 
   const storeShopIds = shops
@@ -43,9 +48,25 @@ export default function FavoriteShopList() {
     loadShopNames(storeShopIds.split(','));
   }, [storeShopIds, loadShopNames]);
 
-  const toggle = (shopId) => {
+  useEffect(() => () => onBusyChange?.(false), [onBusyChange]);
+
+  const handleNotify = async (shopId) => {
     setResult(null);
-    setOpenId((current) => (current === shopId ? null : shopId));
+    if (openId === shopId) {
+      setOpenId(null);
+      return;
+    }
+    if (agreeing) return;
+    setAgreeing(true);
+    onBusyChange?.(true);
+    try {
+      // 서버의 최신 문자 수신 동의를 확인하고, 없으면 동의 모달에서 PUT 으로 저장한다
+      const agreed = await ensureAgreement(TERMS_CODE.SMS_NOTIFICATION);
+      if (agreed) setOpenId(shopId);
+    } finally {
+      setAgreeing(false);
+      onBusyChange?.(false);
+    }
   };
 
   const handleSubmit = async (shop, { startTime, endTime }) => {
@@ -132,7 +153,8 @@ export default function FavoriteShopList() {
                     type="button"
                     size="small"
                     aria-expanded={open}
-                    onClick={() => toggle(shop.shopId)}
+                    disabled={saving || agreeing}
+                    onClick={() => handleNotify(shop.shopId)}
                   >
                     {open ? '접기' : '알림 받기'}
                   </Button>

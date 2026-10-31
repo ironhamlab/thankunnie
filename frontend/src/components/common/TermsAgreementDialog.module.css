@@ -1,37 +1,101 @@
+.dialog {
+  border: 0;
+  border-top: 4px solid var(--color-primary);
+  width: min(440px, calc(100vw - 32px));
+  box-shadow: 0 24px 60px #b7005226;
+}
+
+.dialog :global(.b-pad) {
+  padding: 22px 22px 18px;
+  background: var(--color-white);
+}
+
+.dialog :global(.b-panel-heading) {
+  justify-content: center;
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.dialog h2 {
+  font-size: 17px;
+  line-height: 1.45;
+  text-align: center;
+  word-break: keep-all;
+  padding-inline: 8px;
+}
+
 .root {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
-  max-width: 420px;
+  align-items: center;
+  gap: 14px;
 }
 
-.description {
+.badge {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--color-primary-soft), var(--color-primary-faint));
+  color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px #b7005214;
+}
+
+.badgeMark {
+  font-size: 18px;
+  line-height: 1;
+  color: var(--color-primary);
+}
+
+/* Dialog 공통의 .root p 여백보다 구체적으로 잡는다 */
+.root .description {
   margin: 0;
+  text-align: center;
   color: var(--color-text-secondary);
   font-size: 14px;
+  line-height: 1.5;
+  word-break: keep-all;
 }
 
 .content {
-  padding: var(--spacing-md);
-  border: 1px solid var(--color-border);
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #ffd0e0;
   border-radius: var(--radius-md);
-  background: var(--color-background);
+  background: linear-gradient(180deg, #fff8fb, var(--color-white) 70%);
 }
 
 .content h3 {
-  margin: 0 0 var(--spacing-sm);
-  font-size: 14px;
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary);
 }
 
-.content p {
+.root .content p {
   margin: 0;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--color-text-secondary);
+  word-break: keep-all;
 }
 
 .actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.actions :global(.b-button) {
+  width: 100%;
+}
+
+.confirm {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
 }

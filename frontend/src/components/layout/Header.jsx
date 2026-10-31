@@ -42,7 +42,6 @@ function getActiveMenu({ pathname, search }) {
   if (pathname === ROUTES.HOME && params.get('sale') === '1') return 'sale';
   if (pathname === ROUTES.HOME && (params.has('view') || params.has('search'))) return 'search';
   if (pathname === ROUTES.MY_RESERVATIONS) return 'reservations';
-  if (pathname === ROUTES.MY_NOTIFICATIONS) return 'notifications';
   if (pathname === ROUTES.PROFILE) return 'profile';
   return null;
 }
@@ -117,9 +116,6 @@ export default function Header() {
             </Link>
             <Link to={ROUTES.MY_RESERVATIONS} aria-current={current('reservations')}>
               <CalendarIcon size={16} /> 내 예약
-            </Link>
-            <Link to={ROUTES.MY_NOTIFICATIONS} aria-current={current('notifications')}>
-              <NotificationIcon size={16} /> 구독
             </Link>
           </nav>
 
@@ -223,9 +219,6 @@ export default function Header() {
         </Link>
         <Link to={ROUTES.MY_RESERVATIONS} aria-current={current('reservations')}>
           <CalendarIcon size={20} />내 예약
-        </Link>
-        <Link to={ROUTES.MY_NOTIFICATIONS} aria-current={current('notifications')}>
-          <NotificationIcon size={20} />내 알림
         </Link>
       </nav>
     </>
