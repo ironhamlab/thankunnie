@@ -3,22 +3,26 @@ import { useScheduleStore } from '@/store/useScheduleStore';
 import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
 import Alert from '@/components/common/Alert';
+import { DAY_LABELS } from '@/utils/scheduleSlots';
+import { TIME_OPTIONS, toClock, toMinutes, toTime } from '@/utils/vacancyPreview';
+import WeekHoursSummary from '@/pages/owner/components/WeekHoursSummary';
+import BusinessHoursTips from '@/pages/owner/components/BusinessHoursTips';
+import styles from './BusinessHoursPanel.module.css';
 
-const DAY_LABELS = {
-  MON: '월',
-  TUE: '화',
-  WED: '수',
-  THU: '목',
-  FRI: '금',
-  SAT: '토',
-  SUN: '일',
-};
 const DEFAULT_OPEN = '10:00';
 const DEFAULT_CLOSE = '20:00';
+// 자정을 넘기는 영업은 받지 않아 종료는 23:30 까지, 시작은 종료 칸이 남도록 23:00 까지 고른다
+const LAST_OPEN = '23:00';
+const OPEN_OPTIONS = TIME_OPTIONS.filter((time) => time <= LAST_OPEN);
+
+const clockLabel = (time) => `${toClock(time).period} ${toClock(time).label}`;
+// 30분 단위가 아닌 예전 값도 그대로 보이도록 목록에 끼워 넣는다
+const withCurrent = (options, current) =>
+  !current || options.includes(current) ? options : [...options, current].sort();
 
 /**
- * 요일별 영업시간·휴무 설정. 예약이 걸린 시간을 줄이면 서버가 거절한다.
- * 저장하면 예약 가능 시간이 바뀌므로 onSaved 로 부모에게 알린다.
+ * 요일별 영업시간·휴무 설정. 요일마다 한 줄로 영업·휴무와 30분 단위 시작~종료를 고른다.
+ * 예약이 걸린 시간을 줄이면 서버가 거절한다. 저장하면 예약 가능 시간이 바뀌므로 onSaved 로 부모에게 알린다.
  */
 export default function BusinessHoursPanel({ hours, onSaved }) {
   const saveBusinessHours = useScheduleStore((state) => state.saveBusinessHours);
@@ -29,7 +33,17 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
   const handleDayChange = (dayOfWeek, key, value) => {
     setMessage(null);
     setDays((prev) =>
-      prev.map((day) => (day.dayOfWeek === dayOfWeek ? { ...day, [key]: value } : day)),
+      prev.map((day) => {
+        if (day.dayOfWeek !== dayOfWeek) {
+          return day;
+        }
+        const next = { ...day, [key]: value };
+        // 시작을 종료 이후로 옮기면 종료를 시작 30분 뒤로 따라 옮겨 잘못된 구간이 생기지 않게 한다
+        if (key === 'openTime' && next.closeTime <= value) {
+          next.closeTime = toTime(toMinutes(value) + 30);
+        }
+        return next;
+      }),
     );
   };
 
@@ -76,80 +90,95 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
   };
 
   return (
-    <Panel as="section" padded>
-      <div className="b-row b-panel-heading">
-        <h2>요일별 영업시간</h2>
-        <small className="b-muted">30분 단위 · 자정을 넘기는 영업은 지원하지 않습니다</small>
-      </div>
-      <form className="b-stack" onSubmit={handleSubmit} aria-busy={isSaving}>
-        <div className="b-table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>요일</th>
-                <th>휴무</th>
-                <th>영업 시작</th>
-                <th>영업 종료</th>
-              </tr>
-            </thead>
-            <tbody>
-              {days.map((day) => (
-                <tr key={day.dayOfWeek}>
-                  <td>
-                    <strong>{DAY_LABELS[day.dayOfWeek]}</strong>
-                  </td>
-                  <td>
-                    <input
-                      type="checkbox"
-                      aria-label={`${DAY_LABELS[day.dayOfWeek]}요일 휴무`}
-                      checked={day.closed}
-                      onChange={(event) => handleClosedChange(day, event.target.checked)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="time"
-                      step="1800"
-                      required={!day.closed}
-                      disabled={day.closed}
-                      aria-label={`${DAY_LABELS[day.dayOfWeek]}요일 영업 시작`}
-                      value={day.openTime ?? ''}
-                      onChange={(event) =>
-                        handleDayChange(day.dayOfWeek, 'openTime', event.target.value)
-                      }
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="time"
-                      step="1800"
-                      required={!day.closed}
-                      disabled={day.closed}
-                      aria-label={`${DAY_LABELS[day.dayOfWeek]}요일 영업 종료`}
-                      value={day.closeTime ?? ''}
-                      onChange={(event) =>
-                        handleDayChange(day.dayOfWeek, 'closeTime', event.target.value)
-                      }
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div className={styles.layout}>
+      <Panel as="section" padded>
+        <div className="b-row b-panel-heading">
+          <h2>요일별 영업시간</h2>
+          <small className="b-muted">30분 단위 · 자정을 넘기는 영업은 지원하지 않습니다</small>
         </div>
-        {message && (
-          <Alert
-            as="p"
-            tone={message.type === 'success' ? 'success' : 'error'}
-            role={message.type === 'success' ? 'status' : 'alert'}
-          >
-            {message.text}
-          </Alert>
-        )}
-        <Button variant="primary" disabled={isSaving}>
-          영업시간 저장
-        </Button>
-      </form>
-    </Panel>
+        <form className="b-stack" onSubmit={handleSubmit} aria-busy={isSaving}>
+          <ul className={styles.days}>
+            {days.map((day) => {
+              const label = DAY_LABELS[day.dayOfWeek];
+              const closeOptions = TIME_OPTIONS.filter((time) => time > day.openTime);
+              return (
+                <li key={day.dayOfWeek} className={styles.day}>
+                  <strong className={styles.label}>{label}</strong>
+                  <div
+                    className={`b-options ${styles.toggle}`}
+                    role="group"
+                    aria-label={`${label}요일 영업 여부`}
+                  >
+                    {[
+                      [false, '영업'],
+                      [true, '휴무'],
+                    ].map(([closed, text]) => (
+                      <button
+                        key={text}
+                        type="button"
+                        aria-pressed={day.closed === closed}
+                        className={day.closed === closed ? 'is-selected' : ''}
+                        onClick={() => handleClosedChange(day, closed)}
+                      >
+                        {text}
+                      </button>
+                    ))}
+                  </div>
+                  {day.closed ? (
+                    <span className={styles.off}>쉬는 날</span>
+                  ) : (
+                    <div className={styles.times}>
+                      <select
+                        aria-label={`${label}요일 영업 시작`}
+                        value={day.openTime}
+                        onChange={(event) =>
+                          handleDayChange(day.dayOfWeek, 'openTime', event.target.value)
+                        }
+                      >
+                        {withCurrent(OPEN_OPTIONS, day.openTime).map((time) => (
+                          <option key={time} value={time}>
+                            {clockLabel(time)}
+                          </option>
+                        ))}
+                      </select>
+                      <span aria-hidden="true">~</span>
+                      <select
+                        aria-label={`${label}요일 영업 종료`}
+                        value={day.closeTime}
+                        onChange={(event) =>
+                          handleDayChange(day.dayOfWeek, 'closeTime', event.target.value)
+                        }
+                      >
+                        {withCurrent(closeOptions, day.closeTime).map((time) => (
+                          <option key={time} value={time}>
+                            {clockLabel(time)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          {message && (
+            <Alert
+              as="p"
+              tone={message.type === 'success' ? 'success' : 'error'}
+              role={message.type === 'success' ? 'status' : 'alert'}
+            >
+              {message.text}
+            </Alert>
+          )}
+          <Button variant="primary" disabled={isSaving}>
+            영업시간 저장
+          </Button>
+        </form>
+      </Panel>
+      <div className={styles.side}>
+        <WeekHoursSummary days={days} />
+        <BusinessHoursTips />
+      </div>
+    </div>
   );
 }
