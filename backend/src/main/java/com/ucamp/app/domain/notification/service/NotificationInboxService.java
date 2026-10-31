@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -39,6 +40,8 @@ public class NotificationInboxService {
 
     /**
      * 받은 알림 한 줄을 저장한다. 읽은 시각은 비워 둔다.
+     * 예약 확정·취소 문자는 그 트랜잭션이 커밋된 뒤에 호출한다.
+     * 그때 남은 트랜잭션에 붙으면 이 줄이 커밋되지 않으므로, 알림함만 새 트랜잭션으로 저장한다.
      *
      * @param userId   알림을 받은 회원
      * @param category 예약 또는 관심
@@ -46,7 +49,7 @@ public class NotificationInboxService {
      * @param body     보낸 문자와 같은 본문
      * @param linkPath 누르면 이동할 경로. 없으면 null
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void save(Long userId, NotificationInboxCategory category, String title, String body, String linkPath) {
         notificationInboxRepository.save(NotificationInbox.builder()
                 .userId(userId)

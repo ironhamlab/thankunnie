@@ -26,6 +26,9 @@ import org.springframework.data.auditing.DateTimeProvider;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.ucamp.app.common.util.TimeUtils;
@@ -87,6 +90,9 @@ class NotificationDispatchServiceTest {
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    @Autowired
     private CategoryRegionPendingQueue categoryRegionPendingQueue;
 
     @MockitoBean
@@ -97,8 +103,15 @@ class NotificationDispatchServiceTest {
         categoryRegionPendingQueue.clear();
         NotificationFixture.category(jdbcTemplate, 10L, "NAIL");
         NotificationFixture.shop(jdbcTemplate, SHOP_ID, 10L, "SEOUL_GANGNAM", "ACTIVE");
-        NotificationFixture.user(jdbcTemplate, USER_ID);
-        NotificationFixture.user(jdbcTemplate, OTHER_USER_ID);
+        // 알림함 저장은 별도 트랜잭션이라, 회원은 그 전에 커밋되어 있어야 한다.
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        template.executeWithoutResult(status -> {
+            jdbcTemplate.update("DELETE FROM NOTIFICATION_INBOX");
+            jdbcTemplate.update("DELETE FROM APP_USER WHERE USER_ID IN (?, ?)", USER_ID, OTHER_USER_ID);
+            NotificationFixture.user(jdbcTemplate, USER_ID);
+            NotificationFixture.user(jdbcTemplate, OTHER_USER_ID);
+        });
         given(solapiSmsClient.send(anyString(), anyString())).willReturn(SmsSendResult.success("G4V_TEST"));
     }
 

@@ -20,6 +20,9 @@ import org.springframework.data.auditing.DateTimeProvider;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.TestUser;
@@ -48,10 +51,21 @@ class NotificationInboxQueryTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
     @BeforeEach
     void setUp() {
-        NotificationFixture.user(jdbcTemplate, CUSTOMER.userId());
-        NotificationFixture.user(jdbcTemplate, OTHER_CUSTOMER.userId());
+        // save() 는 별도 트랜잭션이라, 회원은 그 전에 커밋되어 있어야 한다.
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        template.executeWithoutResult(status -> {
+            jdbcTemplate.update("DELETE FROM NOTIFICATION_INBOX");
+            jdbcTemplate.update("DELETE FROM APP_USER WHERE USER_ID IN (?, ?)",
+                    CUSTOMER.userId(), OTHER_CUSTOMER.userId());
+            NotificationFixture.user(jdbcTemplate, CUSTOMER.userId());
+            NotificationFixture.user(jdbcTemplate, OTHER_CUSTOMER.userId());
+        });
     }
 
     @Test
