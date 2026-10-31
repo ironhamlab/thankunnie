@@ -181,6 +181,7 @@ jobs:
           SERVICE: ${{ matrix.service }}
           # 저장소 Settings > Secrets and variables > Actions > Variables 에 등록한 공개 키 (비밀값 아님)
           VITE_KAKAO_MAP_APP_KEY: ${{ vars.VITE_KAKAO_MAP_APP_KEY }}
+          VITE_PORTONE_IMP_CODE: ${{ vars.VITE_PORTONE_IMP_CODE }}
         run: |
           set -euo pipefail
 
@@ -196,10 +197,16 @@ jobs:
               echo "Repository variable VITE_KAKAO_MAP_APP_KEY is missing"
               exit 1
             fi
+            
+            if [ -z "${VITE_PORTONE_IMP_CODE:-}" ]; then
+              echo "Repository variable VITE_PORTONE_IMP_CODE is missing"
+              exit 1
+            fi
 
             docker build \
               --build-arg VITE_API_BASE_URL=/api \
               --build-arg VITE_KAKAO_MAP_APP_KEY="$VITE_KAKAO_MAP_APP_KEY" \
+              --build-arg VITE_PORTONE_IMP_CODE="$VITE_PORTONE_IMP_CODE" \
               --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
               -t "$IMAGE" frontend
           fi
