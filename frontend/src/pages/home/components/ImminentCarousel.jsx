@@ -4,6 +4,7 @@ import { ROUTES } from '@/constants/routes';
 import { money } from '@/utils/demoData';
 import { useExploreStore } from '@/store/useExploreStore';
 import Button from '@/components/common/Button';
+import VacancyCountdown from './VacancyCountdown';
 import styles from './ImminentCarousel.module.css';
 
 // 자동으로 넘기는 간격. 매장·시간·가격을 읽을 시간을 주려고 3초보다 조금 길게 둔다
@@ -49,14 +50,19 @@ export default function ImminentCarousel() {
     return () => window.clearTimeout(timer);
   }, [autoPlay, count, index]);
 
+  // 임박 빈자리가 없으면 스토어가 다음으로 빠른 빈자리를 대신 담아 준다
+  const heading = current?.upcoming ? '다음으로 빠른 빈자리' : '곧 시작하는 임박 빈자리';
+
   return (
     // 8시간 범위가 자정을 넘으면 내일 새벽 시각도 나오므로 "오늘"로 한정하지 않는다
-    <section id="home-imminent" className={styles.root} aria-label="곧 시작하는 임박 빈자리">
+    <section id="home-imminent" className={styles.root} aria-label={heading}>
       <div className={styles.heading}>
         <h2>
-          <span aria-hidden="true">ϟ</span> 곧 시작하는 임박 빈자리
+          <span aria-hidden="true">ϟ</span> {heading}
         </h2>
-        <Link to={`${ROUTES.HOME}?sale=1`}>전체보기 ›</Link>
+        <Link to={current?.upcoming ? `${ROUTES.HOME}?view=list&date=all` : `${ROUTES.HOME}?sale=1`}>
+          전체보기 ›
+        </Link>
       </div>
       {current ? (
         <div
@@ -91,9 +97,11 @@ export default function ImminentCarousel() {
               >
                 ● {current.urgency}
               </span>
-              <span className={styles.closes}>
-                ◷ 예약 마감 <b>{current.closesAt}</b>
-              </span>
+              <VacancyCountdown
+                className={styles.closes}
+                closesAt={current.bookingClosesAt}
+                closesTime={current.closesAt}
+              />
             </div>
             <div className={styles.body}>
               <div className={styles.meta}>
@@ -124,9 +132,6 @@ export default function ImminentCarousel() {
           </article>
           {count > 1 && (
             <div className={styles.controls}>
-              <button type="button" aria-label="이전 빈자리" onClick={() => move(-1)}>
-                ‹
-              </button>
               <div className={styles.dots}>
                 {vacancies.map((item, dot) => (
                   <button
@@ -141,6 +146,9 @@ export default function ImminentCarousel() {
               <span>
                 <b>{vacancies.indexOf(current) + 1}</b> / {count}
               </span>
+              <button type="button" aria-label="이전 빈자리" onClick={() => move(-1)}>
+                ‹
+              </button>
               <button type="button" aria-label="다음 빈자리" onClick={() => move(1)}>
                 ›
               </button>

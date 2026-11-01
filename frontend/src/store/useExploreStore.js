@@ -5,11 +5,22 @@ import { toVacancyCard } from '@/utils/exploreVacancy';
 
 // 매장 하나의 하루 빈자리는 많아야 수십 건이라 한 번에 받는다
 const SHOP_VACANCY_SIZE = 50;
+// 임박 빈자리 대신 보여줄 매장 수. 임박 빈자리 API 와 같게 둔다
+const UPCOMING_SHOP_COUNT = 10;
 
 const fetchVacancyCards = async (params) =>
   (await exploreApi.getVacancies(params)).content.map((item) => toVacancyCard(item));
-const fetchImminentCards = async () =>
-  (await exploreApi.getImminentVacancies()).map((item) => toVacancyCard(item));
+// 임박 빈자리가 없으면(영업이 끝난 밤 등) 다음으로 빠른 일반 시술 빈자리를 매장마다 1건씩 대신 보여준다
+const fetchImminentCards = async () => {
+  const imminent = await exploreApi.getImminentVacancies();
+  if (imminent.length) return imminent.map((item) => toVacancyCard(item));
+  const cards = await fetchVacancyCards({ treatmentType: 'NORMAL', size: SHOP_VACANCY_SIZE });
+  const shopIds = new Set();
+  return cards
+    .filter((card) => !shopIds.has(card.shopId) && shopIds.add(card.shopId))
+    .slice(0, UPCOMING_SHOP_COUNT)
+    .map((card) => ({ ...card, upcoming: true }));
+};
 const fetchShops = async (params) => (await exploreApi.getShops(params)).shops;
 
 const toError = (error) => ({
@@ -45,6 +56,10 @@ export const useExploreStore = create((set, get) => ({
   imminentError: null,
 
   // 매장 요약 (C-02). 홈 분야 탭 목록·홈 지도·검색 화면 목록과 지도
+  // 홈 소개의 빈자리 현황 (분야 구분 없는 매장 요약)
+  summaryShops: [],
+  summaryShopsStatus: 'idle',
+  summaryShopsError: null,
   homeShops: [],
   homeShopsStatus: 'idle',
   homeShopsError: null,
@@ -71,6 +86,11 @@ export const useExploreStore = create((set, get) => ({
     set,
     { data: 'imminentVacancies', status: 'imminentStatus', error: 'imminentError' },
     fetchImminentCards,
+  ),
+  loadSummaryShops: simpleLoader(
+    set,
+    { data: 'summaryShops', status: 'summaryShopsStatus', error: 'summaryShopsError' },
+    fetchShops,
   ),
   loadHomeShops: simpleLoader(
     set,
