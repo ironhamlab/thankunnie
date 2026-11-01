@@ -183,7 +183,7 @@ export default function ShopDetailPage({ model = false }) {
         <span>›</span>
         <strong>{shop.shopName}</strong>
       </nav>
-      <div className={`b-columns ${step === dateStep ? '' : styles.single}`}>
+      <div className="b-columns">
         <div className={`b-stack ${styles.content}`}>
           <ShopHeader shop={shop} view={view} onSelect={(key) => updateParams({ view: key })} />
           {view === 'info' && <ShopInfoPanel shop={shop} />}
@@ -261,11 +261,13 @@ export default function ShopDetailPage({ model = false }) {
             </>
           )}
         </div>
-        {step === dateStep && (
-          <aside className={`b-stack ${styles.aside}`}>
-            <BookingSummary treatment={treatment} date={selectedDate} time={time} />
-          </aside>
-        )}
+        <aside className={`b-stack ${styles.aside}`} aria-label="예약 요약">
+          <BookingSummary
+            treatment={treatment}
+            date={selectedDate}
+            time={!model || agreed ? time : null}
+          />
+        </aside>
       </div>
     </div>
   );

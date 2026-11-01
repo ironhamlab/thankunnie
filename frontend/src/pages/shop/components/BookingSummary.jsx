@@ -46,7 +46,17 @@ export default function BookingSummary({ treatment, date, time }) {
     <Panel as="section" padded className="b-summary">
       <h2>예약 요약</h2>
       {!treatment && <Notice>시술을 먼저 선택해 주세요.</Notice>}
-      {treatment && !startsAt && <Notice>날짜와 시작 시간을 선택해 주세요.</Notice>}
+      {treatment && !startsAt && (
+        <>
+          <dl className="b-details">
+            <div>
+              <dt>시술</dt>
+              <dd>{treatment.name}</dd>
+            </div>
+          </dl>
+          <Notice>날짜와 시작 시간을 선택해 주세요.</Notice>
+        </>
+      )}
       {startsAt && status === 'failed' && (
         <>
           <Alert tone="error" role="alert">
