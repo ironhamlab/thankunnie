@@ -18,6 +18,7 @@ const DEFAULT_BOUNDS_PADDING = { top: 40, right: 40, bottom: 40, left: 40 };
  * @param onSelect        마커 클릭 시 id를 받는 콜백
  * @param markerClassName 마커 버튼 클래스. 선택된 마커에는 is-selected가 추가된다
  * @param boundsPadding   마커 범위를 맞출 때 띄울 여백(px). 지도 위에 패널이 겹치는 쪽을 넓게 준다
+ * @param level           마커가 1개일 때 확대 정도(작을수록 가깝게). 생략하면 기본 확대를 유지한다
  * @param fallback        지도를 쓸 수 없을 때 보여줄 요소
  */
 export default function KakaoMap({
@@ -26,6 +27,7 @@ export default function KakaoMap({
   onSelect,
   markerClassName,
   boundsPadding = DEFAULT_BOUNDS_PADDING,
+  level,
   fallback = null,
 }) {
   const containerRef = useRef(null);
@@ -96,13 +98,16 @@ export default function KakaoMap({
       const { top, right, bottom, left } = boundsPadding;
       map.setBounds(bounds, top, right, bottom, left);
     } else if (markers.length === 1) {
+      if (level) {
+        map.setLevel(level);
+      }
       map.setCenter(new maps.LatLng(markers[0].lat, markers[0].lng));
     }
     return () => {
       overlays.forEach((overlay) => overlay.setMap(null));
       elements.clear();
     };
-  }, [status, markers, markerClassName, boundsPadding]);
+  }, [status, markers, markerClassName, boundsPadding, level]);
 
   useEffect(() => {
     if (status !== 'ready') {
