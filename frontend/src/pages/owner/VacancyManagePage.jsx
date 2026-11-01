@@ -15,6 +15,11 @@ import VacancyPreviewPanel from '@/pages/owner/components/VacancyPreviewPanel';
 import VacancyNotices from '@/pages/owner/components/VacancyNotices';
 import VacancyTabs from '@/pages/owner/components/VacancyTabs';
 import styles from './VacancyManagePage.module.css';
+import motion from './components/OwnerMotion.module.css';
+
+// 지운 일정이 사라지는 효과 시간 (OwnerMotion.module.css 의 .leaving 과 같게 둔다)
+const LEAVE_MS = 280;
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * 빈자리 열기·닫기 (B-F3). 열면 그 시간에 할 수 있는 시술이 고객 빈자리 목록에 노출되고, 닫으면 예약을 받지 않는다.
@@ -42,6 +47,7 @@ export default function VacancyManagePage() {
   const [editingId, setEditingId] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [notice, setNotice] = useState(null);
+  const [leavingId, setLeavingId] = useState(null);
   const { slots, ready, fresh, failed, retry } = useDaySlots(form.date);
   const today = todayKst();
   const lastDate = addDays(today, P.BOOKING_MAX_DAYS - 1);
@@ -116,6 +122,9 @@ export default function VacancyManagePage() {
     if (!window.confirm(`${formatDayLabel(date)} ${startTime}~${endTime} 일정을 삭제할까요?`)) {
       return;
     }
+    // 사라지는 효과가 끝난 뒤 지운다. 실패하면 효과를 풀어 일정이 다시 보이게 한다
+    setLeavingId(exception.exceptionId);
+    await wait(window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : LEAVE_MS);
     try {
       await deleteException(exception.exceptionId);
       setNotice({ tone: 'success', text: '일정을 삭제했습니다.' });
@@ -124,6 +133,8 @@ export default function VacancyManagePage() {
       }
     } catch (failure) {
       setNotice({ tone: 'error', text: failure.message });
+    } finally {
+      setLeavingId(null);
     }
   };
 
@@ -144,7 +155,7 @@ export default function VacancyManagePage() {
         onChange={changeTab}
       />
       {tab === 'form' && (
-        <div className={styles.columns}>
+        <div className={`${styles.columns} ${motion.step}`}>
           <ScheduleExceptionForm
             form={form}
             editingId={editingId}
@@ -186,10 +197,12 @@ export default function VacancyManagePage() {
       )}
       {tab === 'list' && (
         <ScheduleExceptionList
+          className={motion.step}
           exceptions={exceptions}
           businessHours={businessHours}
           editingId={editingId}
-          disabled={isBusy}
+          leavingId={leavingId}
+          disabled={isBusy || leavingId !== null}
           onSelectDate={handleSelectDate}
           onEdit={handleEdit}
           onDelete={handleDelete}

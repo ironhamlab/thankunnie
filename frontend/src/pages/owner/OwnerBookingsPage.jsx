@@ -12,6 +12,7 @@ import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
 import EmptyState from '@/components/common/EmptyState';
 import styles from './OwnerBookingsPage.module.css';
+import motion from './components/OwnerMotion.module.css';
 
 // 상태를 고르지 않으면 서버가 점유 만료(EXPIRED)를 뺀 전체를 준다
 const STATUS_FILTERS = [
@@ -162,7 +163,8 @@ export default function OwnerBookingsPage() {
           {listStatus === 'failed' && <p role="alert">{listError.message}</p>}
           {listStatus === 'succeeded' && (
             <>
-              <div className="b-table-scroll">
+              {/* 필터·페이지를 바꿔 목록을 새로 받을 때마다 다시 그려져 내용이 바뀐 것을 알린다 */}
+              <div className={`b-table-scroll ${motion.step}`}>
                 <table className={styles.table}>
                   <thead>
                     <tr>
@@ -216,8 +218,11 @@ export default function OwnerBookingsPage() {
           )}
         </Panel>
         <aside ref={detailRef} tabIndex={-1} aria-label="예약 상세" className="b-stack">
+          {/* 다른 예약을 고르면 상세가 새로 나타나 바뀐 것을 알린다 */}
           {listStatus === 'succeeded' && (
-            <ReservationDetailPanel viewer="owner" cancelPath={cancelPath} />
+            <div key={activeId} className={motion.enter}>
+              <ReservationDetailPanel viewer="owner" cancelPath={cancelPath} />
+            </div>
           )}
         </aside>
       </div>
