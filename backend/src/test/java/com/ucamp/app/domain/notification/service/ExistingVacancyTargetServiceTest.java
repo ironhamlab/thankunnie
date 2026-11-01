@@ -16,6 +16,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.ucamp.app.domain.notification.entity.NotificationEvent;
 import com.ucamp.app.domain.notification.entity.NotificationEventType;
@@ -94,6 +95,26 @@ class ExistingVacancyTargetServiceTest {
         List<NotificationEvent> targets = existingVacancyTargetService.findForStore(SHOP_ID, HOPE_START, HOPE_END);
 
         assertThat(targets).containsExactly(lastMinute, imminent, reopened);
+    }
+
+    @Test
+    @DisplayName("같은 시작 시각의 재공개는 이벤트 번호가 가장 큰 한 건만 남긴다")
+    void findForStore_sameReopenedSlot_keepsLatestOnly() {
+        LocalDateTime slotStart = NOW.plusHours(2);
+        NotificationEvent older = event(NotificationEventType.REOPENED, null, slotStart, slotStart.plusHours(1));
+        NotificationEvent latest = event(NotificationEventType.REOPENED, null, slotStart, slotStart.plusHours(1));
+        NotificationEvent imminent = event(NotificationEventType.IMMINENT, 11L, slotStart, slotStart.plusHours(1));
+        ReflectionTestUtils.setField(older, "id", 1L);
+        ReflectionTestUtils.setField(latest, "id", 2L);
+        ReflectionTestUtils.setField(imminent, "id", 3L);
+        given(notificationEventRepository.findByShopAndSlotStartInHopeTime(SHOP_ID, HOPE_START, HOPE_END))
+                .willReturn(List.of(older, latest, imminent));
+        given(shopStatusQueryRepository.isActive(SHOP_ID)).willReturn(true);
+        given(availabilityService.isAvailable(SHOP_ID, slotStart, 60)).willReturn(true);
+        given(vacancySlotRepository.isOpenSlotSellable(11L, NOW)).willReturn(true);
+
+        assertThat(existingVacancyTargetService.findForStore(SHOP_ID, HOPE_START, HOPE_END))
+                .containsExactly(latest, imminent);
     }
 
     @Test

@@ -4,7 +4,9 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,13 +59,46 @@ public class ExistingVacancyTargetService {
 
         List<NotificationEvent> inHopeTime = notificationEventRepository.findByShopAndSlotStartInHopeTime(
                 shopId, hopeStart, hopeEnd);
+        // 같은 10시 재공개가 여러 건이면 가장 최근 한 건만 본다. 임박·초임박은 그대로 둔다.
+        // 카테고리 알림도 이 메서드를 매장마다 부르므로 같이 적용된다.
         List<NotificationEvent> targets = new ArrayList<>();
-        for (NotificationEvent event : inHopeTime) {
+        for (NotificationEvent event : latestReopenedOnly(inHopeTime)) {
             if (stillSellable(event, now)) {
                 targets.add(event);
             }
         }
         return targets;
+    }
+
+    // 재공개는 매장+시작 시각마다 이벤트 번호가 가장 큰 한 건만 남긴다.
+    private static List<NotificationEvent> latestReopenedOnly(List<NotificationEvent> events) {
+        Map<ShopSlot, NotificationEvent> latestReopened = new HashMap<>();
+        for (NotificationEvent event : events) {
+            if (event.getEventType() != NotificationEventType.REOPENED) {
+                continue;
+            }
+            ShopSlot slot = new ShopSlot(event.getShopId(), event.getSlotStartsAt());
+            NotificationEvent previous = latestReopened.get(slot);
+            if (previous == null || event.getId() > previous.getId()) {
+                latestReopened.put(slot, event);
+            }
+        }
+
+        List<NotificationEvent> kept = new ArrayList<>();
+        for (NotificationEvent event : events) {
+            if (event.getEventType() != NotificationEventType.REOPENED) {
+                kept.add(event);
+                continue;
+            }
+            ShopSlot slot = new ShopSlot(event.getShopId(), event.getSlotStartsAt());
+            if (latestReopened.get(slot) == event) {
+                kept.add(event);
+            }
+        }
+        return kept;
+    }
+
+    private record ShopSlot(Long shopId, LocalDateTime startsAt) {
     }
 
     /**
