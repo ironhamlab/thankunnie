@@ -371,7 +371,8 @@ class NotificationDispatchServiceTest {
             assertThat(inbox.getCategory()).isEqualTo(NotificationInboxCategory.INTEREST);
             assertThat(inbox.getTitle()).isEqualTo("빈자리 알림");
             assertThat(inbox.getBody()).isEqualTo("땡 잡을 기회 2건이 생겼어요!");
-            assertThat(inbox.getLinkPath()).isEqualTo("/?view=list&category=10&region=SEOUL_GANGNAM");
+            assertThat(inbox.getLinkPath())
+                    .isEqualTo("/?view=list&category=10&region=SEOUL_GANGNAM&date=2026-10-22");
             assertThat(inbox.getReadAt()).isNull();
         });
         assertThat(categoryRegionPendingQueue.pendingEventIds(subscription.getId())).isEmpty();

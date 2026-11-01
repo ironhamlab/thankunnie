@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.notification.service;
 
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -140,14 +141,19 @@ public class NotificationInboxService {
     }
 
     /**
-     * 카테고리·지역 묶음 알림이 이동하는 빈자리 목록 경로.
-     * 예: /?view=list&category=1&region=11680
+     * 카테고리·지역 알림이 이동하는 빈자리 목록 경로.
+     * 예: /?view=list&category=1&region=11680&date=2026-11-02
      *
      * @param categoryId 구독한 카테고리 ID
      * @param regionCode 구독한 지역코드
-     * @return 그 카테고리와 지역으로 좁힌 빈자리 목록 경로
+     * @param date       빈자리가 있는 날. null 이면 날짜 없이 보낸다
+     * @return 그 카테고리·지역·날짜로 좁힌 빈자리 목록 경로
      */
-    public static String categoryRegionListPath(Long categoryId, String regionCode) {
-        return "/?view=list&category=" + categoryId + "&region=" + regionCode;
+    public static String categoryRegionListPath(Long categoryId, String regionCode, LocalDate date) {
+        String path = "/?view=list&category=" + categoryId + "&region=" + regionCode;
+        if (date != null) {
+            path += "&date=" + date;
+        }
+        return path;
     }
 }
