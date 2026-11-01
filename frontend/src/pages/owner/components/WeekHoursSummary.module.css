@@ -1,0 +1,102 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.root h2 {
+  margin: 0;
+}
+.total {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+.total strong {
+  color: var(--color-primary);
+  font-size: 18px;
+}
+.week,
+.ticks {
+  /* 요일 글자 칸만큼 띄워 막대와 눈금의 0시를 맞춘다 */
+  --label-width: 24px;
+}
+.week {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+.week li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.label {
+  width: 16px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.track {
+  position: relative;
+  flex: 1;
+  height: 18px;
+  border-radius: 6px;
+  /* 6시간마다 옅은 세로선을 그어 시각을 어림할 수 있게 한다 */
+  background:
+    linear-gradient(
+      90deg,
+      transparent calc(25% - 1px),
+      var(--color-border) 25%,
+      transparent calc(25% + 1px)
+    ),
+    linear-gradient(
+      90deg,
+      transparent calc(50% - 1px),
+      var(--color-border) 50%,
+      transparent calc(50% + 1px)
+    ),
+    linear-gradient(
+      90deg,
+      transparent calc(75% - 1px),
+      var(--color-border) 75%,
+      transparent calc(75% + 1px)
+    ),
+    var(--color-surface);
+}
+.bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 6px;
+  background: var(--color-primary);
+  transition:
+    left 0.2s ease,
+    width 0.2s ease;
+}
+.off {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+.ticks {
+  position: relative;
+  height: 14px;
+  margin-left: var(--label-width);
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+.ticks span {
+  position: absolute;
+  transform: translateX(-50%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    transition: none;
+  }
+}

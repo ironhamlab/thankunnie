@@ -1,0 +1,49 @@
+/* 오른쪽 열의 남는 높이를 채워 영업시간 칸과 아래 끝을 맞추고, 버튼은 맨 아래에 붙인다 */
+.root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.root h2 {
+  margin: 0;
+}
+.root > :last-child {
+  margin-top: auto;
+}
+.tips {
+  list-style: none;
+  counter-reset: tip;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+.tips li {
+  counter-increment: tip;
+  position: relative;
+  padding-left: 28px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+  /* 한글이 단어 중간('않아/요')에서 끊기지 않게 어절 단위로 줄을 바꾸고, 마지막 줄에 한 어절만 남지 않게 한다 */
+  word-break: keep-all;
+  text-wrap: pretty;
+}
+/* 번호를 동그라미로 그려 항목을 훑어보기 쉽게 한다 */
+.tips li::before {
+  content: counter(tip);
+  position: absolute;
+  top: 1px;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+}

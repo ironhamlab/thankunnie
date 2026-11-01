@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TIME_OPTIONS, toMinutes, toTime } from '@/utils/vacancyPreview';
+import { TIME_OPTIONS, toClock, toMinutes, toTime } from '@/utils/vacancyPreview';
 import styles from './TimeRangePicker.module.css';
 
 // 영업하지 않는 날 접힌 상태에서 보여줄 첫 칸
@@ -19,15 +19,6 @@ const STATUS_LABELS = {
 };
 // 칸에는 글자를 넣지 않고 색으로만 구분하므로, 화면에 나온 상태만 범례로 알려준다
 const LEGEND_STATUSES = ['CLOSED', 'BOOKED', 'OFF'];
-
-// 13:30 → { period: '오후', label: '1:30' }
-const toClock = (time) => {
-  const [hours, minutes] = time.split(':').map(Number);
-  return {
-    period: hours < 12 ? '오전' : '오후',
-    label: `${hours % 12 || 12}:${String(minutes).padStart(2, '0')}`,
-  };
-};
 
 /**
  * 30분 칸을 눌러 시간대를 고른다. 시작 칸을 누른 뒤 끝 칸을 누르면 그 사이가 선택된다.
