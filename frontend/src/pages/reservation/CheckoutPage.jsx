@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { generatePath, Link, useBlocker, useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { formatMoney } from '@/utils/reservationFormat';
-import { shopImage } from '@/utils/exploreVacancy';
 import { datePart, timePart } from '@/utils/scheduleDate';
 import { savePendingRequest, takePendingRequest, verifyErrorMessage } from '@/utils/payment';
 import { loadPortOne, requestPay } from '@/utils/portoneLoader';
 import { useReservationStore } from '@/store/useReservationStore';
 import { usePaymentStore } from '@/store/usePaymentStore';
 import { useShopDetailStore } from '@/store/useShopDetailStore';
+import RepresentativeImage from '@/pages/owner/components/RepresentativeImage';
 import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
 import Panel from '@/components/common/Panel';
@@ -368,11 +368,12 @@ export default function CheckoutPage() {
           <div className="b-stack">
             <Panel as="section" padded>
               <h2 className="b-panel-heading">1. 예약 정보 확인</h2>
-              <div className="b-booking-service">
-                <img
-                  src={shopImage(shop?.imageUrl)}
+              <div className={`b-booking-service ${styles.service}`}>
+                <RepresentativeImage
+                  imageUrl={shop?.imageUrl}
+                  kind="shop"
+                  name={summary.shopName}
                   className="b-thumb"
-                  alt={`${summary.shopName} 매장`}
                 />
                 <div>
                   <h2>{summary.shopName}</h2>
