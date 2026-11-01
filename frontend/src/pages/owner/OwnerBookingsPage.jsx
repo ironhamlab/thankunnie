@@ -224,7 +224,10 @@ export default function OwnerBookingsPage() {
         <aside ref={detailRef} tabIndex={-1} aria-label="예약 상세" className="b-stack">
           {/* 다른 예약을 고르면 상세가 새로 나타나 바뀐 것을 알린다 */}
           {listStatus === 'succeeded' && (
-            <div key={loadedDetailId ?? 'pending'} className={motion.enter}>
+            <div
+              key={loadedDetailId ?? 'pending'}
+              className={loadedDetailId ? motion.enter : undefined}
+            >
               <ReservationDetailPanel viewer="owner" cancelPath={cancelPath} />
             </div>
           )}
