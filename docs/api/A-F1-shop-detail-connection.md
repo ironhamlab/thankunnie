@@ -35,6 +35,16 @@
 
 호출 경로: 화면 → `useShopDetailStore`·`useVacancyDetailStore` → `shopDetailApi`·`vacancyDetailApi` → 공통 `axiosInstance`.
 
+### 시작 가능 시각 `GET /api/v1/available-times` (B)
+
+| 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| `shopId`, `date`, `durationMinutes` | number, string(YYYY-MM-DD), number | 요청 값 그대로 |
+| `startTimes` | string[] (ISO-8601, +09:00) | 30분 단위 시작 가능 시각, 오름차순. 영업시간·사장님이 연 시간 안에서 시술이 끝나고, 닫은 시간·다른 예약과 겹치지 않으며, 시작 20분 전이 지나지 않은 시각 |
+| `extendedStartTimes` | string[] (ISO-8601, +09:00) | `startTimes` 중 영업시간만으로는 안 되고 사장님이 연 시간(OPEN) 덕분에 가능한 시각, 오름차순. 시술이 요일 영업시간 밖으로 조금이라도 넘어가면 포함하고(예: 20시 마감, 120분 시술 18:30 시작), 휴무일에 연 시간은 모두 포함한다. 영업시간 안에서 연 시간은 포함하지 않는다. 없으면 빈 배열 |
+
+- 사장님이 적은 열기 사유는 응답에 넣지 않는다. 연장 표시는 정해진 문구로 한다.
+
 ### 매장 상세 `GET /api/v1/explore/shops/{shopId}`
 
 - 노출 중인 매장(`SHOP.STATUS = ACTIVE`)의 안내, 월~일 영업시간 7개, 판매 중인 시술(`TREATMENT.STATUS = ACTIVE`, 시술 ID 순)을 돌려준다.
