@@ -2,6 +2,7 @@ package com.ucamp.app.domain.vacancy.service;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -14,6 +15,7 @@ import com.ucamp.app.common.policy.BookingPolicy;
 import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.vacancy.dto.response.AvailableTimesResponse;
 import com.ucamp.app.domain.vacancy.repository.ShopStatusQueryRepository;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService.DayAvailability;
 
 /**
  * 가용 시간 공용 조회 (B-06). 사장님 열기·닫기 캘린더(B-08)와 고객 상세 시간 선택(C)이 함께 쓴다.
@@ -51,10 +53,12 @@ public class AvailableTimeQueryService {
         if (!shopStatusQueryRepository.isActive(shopId)) {
             throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
         }
-        List<OffsetDateTime> startTimes = availabilityService
-                .getAvailableStartTimes(shopId, date, durationMinutes).stream()
-                .map(TimeUtils::toOffset)
-                .toList();
-        return new AvailableTimesResponse(shopId, date, durationMinutes, startTimes);
+        DayAvailability availability = availabilityService.getDayAvailability(shopId, date, durationMinutes);
+        return new AvailableTimesResponse(shopId, date, durationMinutes,
+                toOffsets(availability.startTimes()), toOffsets(availability.extendedStartTimes()));
+    }
+
+    private static List<OffsetDateTime> toOffsets(List<LocalDateTime> times) {
+        return times.stream().map(TimeUtils::toOffset).toList();
     }
 }

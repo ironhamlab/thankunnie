@@ -7,6 +7,7 @@ import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
 import EmptyState from '@/components/common/EmptyState';
 import styles from './ScheduleExceptionList.module.css';
+import motion from './OwnerMotion.module.css';
 
 const TYPE_BADGES = {
   OPEN: ['열기', 'b-green'],
@@ -75,11 +76,14 @@ function DayBar({ date, hours, items }) {
  * 등록한 빈자리 열기·닫기 일정 (오늘부터 60일)을 날짜별로 묶어 보여준다.
  * 날짜를 누르면 등록 탭이 그 날짜로, 수정을 누르면 그 일정으로 열린다.
  * 사유는 기본으로 접어 두고 시간 옆 ▼ 로 펼친다. 닫기와 겹친 열기 경고는 늘 보여준다.
+ * leavingId 일정은 지우기 직전이라 사라지는 효과를 준다.
  */
 export default function ScheduleExceptionList({
+  className = '',
   exceptions,
   businessHours,
   editingId,
+  leavingId,
   disabled,
   onSelectDate,
   onEdit,
@@ -97,7 +101,7 @@ export default function ScheduleExceptionList({
     });
 
   return (
-    <Panel as="section" padded className={styles.root}>
+    <Panel as="section" padded className={`${styles.root} ${className}`}>
       <h2>
         열기·닫기 일정 <small className="b-muted">(오늘부터 60일, {exceptions.length}건)</small>
       </h2>
@@ -130,7 +134,12 @@ export default function ScheduleExceptionList({
                 return (
                   <li
                     key={exception.exceptionId}
-                    className={exception.exceptionId === editingId ? styles.editing : ''}
+                    className={[
+                      exception.exceptionId === editingId && styles.editing,
+                      exception.exceptionId === leavingId && motion.leaving,
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
                   >
                     <Badge className={`${badge} ${styles.badge}`}>{label}</Badge>
                     <span className={styles.time}>

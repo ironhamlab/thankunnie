@@ -8,6 +8,7 @@ import { TIME_OPTIONS, toClock, toMinutes, toTime } from '@/utils/vacancyPreview
 import WeekHoursSummary from '@/pages/owner/components/WeekHoursSummary';
 import BusinessHoursTips from '@/pages/owner/components/BusinessHoursTips';
 import styles from './BusinessHoursPanel.module.css';
+import motion from './OwnerMotion.module.css';
 
 const DEFAULT_OPEN = '10:00';
 const DEFAULT_CLOSE = '20:00';
@@ -29,6 +30,8 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
   const isSaving = useScheduleStore((state) => state.mutationStatus === 'loading');
   const [days, setDays] = useState(hours);
   const [message, setMessage] = useState(null);
+  // 영업·휴무를 바꾼 요일만 시간 칸이 나타나는 효과를 준다 (처음 불러올 때는 움직이지 않게)
+  const [toggledDays, setToggledDays] = useState(() => new Set());
 
   const handleDayChange = (dayOfWeek, key, value) => {
     setMessage(null);
@@ -47,8 +50,11 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
     );
   };
 
+  const enterOf = (day) => (toggledDays.has(day.dayOfWeek) ? motion.enter : '');
+
   const handleClosedChange = (day, closed) => {
     setMessage(null);
+    setToggledDays((prev) => new Set(prev).add(day.dayOfWeek));
     setDays((prev) =>
       prev.map((item) =>
         item.dayOfWeek === day.dayOfWeek
@@ -125,9 +131,9 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
                     ))}
                   </div>
                   {day.closed ? (
-                    <span className={styles.off}>쉬는 날</span>
+                    <span className={`${styles.off} ${enterOf(day)}`}>쉬는 날</span>
                   ) : (
-                    <div className={styles.times}>
+                    <div className={`${styles.times} ${enterOf(day)}`}>
                       <select
                         aria-label={`${label}요일 영업 시작`}
                         value={day.openTime}
@@ -163,6 +169,8 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
           </ul>
           {message && (
             <Alert
+              key={message.text}
+              className={motion.enter}
               as="p"
               tone={message.type === 'success' ? 'success' : 'error'}
               role={message.type === 'success' ? 'status' : 'alert'}

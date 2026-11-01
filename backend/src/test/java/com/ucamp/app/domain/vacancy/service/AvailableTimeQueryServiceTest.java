@@ -20,6 +20,7 @@ import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.vacancy.dto.response.AvailableTimesResponse;
 import com.ucamp.app.domain.vacancy.repository.ShopStatusQueryRepository;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService.DayAvailability;
 
 class AvailableTimeQueryServiceTest {
 
@@ -40,11 +41,11 @@ class AvailableTimeQueryServiceTest {
     }
 
     @Test
-    @DisplayName("운영 중인 매장이면 계산된 시작 시각을 한국 시간 오프셋으로 반환한다")
+    @DisplayName("운영 중인 매장이면 계산된 시작 시각과 연장 영업 시각을 한국 시간 오프셋으로 반환한다")
     void getAvailableTimes_activeShop_returnsOffsetTimes() {
         given(shopStatusQueryRepository.isActive(1L)).willReturn(true);
-        given(availabilityService.getAvailableStartTimes(1L, TODAY, 60))
-                .willReturn(List.of(NOW.withHour(10), NOW.withHour(10).withMinute(30)));
+        given(availabilityService.getDayAvailability(1L, TODAY, 60)).willReturn(new DayAvailability(
+                List.of(NOW.withHour(10), NOW.withHour(20)), List.of(NOW.withHour(20))));
 
         AvailableTimesResponse result = availableTimeQueryService.getAvailableTimes(1L, TODAY, 60);
 
@@ -52,6 +53,8 @@ class AvailableTimeQueryServiceTest {
         assertThat(result.startTimes()).hasSize(2);
         assertThat(result.startTimes().get(0).getHour()).isEqualTo(10);
         assertThat(result.startTimes().get(0).getOffset()).isEqualTo(ZoneOffset.ofHours(9));
+        assertThat(result.extendedStartTimes()).singleElement()
+                .satisfies(time -> assertThat(time.getHour()).isEqualTo(20));
     }
 
     @Test
@@ -59,7 +62,8 @@ class AvailableTimeQueryServiceTest {
     void getAvailableTimes_lastBookingDay_allowed() {
         LocalDate lastDay = TODAY.plusDays(59);
         given(shopStatusQueryRepository.isActive(1L)).willReturn(true);
-        given(availabilityService.getAvailableStartTimes(1L, lastDay, 30)).willReturn(List.of());
+        given(availabilityService.getDayAvailability(1L, lastDay, 30))
+                .willReturn(new DayAvailability(List.of(), List.of()));
 
         assertThat(availableTimeQueryService.getAvailableTimes(1L, lastDay, 30).startTimes()).isEmpty();
     }
