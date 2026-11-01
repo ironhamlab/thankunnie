@@ -63,8 +63,7 @@ export default function ShopLocationMap({ shops, status, expandedShopId, onShowS
                     model: true,
                   })}
                 >
-                  ✦ 모델 모집 빈자리 {selected.modelVacancyCount}개 ·{' '}
-                  {money(selected.modelMinSalePrice)}~ ›
+                  ✦ 모델 모집 {selected.modelVacancyCount}개 · {money(selected.modelMinSalePrice)}~
                 </Link>
               )}
             </div>
