@@ -111,7 +111,7 @@ public class NotificationEventService {
      *
      * @param reservationId 취소된 예약 번호
      * @param now           현재 시각 (서울). 호출 쪽에서 넘기지만, 가능 여부는 AvailabilityService 시계 기준이다
-     * @return 소식을 만들었으면 true. 아직 못 팔거나 이미 있으면 false
+     * @return 소식을 만들었으면 true. 아직 못 팔거나 이 예약의 재공개가 이미 있으면 false
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean createReopenedEvent(Long reservationId, LocalDateTime now) {
@@ -134,9 +134,9 @@ public class NotificationEventService {
             return false;
         }
 
-        // 같은 매장, 같은 시작 시각의 재공개 소식은 한 번만 만든다.
-        boolean alreadyCreated = notificationEventRepository.existsByShopIdAndEventTypeAndSlotStartsAt(
-                slot.shopId(), NotificationEventType.REOPENED, slot.startsAt());
+        // 같은 예약의 재공개만 한 번으로 막는다. 다른 예약이 같은 시각에 나중에 취소되면 새로 만든다.
+        boolean alreadyCreated = notificationEventRepository.existsByEventTypeAndReservationId(
+                NotificationEventType.REOPENED, slot.reservationId());
         if (alreadyCreated) {
             return false;
         }
