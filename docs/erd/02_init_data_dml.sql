@@ -46,7 +46,7 @@ VALUES (4, 'THIRD_PARTY', 1, '개인정보 제3자 제공 동의', 'Y', TIMESTAM
 INSERT INTO TERMS (TERMS_ID, CODE, VERSION, TITLE, IS_REQUIRED, CREATED_AT, UPDATED_AT)
 VALUES (5, 'SMS_NOTIFICATION', 1, '관심 시간 알림 문자 수신 동의', 'N', TIMESTAMP '2026-10-01 09:00:00', TIMESTAMP '2026-10-01 09:00:00');
 INSERT INTO TERMS (TERMS_ID, CODE, VERSION, TITLE, IS_REQUIRED, CREATED_AT, UPDATED_AT)
-VALUES (6, 'MODEL_PHOTO', 1, '모델 시술 촬영·결과물 활용 동의', 'N', TIMESTAMP '2026-10-01 09:00:00', TIMESTAMP '2026-10-01 09:00:00');
+VALUES (6, 'MODEL_PHOTO', 1, '초보 시술 촬영·결과물 활용 동의', 'N', TIMESTAMP '2026-10-01 09:00:00', TIMESTAMP '2026-10-01 09:00:00');
 
 -- ---------------------------------------------------------------------
 -- 회원 약관 동의: customer1 은 필수만(시연에서 문자·촬영 동의 모달 확인용), customer2 는 선택까지 모두 동의

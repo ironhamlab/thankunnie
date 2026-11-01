@@ -327,7 +327,7 @@ class NotificationEventServiceTest {
     }
 
     @Test
-    @DisplayName("모델 시술, 영업시간·OPEN 밖 시간, 접수 마감된 시간은 재공개 이벤트 대상이 아니다")
+    @DisplayName("초보 시술, 영업시간·OPEN 밖 시간, 접수 마감된 시간은 재공개 이벤트 대상이 아니다")
     void createReopenedEvent_notTarget_returnsFalse() {
         openSlot(1L, NOW.plusHours(10), NOW.plusHours(14));
         reservation(CANCELLED_RESERVATION, MODEL_TREATMENT, "CANCELLED", NOW.plusHours(11), NOW.plusHours(12));

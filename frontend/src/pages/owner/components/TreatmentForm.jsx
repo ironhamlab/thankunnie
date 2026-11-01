@@ -63,7 +63,7 @@ export default function TreatmentForm({
     }
     const isModel = form.treatmentType === 'MODEL';
     if (isModel && (!form.modelCondition?.trim() || !form.photoNotice?.trim())) {
-      setValidationError('모델 모집은 참여 조건과 촬영 안내가 필수입니다.');
+      setValidationError('초보 시술 모집은 참여 조건과 촬영 안내가 필수입니다.');
       return;
     }
     onSave(
@@ -99,7 +99,7 @@ export default function TreatmentForm({
             목적 태그 *
             <select required name="treatmentType" value={form.treatmentType} onChange={change}>
               <option value="NORMAL">일반 시술</option>
-              <option value="MODEL">모델 모집</option>
+              <option value="MODEL">초보 시술 모집</option>
             </select>
           </label>
           {form.treatmentType === 'MODEL' && (

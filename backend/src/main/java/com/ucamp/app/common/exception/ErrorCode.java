@@ -29,7 +29,7 @@ public enum ErrorCode {
     TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "TERMS_001", "약관을 찾을 수 없습니다."),
     TERMS_REQUIRED_NOT_AGREED(HttpStatus.BAD_REQUEST, "TERMS_002", "필수 약관에 모두 동의해야 합니다."),
     TERMS_SMS_AGREEMENT_REQUIRED(HttpStatus.CONFLICT, "TERMS_003", "알림 문자 수신 동의가 필요합니다."),
-    TERMS_MODEL_PHOTO_AGREEMENT_REQUIRED(HttpStatus.CONFLICT, "TERMS_004", "모델 시술 촬영 동의가 필요합니다."),
+    TERMS_MODEL_PHOTO_AGREEMENT_REQUIRED(HttpStatus.CONFLICT, "TERMS_004", "초보 시술 촬영 동의가 필요합니다."),
 
     // RESERVATION
     RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "RESERVATION_001", "예약을 찾을 수 없습니다."),

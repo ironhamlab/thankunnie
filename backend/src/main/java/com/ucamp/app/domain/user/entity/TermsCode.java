@@ -15,6 +15,6 @@ public enum TermsCode {
     THIRD_PARTY,
     /** 관심 시간 알림 문자 수신. 구독 등록 전에 필요하다 */
     SMS_NOTIFICATION,
-    /** 모델 시술 촬영·결과물 활용. 모델 시술 예약 전에 필요하다 */
+    /** 초보 시술 촬영·결과물 활용. 초보 시술 예약 전에 필요하다 */
     MODEL_PHOTO
 }

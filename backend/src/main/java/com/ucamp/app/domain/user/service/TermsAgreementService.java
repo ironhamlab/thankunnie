@@ -33,7 +33,7 @@ import com.ucamp.app.domain.user.repository.UserTermsAgreementRepository;
  *
  * <p>동의는 항상 코드별 <b>최신 버전</b> 약관을 기준으로 한다. 약관을 개정해 새 버전 행을 넣으면
  * 이전 버전에만 동의한 회원은 미동의로 판단되어 다시 동의를 받게 된다.
- * 다른 도메인은 {@link #requireAgreed(Long, TermsCode)} 로 선택 동의(문자 수신·모델 촬영) 여부를 검사한다.
+ * 다른 도메인은 {@link #requireAgreed(Long, TermsCode)} 로 선택 동의(문자 수신·초보 시술 촬영) 여부를 검사한다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -134,7 +134,7 @@ public class TermsAgreementService {
 
     /**
      * 동의하지 않았으면 약관별 에러를 던진다. 프론트는 에러 코드를 보고 동의 모달을 띄운 뒤 다시 요청한다.
-     * 문자 수신은 구독 등록, 모델 촬영은 모델 시술 예약 생성에서 호출한다.
+     * 문자 수신은 구독 등록, 초보 시술 촬영은 초보 시술 예약 생성에서 호출한다.
      */
     public void requireAgreed(Long userId, TermsCode code) {
         if (!hasAgreed(userId, code)) {

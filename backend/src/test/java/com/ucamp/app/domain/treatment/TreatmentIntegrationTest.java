@@ -187,12 +187,12 @@ class TreatmentIntegrationTest {
     }
 
     @Test
-    @DisplayName("할인가·모델 조건·기존 예약 스냅샷을 보존하고 판매가보다 낮은 정상가를 거절한다")
+    @DisplayName("할인가·초보 시술 조건·기존 예약 스냅샷을 보존하고 판매가보다 낮은 정상가를 거절한다")
     void update_discountedTreatment_preservesPricesAndReservation() throws Exception {
         long id = create(60, 50000).get("treatmentId").asLong();
         jdbc.update("""
                 UPDATE TREATMENT SET PRICE = 40000, LAST_MINUTE_PRICE = 30000,
-                    TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '모델 조건' WHERE TREATMENT_ID = ?
+                    TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '초보 시술 조건' WHERE TREATMENT_ID = ?
                 """, id);
         jdbc.update("""
                 INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
@@ -215,7 +215,7 @@ class TreatmentIntegrationTest {
         assertThat(((Number) treatment.get("PRICE")).intValue()).isEqualTo(40000);
         assertThat(((Number) treatment.get("LAST_MINUTE_PRICE")).intValue()).isEqualTo(30000);
         assertThat(treatment.get("TREATMENT_TYPE")).isEqualTo("MODEL");
-        assertThat(treatment.get("MODEL_CONDITION")).isEqualTo("모델 조건");
+        assertThat(treatment.get("MODEL_CONDITION")).isEqualTo("초보 시술 조건");
         var reservation = jdbc.queryForMap("SELECT * FROM RESERVATION WHERE RESERVATION_ID = 9001");
         assertThat(((Number) reservation.get("APPLIED_PRICE")).intValue()).isEqualTo(40000);
         assertThat(((Number) reservation.get("DEPOSIT")).intValue()).isEqualTo(20000);
@@ -279,7 +279,7 @@ class TreatmentIntegrationTest {
                 .andExpect(jsonPath("$.data.treatmentType").value("MODEL"))
                 .andExpect(jsonPath("$.data.modelCondition").value("탈색 이력 없음"))
                 .andExpect(jsonPath("$.data.photoNotice").value("전후 사진 촬영"));
-        // 기존 기본정보 요청은 모델 조건을 그대로 보존한다.
+        // 기존 기본정보 요청은 초보 시술 조건을 그대로 보존한다.
         mvc.perform(put(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
                         .contentType(MediaType.APPLICATION_JSON).content(body(90, 60000)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.modelCondition").value("탈색 이력 없음"));

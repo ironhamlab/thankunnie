@@ -265,7 +265,7 @@ class ReservationServiceTest {
     }
 
     @Test
-    @DisplayName("모델 시술인데 촬영 동의가 없으면 잠금 전에 TERMS_MODEL_PHOTO_AGREEMENT_REQUIRED 예외가 발생한다")
+    @DisplayName("초보 시술인데 촬영 동의가 없으면 잠금 전에 TERMS_MODEL_PHOTO_AGREEMENT_REQUIRED 예외가 발생한다")
     void createReservation_modelWithoutPhotoAgreement_throwsBeforeLock() {
         Treatment treatment = treatment(TreatmentStatus.ACTIVE);
         ReflectionTestUtils.setField(treatment, "treatmentType", TreatmentType.MODEL);
@@ -281,7 +281,7 @@ class ReservationServiceTest {
     }
 
     @Test
-    @DisplayName("모델 시술은 촬영 동의가 있으면 그대로 점유 예약을 만든다")
+    @DisplayName("초보 시술은 촬영 동의가 있으면 그대로 점유 예약을 만든다")
     void createReservation_modelWithPhotoAgreement_savesHold() {
         Treatment treatment = treatment(TreatmentStatus.ACTIVE);
         ReflectionTestUtils.setField(treatment, "treatmentType", TreatmentType.MODEL);

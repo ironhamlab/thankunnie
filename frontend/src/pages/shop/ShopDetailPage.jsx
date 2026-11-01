@@ -22,7 +22,7 @@ const TIME_PATTERN = /^\d{2}:\d{2}$/;
 const VIEWS = ['info', 'reserve'];
 const MODEL_LIST_PATH = `${ROUTES.HOME}?view=list&type=MODEL`;
 const NORMAL_STEPS = ['시술 선택', '날짜·시간 선택'];
-// 모델 모집은 시술 선택과 날짜·시간 선택 사이에 모집 안내 확인 단계를 둔다
+// 초보 시술 모집은 시술 선택과 날짜·시간 선택 사이에 모집 안내 확인 단계를 둔다
 const MODEL_STEPS = ['시술 선택', '모집 안내 확인', '날짜·시간 선택'];
 
 const businessDay = (date) => BUSINESS_DAYS[new Date(`${date}T00:00:00Z`).getUTCDay()];
@@ -33,10 +33,10 @@ const businessDay = (date) => BUSINESS_DAYS[new Date(`${date}T00:00:00Z`).getUTC
  * 선택값(view, treatmentId, step, date, time)은 화면 상태로만 두며, 주소는 /shops/:shopId 로 유지한다.
  * 탐색 화면(마감 임박·시간 버튼·매장 카드)에서 ?date=&treatmentId=&startsAt= 로 들어오면 처음 선택값으로만 쓴다.
  *
- * 매장 상세는 일반 시술만, 모델 모집 상세(model, /shops/:shopId/models)는 모델 시술만 같은 흐름으로 보여준다.
- * 모델 모집은 시술 선택 → 모집 안내 확인(참여 조건·촬영 안내 + 필수 체크) → 날짜·시간 선택 3단계다.
+ * 매장 상세는 일반 시술만, 초보 시술 모집 상세(model, /shops/:shopId/models)는 초보 시술만 같은 흐름으로 보여준다.
+ * 초보 시술 모집은 시술 선택 → 모집 안내 확인(참여 조건·촬영 안내 + 필수 체크) → 날짜·시간 선택 3단계다.
  *
- * @param model 모델 모집 상세로 보여줄지
+ * @param model 초보 시술 모집 상세로 보여줄지
  */
 export default function ShopDetailPage({ model = false }) {
   const { shopId } = useParams();
@@ -95,7 +95,7 @@ export default function ShopDetailPage({ model = false }) {
   // 처음 들어오면 예약하기를 먼저 보여준다
   const pickedView = selected('view');
   const view = VIEWS.includes(pickedView) ? pickedView : 'reserve';
-  // 모델 모집은 안내 확인 단계에서 체크해야 날짜·시간 단계로 갈 수 있다. 시술을 바꾸면 다시 체크한다
+  // 초보 시술 모집은 안내 확인 단계에서 체크해야 날짜·시간 단계로 갈 수 있다. 시술을 바꾸면 다시 체크한다
   const agreed = selected('agreed') === 'Y';
   const steps = model ? MODEL_STEPS : NORMAL_STEPS;
   const dateStep = steps.length;
@@ -145,7 +145,7 @@ export default function ShopDetailPage({ model = false }) {
         )}
         {!isMissing && <Button onClick={() => loadShop(shopId)}>다시 시도</Button>}
         <Button as={Link} to={model ? MODEL_LIST_PATH : ROUTES.HOME}>
-          {model ? '모델 모집 목록으로' : '빈자리 목록으로'}
+          {model ? '초보 시술 모집 목록으로' : '빈자리 목록으로'}
         </Button>
       </EmptyState>
     );
@@ -178,7 +178,7 @@ export default function ShopDetailPage({ model = false }) {
         <Link to={ROUTES.HOME}>홈</Link>
         <span>›</span>
         {model ? (
-          <Link to={MODEL_LIST_PATH}>시술 모델 모집</Link>
+          <Link to={MODEL_LIST_PATH}>초보 시술 모집</Link>
         ) : (
           <span>{shop.categoryName}</span>
         )}
@@ -191,7 +191,7 @@ export default function ShopDetailPage({ model = false }) {
           {view === 'info' && <ShopInfoPanel shop={shop} />}
           {view === 'reserve' && (
             <>
-              {/* 단계 표시를 눌러 바로 이동한다. 시술을 고르고, 모델 모집은 안내를 확인한 뒤에만 다음 단계로 갈 수 있다 */}
+              {/* 단계 표시를 눌러 바로 이동한다. 시술을 고르고, 초보 시술 모집은 안내를 확인한 뒤에만 다음 단계로 갈 수 있다 */}
               <ol className={styles.steps} aria-label="예약 단계">
                 {steps.map((title, index) => {
                   const number = index + 1;
@@ -215,7 +215,7 @@ export default function ShopDetailPage({ model = false }) {
                   treatments={treatments}
                   emptyMessage={
                     model
-                      ? '지금 모집 중인 모델 시술이 없습니다.'
+                      ? '지금 모집 중인 초보 시술이 없습니다.'
                       : '지금 예약할 수 있는 시술이 없습니다.'
                   }
                   selectedId={treatment?.treatmentId}
