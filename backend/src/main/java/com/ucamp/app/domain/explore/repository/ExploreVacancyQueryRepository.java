@@ -14,7 +14,7 @@ import com.ucamp.app.domain.treatment.entity.TreatmentType;
 
 /**
  * 고객 빈자리 탐색 후보 조회 (C). 매장(A)·시술·시간대 열기(B) 엔티티를 읽기만 하고 고치지 않는다.
- * 조회 기간과 겹치는 OPEN 시간대 × 그 매장의 판매 중인 시술을 돌려준다.
+ * 조회 기간과 겹치는 OPEN 시간대 × 그 매장의 판매 중인 시술을 돌려준다. 임박 빈자리는 OPEN 없이 매장 × 시술만 돌려준다.
  * 매장 노출 상태(SHOP.STATUS)는 Shop 엔티티에 없어 같은 테이블을 매핑한 ShopAccount 로 거른다.
  */
 public interface ExploreVacancyQueryRepository extends Repository<ShopScheduleException, Long> {
@@ -23,6 +23,33 @@ public interface ExploreVacancyQueryRepository extends Repository<ShopScheduleEx
     String OPEN = "com.ucamp.app.domain.schedule.entity.ScheduleExceptionType.OPEN";
     String SHOP_ACTIVE = "com.ucamp.app.domain.auth.entity.ShopAccountStatus.ACTIVE";
     String TREATMENT_ACTIVE = "com.ucamp.app.domain.treatment.entity.TreatmentStatus.ACTIVE";
+    String TREATMENT_NORMAL = "com.ucamp.app.domain.treatment.entity.TreatmentType.NORMAL";
+
+    // 임박 빈자리는 사장님이 열지 않아도 영업시간 안 빈 시각을 보여주므로 OPEN 시간대 없이 매장 × 시술만 고른다
+    String FIND_IMMINENT_CANDIDATES = """
+            select new com.ucamp.app.domain.explore.repository.ExploreVacancyCandidate(
+                   s.shopId, s.name, s.regionCode, s.address, s.latitude, s.longitude, s.imageUrl,
+                   t.treatmentId, t.name, c.categoryId, c.name, t.treatmentType, t.durationMinutes,
+                   t.regularPrice, t.price, t.lastMinutePrice, t.imageUrl)
+            from Shop s
+            join ShopAccount a on a.shopId = s.shopId
+            join Treatment t on t.shop = s
+            join ShopCategory c on c.categoryId = s.categoryId
+            where a.status = \
+            """
+            + SHOP_ACTIVE
+            + """
+              and t.status = \
+            """
+            + TREATMENT_ACTIVE
+            + """
+              and t.treatmentType = \
+            """
+            + TREATMENT_NORMAL
+            + """
+
+            order by s.shopId, t.treatmentId
+            """;
 
     String FIND_CANDIDATES = """
             select new com.ucamp.app.domain.explore.repository.ExploreVacancyCandidate(
@@ -95,6 +122,14 @@ public interface ExploreVacancyQueryRepository extends Repository<ShopScheduleEx
             @Param("maxLat") BigDecimal maxLat,
             @Param("minLng") BigDecimal minLng,
             @Param("maxLng") BigDecimal maxLng);
+
+    /**
+     * 임박 빈자리 후보. 노출 중인 매장의 판매 중인 일반 시술(모델 시술 제외)을 매장 ID, 시술 ID 순으로 조회한다.
+     *
+     * @return 임박 빈자리 후보 목록 (openStartsAt·openEndsAt 은 null)
+     */
+    @Query(FIND_IMMINENT_CANDIDATES)
+    List<ExploreVacancyCandidate> findImminentCandidates();
 
     // 검색어의 % · _ 가 와일드카드로 해석되지 않게 한다. 이스케이프 문자는 쿼리의 escape '!' 와 같다
     private static String escapeLike(String keyword) {
