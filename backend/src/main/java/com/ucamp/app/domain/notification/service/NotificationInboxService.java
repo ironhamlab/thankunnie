@@ -31,9 +31,6 @@ public class NotificationInboxService {
     /** 내 예약 화면. 예약 확정·취소 알림이 이동하는 경로다. */
     public static final String MY_RESERVATIONS_PATH = "/my-reservations";
 
-    /** 타임세일 목록. 매장이 여러 곳인 묶음 알림이 이동하는 경로다. */
-    public static final String TIME_SALE_PATH = "/?sale=1";
-
     private final NotificationInboxRepository notificationInboxRepository;
     private final Clock clock;
     private final NotificationInboxConnections connections;
@@ -140,5 +137,17 @@ public class NotificationInboxService {
      */
     public static String shopPath(Long shopId) {
         return "/shops/" + shopId;
+    }
+
+    /**
+     * 카테고리·지역 묶음 알림이 이동하는 빈자리 목록 경로.
+     * 예: /?view=list&category=1&region=11680
+     *
+     * @param categoryId 구독한 카테고리 ID
+     * @param regionCode 구독한 지역코드
+     * @return 그 카테고리와 지역으로 좁힌 빈자리 목록 경로
+     */
+    public static String categoryRegionListPath(Long categoryId, String regionCode) {
+        return "/?view=list&category=" + categoryId + "&region=" + regionCode;
     }
 }

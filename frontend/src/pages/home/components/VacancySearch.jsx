@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDesignStore } from '@/store/useDesignStore';
 import { useExploreStore } from '@/store/useExploreStore';
+import { regionNameOf } from '@/constants/regions';
 import { TIME_OF_DAY, dayLabel, validDate } from '@/utils/exploreVacancy';
 import { addDays, todayKst } from '@/utils/scheduleDate';
 import FireIcon from '@/components/icons/FireIcon';
@@ -57,7 +58,7 @@ function Filter({ label, options, value, onChange, segmented = false }) {
 /**
  * 빈자리 검색 화면 (/?view=list). 분야·날짜·시간대 조건에 맞는 매장을 한 줄씩 보여주고(C-02),
  * 매장을 펼치면 시술별 시작 시각(C-01)을 보여준다. 옆 지도에는 같은 매장 위치를 띄운다.
- * 분야·날짜·펼친 매장·타임세일·초보 시술 모집 여부는 주소에 남겨 새로고침이나 홈에서 들어와도 같은 화면을 보여준다.
+ * 분야·지역·날짜·펼친 매장·타임세일·초보 시술 모집 여부는 주소에 남겨 새로고침이나 홈에서 들어와도 같은 화면을 보여준다.
  */
 export default function VacancySearch() {
   const [params, setParams] = useSearchParams();
@@ -67,6 +68,8 @@ export default function VacancySearch() {
   const modelOnly = params.get('type') === MODEL;
   const expandedId = params.get('shop');
   const categoryId = params.get('category');
+  // 알림 링크의 region. 없으면 지역으로 좁히지 않는다
+  const regionCode = params.get('region') || undefined;
   const dateParam = params.get('date');
   // 타임세일은 오늘 시작하는 빈자리만 보고, 그 밖에는 고른 날짜(기본 오늘)를 본다
   const date = (!saleOnly && validDate(dateParam, today, lastDay)) || today;
@@ -100,6 +103,16 @@ export default function VacancySearch() {
   const [paging, setPaging] = useState({ key: '', count: PAGE_SIZE });
   const categoryName =
     categories.find((item) => String(item.categoryId) === categoryId)?.name ?? ALL;
+  // 주소에 region이 있을 때만 제목 앞에 구 이름을 붙인다. 11680 → 강남구
+  const regionName = regionCode ? regionNameOf(regionCode) : '';
+  let listTitle = '빈자리 있는 매장';
+  if (regionName && categoryName !== ALL) {
+    listTitle = `${regionName} ${categoryName} 빈자리 있는 매장`;
+  } else if (regionName) {
+    listTitle = `${regionName} 빈자리 있는 매장`;
+  } else if (categoryName !== ALL) {
+    listTitle = `${categoryName} 빈자리 있는 매장`;
+  }
 
   useEffect(() => {
     loadCategories();
@@ -116,12 +129,13 @@ export default function VacancySearch() {
       startDate: date,
       endDate: date,
       categoryId: categoryId ?? undefined,
+      regionCode,
       timeOfDay: TIME_OF_DAY[time],
       priceTier: saleOnly ? 'IMMINENT' : undefined,
       treatmentType: modelOnly ? MODEL : undefined,
       keyword: keyword || undefined,
     }),
-    [date, categoryId, time, saleOnly, modelOnly, keyword],
+    [date, categoryId, regionCode, time, saleOnly, modelOnly, keyword],
   );
   const filterKey = JSON.stringify(filter);
 
@@ -253,8 +267,7 @@ export default function VacancySearch() {
       </section>
       <div className={`b-row ${styles.resultsHeading}`}>
         <h2>
-          {categoryName === ALL ? '빈자리 있는 매장' : `${categoryName} 빈자리 있는 매장`}{' '}
-          <Badge>{shops.length}곳</Badge>
+          {listTitle} <Badge>{shops.length}곳</Badge>
         </h2>
       </div>
       <div className={styles.layout}>

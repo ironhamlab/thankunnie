@@ -251,7 +251,8 @@ public class NotificationDispatchService {
                 NotificationInboxCategory.INTEREST,
                 "빈자리 알림",
                 messageBody,
-                NotificationInboxService.TIME_SALE_PATH));
+                NotificationInboxService.categoryRegionListPath(
+                        subscription.getCategoryId(), subscription.getRegionCode())));
     }
 
     // 구독이 해제되지 않았고 희망 시간이 남은 이벤트만 센다. 그 슬롯이 아직 팔려야 한다.
