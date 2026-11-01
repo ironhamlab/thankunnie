@@ -6,6 +6,8 @@ const repeatParams = { indexes: null };
 export const exploreApi = {
   getVacancies: (params) =>
     axiosInstance.get('/v1/explore/vacancies', { params, paramsSerializer: repeatParams }),
+  // 메인 임박 카드. 8시간 안 일반 시술 빈자리를 매장마다 1건씩 빠른 시작순으로 최대 10개 (영업시간 기준, OPEN 불필요)
+  getImminentVacancies: () => axiosInstance.get('/v1/explore/vacancies/imminent'),
   getShops: (params) =>
     axiosInstance.get('/v1/explore/shops', { params, paramsSerializer: repeatParams }),
   getCategories: () => axiosInstance.get('/v1/auth/shop-categories'),

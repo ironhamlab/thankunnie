@@ -75,6 +75,14 @@ public class ExploreVacancyController {
                 exploreVacancyService.search(new ExploreVacancySearchRequest(filter, sort, page, size))));
     }
 
+    @Operation(summary = "임박 빈자리",
+            description = "메인 화면용. 지금부터 8시간 안에 시작하는 일반 시술 빈자리를 매장마다 가장 빠른 1건씩,"
+                    + " 빠른 시작순으로 최대 10개. 사장님이 시간대를 열지 않아도 영업시간 안 빈 시각이면 나온다")
+    @GetMapping("/vacancies/imminent")
+    public ResponseEntity<ApiResponse<List<ExploreVacancyResponse>>> getImminentVacancies() {
+        return ResponseEntity.ok(ApiResponse.success(exploreVacancyService.searchImminent()));
+    }
+
     @Operation(summary = "빈자리 상세",
             description = "시술 × 시작 시각의 예약 가능 여부·가격·시술/매장 안내. 조회 시점에 다시 계산하며,"
                     + " 지났거나 마감된 시각도 200 으로 bookable=false 를 돌려준다")

@@ -115,6 +115,20 @@ class ExploreVacancyControllerTest {
     }
 
     @Test
+    @DisplayName("임박 빈자리는 비로그인으로 조회하고 상세 경로({treatmentId})로 해석하지 않는다")
+    void getImminentVacancies_anonymous_returnsList() throws Exception {
+        given(exploreVacancyService.searchImminent()).willReturn(List.of());
+
+        mockMvc.perform(get(VACANCIES_URL + "/imminent"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray());
+
+        verify(exploreVacancyService).searchImminent();
+        verifyNoInteractions(exploreVacancyDetailService);
+    }
+
+    @Test
     @DisplayName("빈자리 상세는 비로그인으로 조회하고 시술 ID 와 시작 시각을 넘긴다")
     void getVacancyDetail_anonymous_returnsDetail() throws Exception {
         OffsetDateTime startsAt = OffsetDateTime.of(2026, 11, 6, 20, 0, 0, 0, ZoneOffset.ofHours(9));

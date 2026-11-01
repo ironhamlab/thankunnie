@@ -8,6 +8,8 @@ const SHOP_VACANCY_SIZE = 50;
 
 const fetchVacancyCards = async (params) =>
   (await exploreApi.getVacancies(params)).content.map((item) => toVacancyCard(item));
+const fetchImminentCards = async () =>
+  (await exploreApi.getImminentVacancies()).map((item) => toVacancyCard(item));
 const fetchShops = async (params) => (await exploreApi.getShops(params)).shops;
 
 const toError = (error) => ({
@@ -37,7 +39,7 @@ const simpleLoader = (set, keys, fetch) => {
 };
 
 export const useExploreStore = create((set, get) => ({
-  // 홈 오늘 임박 캐러셀 (C-01, 시술 × 시각)
+  // 홈 임박 캐러셀 (임박 빈자리 API, 매장마다 시술 × 시각 1건)
   imminentVacancies: [],
   imminentStatus: 'idle',
   imminentError: null,
@@ -68,7 +70,7 @@ export const useExploreStore = create((set, get) => ({
   loadImminentVacancies: simpleLoader(
     set,
     { data: 'imminentVacancies', status: 'imminentStatus', error: 'imminentError' },
-    fetchVacancyCards,
+    fetchImminentCards,
   ),
   loadHomeShops: simpleLoader(
     set,

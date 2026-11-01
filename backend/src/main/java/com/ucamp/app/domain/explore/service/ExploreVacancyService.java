@@ -51,9 +51,16 @@ public class ExploreVacancyService {
     private static final int MAX_REGION_CODES = 10;
     private static final int MAX_KEYWORD_LENGTH = 50;
     private static final int MAX_CLOSING_WITHIN_HOURS = 72;
+    private static final int IMMINENT_LIMIT = 10;
 
     private static final Comparator<Item> TIEBREAK = Comparator
             .comparing((Item item) -> item.startsAt())
+            .thenComparing(item -> item.candidate().treatmentId());
+
+    // 임박 빈자리: 빠른 시작 → 높은 할인율 → 시술 ID. 매장 대표 1건을 고를 때와 매장끼리 정렬할 때 같이 쓴다
+    private static final Comparator<Item> IMMINENT_ORDER = Comparator
+            .comparing((Item item) -> item.startsAt())
+            .thenComparing(Comparator.comparingInt((Item item) -> item.quote().discountRate()).reversed())
             .thenComparing(item -> item.candidate().treatmentId());
 
     private final ExploreVacancyQueryRepository exploreVacancyQueryRepository;
@@ -99,6 +106,41 @@ public class ExploreVacancyService {
                 .toList();
         return new ExploreShopMapResponse(
                 shops.stream().limit(MAX_MAP_SHOPS).toList(), shops.size() > MAX_MAP_SHOPS);
+    }
+
+    /**
+     * 메인 화면 임박 빈자리. 지금부터 8시간 안에 시작하는 일반 시술 빈자리를 매장마다 가장 빠른 1건씩,
+     * 빠른 시작순으로 최대 10개 돌려준다. 사장님이 열지 않아도 영업시간 안 빈 시각이면 나온다
+     * (빈 시각 판단은 B 의 가용 시간 계산: 영업시간 + 열기 − 닫기 − 예약, 예약 클릭 마감 반영).
+     */
+    public List<ExploreVacancyResponse> searchImminent() {
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime until = now.plus(BookingPolicy.IMMINENT_FROM);
+        Map<AvailabilityKey, List<LocalDateTime>> availableTimes = new HashMap<>();
+        Map<Long, Item> earliestByShop = new HashMap<>();
+        for (ExploreVacancyCandidate candidate : exploreVacancyQueryRepository.findImminentCandidates()) {
+            // 8시간이 자정을 넘으면 다음 날 새벽 시각도 본다
+            for (LocalDate date = now.toLocalDate(); !date.isAfter(until.toLocalDate()); date = date.plusDays(1)) {
+                AvailabilityKey key = new AvailabilityKey(candidate.shopId(), date, candidate.durationMinutes());
+                List<LocalDateTime> startTimes = availableTimes.computeIfAbsent(key,
+                        k -> availabilityService.getAvailableStartTimes(k.shopId(), k.date(), k.durationMinutes()));
+                for (LocalDateTime startsAt : startTimes) {
+                    if (!startsAt.isBefore(now) && startsAt.isBefore(until)) {
+                        earliestByShop.merge(candidate.shopId(), new Item(candidate, startsAt,
+                                quote(candidate, startsAt, now)), ExploreVacancyService::earlier);
+                    }
+                }
+            }
+        }
+        return earliestByShop.values().stream()
+                .sorted(IMMINENT_ORDER)
+                .limit(IMMINENT_LIMIT)
+                .map(item -> ExploreVacancyResponse.of(item.candidate(), item.startsAt(), item.quote()))
+                .toList();
+    }
+
+    private static Item earlier(Item a, Item b) {
+        return IMMINENT_ORDER.compare(a, b) <= 0 ? a : b;
     }
 
     // 필터를 검사하고 조건에 맞는 빈자리(시술 × 시작 시각)를 구한다. 정렬하지 않은 상태다

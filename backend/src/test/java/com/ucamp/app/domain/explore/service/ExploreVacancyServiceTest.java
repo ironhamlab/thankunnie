@@ -301,6 +301,69 @@ class ExploreVacancyServiceTest {
         assertInvalid(request().bounds("37.50", "37.49", "127.02", "127.03").build());
     }
 
+    // 임박 빈자리: 지금(10:00)부터 18:00 전까지 시작. 매장 1(금 10~20시)은 클릭 마감 20분 뒤 첫 시각 10:30,
+    // 매장 2(금 11~21시)는 11:00 이 가장 빠르다. 같은 시각이면 할인율이 높은 시술을 고른다
+    @Test
+    @DisplayName("임박 빈자리는 사장님이 열지 않아도 영업시간 안 빈 시각에서 매장마다 가장 빠른 1건을 빠른 시작순으로 낸다")
+    void searchImminent_withoutOpen_returnsEarliestPerShop() {
+        List<ExploreVacancyResponse> result = exploreVacancyService.searchImminent();
+
+        // 매장 1 10:30: 손 케어 25%(20,000→15,000) > 젤네일 22%. 매장 2 11:00: 디지털 펌 22% > 남성 커트 0%
+        assertThat(result).extracting(ExploreVacancyResponse::vacancyId)
+                .containsExactly("2-202611061030", "4-202611061100");
+        assertThat(result.get(0).priceTier()).isEqualTo(PriceTier.LAST_MINUTE);
+    }
+
+    @Test
+    @DisplayName("임박 빈자리에서 모델 시술은 빠진다")
+    void searchImminent_modelTreatment_excluded() {
+        jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건'"
+                + " WHERE TREATMENT_ID = 2");
+
+        assertThat(exploreVacancyService.searchImminent()).extracting(ExploreVacancyResponse::vacancyId)
+                .containsExactly("1-202611061030", "4-202611061100");
+    }
+
+    @Test
+    @DisplayName("임박 빈자리는 지금부터 8시간 안에 시작하는 시각만 낸다")
+    void searchImminent_afterEightHours_excluded() {
+        jdbcTemplate.update("UPDATE SHOP_BUSINESS_HOUR SET OPEN_TIME = '18:00' WHERE SHOP_ID = 2 AND DAY_OF_WEEK = 'FRI'");
+
+        assertThat(exploreVacancyService.searchImminent()).extracting(ExploreVacancyResponse::shopId)
+                .containsExactly(1L);
+    }
+
+    @Test
+    @DisplayName("임박 빈자리는 8시간이 되기 직전 시각까지 낸다")
+    void searchImminent_justBeforeEightHours_included() {
+        jdbcTemplate.update("UPDATE SHOP_BUSINESS_HOUR SET OPEN_TIME = '17:30' WHERE SHOP_ID = 2 AND DAY_OF_WEEK = 'FRI'");
+
+        assertThat(exploreVacancyService.searchImminent()).extracting(ExploreVacancyResponse::vacancyId)
+                .containsExactly("2-202611061030", "4-202611061730");
+    }
+
+    @Test
+    @DisplayName("임박 빈자리는 예약과 겹치는 시각을 빼고 그다음 빠른 시각을 낸다")
+    void searchImminent_reservedTime_picksNextEarliest() {
+        jdbcTemplate.update("""
+                INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT,
+                                         APPLIED_PRICE, DEPOSIT, HOLD_EXPIRES_AT, CREATED_AT, UPDATED_AT)
+                VALUES (900, 1, 1, 'CONFIRMED', ?, ?, 30000, 20000, ?, ?, ?)
+                """, NOW.withMinute(30), NOW.withHour(12), NOW, NOW, NOW);
+
+        assertThat(exploreVacancyService.searchImminent()).extracting(ExploreVacancyResponse::vacancyId)
+                .containsExactly("4-202611061100", "2-202611061200");
+    }
+
+    @Test
+    @DisplayName("임박 빈자리에서 노출하지 않는 매장은 빠진다")
+    void searchImminent_inactiveShop_excluded() {
+        jdbcTemplate.update("UPDATE SHOP SET STATUS = 'INACTIVE' WHERE SHOP_ID = 2");
+
+        assertThat(exploreVacancyService.searchImminent()).extracting(ExploreVacancyResponse::shopId)
+                .containsExactly(1L);
+    }
+
     // 매장 2(서초구, 금 11~21시)가 2026-11-06 21~22시를 연다
     private void openShopTwo() {
         jdbcTemplate.update("""
