@@ -53,14 +53,35 @@ public class AvailabilityService {
      * 날짜에 시술을 시작할 수 있는 시각 목록 (C: 검색·상세 화면용).
      */
     public List<LocalDateTime> getAvailableStartTimes(Long shopId, LocalDate date, int durationMinutes) {
+        return getDayAvailability(shopId, date, durationMinutes).startTimes();
+    }
+
+    /**
+     * 날짜에 시술을 시작할 수 있는 시각과, 그중 영업시간만으로는 안 되고 사장님이 연 시간 덕분에 되는 시각.
+     * 시술이 영업시간 밖으로 조금이라도 넘어가면 연장 영업 시각이다 (휴무일에 연 시간은 모두 해당).
+     * 고객 상세 화면이 연장 영업임을 표시하는 데 쓴다.
+     */
+    public DayAvailability getDayAvailability(Long shopId, LocalDate date, int durationMinutes) {
         requirePositive(durationMinutes);
         Duration duration = Duration.ofMinutes(durationMinutes);
         LocalDateTime from = date.atStartOfDay();
         LocalDateTime to = date.plusDays(1).atStartOfDay().plus(duration);
         LocalDateTime now = LocalDateTime.now(clock);
         Schedule schedule = loadSchedule(shopId, from, to, now);
-        return AvailabilityCalculator.availableStartTimes(
+        List<LocalDateTime> startTimes = AvailabilityCalculator.availableStartTimes(
                 date, duration, schedule.openRanges(), schedule.blockedRanges(), now);
+        List<LocalDateTime> extendedStartTimes = startTimes.stream()
+                .filter(start -> !AvailabilityCalculator.isFree(
+                        new TimeRange(start, start.plus(duration)), schedule.businessRanges(), List.of()))
+                .toList();
+        return new DayAvailability(startTimes, extendedStartTimes);
+    }
+
+    /**
+     * @param startTimes         시작 가능 시각, 오름차순
+     * @param extendedStartTimes startTimes 중 영업시간 밖 연장 영업이 있어야 가능한 시각, 오름차순
+     */
+    public record DayAvailability(List<LocalDateTime> startTimes, List<LocalDateTime> extendedStartTimes) {
     }
 
     /**
@@ -125,13 +146,14 @@ public class AvailabilityService {
     private Schedule loadSchedule(Long shopId, LocalDateTime from, LocalDateTime to, LocalDateTime now) {
         Map<BusinessDay, ShopBusinessHour> hours = shopBusinessHourRepository.findByShopId(shopId).stream()
                 .collect(Collectors.toMap(ShopBusinessHour::getDayOfWeek, Function.identity()));
-        List<TimeRange> openRanges = new ArrayList<>();
+        List<TimeRange> businessRanges = new ArrayList<>();
         for (LocalDate date = from.toLocalDate(); !date.isAfter(to.toLocalDate()); date = date.plusDays(1)) {
             ShopBusinessHour hour = hours.get(BusinessDay.of(date));
             if (hour != null) {
-                hour.rangeOn(date).ifPresent(openRanges::add);
+                hour.rangeOn(date).ifPresent(businessRanges::add);
             }
         }
+        List<TimeRange> openRanges = new ArrayList<>(businessRanges);
         List<TimeRange> closedRanges = new ArrayList<>();
         for (ShopScheduleException exception : shopScheduleExceptionRepository.findOverlapping(shopId, from, to)) {
             TimeRange range = new TimeRange(exception.getStartsAt(), exception.getEndsAt());
@@ -146,11 +168,15 @@ public class AvailabilityService {
                         reservation.getStatus(), reservation.getHoldExpiresAt(), now))
                 .map(reservation -> new TimeRange(reservation.getStartsAt(), reservation.getEndsAt()))
                 .toList();
-        return new Schedule(openRanges, closedRanges, reservedRanges);
+        return new Schedule(businessRanges, openRanges, closedRanges, reservedRanges);
     }
 
-    private record Schedule(List<TimeRange> openRanges, List<TimeRange> closedRanges,
-            List<TimeRange> reservedRanges) {
+    /**
+     * @param businessRanges 요일 영업시간만의 구간 (연장 영업 판단용)
+     * @param openRanges     영업시간과 사장님이 연 시간을 합친 구간
+     */
+    private record Schedule(List<TimeRange> businessRanges, List<TimeRange> openRanges,
+            List<TimeRange> closedRanges, List<TimeRange> reservedRanges) {
 
         List<TimeRange> blockedRanges() {
             List<TimeRange> blocked = new ArrayList<>(closedRanges);
