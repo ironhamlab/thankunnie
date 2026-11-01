@@ -1,9 +1,10 @@
 import Panel from '@/components/common/Panel';
+import ShopLocation from './ShopLocation';
 import styles from '../ShopDetailPage.module.css';
 
 const DAY_LABELS = { MON: '월', TUE: '화', WED: '수', THU: '목', FRI: '금', SAT: '토', SUN: '일' };
 
-/** 매장 상세정보: 주소·연락처·영업시간·소개·공지 */
+/** 매장 상세정보: 주소·연락처·영업시간·위치 지도·소개·공지 */
 export default function ShopInfoPanel({ shop }) {
   const address = [shop.address, shop.addressDetail].filter(Boolean).join(' ');
 
@@ -37,6 +38,7 @@ export default function ShopInfoPanel({ shop }) {
           </dd>
         </div>
       </dl>
+      <ShopLocation shop={shop} />
       <h3 className={styles.subheading}>매장 소개</h3>
       <p className={styles.intro}>{shop.description || '등록된 매장 소개가 없습니다.'}</p>
       {shop.notice && (

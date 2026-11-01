@@ -176,7 +176,7 @@ class ExploreVacancyServiceTest {
     @Test
     @DisplayName("일반·초보 시술이 섞인 매장 요약은 매장 상세에 보이는 일반 빈자리로 계산하고 초보 시술 빈자리는 따로 담는다")
     void searchShops_mixedShop_summarizesNormalAndModelSeparately() {
-        // 젤네일(일반) 30,000원·14% 3건, 손 케어(모델) 18,000원·10% 4건
+        // 젤네일(일반) 30,000원·14% 3건, 손 케어(초보 시술) 18,000원·10% 4건
         jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건',"
                 + " PHOTO_NOTICE = '안내' WHERE TREATMENT_ID = 2");
 
@@ -315,7 +315,7 @@ class ExploreVacancyServiceTest {
     }
 
     @Test
-    @DisplayName("임박 빈자리에서 모델 시술은 빠진다")
+    @DisplayName("임박 빈자리에서 초보 시술은 빠진다")
     void searchImminent_modelTreatment_excluded() {
         jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건'"
                 + " WHERE TREATMENT_ID = 2");
