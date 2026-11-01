@@ -8,9 +8,9 @@
 .summary > :global(.b-row) {
   flex-wrap: wrap;
 }
+/* 좁은 화면에서도 아바타와 이름을 한 줄에 두고, 긴 글자는 오른쪽 칸 안에서 줄바꿈한다 */
 .summary > :global(.b-row) > :global(.b-flex) {
   min-width: 0;
-  flex-wrap: wrap;
 }
 .summary h1 {
   font-size: 23px;
