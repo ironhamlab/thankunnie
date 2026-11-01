@@ -50,10 +50,11 @@ export default function ImminentCarousel() {
   }, [autoPlay, count, index]);
 
   return (
-    <section id="home-imminent" className={styles.root} aria-label="오늘 임박 빈자리">
+    // 8시간 범위가 자정을 넘으면 내일 새벽 시각도 나오므로 "오늘"로 한정하지 않는다
+    <section id="home-imminent" className={styles.root} aria-label="곧 시작하는 임박 빈자리">
       <div className={styles.heading}>
         <h2>
-          <span aria-hidden="true">ϟ</span> 오늘 마감 임박
+          <span aria-hidden="true">ϟ</span> 곧 시작하는 임박 빈자리
         </h2>
         <Link to={`${ROUTES.HOME}?sale=1`}>전체보기 ›</Link>
       </div>
@@ -150,10 +151,10 @@ export default function ImminentCarousel() {
         <div className={styles.empty}>
           <strong>
             {status === 'loading' || status === 'idle'
-              ? '오늘 임박 빈자리를 찾는 중이에요'
+              ? '임박 빈자리를 찾는 중이에요'
               : status === 'failed'
                 ? '빈자리를 불러오지 못했어요'
-                : '오늘 마감 임박 빈자리가 아직 없어요'}
+                : '곧 시작하는 임박 빈자리가 아직 없어요'}
           </strong>
           {status === 'succeeded' && (
             <p>
