@@ -227,7 +227,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 | `shopDescription`, `shopNotice` | string, null 가능 | 매장 소개, 공지 |
 | `balanceAmount` | number | 현장 결제 잔금 = 판매가 − 예약금 |
 
-- 다른 시각을 고르려면 `GET /api/v1/available-times?shopId={shopId}&date={date}&durationMinutes={durationMinutes}`(B)로 시작 가능 시각을 받고, 고른 시각으로 C-03을 다시 호출한다.
+- 다른 시각을 고르려면 `GET /api/v1/available-times?shopId={shopId}&date={date}&durationMinutes={durationMinutes}`(B)로 시작 가능 시각을 받고, 고른 시각으로 C-03을 다시 호출한다. 응답의 `extendedStartTimes`는 그중 영업시간 밖 연장 영업 덕분에 가능한 시각이다(필드 설명은 A-F1 문서).
 - 이미 지났거나 마감된 시각이라도 200으로 응답하고 `bookable=false`로 알린다. 화면은 "예약 마감" 안내와 다른 시간 선택을 보여준다.
 
 | HTTP | 코드 | 상황 |
