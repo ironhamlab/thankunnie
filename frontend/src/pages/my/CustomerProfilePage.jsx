@@ -4,7 +4,8 @@ import { ROUTES } from '@/constants/routes';
 import { PAYMENT_STATUS, reservationStatusOf } from '@/constants/reservationStatus';
 import { formatMoney, formatVisitDate, visitDayLabel } from '@/utils/reservationFormat';
 import { isPendingFavorite } from '@/utils/notificationRules';
-import { datePart, timePart, todayKst } from '@/utils/scheduleDate';
+import { datePart, timePart } from '@/utils/scheduleDate';
+import { useKstToday } from '@/hooks/useKstToday';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { useReservationStore } from '@/store/useReservationStore';
 import { useUserStore } from '@/store/useUserStore';
@@ -17,8 +18,8 @@ import MyNotificationsPage from './MyNotificationsPage';
 import styles from './CustomerProfilePage.module.css';
 
 // 내 예약 '이용 예정' 탭과 같은 조건. 시작 시각 오름차순이라 첫 건이 가장 가까운 예약이다
-const upcomingFilters = () => ({
-  from: todayKst(),
+const upcomingFilters = (today) => ({
+  from: today,
   statuses: ['HOLD', 'CONFIRMED'],
   page: 0,
   size: 1,
@@ -45,9 +46,12 @@ export default function CustomerProfilePage() {
     return resetProfile;
   }, [loadProfile, resetProfile]);
 
+  // 자정이 지나면 예약을 다시 불러온다. 재렌더링으로 오늘·내일 표시도 함께 바뀐다
+  const today = useKstToday();
+
   useEffect(() => {
-    loadReservations('my', upcomingFilters());
-  }, [loadReservations]);
+    loadReservations('my', upcomingFilters(today));
+  }, [loadReservations, today]);
 
   // 찜은 희망 시간 없는 업장 구독으로 저장된다. 한 매장에 구독이 여러 건이어도 한 번만 센다
   const favoriteShopIds = new Set(
