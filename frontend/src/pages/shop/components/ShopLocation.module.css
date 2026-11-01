@@ -15,6 +15,10 @@
   border-radius: var(--radius-md);
   background: var(--color-surface);
 }
+/* 키가 없거나 SDK 를 못 불러오면 KakaoMap 이 아무것도 그리지 않으므로 빈 상자를 숨기고 링크만 남긴다 */
+.map:empty {
+  display: none;
+}
 /* 카카오맵 위에 띄우는 매장 이름 마커. 위치는 지도 오버레이가 정한다 */
 .marker {
   border: 1px solid var(--color-primary);
