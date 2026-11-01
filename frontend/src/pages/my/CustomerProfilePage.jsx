@@ -2,9 +2,9 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { PAYMENT_STATUS, reservationStatusOf } from '@/constants/reservationStatus';
-import { formatMoney, formatReservationTime } from '@/utils/reservationFormat';
+import { formatMoney, formatVisitDate, visitDayLabel } from '@/utils/reservationFormat';
 import { isPendingFavorite } from '@/utils/notificationRules';
-import { datePart, todayKst } from '@/utils/scheduleDate';
+import { datePart, timePart, todayKst } from '@/utils/scheduleDate';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { useReservationStore } from '@/store/useReservationStore';
 import { useUserStore } from '@/store/useUserStore';
@@ -119,9 +119,16 @@ export default function CustomerProfilePage() {
       )}
       {nearest && (
         <Panel as="section" padded className={styles.nearest} aria-label="가장 가까운 예약">
-          <div>
+          <div className={styles.nearestWhen}>
+            <span className={styles.nearestDay}>{visitDayLabel(nearest.startsAt)}</span>
+            <strong className={styles.nearestDate}>{formatVisitDate(nearest.startsAt)}</strong>
+            <strong className={styles.nearestTime}>
+              {timePart(nearest.startsAt)}
+              <small> ~ {timePart(nearest.endsAt)}</small>
+            </strong>
+          </div>
+          <div className={styles.nearestInfo}>
             <div className="b-flex">
-              <Badge>◷ {formatReservationTime(nearest.startsAt, nearest.endsAt)}</Badge>
               <Badge className={nearestStatus.tone}>{nearestStatus.label}</Badge>
               <small className="b-muted">예약번호 {nearest.reservationId}</small>
             </div>
@@ -137,8 +144,21 @@ export default function CustomerProfilePage() {
               </span>
             </div>
           </div>
-          <div className="b-flex">
-            <Button as={Link} variant="primary" to={ROUTES.MY_RESERVATIONS}>
+          <div className={`b-flex ${styles.nearestActions}`}>
+            {nearest.status === 'HOLD' && (
+              <Button
+                as={Link}
+                variant="primary"
+                to={`${ROUTES.CHECKOUT}?reservationId=${nearest.reservationId}`}
+              >
+                이어서 결제하기
+              </Button>
+            )}
+            <Button
+              as={Link}
+              variant={nearest.status === 'HOLD' ? undefined : 'primary'}
+              to={ROUTES.MY_RESERVATIONS}
+            >
               전체 예약 보기
             </Button>
           </div>
