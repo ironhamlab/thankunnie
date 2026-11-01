@@ -37,6 +37,7 @@ import com.ucamp.app.domain.schedule.entity.ShopBusinessHour;
 import com.ucamp.app.domain.schedule.entity.ShopScheduleException;
 import com.ucamp.app.domain.schedule.repository.ShopBusinessHourRepository;
 import com.ucamp.app.domain.schedule.repository.ShopScheduleExceptionRepository;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService.DayAvailability;
 
 @ExtendWith(MockitoExtension.class)
 class AvailabilityServiceTest {
@@ -161,6 +162,20 @@ class AvailabilityServiceTest {
     }
 
     @Test
+    @DisplayName("영업시간 밖으로 연 시간에 걸치는 시작 시각만 연장 영업 시각으로 알려준다")
+    void getDayAvailability_openAfterHours_marksExtendedStartTimes() {
+        given(shopScheduleExceptionRepository.findOverlapping(eq(SHOP_ID), any(), any()))
+                .willReturn(List.of(openException(20, 0, 22, 0), openException(14, 0, 17, 0)));
+
+        DayAvailability result = service.getDayAvailability(SHOP_ID, DATE, ONE_HOUR);
+
+        // 19:30 시작은 20:30 에 끝나 영업시간(~20:00)을 넘으므로 연장이고, 영업시간 안에서 연 14~17시는 연장이 아니다
+        assertThat(result.startTimes()).endsWith(at(21, 0));
+        assertThat(result.extendedStartTimes())
+                .containsExactly(at(19, 30), at(20, 0), at(20, 30), at(21, 0));
+    }
+
+    @Test
     @DisplayName("isAvailable 은 영업시간 안의 빈 시각이면 true 다")
     void isAvailable_freeTime_returnsTrue() {
         assertThat(service.isAvailable(SHOP_ID, at(14, 0), ONE_HOUR)).isTrue();
@@ -229,6 +244,15 @@ class AvailabilityServiceTest {
 
     private static LocalDateTime at(int hour, int minute) {
         return DATE.atTime(hour, minute);
+    }
+
+    private static ShopScheduleException openException(int startHour, int startMinute, int endHour, int endMinute) {
+        return ShopScheduleException.builder()
+                .shopId(SHOP_ID)
+                .exceptionType(ScheduleExceptionType.OPEN)
+                .startsAt(at(startHour, startMinute))
+                .endsAt(at(endHour, endMinute))
+                .build();
     }
 
     private static Reservation reservation(int hour, int minute, ReservationStatus status) {
