@@ -357,6 +357,33 @@
 .slots {
   margin-bottom: 4px;
 }
+.slots button {
+  position: relative;
+}
+/* 영업시간 밖 연장 영업 시각: 칸 크기를 바꾸지 않도록 오른쪽 위 모서리에 작게 붙인다 */
+.extendedTag {
+  position: absolute;
+  top: -7px;
+  right: -4px;
+  padding: 1px 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-white);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-decoration: none;
+}
+.extendedNotice {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 600;
+  word-break: keep-all;
+}
 /* 공통 시간 칸(b-time-grid)의 선택 색 대신 앱 기본 색을 쓴다 */
 .slots button:global(.is-selected) {
   border-color: var(--color-primary);

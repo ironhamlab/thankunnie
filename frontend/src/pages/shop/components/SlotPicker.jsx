@@ -19,8 +19,9 @@ const toTime = (minutes) =>
  * 영업시간 안에서 시술이 끝날 수 있는 30분 단위 시작 시각에, 서버가 알려준 시작 가능 시각을 합친다.
  * 예약 가능 여부는 서버 응답(available-times)만 따른다. 영업시간 밖이라도 사장님이 연 시각은 서버 응답에 들어 있다.
  */
-const buildSlots = (businessHour, durationMinutes, startTimes) => {
+const buildSlots = (businessHour, durationMinutes, startTimes, extendedStartTimes = []) => {
   const available = new Set(startTimes.map(timePart));
+  const extended = new Set(extendedStartTimes.map(timePart));
   const times = new Set(available);
   if (businessHour && !businessHour.closed) {
     const lastStart = toMinutes(businessHour.closeTime) - durationMinutes;
@@ -28,7 +29,29 @@ const buildSlots = (businessHour, durationMinutes, startTimes) => {
       times.add(toTime(minutes));
     }
   }
-  return [...times].sort().map((time) => ({ time, available: available.has(time) }));
+  return [...times]
+    .sort()
+    .map((time) => ({ time, available: available.has(time), extended: extended.has(time) }));
+};
+
+/**
+ * 연장 영업 시각이 있는 날의 한 줄 안내. 휴무일에 따로 연 날과, 평소보다 늦게까지 여는 날을 나눠 알린다.
+ * 연장 시각은 서버가 정하고, 화면은 마지막 연장 시각 + 소요 시간으로 끝나는 시각만 계산한다.
+ */
+const extendedNotice = (businessHour, durationMinutes, extendedStartTimes) => {
+  if (!extendedStartTimes.length) {
+    return null;
+  }
+  if (!businessHour || businessHour.closed) {
+    return '휴무일이지만 사장님이 따로 연 시간이에요.';
+  }
+  const lastStart = Math.max(
+    ...extendedStartTimes.map((startTime) => toMinutes(timePart(startTime))),
+  );
+  const extendedEnd = toTime(lastStart + durationMinutes);
+  return extendedEnd > businessHour.closeTime
+    ? `평소 ${businessHour.closeTime}까지 영업하지만 이 날은 ${extendedEnd}까지 연장 영업해요.`
+    : '이 날은 평소 영업시간 밖에도 연 시간이 있어요.';
 };
 
 const dateLabel = (date) => {
@@ -50,8 +73,15 @@ export default function SlotPicker({
   selectedTime,
   onSelectTime,
 }) {
+  const extendedStartTimes = times.extendedStartTimes ?? [];
   const slots =
-    times.status === 'succeeded' ? buildSlots(businessHour, durationMinutes, times.startTimes) : [];
+    times.status === 'succeeded'
+      ? buildSlots(businessHour, durationMinutes, times.startTimes, extendedStartTimes)
+      : [];
+  const notice =
+    times.status === 'succeeded'
+      ? extendedNotice(businessHour, durationMinutes, extendedStartTimes)
+      : null;
   const availableCount = slots.filter((slot) => slot.available).length;
   // 시술은 시작 시각부터 소요 시간 동안 이어지므로, 고른 시각 뒤 칸도 함께 잡힌 것으로 표시한다
   const selectionEnd = selectedTime ? toMinutes(selectedTime) + durationMinutes : null;
@@ -92,8 +122,9 @@ export default function SlotPicker({
       )}
       {times.status === 'succeeded' && slots.length > 0 && (
         <>
+          {notice && <p className={styles.extendedNotice}>{notice}</p>}
           <div className={`b-time-grid ${styles.slots}`} role="group" aria-label="시작 시간">
-            {slots.map(({ time, available }) => (
+            {slots.map(({ time, available, extended }) => (
               <button
                 key={time}
                 type="button"
@@ -102,10 +133,21 @@ export default function SlotPicker({
                   time === selectedTime ? 'is-selected' : inSelection(time) ? styles.inRange : undefined
                 }
                 aria-pressed={time === selectedTime}
-                aria-label={inSelection(time) ? `${time} 선택한 시술 진행 시간` : undefined}
+                aria-label={
+                  inSelection(time)
+                    ? `${time} 선택한 시술 진행 시간`
+                    : extended && available
+                      ? `${time} 연장 영업`
+                      : undefined
+                }
                 onClick={() => onSelectTime(time)}
               >
                 {time}
+                {extended && available && (
+                  <span className={styles.extendedTag} aria-hidden="true">
+                    연장
+                  </span>
+                )}
               </button>
             ))}
           </div>

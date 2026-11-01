@@ -162,7 +162,9 @@ export default function ShopDetailPage({ model = false }) {
     (item) => item.dayOfWeek === businessDay(selectedDate),
   );
   const currentTimes =
-    times.key === timesKey ? times : { status: 'loading', startTimes: [], error: null };
+    times.key === timesKey
+      ? times
+      : { status: 'loading', startTimes: [], extendedStartTimes: [], error: null };
   // 서버가 시작 가능하다고 알려준 시각만 선택된 것으로 본다
   const time =
     currentTimes.status === 'succeeded' &&
