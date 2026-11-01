@@ -3,12 +3,9 @@ import { Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { money } from '@/utils/demoData';
 import { useExploreStore } from '@/store/useExploreStore';
-import { todayKst } from '@/utils/scheduleDate';
 import Button from '@/components/common/Button';
 import styles from './ImminentCarousel.module.css';
 
-// 캐러셀에 넣을 최대 개수. 더 보려면 전체보기(타임세일 목록)로 넘긴다
-const MAX_SLIDES = 10;
 // 자동으로 넘기는 간격. 매장·시간·가격을 읽을 시간을 주려고 3초보다 조금 길게 둔다
 const AUTO_PLAY_MS = 3500;
 const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -16,7 +13,8 @@ const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion:
 const SWIPE_MIN_PX = 40;
 
 /**
- * 홈 오늘 임박 빈자리 캐러셀. 오늘 시작하는 임박·초임박 특가를 빠른 시작순으로 한 장씩 보여준다.
+ * 홈 임박 빈자리 캐러셀. 지금부터 8시간 안에 시작하는 일반 시술 빈자리를 매장마다 1건씩, 빠른 시작순으로
+ * 최대 10장 보여준다(서버가 개수·정렬을 정한다). 더 보려면 전체보기(타임세일 목록)로 넘긴다.
  * 저절로 넘기되, 마우스를 올리거나 키보드로 안의 버튼에 초점이 있으면 누르려던 카드가 바뀌지 않게 멈춘다.
  * 휴대폰에서는 옆으로 밀어 넘기고, 손을 대고 있는 동안만 멈춘다. 끝에서 넘기면 처음으로 돌아간다.
  * 기기에서 동작 줄이기를 켰으면 자동으로 넘기지 않는다.
@@ -30,16 +28,10 @@ export default function ImminentCarousel() {
   const [focused, setFocused] = useState(false);
   const [touching, setTouching] = useState(false);
   const touchStartX = useRef(null);
-  const today = todayKst();
 
   useEffect(() => {
-    loadImminentVacancies({
-      startDate: today,
-      endDate: today,
-      priceTier: 'IMMINENT',
-      size: MAX_SLIDES,
-    });
-  }, [today, loadImminentVacancies]);
+    loadImminentVacancies();
+  }, [loadImminentVacancies]);
 
   const count = vacancies.length;
   // 목록이 다시 와서 개수가 줄어도 범위를 넘지 않게 한다
