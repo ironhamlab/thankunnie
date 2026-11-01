@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { generatePath, Link, useBlocker, useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { formatMoney } from '@/utils/reservationFormat';
+import { shopImage } from '@/utils/exploreVacancy';
 import { datePart, timePart } from '@/utils/scheduleDate';
 import { savePendingRequest, takePendingRequest, verifyErrorMessage } from '@/utils/payment';
 import { loadPortOne, requestPay } from '@/utils/portoneLoader';
 import { useReservationStore } from '@/store/useReservationStore';
 import { usePaymentStore } from '@/store/usePaymentStore';
-import Asset from '@/components/common/Asset';
+import { useShopDetailStore } from '@/store/useShopDetailStore';
 import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
 import Panel from '@/components/common/Panel';
@@ -81,6 +82,9 @@ export default function CheckoutPage() {
   const clockOffset = useReservationStore((s) => s.detailClockOffset);
   const releaseHold = useReservationStore((s) => s.releaseHold);
   const verifyPayment = usePaymentStore((s) => s.verifyPayment);
+  const shop = useShopDetailStore((s) => s.shop);
+  const loadShop = useShopDetailStore((s) => s.loadShop);
+  const clearShop = useShopDetailStore((s) => s.clearShop);
   const navigate = useNavigate();
   const [now, setNow] = useState(Date.now);
   const [paying, setPaying] = useState(false);
@@ -96,6 +100,7 @@ export default function CheckoutPage() {
 
   // 기기 시계가 서버와 달라도 서버가 만료로 보는 순간에 맞춰 세도록, 응답 때 잰 차이만큼 보정한 서버 기준 현재 시각
   const serverNow = now + clockOffset;
+  const shopId = detail?.summary?.shopId;
   const holdOpen = detail?.summary?.status === 'HOLD';
   const holdExpiresAtMs = holdOpen ? new Date(detail.holdExpiresAt).getTime() : 0;
   // 화면을 보는 중에 점유(HOLD) 시간이 끝난 순간. 처음부터 만료 상태로 열린 예약은 해당하지 않는다
@@ -123,6 +128,15 @@ export default function CheckoutPage() {
     }
     return clearDetail;
   }, [reservationId, loadReservation, clearDetail]);
+
+  // 예약 응답에는 매장 이미지가 없어 매장 상세에서 받는다. 실패하면 기본 그림을 보여준다
+  useEffect(() => {
+    if (!shopId) {
+      return undefined;
+    }
+    loadShop(shopId);
+    return clearShop;
+  }, [shopId, loadShop, clearShop]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -355,7 +369,11 @@ export default function CheckoutPage() {
             <Panel as="section" padded>
               <h2 className="b-panel-heading">1. 예약 정보 확인</h2>
               <div className="b-booking-service">
-                <Asset name="8-4-0.png" className="b-thumb" alt={`${summary.shopName} 매장 내부`} />
+                <img
+                  src={shopImage(shop?.imageUrl)}
+                  className="b-thumb"
+                  alt={`${summary.shopName} 매장`}
+                />
                 <div>
                   <h2>{summary.shopName}</h2>
                   <Notice>
@@ -407,8 +425,13 @@ export default function CheckoutPage() {
                 <span>
                   <strong>[필수] 취소 및 모의 환불 정책에 동의합니다</strong>
                   <small>
-                    방문 2시간 전까지 전액 모의 환불, 2시간 미만 임박 취소 시 예약금의 50% 모의
-                    환불이 적용됩니다. 시술 시작 후에는 취소할 수 없습니다.
+                    이용일 이틀 전까지 취소하면 예약금 전액, 하루 전이면 50%가 모의 환불되고, 당일
+                    취소는 환불되지 않습니다.
+                  </small>
+                  <small>날짜는 자정을 기준으로 나뉘며, 시술 시작 후에는 취소할 수 없습니다.</small>
+                  <small>
+                    결제 후 10분 안에 취소하면 하루 1회 전액 모의 환불되지만, 시작까지 3시간 이하일
+                    때 잡은 예약은 제외됩니다.
                   </small>
                 </span>
               </label>
