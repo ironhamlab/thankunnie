@@ -35,23 +35,29 @@ const buildSlots = (businessHour, durationMinutes, startTimes, extendedStartTime
 };
 
 /**
- * 연장 영업 시각이 있는 날의 한 줄 안내. 휴무일에 따로 연 날과, 평소보다 늦게까지 여는 날을 나눠 알린다.
- * 연장 시각은 서버가 정하고, 화면은 마지막 연장 시각 + 소요 시간으로 끝나는 시각만 계산한다.
+ * 연장 영업 시각이 있는 날의 한 줄 안내. 휴무일에 따로 연 날과, 평소 영업시간 밖에도 연 날을 나눠 알린다.
+ * 연 시간 끝에 다른 예약이 있으면 가능 시각만으로는 실제 연장 마감을 알 수 없어, 마감 시각은 적지 않는다.
  */
-const extendedNotice = (businessHour, durationMinutes, extendedStartTimes) => {
+const extendedNotice = (businessHour, extendedStartTimes) => {
   if (!extendedStartTimes.length) {
     return null;
   }
   if (!businessHour || businessHour.closed) {
     return '휴무일이지만 사장님이 따로 연 시간이에요.';
   }
-  const lastStart = Math.max(
-    ...extendedStartTimes.map((startTime) => toMinutes(timePart(startTime))),
-  );
-  const extendedEnd = toTime(lastStart + durationMinutes);
-  return extendedEnd > businessHour.closeTime
-    ? `평소 ${businessHour.closeTime}까지 영업하지만 이 날은 ${extendedEnd}까지 연장 영업해요.`
-    : '이 날은 평소 영업시간 밖에도 연 시간이 있어요.';
+  return `평소 영업시간(${businessHour.openTime}~${businessHour.closeTime}) 밖에도 연 시간이 있어요. '연장' 표시 시간을 확인해 주세요.`;
+};
+
+// 화면 읽기 도구용 칸 이름. 진행 시간이면서 연장 영업인 칸은 두 상태를 함께 읽는다
+const slotLabel = (time, { inProgress, extended }) => {
+  const states = [];
+  if (inProgress) {
+    states.push('선택한 시술 진행 시간');
+  }
+  if (extended) {
+    states.push('연장 영업');
+  }
+  return states.length ? `${time} ${states.join(', ')}` : undefined;
 };
 
 const dateLabel = (date) => {
@@ -79,9 +85,7 @@ export default function SlotPicker({
       ? buildSlots(businessHour, durationMinutes, times.startTimes, extendedStartTimes)
       : [];
   const notice =
-    times.status === 'succeeded'
-      ? extendedNotice(businessHour, durationMinutes, extendedStartTimes)
-      : null;
+    times.status === 'succeeded' ? extendedNotice(businessHour, extendedStartTimes) : null;
   const availableCount = slots.filter((slot) => slot.available).length;
   // 시술은 시작 시각부터 소요 시간 동안 이어지므로, 고른 시각 뒤 칸도 함께 잡힌 것으로 표시한다
   const selectionEnd = selectedTime ? toMinutes(selectedTime) + durationMinutes : null;
@@ -133,13 +137,10 @@ export default function SlotPicker({
                   time === selectedTime ? 'is-selected' : inSelection(time) ? styles.inRange : undefined
                 }
                 aria-pressed={time === selectedTime}
-                aria-label={
-                  inSelection(time)
-                    ? `${time} 선택한 시술 진행 시간`
-                    : extended && available
-                      ? `${time} 연장 영업`
-                      : undefined
-                }
+                aria-label={slotLabel(time, {
+                  inProgress: inSelection(time),
+                  extended: extended && available,
+                })}
                 onClick={() => onSelectTime(time)}
               >
                 {time}
