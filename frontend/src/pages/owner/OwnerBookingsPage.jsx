@@ -39,6 +39,10 @@ export default function OwnerBookingsPage() {
   const pageInfo = useReservationStore((state) => state.pageInfo);
   const listStatus = useReservationStore((state) => state.listStatus);
   const listError = useReservationStore((state) => state.listError);
+  // 상세 응답이 도착했을 때 효과를 시작하도록, 받은 예약 번호로 상세를 다시 그린다 (받기 전에는 로딩 표시)
+  const loadedDetailId = useReservationStore((state) =>
+    state.detailStatus === 'succeeded' ? state.detail?.summary?.reservationId : null,
+  );
   const [from, setFrom] = useState(todayKst());
   const [to, setTo] = useState('');
   const [filterKey, setFilterKey] = useState('ALL');
@@ -220,7 +224,7 @@ export default function OwnerBookingsPage() {
         <aside ref={detailRef} tabIndex={-1} aria-label="예약 상세" className="b-stack">
           {/* 다른 예약을 고르면 상세가 새로 나타나 바뀐 것을 알린다 */}
           {listStatus === 'succeeded' && (
-            <div key={activeId} className={motion.enter}>
+            <div key={loadedDetailId ?? 'pending'} className={motion.enter}>
               <ReservationDetailPanel viewer="owner" cancelPath={cancelPath} />
             </div>
           )}

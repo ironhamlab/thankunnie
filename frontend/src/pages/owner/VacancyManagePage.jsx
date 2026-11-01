@@ -168,7 +168,7 @@ export default function VacancyManagePage() {
             minStart={minStartOf(form.exceptionType, form.date)}
             minDate={today}
             maxDate={lastDate}
-            isSaving={isBusy}
+            isSaving={isBusy || leavingId !== null}
             errorMessage={errorMessage}
             onChange={update}
             onSubmit={handleSubmit}
