@@ -106,8 +106,8 @@ export default function HomePage() {
           <aside className={styles.demo}>
             <b>ⓘ</b>
             <p>
-              <strong>※ MVP 모의 데모:</strong> 본 화면의 데이터는 실시간 결제 없는
-              시뮬레이션입니다.
+              <strong>※ 테스트 결제 안내:</strong> 결제는 실제로 승인되며, 결제한 금액은 이후
+              자동으로 취소됩니다.
             </p>
           </aside>
         </div>

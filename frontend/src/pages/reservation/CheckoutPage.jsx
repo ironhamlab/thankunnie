@@ -260,7 +260,7 @@ export default function CheckoutPage() {
   const handlePay = async () => {
     setError('');
     if (!policy || !demo) {
-      setError('필수 약관과 모의 결제 확인에 동의해 주세요.');
+      setError('필수 약관과 테스트 결제 확인에 동의해 주세요.');
       return;
     }
     setPaying(true);
@@ -423,25 +423,25 @@ export default function CheckoutPage() {
                   onChange={(e) => setPolicy(e.target.checked)}
                 />
                 <span>
-                  <strong>[필수] 취소 및 모의 환불 정책에 동의합니다</strong>
+                  <strong>[필수] 취소 및 환불 정책에 동의합니다</strong>
                   <small>
-                    이용일 이틀 전까지 취소하면 예약금 전액, 하루 전이면 50%가 모의 환불되고, 당일
-                    취소는 환불되지 않습니다.
+                    이용일 이틀 전까지 취소하면 예약금 전액, 하루 전이면 50%가 환불되고, 당일 취소는
+                    환불되지 않습니다.
                   </small>
                   <small>날짜는 자정을 기준으로 나뉘며, 시술 시작 후에는 취소할 수 없습니다.</small>
                   <small>
-                    결제 후 10분 안에 취소하면 하루 1회 전액 모의 환불되지만, 시작까지 3시간 이하일
-                    때 잡은 예약은 제외됩니다.
+                    결제 후 10분 안에 취소하면 하루 1회 전액 환불되지만, 시작까지 3시간 이하일 때
+                    잡은 예약은 제외됩니다.
                   </small>
                 </span>
               </label>
               <label className={styles.check}>
                 <input type="checkbox" checked={demo} onChange={(e) => setDemo(e.target.checked)} />
                 <span>
-                  <strong>[필수] MVP 모의 결제 확인</strong>
+                  <strong>[필수] 테스트 결제 확인</strong>
                   <small>
-                    본 화면은 모의 결제 환경이며 실제 금융 결제 및 대금 청구가 발생하지 않음을
-                    확인합니다.
+                    본 서비스는 테스트 결제 환경입니다. 카드 승인과 출금이 실제로 진행되며, 결제한
+                    금액은 이후 자동으로 취소됨을 확인합니다.
                   </small>
                 </span>
               </label>

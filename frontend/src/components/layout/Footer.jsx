@@ -22,8 +22,8 @@ export default function Footer() {
               땡잡은 언니
             </Link>
             <p>
-              © 2025 땡잡은 언니. 본 서비스는 MVP 모의 결제 데모 환경으로 실제 결제가 발생하지
-              않습니다.
+              © 2025 땡잡은 언니. 본 서비스는 테스트 결제 환경으로, 결제한 금액은 이후 자동으로
+              취소됩니다.
             </p>
           </div>
           <div className={styles.links}>

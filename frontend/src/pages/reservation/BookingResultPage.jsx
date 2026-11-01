@@ -219,12 +219,12 @@ export default function BookingResultPage() {
   return (
     <div className={`b-container b-page ${styles.root}`}>
       <Notice className="b-demo-disclaimer">
-        본 화면은 MVP 모의 결제 환경입니다. 실제 신용카드 과금 및 금융 승인이 발생하지 않습니다.
+        본 서비스는 테스트 결제 환경입니다. 결제한 금액은 이후 자동으로 취소됩니다.
       </Notice>
       <section className={`b-panel ${styles.card}`}>
         <header className={styles.header}>
           <div className={styles.icon}>✓</div>
-          <h1>예약 및 모의 결제가 완료되었습니다!</h1>
+          <h1>예약 및 결제가 완료되었습니다!</h1>
           <p>매장 방문 시 확정된 예약 시간 5분 전까지 도착해 주세요.</p>
           <div className={`b-flex ${styles.badges}`}>
             <Badge>예약 상태: {reservationStatusOf(summary.status).label}</Badge>
