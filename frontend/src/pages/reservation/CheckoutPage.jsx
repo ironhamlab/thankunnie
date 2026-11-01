@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { generatePath, Link, useBlocker, useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { money } from '@/utils/demoData';
+import { formatMoney } from '@/utils/reservationFormat';
 import { datePart, timePart } from '@/utils/scheduleDate';
 import { savePendingRequest, takePendingRequest, verifyErrorMessage } from '@/utils/payment';
 import { loadPortOne, requestPay } from '@/utils/portoneLoader';
@@ -431,20 +431,20 @@ export default function CheckoutPage() {
                 <dt>
                   <strong>총 시술 금액</strong>
                 </dt>
-                <dd>{money(summary.appliedPrice)}</dd>
+                <dd>{formatMoney(summary.appliedPrice)}</dd>
               </div>
             </dl>
             <div className="b-highlight">
               <div className="b-row">
                 <strong>지금 결제할 예약금</strong>
-                <h2 className="b-pink">{money(summary.deposit)}</h2>
+                <h2 className="b-pink">{formatMoney(summary.deposit)}</h2>
               </div>
               <small>노쇼 방지를 위한 예약금입니다.</small>
             </div>
             <dl className="b-details">
               <div>
                 <dt>매장 방문 시 지불할 잔금</dt>
-                <dd>{money(summary.balance)}</dd>
+                <dd>{formatMoney(summary.balance)}</dd>
               </div>
             </dl>
             {(error || expired) && (
@@ -458,7 +458,7 @@ export default function CheckoutPage() {
               </Button>
             ) : (
               <Button variant="primary" wide disabled={paying} onClick={handlePay}>
-                {paying ? '결제 진행 중...' : `${money(summary.deposit)} 결제 진행하기`}
+                {paying ? '결제 진행 중...' : `${formatMoney(summary.deposit)} 결제 진행하기`}
               </Button>
             )}
             <p className="b-help">결제하지 않으면 잡아 둔 시간은 5분 뒤 자동으로 풀립니다.</p>
