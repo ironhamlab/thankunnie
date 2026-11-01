@@ -214,7 +214,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 - **사장님이 시간대를 열지 않아도 노출한다.** 다른 탐색 API와 달리 OPEN 시간대가 아니라 영업시간 기준으로 빈 시각을 찾는다.
   빈 시각 판단은 B의 `AvailabilityService.getAvailableStartTimes`(영업시간 + 열기 − 닫기 − 예약, 시작 20분 전 마감)를 그대로 쓴다.
   매장 상세의 시간 선택(`available-times`)·예약 생성과 같은 기준이라, 카드를 눌러 들어간 매장 상세에도 같은 시각이 있다.
-- 대상: `SHOP.STATUS = ACTIVE` 매장의 `ACTIVE` **일반(NORMAL) 시술**. 모델 시술은 넣지 않는다.
+- 대상: `SHOP.STATUS = ACTIVE` 매장의 `ACTIVE` **일반(NORMAL) 시술**. 초보 시술(MODEL)은 넣지 않는다.
 - 범위: 지금부터 8시간 안에 시작하는 시각 (`BookingPolicy.IMMINENT_FROM`, 시작 시각 < 지금 + 8시간). 자정을 넘기면 다음 날 새벽 시각도 본다.
 - **매장당 1건**: 그 매장에서 가장 빠른 시각. 같은 시각에 시술이 여러 개면 할인율이 높은 것, 그다음 시술 ID가 작은 것.
 - 정렬: 시작 시각 빠른 순 → 할인율 높은 순 → 시술 ID. 최대 10건.
