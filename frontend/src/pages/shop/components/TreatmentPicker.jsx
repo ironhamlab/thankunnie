@@ -32,7 +32,7 @@ export default function TreatmentPicker({ treatments, selectedId, onSelect, empt
                 >
                   <span className={styles.treatmentName}>
                     <strong>{treatment.name}</strong>
-                    {treatment.treatmentType === 'MODEL' && <Badge>모델 모집</Badge>}
+                    {treatment.treatmentType === 'MODEL' && <Badge>초보 시술 모집</Badge>}
                   </span>
                   {treatment.description && <span>{treatment.description}</span>}
                   <span className={styles.treatmentMeta}>

@@ -12,7 +12,7 @@ const router = createBrowserRouter([
       <>
         <AppRouter />
         <DevTestUserSwitch />
-        {/* 구독 등록·모델 시술 예약이 약관 미동의로 막히면 뜨는 동의 모달 (useTermsStore) */}
+        {/* 구독 등록·초보 시술 예약이 약관 미동의로 막히면 뜨는 동의 모달 (useTermsStore) */}
         <TermsAgreementDialog />
       </>
     ),

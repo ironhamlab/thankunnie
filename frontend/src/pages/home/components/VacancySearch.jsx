@@ -57,7 +57,7 @@ function Filter({ label, options, value, onChange, segmented = false }) {
 /**
  * 빈자리 검색 화면 (/?view=list). 분야·날짜·시간대 조건에 맞는 매장을 한 줄씩 보여주고(C-02),
  * 매장을 펼치면 시술별 시작 시각(C-01)을 보여준다. 옆 지도에는 같은 매장 위치를 띄운다.
- * 분야·날짜·펼친 매장·타임세일·모델 모집 여부는 주소에 남겨 새로고침이나 홈에서 들어와도 같은 화면을 보여준다.
+ * 분야·날짜·펼친 매장·타임세일·초보 시술 모집 여부는 주소에 남겨 새로고침이나 홈에서 들어와도 같은 화면을 보여준다.
  */
 export default function VacancySearch() {
   const [params, setParams] = useSearchParams();
@@ -196,7 +196,7 @@ export default function VacancySearch() {
           </div>
           {modelOnly ? (
             <h1>
-              <em>시술 모델</em>을 모집하는 빈자리
+              <em>초보 시술</em>을 받을 수 있는 빈자리
             </h1>
           ) : (
             <h1>
@@ -205,7 +205,7 @@ export default function VacancySearch() {
           )}
           <p>
             {modelOnly
-              ? '포트폴리오 촬영·실습을 함께할 모델을 찾는 매장의 빈자리예요.'
+              ? '포트폴리오 촬영·실습을 위한 초보 시술을 제공하는 매장의 빈자리예요.'
               : '분야와 날짜를 고르면 빈자리가 있는 매장과 위치를 함께 보여드려요.'}
           </p>
         </div>

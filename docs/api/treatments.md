@@ -43,11 +43,11 @@
 - 신규 시술: `conditions`를 생략하면 기본 유형은 NORMAL이며, `conditions.treatmentType`에 MODEL을 지정하면 MODEL로 등록한다. 상태는 ACTIVE다. 판매가와 초임박가는 필수 입력이며 요청한 값으로 저장한다.
 - 등록·수정 모두 양의 정수, 100원 단위, 초임박가 ≤ 판매가 ≤ 정상가를 검사한다. 같은 가격이면 할인 없음.
 - 화면의 판매가·초임박가 기본값은 정상가이며, 수정 화면은 서버에 저장된 가격을 표시한다.
-- `conditions`를 생략하거나 null로 보내면 신규 등록은 NORMAL, 수정은 기존 목적·모델 조건을 보존한다.
-- `conditions`를 제공하면 목적·모델 조건 전체를 함께 저장한다. `treatmentType`은 NORMAL 또는 MODEL 필수다.
+- `conditions`를 생략하거나 null로 보내면 신규 등록은 NORMAL, 수정은 기존 목적·초보 시술 조건을 보존한다.
+- `conditions`를 제공하면 목적·초보 시술 조건 전체를 함께 저장한다. `treatmentType`은 NORMAL 또는 MODEL 필수다.
 - MODEL: 참여 조건(최대 2,000자)과 촬영 안내(최대 1,000자)는 필수이며 공백만 입력할 수 없고 앞뒤 공백을 제거해 저장한다.
-- NORMAL: 참여 조건·촬영 안내는 null 또는 공백이어야 하며 기존 모델 정보를 비운다.
-- 별도 참가비 입력·저장은 하지 않는다. 일반·모델 모두 기존 시술 판매가 검증과 예약금 정책을 사용한다.
+- NORMAL: 참여 조건·촬영 안내는 null 또는 공백이어야 하며 기존 초보 시술 정보를 비운다.
+- 별도 참가비 입력·저장은 하지 않는다. 일반·초보 시술 모두 기존 시술 판매가 검증과 예약금 정책을 사용한다.
   예약 시 서버가 일반·초임박 구간에 해당하는 실제 적용 판매가와 20,000원 중 낮은 금액을 계산해
   `RESERVATION.DEPOSIT`에 저장한다. 예: 판매가 15,000원 → 예약금 15,000원, 판매가 30,000원 → 예약금 20,000원.
 - 기본 정보 수정은 직원, 준비 안내, 이미지, 활성 상태를 변경하지 않는다.
@@ -116,12 +116,12 @@ Oracle DDL은 자동 커밋되므로 실행 전 대상 스키마와 백업을 �
 ## A-06 초기 구현 당시 검증 결과
 
 - `backend/`: `.\gradlew.bat --no-daemon classes test` 성공, 전체 282개 테스트 통과.
-- 모델 조건 수정 및 최대 길이 경계값 검증 보강 후
+- 초보 시술 조건 수정 및 최대 길이 경계값 검증 보강 후
   `.\gradlew.bat --no-daemon test --tests 'com.ucamp.app.domain.treatment.*'` 재실행 성공.
 - `frontend/`: `npm run lint`, `npm run build` 성공.
 - `.\gradlew.bat --no-daemon bootRun`에 local 프로필, 임시 H2 Oracle 모드 URL,
   포트 18080 및 scheduling 비활성 옵션을 전달해 `validate` 기동 성공.
-  실제 HTTP 등록·재조회로 모델 목적, 참여 조건, 촬영 안내 저장 확인.
+  실제 HTTP 등록·재조회로 초보 시술 목적, 참여 조건, 촬영 안내 저장 확인.
 - 검증 프로세스에만 `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=C:/UCAMP/Final/thankunnie/backend/build/socket-temp` 지정.
 - 브라우저 화면 조작 및 Oracle 21c XE의 마이그레이션 적용은 미검증.
 

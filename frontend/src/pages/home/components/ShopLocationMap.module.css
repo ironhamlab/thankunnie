@@ -68,7 +68,7 @@
   font-size: 13px;
   color: var(--color-text-secondary);
 }
-/* 일반·모델이 섞인 매장의 모델 모집 상세 링크. 줄바꿈 없이 작은 알약 모양으로 보여준다 */
+/* 일반·초보 시술이 섞인 매장의 초보 시술 모집 상세 링크. 줄바꿈 없이 작은 알약 모양으로 보여준다 */
 .modelLink {
   display: block;
   width: fit-content;

@@ -73,7 +73,7 @@ export const useReservationStore = create((set, get) => ({
   // 예약 생성은 화면마다 따로 진행 상태를 보여주므로 결과만 돌려주고 store 상태는 바꾸지 않는다.
   createReservation: async (request) => {
     try {
-      // 모델 시술인데 촬영 동의가 없으면(TERMS_004) 동의 모달을 띄우고, 동의하면 한 번 다시 예약한다
+      // 초보 시술인데 촬영 동의가 없으면(TERMS_004) 동의 모달을 띄우고, 동의하면 한 번 다시 예약한다
       return await withTermsAgreement(() => reservationApi.createReservation(request));
     } catch (error) {
       throw toError(error);

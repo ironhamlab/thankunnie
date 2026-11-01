@@ -118,13 +118,13 @@ public class Treatment extends BaseTimeEntity {
         this.durationMinutes = request.durationMinutes();
     }
 
-    /** 목적·모델 조건을 함께 변경하며 일반 시술로 전환하면 기존 모델 정보를 비운다. */
+    /** 목적·초보 시술 조건을 함께 변경하며 일반 시술로 전환하면 기존 초보 시술 정보를 비운다. */
     private void updateConditions(TreatmentConditionsRequest conditions) {
         if (conditions.treatmentType() == null || !conditions.isModelConditionsValid()
                 || !conditions.isNormalConditionsValid()
                 || conditions.modelCondition() != null && conditions.modelCondition().length() > 2000
                 || conditions.photoNotice() != null && conditions.photoNotice().length() > 1000) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "목적과 모델 모집 조건을 확인해 주세요.");
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "목적과 초보 시술 모집 조건을 확인해 주세요.");
         }
         this.treatmentType = conditions.treatmentType();
         this.modelCondition = conditions.treatmentType() == TreatmentType.MODEL

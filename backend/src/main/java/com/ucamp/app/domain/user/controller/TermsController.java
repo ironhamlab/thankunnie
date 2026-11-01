@@ -50,7 +50,7 @@ public class TermsController {
 
     @Operation(summary = "약관 동의",
             description = "최신 버전 약관에 동의한다. 이미 동의했으면 기존 동의를 그대로 반환한다. "
-                    + "문자 수신(SMS_NOTIFICATION)·모델 촬영(MODEL_PHOTO) 동의 모달에서 호출한다")
+                    + "문자 수신(SMS_NOTIFICATION)·초보 시술 촬영(MODEL_PHOTO) 동의 모달에서 호출한다")
     @PutMapping("/users/me/terms-agreements/{termsCode}")
     public ResponseEntity<ApiResponse<UserTermsAgreementResponse>> agree(
             @LoginUser AuthUser loginUser,

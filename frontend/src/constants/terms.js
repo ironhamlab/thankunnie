@@ -11,7 +11,7 @@ export const TERMS_CODE = {
   MODEL_PHOTO: 'MODEL_PHOTO',
 };
 
-// 회원가입 화면에 보이지 않는 약관. 모델 촬영 동의는 첫 모델 시술 예약 때 따로 받는다
+// 회원가입 화면에 보이지 않는 약관. 초보 시술 촬영 동의는 첫 초보 시술 예약 때 따로 받는다
 export const SIGNUP_HIDDEN_TERMS = [TERMS_CODE.MODEL_PHOTO];
 
 // 동의가 없어 막혔을 때 서버가 돌려주는 에러 코드 → 받아야 할 약관
@@ -50,9 +50,9 @@ export const TERMS_CONTENT = {
       '알림 조건을 해제하면 더 이상 받지 않습니다.',
   },
   [TERMS_CODE.MODEL_PHOTO]: {
-    summary: '모델 시술 촬영·결과물 활용',
+    summary: '초보 시술 촬영·결과물 활용',
     body:
-      '모델 시술은 매장의 포트폴리오를 위해 시술 과정과 결과를 촬영할 수 있습니다. ' +
+      '초보 시술은 매장의 포트폴리오를 위해 시술 과정과 결과를 촬영할 수 있습니다. ' +
       '촬영물은 매장의 포트폴리오·SNS 게시에 활용될 수 있으며, 자세한 내용은 시술별 촬영 안내를 확인해 주세요.',
   },
 };
@@ -64,7 +64,7 @@ export const AGREEMENT_DIALOG = {
     description: '알림을 받으려면 문자 수신에 동의해 주세요.',
   },
   [TERMS_CODE.MODEL_PHOTO]: {
-    title: '모델 시술 촬영 동의',
-    description: '모델 시술을 예약하려면 촬영과 결과물 활용에 동의해 주세요. 한 번 동의하면 다음부터 묻지 않아요.',
+    title: '초보 시술 촬영 동의',
+    description: '초보 시술을 예약하려면 촬영과 결과물 활용에 동의해 주세요. 한 번 동의하면 다음부터 묻지 않아요.',
   },
 };

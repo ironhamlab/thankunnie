@@ -68,7 +68,7 @@ class ExploreShopDetailServiceTest {
     }
 
     @Test
-    @DisplayName("모델 모집 시술은 참여 조건과 촬영 안내를 함께 돌려준다")
+    @DisplayName("초보 시술 모집 시술은 참여 조건과 촬영 안내를 함께 돌려준다")
     void getShop_modelTreatment_returnsModelNotices() {
         jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '탈색 이력이 없는 분',"
                 + " PHOTO_NOTICE = '전후 사진 촬영' WHERE TREATMENT_ID = 2");
