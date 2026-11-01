@@ -4,14 +4,123 @@
   align-items: start;
   gap: 24px;
 }
-.grid table {
-  min-width: 680px;
+/* 예약이 적어 목록이 짧으면 목록 카드를 상세 높이까지 늘려 두 카드의 아래 끝을 맞춘다 */
+.grid > section {
+  align-self: stretch;
 }
-.grid :global(.b-notice) {
-  margin: 20px 0;
+/* 목록을 내려도 고른 예약의 상세가 화면에 남아 있게 한다 */
+.grid > aside {
+  position: sticky;
+  top: 20px;
 }
 @media (max-width: 1200px) {
   .grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .grid > aside {
+    position: static;
+  }
+}
+/* 날짜 칸은 글자 위·입력 아래로 두고, 좁으면 다음 줄로 넘겨 화면 밖으로 나가지 않게 한다 */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+}
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.grid table.table {
+  min-width: 680px;
+}
+/* 폰에서는 표를 예약 한 건씩 카드로 바꿔 옆으로 밀지 않고 읽게 한다 */
+@media (max-width: 640px) {
+  .filters label {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0;
+  }
+  .filters label input {
+    width: 100%;
+  }
+  .filters > :last-child {
+    flex: 1 1 100%;
+  }
+  .grid table.table {
+    min-width: 0;
+  }
+  /* 카드에는 열 이름이 보이지 않지만, 화면 읽기 도구가 열 이름을 읽도록 머리글은 눈에만 숨긴다 */
+  .table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .table tbody {
+    display: flex;
+    flex-direction: column;
+  }
+  .table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'id status'
+      'name name'
+      'treatment treatment'
+      'time time'
+      'payment detail';
+    align-items: center;
+    gap: 4px 12px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--color-border);
+  }
+  .table td.id,
+  .table td.name,
+  .table td.treatment,
+  .table td.time,
+  .table td.payment,
+  .table td.status,
+  .table td.detail {
+    padding: 0;
+    border: 0;
+  }
+  .table td.id {
+    grid-area: id;
+    color: var(--color-text-muted);
+    font-size: 11px;
+  }
+  .table td.id::before {
+    content: '예약번호 ';
+  }
+  .table td.name {
+    grid-area: name;
+    font-size: 15px;
+  }
+  .table td.treatment {
+    grid-area: treatment;
+    font-size: 13px;
+  }
+  .table td.time {
+    grid-area: time;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+  .table td.payment {
+    grid-area: payment;
+    color: var(--color-text-secondary);
+  }
+  .table td.status {
+    grid-area: status;
+    justify-self: end;
+  }
+  .table td.detail {
+    grid-area: detail;
+    justify-self: end;
   }
 }
