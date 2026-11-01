@@ -58,7 +58,7 @@
 | `regionCode` | string, 여러 개 (최대 10개) | 전체 | `SHOP.REGION_CODE`(시군구 5자리). `regionCode=11680&regionCode=11650`처럼 반복. 화면 지역 묶음과의 대응은 9장 |
 | `categoryId` | number | 전체 | `SHOP.CATEGORY_ID` |
 | `shopId` | number | 전체 | 한 매장의 빈자리만. 지도에서 매장 마커를 눌렀을 때 사용 |
-| `treatmentType` | `NORMAL`·`MODEL` | 전체 | 해당 시술 유형만. 모델 모집 목록에서 `MODEL` 로 사용 |
+| `treatmentType` | `NORMAL`·`MODEL` | 전체 | 해당 시술 유형만. 초보 시술 모집 목록에서 `MODEL` 로 사용 |
 | `timeOfDay` | `MORNING`·`AFTERNOON`·`EVENING` | 전체 | 시작 시각 기준 09~12시 / 12~18시 / 18시 이후 |
 | `closingWithinHours` | number (1~72) | 없음 | 예약 마감(시작 20분 전)이 지금부터 N시간 안인 빈자리만. 메인 "마감 임박" 영역용 |
 | `priceTier` | `IMMINENT`·`LAST_MINUTE` | 전체 | 해당 가격 구간 이상만. 홈 "임박 특가만 보기"는 `IMMINENT` |
@@ -134,7 +134,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 | `latitude`, `longitude` | number | 매장 좌표 (`SHOP.LATITUDE/LONGITUDE`) | 카카오맵 마커 |
 | `treatmentId`, `treatmentName` | number, string | 시술 | 카드 제목 |
 | `categoryId`, `categoryName` | number, string | 매장 카테고리 | 카드 배지 |
-| `treatmentType` | `NORMAL`·`MODEL` | 일반 / 모델 시술 | 모델 배지 |
+| `treatmentType` | `NORMAL`·`MODEL` | 일반 / 초보 시술 | 초보 시술 배지 |
 | `durationMinutes` | number | 소요 시간(분) | "60분 소요" |
 | `imageUrl` | string, null 가능 | 시술 이미지(`TREATMENT.IMAGE_URL`), 없으면 매장 이미지(`SHOP.IMAGE_URL`), 둘 다 없으면 null | 카드 이미지 (null이면 기본 이미지) |
 | `startsAt`, `endsAt` | ISO-8601 (+09:00) | 시술 시작·종료 (종료 미포함) | "오늘 15:30" |
@@ -160,7 +160,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 
 - 요청 파라미터는 C-01과 같다(`startDate`·`endDate`·`regionCode`·`categoryId`·`treatmentType`·`timeOfDay`·`closingWithinHours`·`priceTier`·`keyword`·지도 범위). `shopId`·`sort`·`page`·`size`는 받지 않는다.
 - 조건에 맞는 빈자리가 1건 이상인 매장만 돌려준다. 순서는 가장 빠른 시작 시각, 매장 ID 순이다.
-- 매장 상세는 일반 시술만, 모델 모집 상세는 모델 시술만 보여주므로 `vacancyCount`·`minSalePrice`·`maxDiscountRate`·`earliestStartsAt`은 카드가 연결되는 쪽 빈자리로 계산한다. 일반 빈자리가 있으면 일반 빈자리, 없으면(`modelOnly=true`) 모델 빈자리다.
+- 매장 상세는 일반 시술만, 초보 시술 모집 상세는 초보 시술만 보여주므로 `vacancyCount`·`minSalePrice`·`maxDiscountRate`·`earliestStartsAt`은 카드가 연결되는 쪽 빈자리로 계산한다. 일반 빈자리가 있으면 일반 빈자리, 없으면(`modelOnly=true`) 초보 시술 빈자리다.
 - 한 번에 최대 200개 매장을 돌려주고, 더 있으면 `hasMore=true`다. 지도에는 "확대하면 더 보여요"를 표시한다.
 
 ```json
@@ -201,8 +201,8 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 | `minSalePrice` | 빈자리 중 최저 판매가 | 마커 라벨 "18,000원~" |
 | `maxDiscountRate` | 빈자리 중 최대 할인율 | 마커 강조(할인 배지) |
 | `earliestStartsAt` | 가장 빠른 시작 시각 (+09:00) | "오늘 20:00부터" |
-| `modelOnly` | 조건에 맞는 빈자리가 모두 MODEL 시술인지 | true 면 매장 카드·"매장 보기"가 모델 모집 상세(`/shops/{shopId}/models`)로 연결 |
-| `modelVacancyCount`, `modelMinSalePrice` | MODEL 빈자리 수·최저 판매가 (없으면 0·null) | 일반·모델이 섞인 매장의 "모델 모집 빈자리 N개 · 가격~" 링크 |
+| `modelOnly` | 조건에 맞는 빈자리가 모두 MODEL 시술인지 | true 면 매장 카드·"매장 보기"가 초보 시술 모집 상세(`/shops/{shopId}/models`)로 연결 |
+| `modelVacancyCount`, `modelMinSalePrice` | MODEL 빈자리 수·최저 판매가 (없으면 0·null) | 일반·초보 시술이 섞인 매장의 "초보 시술 모집 빈자리 N개 · 가격~" 링크 |
 
 ## 5. C-03 빈자리 상세
 
@@ -221,7 +221,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 | `bookable` | boolean | 지금 이 시각을 예약할 수 있는지 |
 | `notBookableReason` | string, null 가능 | `BOOKING_CLOSED`(마감), `NOT_AVAILABLE`(다른 예약·닫힘 등으로 시작 불가). `bookable=true`면 null |
 | `treatmentDescription` | string, null 가능 | 시술 설명 |
-| `modelCondition` | string, null 가능 | 모델 시술 조건 (`MODEL`일 때) |
+| `modelCondition` | string, null 가능 | 초보 시술 조건 (`MODEL`일 때) |
 | `preparationNotes`, `photoNotice` | string, null 가능 | 준비 사항, 촬영 안내 |
 | `addressDetail`, `phone` | string | 상세 주소, 매장 연락처 |
 | `shopDescription`, `shopNotice` | string, null 가능 | 매장 소개, 공지 |

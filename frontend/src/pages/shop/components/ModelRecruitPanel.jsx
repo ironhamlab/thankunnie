@@ -3,8 +3,8 @@ import Panel from '@/components/common/Panel';
 import styles from '../ShopDetailPage.module.css';
 
 /**
- * 모델 모집 안내 확인 단계. 고른 모델 시술의 참여 조건과 촬영 안내를 보여준다.
- * 두 값은 모델 시술 등록 시 필수지만, 비어 오면 안내 문구로 대신한다.
+ * 초보 시술 모집 안내 확인 단계. 고른 초보 시술의 참여 조건과 촬영 안내를 보여준다.
+ * 두 값은 초보 시술 등록 시 필수지만, 비어 오면 안내 문구로 대신한다.
  * 아래 확인 체크를 해야 다음 단계(날짜·시간 선택)로 갈 수 있다.
  *
  * @param agreed        안내 사항 확인 체크 여부
@@ -13,8 +13,8 @@ import styles from '../ShopDetailPage.module.css';
  */
 export default function ModelRecruitPanel({ treatment, agreed, onAgreeChange, onNext }) {
   return (
-    <Panel as="section" padded aria-label="모델 모집 안내">
-      <h2 className="b-panel-heading">모델 모집 안내</h2>
+    <Panel as="section" padded aria-label="초보 시술 모집 안내">
+      <h2 className="b-panel-heading">초보 시술 모집 안내</h2>
       {treatment.description && <p className={styles.intro}>{treatment.description}</p>}
       <div className={`b-highlight ${styles.modelNotice}`}>
         <h3>참여 조건</h3>

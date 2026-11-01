@@ -157,8 +157,8 @@ public class ExploreVacancyService {
         return items.values().stream();
     }
 
-    // 매장 상세는 일반 시술만, 모델 모집 상세는 모델 시술만 보여준다. 카드 값이 연결되는 상세와 맞도록
-    // 일반 빈자리가 있으면 일반 빈자리로, 없으면 모델 빈자리로 요약하고, 섞인 매장의 모델 빈자리는 따로 담는다
+    // 매장 상세는 일반 시술만, 초보 시술 모집 상세는 초보 시술만 보여준다. 카드 값이 연결되는 상세와 맞도록
+    // 일반 빈자리가 있으면 일반 빈자리로, 없으면 초보 시술 빈자리로 요약하고, 섞인 매장의 초보 시술 빈자리는 따로 담는다
     private static ExploreShopResponse toShop(List<Item> items) {
         ExploreVacancyCandidate shop = items.get(0).candidate();
         List<Item> modelItems = items.stream()
