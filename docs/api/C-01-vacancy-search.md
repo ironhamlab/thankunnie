@@ -59,7 +59,7 @@
 | `regionCode` | string, 여러 개 (최대 10개) | 전체 | `SHOP.REGION_CODE`(시군구 5자리). `regionCode=11680&regionCode=11650`처럼 반복. 화면 지역 묶음과의 대응은 9장 |
 | `categoryId` | number | 전체 | `SHOP.CATEGORY_ID` |
 | `shopId` | number | 전체 | 한 매장의 빈자리만. 지도에서 매장 마커를 눌렀을 때 사용 |
-| `treatmentType` | `NORMAL`·`MODEL` | 전체 | 해당 시술 유형만. 모델 모집 목록에서 `MODEL` 로 사용 |
+| `treatmentType` | `NORMAL`·`MODEL` | 전체 | 해당 시술 유형만. 초보 시술 모집 목록에서 `MODEL` 로 사용 |
 | `timeOfDay` | `MORNING`·`AFTERNOON`·`EVENING` | 전체 | 시작 시각 기준 09~12시 / 12~18시 / 18시 이후 |
 | `closingWithinHours` | number (1~72) | 없음 | 예약 마감(시작 20분 전)이 지금부터 N시간 안인 빈자리만. 메인 "마감 임박" 영역용 |
 | `priceTier` | `IMMINENT`·`LAST_MINUTE` | 전체 | 해당 가격 구간 이상만. 홈 "임박 특가만 보기"는 `IMMINENT` |
@@ -135,7 +135,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 | `latitude`, `longitude` | number | 매장 좌표 (`SHOP.LATITUDE/LONGITUDE`) | 카카오맵 마커 |
 | `treatmentId`, `treatmentName` | number, string | 시술 | 카드 제목 |
 | `categoryId`, `categoryName` | number, string | 매장 카테고리 | 카드 배지 |
-| `treatmentType` | `NORMAL`·`MODEL` | 일반 / 모델 시술 | 모델 배지 |
+| `treatmentType` | `NORMAL`·`MODEL` | 일반 / 초보 시술 | 초보 시술 배지 |
 | `durationMinutes` | number | 소요 시간(분) | "60분 소요" |
 | `imageUrl` | string, null 가능 | 시술 이미지(`TREATMENT.IMAGE_URL`), 없으면 매장 이미지(`SHOP.IMAGE_URL`), 둘 다 없으면 null | 카드 이미지 (null이면 기본 이미지) |
 | `startsAt`, `endsAt` | ISO-8601 (+09:00) | 시술 시작·종료 (종료 미포함) | "오늘 15:30" |
@@ -161,7 +161,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 
 - 요청 파라미터는 C-01과 같다(`startDate`·`endDate`·`regionCode`·`categoryId`·`treatmentType`·`timeOfDay`·`closingWithinHours`·`priceTier`·`keyword`·지도 범위). `shopId`·`sort`·`page`·`size`는 받지 않는다.
 - 조건에 맞는 빈자리가 1건 이상인 매장만 돌려준다. 순서는 가장 빠른 시작 시각, 매장 ID 순이다.
-- 매장 상세는 일반 시술만, 모델 모집 상세는 모델 시술만 보여주므로 `vacancyCount`·`minSalePrice`·`maxDiscountRate`·`earliestStartsAt`은 카드가 연결되는 쪽 빈자리로 계산한다. 일반 빈자리가 있으면 일반 빈자리, 없으면(`modelOnly=true`) 모델 빈자리다.
+- 매장 상세는 일반 시술만, 초보 시술 모집 상세는 초보 시술만 보여주므로 `vacancyCount`·`minSalePrice`·`maxDiscountRate`·`earliestStartsAt`은 카드가 연결되는 쪽 빈자리로 계산한다. 일반 빈자리가 있으면 일반 빈자리, 없으면(`modelOnly=true`) 초보 시술 빈자리다.
 - 한 번에 최대 200개 매장을 돌려주고, 더 있으면 `hasMore=true`다. 지도에는 "확대하면 더 보여요"를 표시한다.
 
 ```json
@@ -202,8 +202,8 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 | `minSalePrice` | 빈자리 중 최저 판매가 | 마커 라벨 "18,000원~" |
 | `maxDiscountRate` | 빈자리 중 최대 할인율 | 마커 강조(할인 배지) |
 | `earliestStartsAt` | 가장 빠른 시작 시각 (+09:00) | "오늘 20:00부터" |
-| `modelOnly` | 조건에 맞는 빈자리가 모두 MODEL 시술인지 | true 면 매장 카드·"매장 보기"가 모델 모집 상세(`/shops/{shopId}/models`)로 연결 |
-| `modelVacancyCount`, `modelMinSalePrice` | MODEL 빈자리 수·최저 판매가 (없으면 0·null) | 일반·모델이 섞인 매장의 "모델 모집 빈자리 N개 · 가격~" 링크 |
+| `modelOnly` | 조건에 맞는 빈자리가 모두 MODEL 시술인지 | true 면 매장 카드·"매장 보기"가 초보 시술 모집 상세(`/shops/{shopId}/models`)로 연결 |
+| `modelVacancyCount`, `modelMinSalePrice` | MODEL 빈자리 수·최저 판매가 (없으면 0·null) | 일반·초보 시술이 섞인 매장의 "초보 시술 모집 빈자리 N개 · 가격~" 링크 |
 
 ## 4-1. 메인 임박 빈자리 (UNNIE-157)
 
@@ -214,7 +214,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 - **사장님이 시간대를 열지 않아도 노출한다.** 다른 탐색 API와 달리 OPEN 시간대가 아니라 영업시간 기준으로 빈 시각을 찾는다.
   빈 시각 판단은 B의 `AvailabilityService.getAvailableStartTimes`(영업시간 + 열기 − 닫기 − 예약, 시작 20분 전 마감)를 그대로 쓴다.
   매장 상세의 시간 선택(`available-times`)·예약 생성과 같은 기준이라, 카드를 눌러 들어간 매장 상세에도 같은 시각이 있다.
-- 대상: `SHOP.STATUS = ACTIVE` 매장의 `ACTIVE` **일반(NORMAL) 시술**. 모델 시술은 넣지 않는다.
+- 대상: `SHOP.STATUS = ACTIVE` 매장의 `ACTIVE` **일반(NORMAL) 시술**. 초보 시술(MODEL)은 넣지 않는다.
 - 범위: 지금부터 8시간 안에 시작하는 시각 (`BookingPolicy.IMMINENT_FROM`, 시작 시각 < 지금 + 8시간). 자정을 넘기면 다음 날 새벽 시각도 본다.
 - **매장당 1건**: 그 매장에서 가장 빠른 시각. 같은 시각에 시술이 여러 개면 할인율이 높은 것, 그다음 시술 ID가 작은 것.
 - 정렬: 시작 시각 빠른 순 → 할인율 높은 순 → 시술 ID. 최대 10건.
@@ -238,7 +238,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 | `bookable` | boolean | 지금 이 시각을 예약할 수 있는지 |
 | `notBookableReason` | string, null 가능 | `BOOKING_CLOSED`(마감), `NOT_AVAILABLE`(다른 예약·닫힘 등으로 시작 불가). `bookable=true`면 null |
 | `treatmentDescription` | string, null 가능 | 시술 설명 |
-| `modelCondition` | string, null 가능 | 모델 시술 조건 (`MODEL`일 때) |
+| `modelCondition` | string, null 가능 | 초보 시술 조건 (`MODEL`일 때) |
 | `preparationNotes`, `photoNotice` | string, null 가능 | 준비 사항, 촬영 안내 |
 | `addressDetail`, `phone` | string | 상세 주소, 매장 연락처 |
 | `shopDescription`, `shopNotice` | string, null 가능 | 매장 소개, 공지 |
@@ -274,13 +274,15 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 - 처음 열 때 화면 범위는 브라우저 위치 권한 없이 기본 위치(강남역)에서 시작한다. 내 위치 이동은 추후 기능이다.
 - 카카오맵 키가 없거나 SDK를 불러오지 못하면 지도 대신 C-01 목록을 보여준다.
 
-## 7. 매장 상세 화면 위치 지도 (A 담당 화면에 C 추가)
+## 7. 매장 상세 화면 위치 지도 (A 담당 화면에 C 추가, UNNIE-141 완료)
 
-매장 상세 화면과 상세 데이터 조회는 A 담당이다. A가 구현·연결을 마친 뒤 C가 **매장 위치 지도**를 마지막에 추가한다.
+매장 상세 화면과 상세 데이터 조회는 A 담당이다. C가 **매장 위치 지도**를 상세정보 탭에 추가했다.
 
-- `KakaoMap`에 매장 좌표 마커 1개를 넘겨 표시하고, 지도 아래에 매장 주소를 보여준다.
-- 필요한 값은 매장의 `latitude`, `longitude`, `address`(+`addressDetail`), `shopName`이다. A의 상세 응답에 이 값이 있어야 한다 (A 담당에게 요청할 사항).
-- 카카오맵 키가 없거나 SDK를 불러오지 못하면 지도 대신 주소 문구만 보여준다.
+- 위치: 매장 상세(`/shops/:shopId`) "상세정보" 탭의 주소·연락처·영업시간 아래 (`pages/shop/components/ShopLocation`, `ShopInfoPanel`에 한 줄 추가).
+- `KakaoMap`에 매장 이름 라벨 마커 1개를 넘기고 그 위치를 가운데로, 확대 단계 3으로 보여준다.
+- 지도 아래 링크 두 개: "카카오맵 길찾기"(`https://map.kakao.com/link/to/{도로명 주소},{위도},{경도}`, 도착지로 길찾기. 모바일 카카오맵은 도착지를 이름으로 다시 검색해 카카오에 없는 매장명은 찾지 못하므로 주소를 쓴다), "지도 크게 보기"(`/link/map/...`). 새 탭으로 연다.
+- 필요한 값(`latitude`, `longitude`, `shopName`)은 매장 상세 응답(`GET /api/v1/explore/shops/{shopId}`)에 이미 있다. 주소는 위 상세정보 줄에 있다.
+- 카카오맵 키가 없거나 SDK를 불러오지 못하면 지도는 빼고 링크만 보여준다.
 
 ## 8. 기존 문서·화면과의 대응
 

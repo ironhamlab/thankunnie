@@ -75,7 +75,7 @@ public class ReservationService {
      *                           접수 마감(시작 20분 전)이 지났으면 VACANCY_BOOKING_CLOSED,
      *                           60일 이내가 아니면 VACANCY_OUT_OF_RANGE,
      *                           시술이 없거나 판매 중이 아니면 TREATMENT_NOT_FOUND,
-     *                           모델 시술인데 촬영 동의(MODEL_PHOTO)가 없으면 TERMS_MODEL_PHOTO_AGREEMENT_REQUIRED,
+     *                           초보 시술인데 촬영 동의(MODEL_PHOTO)가 없으면 TERMS_MODEL_PHOTO_AGREEMENT_REQUIRED,
      *                           영업 외 시간이거나 닫힌 시간이면 VACANCY_NOT_OPEN_TIME,
      *                           매장의 다른 예약과 겹치면 VACANCY_TIME_TAKEN,
      *                           본인의 다른 예약과 겹치면 VACANCY_USER_TIME_OVERLAP,
@@ -93,7 +93,7 @@ public class ReservationService {
         Treatment treatment = treatmentRepository.findById(request.treatmentId())
                 .filter(found -> found.getStatus() == TreatmentStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TREATMENT_NOT_FOUND));
-        // 모델 시술은 촬영 동의가 있어야 예약할 수 있다. 프론트는 이 에러를 받으면 동의 모달을 띄운 뒤 다시 요청한다
+        // 초보 시술은 촬영 동의가 있어야 예약할 수 있다. 프론트는 이 에러를 받으면 동의 모달을 띄운 뒤 다시 요청한다
         if (treatment.getTreatmentType() == TreatmentType.MODEL) {
             termsAgreementService.requireAgreed(loginUser.userId(), TermsCode.MODEL_PHOTO);
         }

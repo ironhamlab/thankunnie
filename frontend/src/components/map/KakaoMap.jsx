@@ -18,6 +18,7 @@ const DEFAULT_BOUNDS_PADDING = { top: 40, right: 40, bottom: 40, left: 40 };
  * @param onSelect        마커 클릭 시 id를 받는 콜백
  * @param markerClassName 마커 버튼 클래스. 선택된 마커에는 is-selected가 추가된다
  * @param boundsPadding   마커 범위를 맞출 때 띄울 여백(px). 지도 위에 패널이 겹치는 쪽을 넓게 준다
+ * @param level           마커가 1개일 때 확대 정도(작을수록 가깝게). 생략하면 기본 확대를 유지한다
  * @param fallback        지도를 쓸 수 없을 때 보여줄 요소
  */
 export default function KakaoMap({
@@ -26,6 +27,7 @@ export default function KakaoMap({
   onSelect,
   markerClassName,
   boundsPadding = DEFAULT_BOUNDS_PADDING,
+  level,
   fallback = null,
 }) {
   const containerRef = useRef(null);
@@ -44,6 +46,7 @@ export default function KakaoMap({
       return undefined;
     }
     let cancelled = false;
+    let resizeObserver = null;
     const container = containerRef.current;
     loadKakaoMap()
       .then((maps) => {
@@ -56,6 +59,14 @@ export default function KakaoMap({
         });
         map.addControl(new maps.ZoomControl(), maps.ControlPosition.RIGHT);
         mapRef.current = map;
+        // 만든 뒤 상자 크기가 바뀌면(화면 폭·탭 전환) 카카오맵이 크기를 다시 재지 않아 일부만 그려지므로,
+        // 보던 가운데를 기억했다가 다시 재고 되돌린다
+        resizeObserver = new ResizeObserver(() => {
+          const center = map.getCenter();
+          map.relayout();
+          map.setCenter(center);
+        });
+        resizeObserver.observe(container);
         setStatus('ready');
       })
       .catch((error) => {
@@ -66,6 +77,7 @@ export default function KakaoMap({
       });
     return () => {
       cancelled = true;
+      resizeObserver?.disconnect();
       mapRef.current = null;
       // 카카오맵에는 해제 API가 없어 다시 마운트될 때 지도가 겹치지 않도록 비운다
       container.replaceChildren();
@@ -103,6 +115,16 @@ export default function KakaoMap({
       elements.clear();
     };
   }, [status, markers, markerClassName, boundsPadding]);
+
+  // 확대 단계는 마커와 따로 맞춘다. 마커 effect 에 넣으면 단계가 바뀔 때 마커를 다시 만들어 선택 표시가 사라진다
+  useEffect(() => {
+    const map = mapRef.current;
+    if (status !== 'ready' || !map || !level || markers.length !== 1) {
+      return;
+    }
+    map.setLevel(level);
+    map.setCenter(new window.kakao.maps.LatLng(markers[0].lat, markers[0].lng));
+  }, [status, markers, level]);
 
   useEffect(() => {
     if (status !== 'ready') {

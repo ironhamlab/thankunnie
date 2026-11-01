@@ -150,7 +150,7 @@ class ExploreVacancyServiceTest {
     }
 
     @Test
-    @DisplayName("시술 유형을 지정하면 그 유형의 빈자리만 나오고, 매장 요약은 모델 시술만 있는지 알려준다")
+    @DisplayName("시술 유형을 지정하면 그 유형의 빈자리만 나오고, 매장 요약은 초보 시술만 있는지 알려준다")
     void search_treatmentType_returnsOnlyThatType() {
         openShopTwo();
         jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건',"
@@ -168,15 +168,15 @@ class ExploreVacancyServiceTest {
         assertThat(modelShops).extracting(ExploreShopResponse::shopId).containsExactly(1L);
         assertThat(modelShops.get(0).modelOnly()).isTrue();
         assertThat(modelShops.get(0).modelVacancyCount()).isEqualTo(4);
-        // 매장 1 은 일반·모델이 섞여 있고, 매장 2 는 일반 시술만 있다
+        // 매장 1 은 일반·초보 시술이 섞여 있고, 매장 2 는 일반 시술만 있다
         assertThat(exploreVacancyService.searchShops(request().build().filter()).shops())
                 .extracting(ExploreShopResponse::modelOnly).containsExactly(false, false);
     }
 
     @Test
-    @DisplayName("일반·모델이 섞인 매장 요약은 매장 상세에 보이는 일반 빈자리로 계산하고 모델 빈자리는 따로 담는다")
+    @DisplayName("일반·초보 시술이 섞인 매장 요약은 매장 상세에 보이는 일반 빈자리로 계산하고 초보 시술 빈자리는 따로 담는다")
     void searchShops_mixedShop_summarizesNormalAndModelSeparately() {
-        // 젤네일(일반) 30,000원·14% 3건, 손 케어(모델) 18,000원·10% 4건
+        // 젤네일(일반) 30,000원·14% 3건, 손 케어(초보 시술) 18,000원·10% 4건
         jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건',"
                 + " PHOTO_NOTICE = '안내' WHERE TREATMENT_ID = 2");
 
@@ -315,7 +315,7 @@ class ExploreVacancyServiceTest {
     }
 
     @Test
-    @DisplayName("임박 빈자리에서 모델 시술은 빠진다")
+    @DisplayName("임박 빈자리에서 초보 시술은 빠진다")
     void searchImminent_modelTreatment_excluded() {
         jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건'"
                 + " WHERE TREATMENT_ID = 2");

@@ -124,7 +124,7 @@ public interface ExploreVacancyQueryRepository extends Repository<ShopScheduleEx
             @Param("maxLng") BigDecimal maxLng);
 
     /**
-     * 임박 빈자리 후보. 노출 중인 매장의 판매 중인 일반 시술(모델 시술 제외)을 매장 ID, 시술 ID 순으로 조회한다.
+     * 임박 빈자리 후보. 노출 중인 매장의 판매 중인 일반 시술(초보 시술 제외)을 매장 ID, 시술 ID 순으로 조회한다.
      *
      * @return 임박 빈자리 후보 목록 (openStartsAt·openEndsAt 은 null)
      */

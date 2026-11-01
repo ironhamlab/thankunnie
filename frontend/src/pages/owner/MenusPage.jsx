@@ -147,7 +147,7 @@ export default function MenusPage() {
                         <td>
                           <strong>{item.name}</strong>
                           <small>
-                            {item.treatmentType === 'MODEL' ? '모델 모집' : '일반 시술'}
+                            {item.treatmentType === 'MODEL' ? '초보 시술 모집' : '일반 시술'}
                           </small>
                         </td>
                         <td>{item.description || '상세 설명 없음'}</td>

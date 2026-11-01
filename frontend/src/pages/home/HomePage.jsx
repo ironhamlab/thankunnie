@@ -24,11 +24,11 @@ const SLIDES = [
   },
   {
     tag: '신규 혜택',
-    eyebrow: 'NEW MODEL MATCHING',
+    eyebrow: 'NEW BEGINNER TREATMENTS',
     lead: '부담 없는 ',
-    accent: '무료 & 재료비 실습 모델',
+    accent: '무료 & 재료비 초보 시술',
     end: ' 모집!',
-    description: '헤어 드라이, 젤네일, 속눈썹 펌 등 뷰티샵의 포트폴리오 모델을 만나보세요.',
+    description: '헤어 드라이, 젤네일, 속눈썹 펌 등 뷰티샵의 초보 시술을 만나보세요.',
     badge: '재료비 지원 혜택 모아보기',
   },
   {

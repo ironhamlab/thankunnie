@@ -14,12 +14,6 @@
   color: var(--color-text-secondary);
   margin-bottom: 22px;
 }
-/* 메뉴만 보일 때는 오른쪽 예약 요약이 없으므로 한 열로 가운데 둔다 */
-.root :global(.b-columns).single {
-  grid-template-columns: minmax(0, 1fr);
-  max-width: 760px;
-  margin: 0 auto;
-}
 .header {
   overflow: hidden;
 }
@@ -66,7 +60,7 @@
   box-shadow: 0 0 0 1px var(--color-primary);
   color: var(--color-primary);
 }
-/* 매장 상세는 2단계, 모델 모집은 3단계라 단계 수만큼 같은 너비로 나눈다 */
+/* 매장 상세는 2단계, 초보 시술 모집은 3단계라 단계 수만큼 같은 너비로 나눈다 */
 .steps {
   display: grid;
   grid-auto-flow: column;

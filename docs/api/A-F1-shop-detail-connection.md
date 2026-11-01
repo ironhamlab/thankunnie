@@ -68,9 +68,9 @@
 }
 ```
 
-- `modelCondition`(참여 조건), `photoNotice`(촬영 안내)는 `treatmentType = MODEL`일 때만 값이 있고 NORMAL이면 null이다. `photoNotice`는 모델 모집 상세(UNNIE-52)를 위해 추가했다.
+- `modelCondition`(참여 조건), `photoNotice`(촬영 안내)는 `treatmentType = MODEL`일 때만 값이 있고 NORMAL이면 null이다. `photoNotice`는 초보 시술 모집 상세(UNNIE-52)를 위해 추가했다.
 
-## 시술 모델 모집 상세 (UNNIE-52)
+## 초보 시술 모집 상세 (UNNIE-52)
 
 ```text
 /shops/:shopId/models                매장 상세와 같은 머리(이미지·매장명·메뉴)
@@ -81,10 +81,10 @@
   └ 상세정보                         매장 상세와 같음
 ```
 
-- 매장 상세(`/shops/:shopId`)는 NORMAL 시술만, 모델 모집 상세는 MODEL 시술만 보여준다. 같은 `ShopDetailPage`를 `model` 값으로 나눠 쓰며 API도 같다.
+- 매장 상세(`/shops/:shopId`)는 NORMAL 시술만, 초보 시술 모집 상세는 MODEL 시술만 보여준다. 같은 `ShopDetailPage`를 `model` 값으로 나눠 쓰며 API도 같다.
 - 확인 체크를 해야 3단계로 갈 수 있다. 시술을 바꾸면 체크가 풀린다. 체크는 화면 상태로만 두며 서버에 저장하지 않는다.
 - 처음 선택값은 매장 상세와 같이 `?date=&treatmentId=&startsAt=`로 받는다. 시술이 골라진 채로 들어와도 2단계(안내 확인)부터 연다.
-- `utils/exploreVacancy.js`의 `shopPagePath(shopId, { ..., model: true })`로 이 주소를 만든다. 탐색 목록의 MODEL 빈자리 시간 버튼과, 모델 모집 목록(`?type=MODEL`)의 매장 카드·지도 "매장 보기"가 이 화면으로 간다.
+- `utils/exploreVacancy.js`의 `shopPagePath(shopId, { ..., model: true })`로 이 주소를 만든다. 탐색 목록의 MODEL 빈자리 시간 버튼과, 초보 시술 모집 목록(`?type=MODEL`)의 매장 카드·지도 "매장 보기"가 이 화면으로 간다.
 
 ## 시간 슬롯
 

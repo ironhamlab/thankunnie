@@ -19,8 +19,8 @@ import styles from './ShopRow.module.css';
  * @param detail   펼친 매장의 빈자리 { status, vacancies }. 아직 안 받았으면 undefined
  * @param onToggle 펼치기·접기
  * @param onRetry  빈자리를 다시 받기
- * @param model    모델 모집 목록이면 매장 대신 모델 모집 상세로 보낸다. 모델 시술 빈자리만 있는 매장(shop.modelOnly)도 그렇다.
- *                 일반·모델이 섞인 매장은 카드 아래에 모델 모집 상세 링크를 따로 둔다
+ * @param model    초보 시술 모집 목록이면 매장 대신 초보 시술 모집 상세로 보낸다. 초보 시술 빈자리만 있는 매장(shop.modelOnly)도 그렇다.
+ *                 일반·초보 시술이 섞인 매장은 카드 아래에 초보 시술 모집 상세 링크를 따로 둔다
  */
 export default function ShopRow({ shop, expanded, detail, onToggle, onRetry, model }) {
   const panelId = `shop-${shop.shopId}-vacancies`;
@@ -54,19 +54,18 @@ export default function ShopRow({ shop, expanded, detail, onToggle, onRetry, mod
           aria-controls={panelId}
           onClick={onToggle}
         >
-          <span aria-hidden="true">◷</span>
           {expanded ? '접기' : '시간 보기'}
           <span aria-hidden="true">{expanded ? '▴' : '▾'}</span>
         </button>
       </div>
-      {/* 일반·모델이 섞인 매장은 위 카드가 매장 상세(일반 시술)로 가므로 모델 빈자리는 모델 모집 상세로 따로 보낸다 */}
+      {/* 일반·초보 시술이 섞인 매장은 위 카드가 매장 상세(일반 시술)로 가므로 초보 시술 빈자리는 초보 시술 모집 상세로 따로 보낸다 */}
       {!model && !shop.modelOnly && shop.modelVacancyCount > 0 && (
         <Link
           className={styles.modelLink}
           to={shopPagePath(shop.shopId, { date: datePart(shop.earliestStartsAt), model: true })}
         >
-          <span>✦ 모델 모집 빈자리 {shop.modelVacancyCount}개</span>
-          <b>{money(shop.modelMinSalePrice)}~ ›</b>
+          <span>✦ 초보 시술 모집 빈자리 {shop.modelVacancyCount}개</span>
+          <b>{money(shop.modelMinSalePrice)}~</b>
         </Link>
       )}
       {expanded && (
