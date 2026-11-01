@@ -280,6 +280,21 @@ class NotificationEventServiceTest {
     }
 
     @Test
+    @DisplayName("같은 시각이라도 다른 예약이 취소되면 재공개 이벤트를 새로 만든다")
+    void createReopenedEvent_anotherReservationSameSlot_createsAnother() {
+        openSlot(1L, NOW.plusHours(10), NOW.plusHours(14));
+        reservation(CANCELLED_RESERVATION, NORMAL_TREATMENT, "CANCELLED", NOW.plusHours(11), NOW.plusHours(12));
+        NotificationFixture.reservation(jdbcTemplate, 501L, 2L, NORMAL_TREATMENT, "CANCELLED",
+                NOW.plusHours(11), NOW.plusHours(12), NOW.plusHours(10));
+
+        assertThat(notificationEventService.createReopenedEvent(CANCELLED_RESERVATION, NOW)).isTrue();
+        assertThat(notificationEventService.createReopenedEvent(501L, NOW)).isTrue();
+        assertThat(notificationEventRepository.findAll())
+                .extracting(NotificationEvent::getReservationId)
+                .containsExactlyInAnyOrder(CANCELLED_RESERVATION, 501L);
+    }
+
+    @Test
     @DisplayName("OPEN 행이 없어도 영업시간 안이면 재공개 이벤트를 만든다")
     void createReopenedEvent_businessHoursOnly_createsEvent() {
         // OPEN 없이 금요일 영업시간만 둔다. 11~12시는 영업시간(10~20) 안이다.
