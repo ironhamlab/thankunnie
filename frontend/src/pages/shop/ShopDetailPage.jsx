@@ -117,7 +117,7 @@ export default function ShopDetailPage({ model = false }) {
           : model && !agreed
             ? 2
             : dateStep;
-  const durationMinutes = step === dateStep ? treatment.durationMinutes : undefined;
+  const durationMinutes = treatment?.durationMinutes;
   const timesKey = `${shopId}-${selectedDate}-${durationMinutes}`;
 
   useEffect(() => {
