@@ -54,7 +54,6 @@ export default function ShopRow({ shop, expanded, detail, onToggle, onRetry, mod
           aria-controls={panelId}
           onClick={onToggle}
         >
-          <span aria-hidden="true">◷</span>
           {expanded ? '접기' : '시간 보기'}
           <span aria-hidden="true">{expanded ? '▴' : '▾'}</span>
         </button>
@@ -66,7 +65,7 @@ export default function ShopRow({ shop, expanded, detail, onToggle, onRetry, mod
           to={shopPagePath(shop.shopId, { date: datePart(shop.earliestStartsAt), model: true })}
         >
           <span>✦ 모델 모집 빈자리 {shop.modelVacancyCount}개</span>
-          <b>{money(shop.modelMinSalePrice)}~ ›</b>
+          <b>{money(shop.modelMinSalePrice)}~</b>
         </Link>
       )}
       {expanded && (

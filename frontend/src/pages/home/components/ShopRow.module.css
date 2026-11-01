@@ -1,4 +1,6 @@
 .root {
+  /* 놓인 목록의 폭(검색 목록·지도 옆 좁은 패널)에 맞춰 배치를 바꾸려고 카드 폭을 기준으로 삼는다 */
+  container-type: inline-size;
   background: white;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -131,10 +133,6 @@
   cursor: pointer;
 }
 @media (max-width: 540px) {
-  .thumb {
-    width: 56px;
-    height: 56px;
-  }
   /* 좁은 화면에서는 시작 시각·빈자리 수가 잘리지 않게 줄을 바꾼다 */
   .time {
     white-space: normal;
@@ -159,35 +157,48 @@
 .shopLink:hover {
   background: #fff7f9;
 }
-/* 매장 페이지로 가는 카드와 구분되게 시간 펼치기는 따로 둔다 */
+/* 매장 페이지로 가는 카드와 구분되게 시간 펼치기는 따로 둔다. 버튼 대신 간단한 ▾ 글자 토글로 둔다 */
 .toggle {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 8px 12px;
-  border: 1px solid var(--color-primary);
-  border-radius: var(--radius-pill);
-  background: white;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
   color: var(--color-primary);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 }
-.toggle[aria-expanded='true'] {
-  background: var(--color-primary);
-  color: white;
+.toggle:hover,
+.toggle:focus-visible {
+  text-decoration: underline;
 }
-@media (max-width: 540px) {
-  .shopLink {
-    gap: 10px;
-  }
+/* 좁은 카드(지도 옆 패널·휴대폰)는 매장 정보를 한 줄 다 쓰고, 시간 보기는 아래 오른쪽으로 내린다 */
+@container (max-width: 440px) {
   .summary {
     flex-wrap: wrap;
-    padding: 0 12px 12px 0;
+    gap: 0;
+    padding: 0 12px 6px 0;
+  }
+  .shopLink {
+    flex-basis: 100%;
+    gap: 10px;
+    padding-bottom: 4px;
+  }
+  .thumb {
+    width: 56px;
+    height: 56px;
+  }
+  .info strong {
+    font-size: 15px;
+  }
+  .price b {
+    font-size: 15px;
   }
   .toggle {
-    margin-left: 12px;
+    margin-left: auto;
   }
 }
 /* 일반·모델이 섞인 매장의 모델 모집 상세 링크 */
