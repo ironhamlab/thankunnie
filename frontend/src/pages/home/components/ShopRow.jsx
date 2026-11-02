@@ -11,6 +11,9 @@ import { datePart } from '@/utils/scheduleDate';
 import LocationIcon from '@/components/icons/LocationIcon';
 import styles from './ShopRow.module.css';
 
+// 전체 날짜 보기는 60일 치가 섞여 길어지므로 빈자리가 있는 가장 빠른 날짜 이만큼만 펼쳐 보여준다
+const SHOWN_DAYS = 2;
+
 /**
  * 검색 화면의 한 줄 매장 카드. 매장을 누르면 매장 페이지로 가고, 오른쪽 '시간 보기'를 누르면
  * 아래가 펼쳐지며 시술별 시작 시각 버튼을 보여준다. 시각을 누르면 그 시간이 골라진 매장 페이지로 간다.
@@ -38,8 +41,18 @@ export default function ShopRow({
   located = false,
 }) {
   const panelId = `shop-${shop.shopId}-vacancies`;
-  // 전체 날짜 보기처럼 여러 날짜의 빈자리가 섞이면 시각 앞에 날짜를 붙인다
-  const multiDay = new Set(detail?.vacancies?.map((vacancy) => vacancy.day)).size > 1;
+  // 여러 날짜의 빈자리가 섞이면 앞쪽 날짜만 날짜별로 묶고, 나머지는 매장 페이지에서 고르게 한다
+  const vacancies = detail?.vacancies ?? [];
+  const dates = [...new Set(vacancies.map((vacancy) => datePart(vacancy.startsAt)))].sort();
+  const multiDay = dates.length > 1;
+  const shownDates = dates.slice(0, SHOWN_DAYS);
+  const shownVacancies = vacancies.filter((vacancy) =>
+    shownDates.includes(datePart(vacancy.startsAt)),
+  );
+  const nextDate = dates[SHOWN_DAYS];
+  // 받은 빈자리가 개수 제한에 걸려 잘렸을 수도 있으므로 매장 전체 빈자리 수와도 비교한다
+  const hasMore = multiDay && (nextDate || shop.vacancyCount > shownVacancies.length);
+  const dayOf = (date) => vacancies.find((vacancy) => datePart(vacancy.startsAt) === date).day;
   const locateButton = onLocate && (
     <button
       type="button"
@@ -132,32 +145,71 @@ export default function ShopRow({
           ) : detail.vacancies.length === 0 ? (
             <p className={styles.message}>방금 빈자리가 모두 마감됐어요.</p>
           ) : (
-            groupByTreatment(detail.vacancies).map((treatment) => (
-              <div className={styles.treatment} key={treatment.treatmentId}>
-                <div className={styles.treatmentInfo}>
-                  <strong>{treatment.name}</strong>
-                  <span>
-                    {treatment.duration}분 · {money(treatment.price)}
-                    {treatment.discount > 0 && <em> {treatment.discount}%↓</em>}
-                  </span>
+            <>
+              {groupByTreatment(shownVacancies).map((treatment) => (
+                <div className={styles.treatment} key={treatment.treatmentId}>
+                  <div className={styles.treatmentInfo}>
+                    <strong>{treatment.name}</strong>
+                    <span>
+                      {treatment.duration}분 · {money(treatment.price)}
+                      {treatment.discount > 0 && <em> {treatment.discount}%↓</em>}
+                    </span>
+                  </div>
+                  {multiDay ? (
+                    shownDates.map((date) => {
+                      const slots = treatment.slots.filter(
+                        (slot) => datePart(slot.startsAt) === date,
+                      );
+                      return (
+                        slots.length > 0 && (
+                          <div className={styles.dayRow} key={date}>
+                            <span className={styles.dayLabel}>{dayOf(date)}</span>
+                            <SlotLinks treatment={treatment} slots={slots} />
+                          </div>
+                        )
+                      );
+                    })
+                  ) : (
+                    <SlotLinks treatment={treatment} slots={treatment.slots} />
+                  )}
                 </div>
-                <div className={styles.slots}>
-                  {treatment.slots.map((slot) => (
-                    <Link
-                      key={slot.id}
-                      to={slot.shopPath}
-                      className={slot.urgency !== '일반 빈자리' ? styles.urgent : ''}
-                      aria-label={`${treatment.name} ${slot.day} ${slot.time} ${money(slot.price)}`}
-                    >
-                      {multiDay ? `${slot.day} ${slot.time}` : slot.time}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))
+              ))}
+              {hasMore && (
+                <p className={styles.message}>
+                  {nextDate ? `${dayOf(nextDate)}부터는` : '다른 시간은'}{' '}
+                  <Link
+                    to={shopPagePath(shop.shopId, {
+                      date: nextDate,
+                      model: model || shop.modelOnly,
+                    })}
+                  >
+                    매장 페이지
+                  </Link>
+                  에서 골라요
+                </p>
+              )}
+            </>
           )}
         </div>
       )}
     </article>
+  );
+}
+
+/** 한 시술의 시작 시각 버튼들. 누르면 그 시간이 골라진 매장 페이지로 간다 */
+function SlotLinks({ treatment, slots }) {
+  return (
+    <div className={styles.slots}>
+      {slots.map((slot) => (
+        <Link
+          key={slot.id}
+          to={slot.shopPath}
+          className={slot.urgency !== '일반 빈자리' ? styles.urgent : ''}
+          aria-label={`${treatment.name} ${slot.day} ${slot.time} ${money(slot.price)}`}
+        >
+          {slot.time}
+        </Link>
+      ))}
+    </div>
   );
 }
