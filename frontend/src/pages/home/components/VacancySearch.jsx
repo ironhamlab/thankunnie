@@ -61,7 +61,8 @@ function Filter({ label, options, value, onChange, segmented = false }) {
 /**
  * 빈자리 검색 화면 (/?view=list). 분야·날짜·시간대 조건에 맞는 매장을 한 줄씩 보여주고(C-02),
  * 매장을 펼치면 시술별 시작 시각(C-01)을 보여준다. 옆 지도에는 같은 매장 위치를 띄운다.
- * 분야·지역·날짜·펼친 매장·타임세일·초보 시술 모집 여부는 주소에 남겨 새로고침이나 홈에서 들어와도 같은 화면을 보여준다.
+ * 매장 줄의 지도에서 보기나 시간 보기를 누르면 옆 지도가 그 매장으로 확대해 옮긴다.
+ * 분야·지역·날짜·펼친 매장·지도에서 고른 매장·타임세일·초보 시술 모집 여부는 주소에 남겨 새로고침이나 홈에서 들어와도 같은 화면을 보여준다.
  */
 export default function VacancySearch() {
   const [params, setParams] = useSearchParams();
@@ -70,6 +71,9 @@ export default function VacancySearch() {
   const saleOnly = params.get('sale') === '1';
   const modelOnly = params.get('type') === MODEL;
   const expandedId = params.get('shop');
+  // 지도에서 보기로 고른 매장. 펼친 매장보다 먼저 옆 지도에 보여준다
+  const pinnedId = params.get('pin');
+  const mapShopId = pinnedId ?? expandedId;
   const categoryId = params.get('category');
   // 알림 링크의 region. 없으면 지역으로 좁히지 않는다
   const regionCode = params.get('region') || undefined;
@@ -109,6 +113,8 @@ export default function VacancySearch() {
   const [sort, setSort] = useState(sorts[0]);
   const [keyword, setKeyword] = useState(search);
   const [paging, setPaging] = useState({ key: '', page: 0 });
+  // 목록에서 매장을 고를 때마다 새 값을 넣어, 같은 매장을 다시 눌러도 지도를 다시 확대한다
+  const [mapFocus, setMapFocus] = useState(null);
   const categoryName =
     categories.find((item) => String(item.categoryId) === categoryId)?.name ?? ALL;
   // 주소에 region이 있을 때만 제목 앞에 구 이름을 붙인다. 11680 → 강남구
@@ -178,10 +184,10 @@ export default function VacancySearch() {
 
   const detail = expandedId ? shopVacancies[expandedId] : undefined;
   useEffect(() => {
-    if (!allDates && expandedId && !detail && status === 'succeeded') {
+    if (expandedId && !detail && status === 'succeeded') {
       loadShopVacancies(expandedId, filter);
     }
-  }, [allDates, expandedId, detail, status, filter, loadShopVacancies]);
+  }, [expandedId, detail, status, filter, loadShopVacancies]);
 
   // 지도나 홈에서 고른 매장이 화면 밖이면 보이도록 옮긴다
   useEffect(() => {
@@ -209,7 +215,7 @@ export default function VacancySearch() {
   };
   const totalPages = Math.ceil(sortedShops.length / PAGE_SIZE);
   const page = Math.min(
-    paging.key === pagingKey ? paging.page : pageOf(expandedId),
+    paging.key === pagingKey ? paging.page : pageOf(mapShopId),
     Math.max(totalPages - 1, 0),
   );
   const visibleShops = sortedShops.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -223,8 +229,31 @@ export default function VacancySearch() {
     setPaging({ key: pagingKeyOf(sortName), page: 0 });
   };
 
-  const toggleShop = (shopId) =>
-    updateOption('shop', String(shopId) === expandedId ? '' : String(shopId));
+  const focusMap = (shop) => {
+    setMapFocus({ lat: shop.latitude, lng: shop.longitude, zoom: true });
+    // 좁은 화면은 지도가 목록 위에 있어 눌러도 안 보이므로 지도까지 올린다
+    document.getElementById('vacancy-map')?.scrollIntoView({ block: 'nearest' });
+  };
+  // 시간 보기로 펼치면 지도에서 보기로 고른 매장 대신 펼친 매장을 보여준다
+  const toggleShop = (shop) => {
+    const shopId = String(shop.shopId);
+    const expanding = shopId !== expandedId;
+    setParams(
+      (previous) => {
+        const next = new URLSearchParams(previous);
+        if (expanding) next.set('shop', shopId);
+        else next.delete('shop');
+        next.delete('pin');
+        return next;
+      },
+      { replace: true },
+    );
+    if (expanding) focusMap(shop);
+  };
+  const locateShop = (shop) => {
+    updateOption('pin', String(shop.shopId));
+    focusMap(shop);
+  };
   const chooseCategory = (name) => {
     const id = categories.find((item) => item.name === name)?.categoryId;
     setParams(
@@ -232,8 +261,9 @@ export default function VacancySearch() {
         const next = new URLSearchParams(previous);
         if (id) next.set('category', id);
         else next.delete('category');
-        // 분야를 바꾸면 펼쳐 둔 매장은 목록에 없을 수 있다
+        // 분야를 바꾸면 펼쳐 두거나 지도에서 고른 매장은 목록에 없을 수 있다
         next.delete('shop');
+        next.delete('pin');
         next.set('view', 'list');
         return next;
       },
@@ -358,12 +388,13 @@ export default function VacancySearch() {
                   <div key={shop.shopId} id={`shop-row-${shop.shopId}`}>
                     <ShopRow
                       shop={shop}
-                      expanded={!allDates && String(shop.shopId) === expandedId}
+                      expanded={String(shop.shopId) === expandedId}
                       detail={String(shop.shopId) === expandedId ? detail : undefined}
-                      onToggle={() => toggleShop(shop.shopId)}
+                      onToggle={() => toggleShop(shop)}
                       onRetry={() => loadShopVacancies(String(shop.shopId), filter)}
                       model={modelOnly}
-                      showTimes={!allDates}
+                      onLocate={locateShop}
+                      located={String(shop.shopId) === mapShopId}
                     />
                   </div>
                 ))}
@@ -429,12 +460,18 @@ export default function VacancySearch() {
             </EmptyState>
           )}
         </div>
-        <aside className={styles.mapPane}>
+        <aside id="vacancy-map" className={styles.mapPane}>
           <ShopLocationMap
             shops={allDates ? sortedShops : shops}
-            showTimes={!allDates}
             status={status}
             expandedShopId={expandedId}
+            pinnedShopId={pinnedId}
+            focusPosition={mapFocus}
+            onPinShop={(id) => {
+              // 지도에서 고른 매장이 다른 페이지에 있으면 그 페이지로 넘긴다
+              setPaging({ key: pagingKey, page: pageOf(id) });
+              updateOption('pin', String(id));
+            }}
             onShowShop={(id) => {
               // 지도에서 고른 매장이 다른 페이지에 있으면 그 페이지로 넘긴다
               if (id) setPaging({ key: pagingKey, page: pageOf(id) });

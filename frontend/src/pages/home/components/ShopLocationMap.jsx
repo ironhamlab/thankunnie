@@ -13,8 +13,13 @@ const MAP_BOUNDS_PADDING = { top: 60, right: 110, bottom: 150, left: 100 };
 /**
  * 검색 조건에 맞는 빈자리가 있는 매장 위치 (C-02). 목록의 매장이 다 보이게 범위를 맞추고, 축소하면 가까운 핀을 묶는다.
  * 목록에서 펼친 매장이 지도에서도 선택되고, 지도에서 고른 매장은 매장 페이지로 가거나 목록에서 펼쳐 시간을 볼 수 있다.
- * 전체 날짜 보기(showTimes 가 false)는 빈자리가 없는 매장도 함께 받아, 그 매장은 빈자리 없음 안내와 매장 보기만 보여준다.
+ * 전체 날짜 보기는 빈자리가 없는 매장도 함께 받아, 그 매장은 빈자리 없음 안내와 매장 보기만 보여준다.
  * 초보 시술 모집 목록(model)이거나 초보 시술 빈자리만 있는 매장(modelOnly)이면 초보 시술 모집 상세로 간다.
+ * 목록의 '지도에서 보기'로 고른 매장(pinnedShopId)은 펼친 매장보다 먼저 보여주고, 그 상태에서 핀을 누르면 고른 매장을 바꾼다.
+ *
+ * @param pinnedShopId  목록의 '지도에서 보기'로 고른 매장 ID (문자열)
+ * @param onPinShop     지도에서 보기 상태에서 다른 핀을 누르면 그 매장 ID 를 받는다
+ * @param focusPosition 목록에서 매장을 고를 때마다 새로 들어오는 { lat, lng, zoom }. 그 매장으로 지도를 확대해 옮긴다
  */
 export default function ShopLocationMap({
   shops,
@@ -23,18 +28,23 @@ export default function ShopLocationMap({
   onShowShop,
   model,
   showTimes = true,
+  pinnedShopId,
+  onPinShop,
+  focusPosition,
 }) {
   const [pickedId, setPickedId] = useState(null);
   const [mapUnavailable, setMapUnavailable] = useState(false);
-  // 목록에서 펼친 매장을 우선 보여주고, 그다음 지도에서 누른 매장을 보여준다
+  // 지도에서 보기로 고른 매장, 목록에서 펼친 매장, 지도에서 누른 매장 순으로 보여준다
   const selected =
+    shops.find((shop) => String(shop.shopId) === pinnedShopId) ??
     shops.find((shop) => String(shop.shopId) === expandedShopId) ??
     shops.find((shop) => String(shop.shopId) === pickedId) ??
     shops[0];
   const pick = (shopId) => {
     setPickedId(shopId);
-    // 다른 매장을 펼쳐 둔 상태라면 지도에서 고른 매장을 바로 펼친다
-    if (expandedShopId && shopId !== expandedShopId) onShowShop(shopId);
+    // 지도에서 보기로 고른 매장이 있으면 그것을 바꾸고, 다른 매장을 펼쳐 둔 상태라면 지도에서 고른 매장을 바로 펼친다
+    if (pinnedShopId) onPinShop(shopId);
+    else if (expandedShopId && shopId !== expandedShopId) onShowShop(shopId);
   };
   const handleUnavailable = useCallback(() => setMapUnavailable(true), []);
   const isExpanded = selected && String(selected.shopId) === expandedShopId;
@@ -51,6 +61,7 @@ export default function ShopLocationMap({
           onUnavailable={handleUnavailable}
           fitToShops
           boundsPadding={MAP_BOUNDS_PADDING}
+          focusPosition={focusPosition}
         />
       )}
       <span className={styles.count}>매장 {shops.length}곳</span>
@@ -97,7 +108,7 @@ export default function ShopLocationMap({
               >
                 매장 보기
               </Button>
-              {showTimes && (
+              {showTimes && hasVacancy && (
                 <Button
                   variant="soft"
                   aria-expanded={isExpanded}
