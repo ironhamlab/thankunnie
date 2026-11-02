@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useReservationStore } from '@/store/useReservationStore';
@@ -36,6 +36,27 @@ export default function useReserve() {
   const [queue, setQueue] = useState(null);
   // 화면을 떠날 때 서 있던 줄에서 나가도록 지금 대기 중인 빈자리를 기억한다
   const waitingSlotRef = useRef(null);
+  // 응답을 기다리는 순서 조회. 나가기가 이 조회보다 먼저 서버에 닿으면 조회가 다시 줄에 세우므로 끝난 뒤 나간다
+  const joinInFlightRef = useRef(null);
+
+  const requestTicket = (slot) => {
+    const pending = joinQueue(slot);
+    joinInFlightRef.current = pending;
+    const clear = () => {
+      if (joinInFlightRef.current === pending) joinInFlightRef.current = null;
+    };
+    pending.then(clear, clear);
+    return pending;
+  };
+
+  const leaveAfterJoin = useCallback(
+    (slot) => {
+      Promise.resolve(joinInFlightRef.current)
+        .catch(() => {})
+        .then(() => leaveQueue(slot));
+    },
+    [leaveQueue],
+  );
 
   // retried: 기존 예약이 없어 한 번 다시 보낸 요청인지. 서버와 조회가 엇갈려도 계속 다시 보내지 않도록 한 번만 한다
   const create = async (request, retried = false) => {
@@ -52,6 +73,9 @@ export default function useReserve() {
         await submit(request);
         return;
       }
+      // 예약하지 못하고 화면에 머물면 순서를 더 묻지 않으므로, 맨 앞 자리를 비워 뒷사람이 기다리지 않게 한다.
+      // 결제 대기 예약을 바꾸기로 하면 다시 줄에 선다
+      leaveQueue(toSlot(request));
       if (err.code === HOLD_EXISTS) {
         // 바꾸기를 눌렀는데도 오면 그 사이 점유가 다른 예약으로 바뀐 것이다. 지금 점유로 다시 묻는다
         const baseRequest = toSlot(request);
@@ -109,17 +133,19 @@ export default function useReserve() {
     setError('');
     setLoading(true);
     try {
-      await applyTicket(await joinQueue(toSlot(request)), request);
+      await applyTicket(await requestTicket(toSlot(request)), request);
     } catch (err) {
       setError(err.message);
       setLoading(false);
     }
   };
 
-  // applyTicket 은 렌더마다 새로 만들어진다. 순서 조회는 queue 가 바뀔 때만 다시 예약하도록 최신 함수를 ref 로 넘긴다
+  // applyTicket 등은 렌더마다 새로 만들어진다. 순서 조회는 queue 가 바뀔 때만 다시 예약하도록 최신 함수를 ref 로 넘긴다
   const applyTicketRef = useRef(applyTicket);
+  const requestTicketRef = useRef(requestTicket);
   useEffect(() => {
     applyTicketRef.current = applyTicket;
+    requestTicketRef.current = requestTicket;
   });
 
   // 대기 중이면 몇 초마다 순서를 다시 묻는다. 서버가 살아 있음을 알아야 줄에서 빼지 않는다
@@ -129,7 +155,7 @@ export default function useReserve() {
     const timer = setTimeout(async () => {
       let ticket;
       try {
-        ticket = await joinQueue(toSlot(queue.request));
+        ticket = await requestTicketRef.current(toSlot(queue.request));
       } catch {
         // 잠깐 연결이 끊겨도 대기는 이어간다. 다음 차례에 다시 묻도록 같은 순서로 다시 그린다
         if (!cancelled) setQueue((current) => current && { ...current });
@@ -141,18 +167,18 @@ export default function useReserve() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [queue, joinQueue]);
+  }, [queue]);
 
   // 대기 화면을 띄운 채 다른 화면으로 가면 줄에서 나간다
   useEffect(
     () => () => {
-      if (waitingSlotRef.current) leaveQueue(waitingSlotRef.current);
+      if (waitingSlotRef.current) leaveAfterJoin(waitingSlotRef.current);
     },
-    [leaveQueue],
+    [leaveAfterJoin],
   );
 
   const cancelQueue = () => {
-    if (waitingSlotRef.current) leaveQueue(waitingSlotRef.current);
+    if (waitingSlotRef.current) leaveAfterJoin(waitingSlotRef.current);
     waitingSlotRef.current = null;
     setQueue(null);
   };
