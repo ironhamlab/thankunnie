@@ -56,6 +56,10 @@ export const useExploreStore = create((set, get) => ({
   imminentError: null,
 
   // 매장 요약 (C-02). 홈 분야 탭 목록·홈 지도·검색 화면 목록과 지도
+  // 빈자리 목록의 전체 날짜 보기에서 빈자리가 없는 매장까지 채울 전체 매장
+  allShops: [],
+  allShopsStatus: 'idle',
+  allShopsError: null,
   // 홈 소개의 빈자리 현황 (분야 구분 없는 매장 요약)
   summaryShops: [],
   summaryShopsStatus: 'idle',
@@ -86,6 +90,11 @@ export const useExploreStore = create((set, get) => ({
     set,
     { data: 'imminentVacancies', status: 'imminentStatus', error: 'imminentError' },
     fetchImminentCards,
+  ),
+  loadAllShops: simpleLoader(
+    set,
+    { data: 'allShops', status: 'allShopsStatus', error: 'allShopsError' },
+    exploreApi.getAllShops,
   ),
   loadSummaryShops: simpleLoader(
     set,

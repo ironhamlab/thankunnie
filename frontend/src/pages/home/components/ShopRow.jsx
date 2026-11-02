@@ -33,6 +33,23 @@ export default function ShopRow({
   showTimes = true,
 }) {
   const panelId = `shop-${shop.shopId}-vacancies`;
+  // 전체 매장 목록에서 온 매장은 빈자리 요약이 없다. 매장 상세에서 날짜를 골라 다시 찾아보게 한다
+  if (shop.earliestStartsAt == null) {
+    return (
+      <article className={`${styles.root} ${styles.noVacancy}`}>
+        <div className={styles.summary}>
+          <Link className={styles.shopLink} to={shopPagePath(shop.shopId)}>
+            <img className={styles.thumb} src={shopImage(shop.imageUrl)} alt="" />
+            <span className={styles.info}>
+              <strong>{shop.shopName}</strong>
+              <span className={styles.area}>⌖ {areaName(shop.address)}</span>
+              <span className={styles.none}>지금은 빈자리가 없어요</span>
+            </span>
+          </Link>
+        </div>
+      </article>
+    );
+  }
   return (
     <article className={`${styles.root} ${expanded ? styles.expanded : ''}`}>
       <div className={styles.summary}>

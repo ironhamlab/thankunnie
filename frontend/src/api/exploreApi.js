@@ -10,5 +10,7 @@ export const exploreApi = {
   getImminentVacancies: () => axiosInstance.get('/v1/explore/vacancies/imminent'),
   getShops: (params) =>
     axiosInstance.get('/v1/explore/shops', { params, paramsSerializer: repeatParams }),
+  // 빈자리 유무와 상관없이 노출 중인 매장 전체
+  getAllShops: (params) => axiosInstance.get('/v1/explore/shops/all', { params }),
   getCategories: () => axiosInstance.get('/v1/auth/shop-categories'),
 };

@@ -32,6 +32,17 @@
   color: white;
   z-index: 1;
 }
+/* 빈자리가 없는 매장은 가격 없이 이름만 흐리게 보여준다 */
+.pinNoVacancy {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+.pinNoVacancy:global(.is-selected) {
+  border-color: var(--color-text-muted);
+  background: var(--color-text-muted);
+}
 /* 내 위치 버튼. 홈 지도처럼 낮은 지도에서도 위 도구 막대·아래 미리보기와 겹치지 않게 왼쪽 가운데에 둔다 */
 .locate {
   position: absolute;

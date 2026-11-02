@@ -90,6 +90,8 @@ export default function VacancySearch() {
   const shops = useExploreStore((s) => s.searchShops);
   const status = useExploreStore((s) => s.searchShopsStatus);
   const error = useExploreStore((s) => s.searchShopsError);
+  const allShops = useExploreStore((s) => s.allShops);
+  const loadAllShops = useExploreStore((s) => s.loadAllShops);
   const shopVacancies = useExploreStore((s) => s.shopVacancies);
   const categories = useExploreStore((s) => s.categories);
   const loadSearchShops = useExploreStore((s) => s.loadSearchShops);
@@ -129,6 +131,10 @@ export default function VacancySearch() {
   const filterKey = JSON.stringify(filter);
 
   useEffect(() => {
+    if (allDates) loadAllShops({ categoryId: categoryId ?? undefined, keyword: keyword || undefined });
+  }, [allDates, categoryId, keyword, loadAllShops]);
+
+  useEffect(() => {
     loadSearchShops(filter);
   }, [filter, loadSearchShops]);
 
@@ -159,10 +165,14 @@ export default function VacancySearch() {
     }
   }, [expandedId, status]);
 
-  const sortedShops = useMemo(
-    () => [...shops].sort((a, b) => SHOP_SORTS[sort](a, b) || a.shopId - b.shopId),
-    [shops, sort],
-  );
+  // 전체 날짜 보기는 빈자리가 있는 매장을 먼저 두고, 빈자리가 없는 매장을 뒤에 붙인다.
+  // 시작 시간을 고르면 그 시간 빈자리를 찾는 것이므로 빈자리가 없는 매장은 빼고 본다
+  const sortedShops = useMemo(() => {
+    const withVacancy = [...shops].sort((a, b) => SHOP_SORTS[sort](a, b) || a.shopId - b.shopId);
+    if (!allDates || time !== ALL) return withVacancy;
+    const vacancyIds = new Set(shops.map((shop) => shop.shopId));
+    return [...withVacancy, ...allShops.filter((shop) => !vacancyIds.has(shop.shopId))];
+  }, [shops, sort, allDates, time, allShops]);
   // 조건이 바뀌면 처음 개수로 돌아간다. 펼친 매장은 뒤쪽에 있어도 보이게 한다
   const pageCount = paging.key === filterKey ? paging.count : PAGE_SIZE;
   const expandedIndex = sortedShops.findIndex((shop) => String(shop.shopId) === expandedId);
@@ -279,7 +289,7 @@ export default function VacancySearch() {
             : categoryName === ALL
               ? '빈자리 있는 매장'
               : `${categoryName} 빈자리 있는 매장`}{' '}
-          <Badge>{shops.length}곳</Badge>
+          <Badge>{sortedShops.length}곳</Badge>
         </h2>
       </div>
       <div className={styles.layout}>
@@ -298,7 +308,7 @@ export default function VacancySearch() {
                 다시 시도
               </Button>
             </EmptyState>
-          ) : shops.length ? (
+          ) : sortedShops.length ? (
             <>
               <div className={styles.rows}>
                 {visibleShops.map((shop) => (
@@ -355,7 +365,8 @@ export default function VacancySearch() {
         </div>
         <aside className={styles.mapPane}>
           <ShopLocationMap
-            shops={shops}
+            shops={allDates ? sortedShops : shops}
+            showTimes={!allDates}
             status={status}
             expandedShopId={expandedId}
             onShowShop={(id) => updateOption('shop', id ? String(id) : '')}

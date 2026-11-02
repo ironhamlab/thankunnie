@@ -43,6 +43,9 @@
   font-size: 13px;
   color: var(--color-primary);
 }
+.panel .noVacancy {
+  color: var(--color-text-muted);
+}
 .panel small {
   font-size: 11px;
   color: var(--color-text-muted);
