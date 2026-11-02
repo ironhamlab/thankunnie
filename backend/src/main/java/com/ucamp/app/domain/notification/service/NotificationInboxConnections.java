@@ -72,6 +72,26 @@ public class NotificationInboxConnections {
     }
 
     /**
+     * 열려 있는 연결마다 연결 유지용 주석을 보낸다.
+     * 알림 개수가 아니라서 화면의 뱃지나 토스트는 바뀌지 않는다.
+     * 배포 Nginx는 300초 동안 데이터가 없으면 연결을 끊으므로, 그보다 짧게 보낸다.
+     * 보내다 끊긴 연결은 목록에서 뺀다.
+     */
+    public void sendHeartbeat() {
+        for (Map.Entry<Long, List<SseEmitter>> entry : copyAll()) {
+            for (SseEmitter emitter : entry.getValue()) {
+                try {
+                    emitter.send(SseEmitter.event().comment("heartbeat"));
+                } catch (IOException | IllegalStateException exception) {
+                    log.warn("알림 연결 유지 신호 전송 실패 userId={}", entry.getKey(), exception);
+                    remove(entry.getKey(), emitter);
+                    completeQuietly(emitter);
+                }
+            }
+        }
+    }
+
+    /**
      * 이 회원이 지금 열어 둔 연결 수다.
      *
      * @param userId 회원 ID
@@ -96,6 +116,14 @@ public class NotificationInboxConnections {
         for (SseEmitter emitter : all) {
             emitter.complete();
         }
+    }
+
+    private synchronized List<Map.Entry<Long, List<SseEmitter>>> copyAll() {
+        List<Map.Entry<Long, List<SseEmitter>>> copy = new ArrayList<>();
+        for (Map.Entry<Long, List<SseEmitter>> entry : connections.entrySet()) {
+            copy.add(Map.entry(entry.getKey(), new ArrayList<>(entry.getValue())));
+        }
+        return copy;
     }
 
     private synchronized List<SseEmitter> copy(Long userId) {
