@@ -1,0 +1,57 @@
+{
+  "district": "용산구",
+  "regionCode": "11170",
+  "source": "https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%5Btimeout%3A35%5D%3Barea%5B%22name%22%3D%22%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%22%5D%5B%22boundary%22%3D%22administrative%22%5D-%3E.seoul%3Brel%28area.seoul%29%5B%22boundary%22%3D%22administrative%22%5D%5B%22name%22%3D%22%EC%9A%A9%EC%82%B0%EA%B5%AC%22%5D%3Bmap_to_area-%3E.district%3Bnwr%28area.district%29%5B%22addr%3Astreet%22%5D%5B%22addr%3Ahousenumber%22%5D%3Bout%20center%20tags%206%3B",
+  "attribution": "OpenStreetMap contributors, ODbL 1.0; https://www.openstreetmap.org/copyright",
+  "checkedOn": "2026-11-02",
+  "locations": [
+    {
+      "osmType": "node",
+      "osmId": 368655057,
+      "street": "효창원로69길",
+      "houseNumber": "8",
+      "latitude": 37.5417302,
+      "longitude": 126.9617237
+    },
+    {
+      "osmType": "node",
+      "osmId": 368875665,
+      "street": "이태원로",
+      "houseNumber": "22",
+      "latitude": 37.5343766,
+      "longitude": 126.9779346
+    },
+    {
+      "osmType": "node",
+      "osmId": 368899870,
+      "street": "백범로",
+      "houseNumber": "350",
+      "latitude": 37.5372658,
+      "longitude": 126.9677293
+    },
+    {
+      "osmType": "node",
+      "osmId": 1726324029,
+      "street": "이태원로15길",
+      "houseNumber": "1",
+      "latitude": 37.5346186,
+      "longitude": 126.9901929
+    },
+    {
+      "osmType": "node",
+      "osmId": 1741198466,
+      "street": "이태원로",
+      "houseNumber": "136-1",
+      "latitude": 37.5339734,
+      "longitude": 126.9890299
+    },
+    {
+      "osmType": "node",
+      "osmId": 1742268347,
+      "street": "녹사평대로26길",
+      "houseNumber": "21",
+      "latitude": 37.5308549,
+      "longitude": 126.9913066
+    }
+  ]
+}

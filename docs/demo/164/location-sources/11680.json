@@ -1,0 +1,201 @@
+{
+  "district": "강남구",
+  "regionCode": "11680",
+  "source": "https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%5Btimeout%3A35%5D%3Barea%5B%22name%22%3D%22%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%22%5D%5B%22boundary%22%3D%22administrative%22%5D-%3E.seoul%3Brel%28area.seoul%29%5B%22boundary%22%3D%22administrative%22%5D%5B%22name%22%3D%22%EA%B0%95%EB%82%A8%EA%B5%AC%22%5D%3Bmap_to_area-%3E.district%3Bnwr%28area.district%29%5B%22addr%3Astreet%22%5D%5B%22addr%3Ahousenumber%22%5D%3Bout%20center%20tags%2024%3B",
+  "attribution": "OpenStreetMap contributors, ODbL 1.0; https://www.openstreetmap.org/copyright",
+  "checkedOn": "2026-11-02",
+  "locations": [
+    {
+      "osmType": "node",
+      "osmId": 368621524,
+      "street": "삼성로",
+      "houseNumber": "29",
+      "latitude": 37.487175,
+      "longitude": 127.065613
+    },
+    {
+      "osmType": "node",
+      "osmId": 368726515,
+      "street": "삼성로",
+      "houseNumber": "753",
+      "latitude": 37.5221599,
+      "longitude": 127.0481431
+    },
+    {
+      "osmType": "node",
+      "osmId": 368726588,
+      "street": "삼성로147길",
+      "houseNumber": "4",
+      "latitude": 37.5227108,
+      "longitude": 127.0476695
+    },
+    {
+      "osmType": "node",
+      "osmId": 368728083,
+      "street": "도산대로90길",
+      "houseNumber": "3",
+      "latitude": 37.523206,
+      "longitude": 127.046836
+    },
+    {
+      "osmType": "node",
+      "osmId": 368857339,
+      "street": "삼성로135길",
+      "houseNumber": "28",
+      "latitude": 37.519928,
+      "longitude": 127.0471066
+    },
+    {
+      "osmType": "node",
+      "osmId": 368875264,
+      "street": "선릉로",
+      "houseNumber": "572",
+      "latitude": 37.5095484,
+      "longitude": 127.0444223
+    },
+    {
+      "osmType": "node",
+      "osmId": 368875325,
+      "street": "강남대로",
+      "houseNumber": "458",
+      "latitude": 37.5034023,
+      "longitude": 127.0254123
+    },
+    {
+      "osmType": "node",
+      "osmId": 368875482,
+      "street": "역삼로",
+      "houseNumber": "239",
+      "latitude": 37.4976682,
+      "longitude": 127.0425534
+    },
+    {
+      "osmType": "node",
+      "osmId": 368875513,
+      "street": "테헤란로",
+      "houseNumber": "131",
+      "latitude": 37.500077,
+      "longitude": 127.032799
+    },
+    {
+      "osmType": "node",
+      "osmId": 368875573,
+      "street": "학동로",
+      "houseNumber": "212",
+      "latitude": 37.514051,
+      "longitude": 127.032415
+    },
+    {
+      "osmType": "node",
+      "osmId": 368875730,
+      "street": "언주로",
+      "houseNumber": "508",
+      "latitude": 37.5037404,
+      "longitude": 127.0428501
+    },
+    {
+      "osmType": "node",
+      "osmId": 368875912,
+      "street": "영동대로96길",
+      "houseNumber": "37",
+      "latitude": 37.511652,
+      "longitude": 127.0655074
+    },
+    {
+      "osmType": "node",
+      "osmId": 368875985,
+      "street": "논현로38길",
+      "houseNumber": "38-4",
+      "latitude": 37.483974,
+      "longitude": 127.046112
+    },
+    {
+      "osmType": "node",
+      "osmId": 368876053,
+      "street": "삼성로",
+      "houseNumber": "635",
+      "latitude": 37.5165462,
+      "longitude": 127.0510977
+    },
+    {
+      "osmType": "node",
+      "osmId": 368876062,
+      "street": "남부순환로",
+      "houseNumber": "2806",
+      "latitude": 37.4892322,
+      "longitude": 127.0531499
+    },
+    {
+      "osmType": "node",
+      "osmId": 368876070,
+      "street": "압구정로",
+      "houseNumber": "332",
+      "latitude": 37.5282746,
+      "longitude": 127.0378675
+    },
+    {
+      "osmType": "node",
+      "osmId": 368876087,
+      "street": "삼성로107길",
+      "houseNumber": "5",
+      "latitude": 37.5114547,
+      "longitude": 127.053465
+    },
+    {
+      "osmType": "node",
+      "osmId": 368876095,
+      "street": "테헤란로4길",
+      "houseNumber": "46",
+      "latitude": 37.4954802,
+      "longitude": 127.0307131
+    },
+    {
+      "osmType": "node",
+      "osmId": 368876105,
+      "street": "압구정로",
+      "houseNumber": "134",
+      "latitude": 37.524348,
+      "longitude": 127.0235133
+    },
+    {
+      "osmType": "node",
+      "osmId": 368876131,
+      "street": "강남대로",
+      "houseNumber": "620",
+      "latitude": 37.5171349,
+      "longitude": 127.019749
+    },
+    {
+      "osmType": "node",
+      "osmId": 368876150,
+      "street": "선릉로",
+      "houseNumber": "646",
+      "latitude": 37.5143539,
+      "longitude": 127.0434154
+    },
+    {
+      "osmType": "node",
+      "osmId": 368876204,
+      "street": "학동로4길",
+      "houseNumber": "8",
+      "latitude": 37.5109147,
+      "longitude": 127.0228955
+    },
+    {
+      "osmType": "node",
+      "osmId": 368876251,
+      "street": "역삼로71길",
+      "houseNumber": "12",
+      "latitude": 37.5026676,
+      "longitude": 127.054582
+    },
+    {
+      "osmType": "node",
+      "osmId": 368876265,
+      "street": "논현로58길",
+      "houseNumber": "8",
+      "latitude": 37.4920311,
+      "longitude": 127.0419675
+    }
+  ]
+}

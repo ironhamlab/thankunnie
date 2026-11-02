@@ -1,0 +1,33 @@
+{
+  "district": "강서구",
+  "regionCode": "11500",
+  "source": "https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%5Btimeout%3A35%5D%3Barea%5B%22name%22%3D%22%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%22%5D%5B%22boundary%22%3D%22administrative%22%5D-%3E.seoul%3Brel%28area.seoul%29%5B%22boundary%22%3D%22administrative%22%5D%5B%22name%22%3D%22%EA%B0%95%EC%84%9C%EA%B5%AC%22%5D%3Bmap_to_area-%3E.district%3Bnwr%28area.district%29%5B%22addr%3Astreet%22%5D%5B%22addr%3Ahousenumber%22%5D%3Bout%20center%20tags%203%3B",
+  "attribution": "OpenStreetMap contributors, ODbL 1.0; https://www.openstreetmap.org/copyright",
+  "checkedOn": "2026-11-02",
+  "locations": [
+    {
+      "osmType": "node",
+      "osmId": 368653211,
+      "street": "강서로52길",
+      "houseNumber": "89",
+      "latitude": 37.557515,
+      "longitude": 126.843093
+    },
+    {
+      "osmType": "node",
+      "osmId": 368655185,
+      "street": "공항대로8길",
+      "houseNumber": "77-24",
+      "latitude": 37.557386,
+      "longitude": 126.81285
+    },
+    {
+      "osmType": "node",
+      "osmId": 368741805,
+      "street": "강서로",
+      "houseNumber": "375-8",
+      "latitude": 37.55943,
+      "longitude": 126.83796
+    }
+  ]
+}

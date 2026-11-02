@@ -1,0 +1,1783 @@
+{
+  "issue": "UNNIE-164",
+  "scope": "additions-preserving-existing-data",
+  "districts": [
+    [
+      "강남구",
+      "11680",
+      8
+    ],
+    [
+      "마포구",
+      "11440",
+      5
+    ],
+    [
+      "서초구",
+      "11650",
+      4
+    ],
+    [
+      "송파구",
+      "11710",
+      4
+    ],
+    [
+      "성동구",
+      "11200",
+      3
+    ],
+    [
+      "용산구",
+      "11170",
+      2
+    ],
+    [
+      "영등포구",
+      "11560",
+      2
+    ],
+    [
+      "종로구",
+      "11110",
+      2
+    ],
+    [
+      "중구",
+      "11140",
+      2
+    ],
+    [
+      "광진구",
+      "11215",
+      2
+    ],
+    [
+      "강동구",
+      "11740",
+      2
+    ],
+    [
+      "강북구",
+      "11305",
+      1
+    ],
+    [
+      "강서구",
+      "11500",
+      1
+    ],
+    [
+      "관악구",
+      "11620",
+      1
+    ],
+    [
+      "구로구",
+      "11530",
+      1
+    ],
+    [
+      "금천구",
+      "11545",
+      1
+    ],
+    [
+      "노원구",
+      "11350",
+      1
+    ],
+    [
+      "도봉구",
+      "11320",
+      1
+    ],
+    [
+      "동대문구",
+      "11230",
+      1
+    ],
+    [
+      "동작구",
+      "11590",
+      1
+    ],
+    [
+      "서대문구",
+      "11410",
+      1
+    ],
+    [
+      "성북구",
+      "11290",
+      1
+    ],
+    [
+      "양천구",
+      "11470",
+      1
+    ],
+    [
+      "은평구",
+      "11380",
+      1
+    ],
+    [
+      "중랑구",
+      "11260",
+      1
+    ]
+  ],
+  "shops": [
+    {
+      "district": "강남구",
+      "regionCode": "11680",
+      "districtIndex": 1,
+      "number": 1,
+      "loginId": "demo164_s01",
+      "name": "다온 강남 네일 스튜디오",
+      "categoryId": 1,
+      "category": "nail",
+      "assetId": "shop-001",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "핑크 시럽 젤네일",
+          "assetId": "treatment-001",
+          "menuIndex": 0
+        },
+        {
+          "type": "NORMAL",
+          "name": "코랄 원컬러 젤네일",
+          "assetId": "treatment-002",
+          "menuIndex": 1
+        }
+      ]
+    },
+    {
+      "district": "강남구",
+      "regionCode": "11680",
+      "districtIndex": 2,
+      "number": 2,
+      "loginId": "demo164_s02",
+      "name": "다온 강남 헤어 스튜디오",
+      "categoryId": 2,
+      "category": "hair",
+      "assetId": "shop-002",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "미디엄 레이어드 커트",
+          "assetId": "treatment-011",
+          "menuIndex": 0
+        },
+        {
+          "type": "NORMAL",
+          "name": "턱선 보브 커트",
+          "assetId": "treatment-012",
+          "menuIndex": 1
+        }
+      ]
+    },
+    {
+      "district": "강남구",
+      "regionCode": "11680",
+      "districtIndex": 3,
+      "number": 3,
+      "loginId": "demo164_s03",
+      "name": "다온 강남 속눈썹 스튜디오",
+      "categoryId": 3,
+      "category": "lash",
+      "assetId": "shop-003",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "내추럴 속눈썹 펌",
+          "assetId": "treatment-023",
+          "menuIndex": 0
+        },
+        {
+          "type": "NORMAL",
+          "name": "C컬 속눈썹 펌",
+          "assetId": "treatment-024",
+          "menuIndex": 1
+        }
+      ]
+    },
+    {
+      "district": "강남구",
+      "regionCode": "11680",
+      "districtIndex": 4,
+      "number": 4,
+      "loginId": "demo164_s04",
+      "name": "다온 강남 피부 관리 스튜디오",
+      "categoryId": 4,
+      "category": "skin",
+      "assetId": "shop-004",
+      "normalCount": 3,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "수분 집중 페이셜",
+          "assetId": "treatment-029",
+          "menuIndex": 0
+        },
+        {
+          "type": "NORMAL",
+          "name": "편안한 진정 페이셜",
+          "assetId": "treatment-030",
+          "menuIndex": 1
+        },
+        {
+          "type": "NORMAL",
+          "name": "부드러운 각질 케어",
+          "assetId": "treatment-031",
+          "menuIndex": 2
+        }
+      ]
+    },
+    {
+      "district": "강남구",
+      "regionCode": "11680",
+      "districtIndex": 5,
+      "number": 5,
+      "loginId": "demo164_s05",
+      "name": "다온 강남 메이크업 스튜디오",
+      "categoryId": 5,
+      "category": "makeup",
+      "assetId": "shop-005",
+      "normalCount": 4,
+      "modelCount": 1,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "피치 데일리 메이크업",
+          "assetId": "treatment-035",
+          "menuIndex": 0
+        },
+        {
+          "type": "NORMAL",
+          "name": "브라운 행사 메이크업",
+          "assetId": "treatment-036",
+          "menuIndex": 1
+        },
+        {
+          "type": "NORMAL",
+          "name": "로즈 립 포인트 메이크업",
+          "assetId": "treatment-037",
+          "menuIndex": 2
+        },
+        {
+          "type": "NORMAL",
+          "name": "차분한 촬영 메이크업",
+          "assetId": "treatment-038",
+          "menuIndex": 3
+        },
+        {
+          "type": "MODEL",
+          "name": "로즈 립 포인트 메이크업 초보 시술 모델",
+          "assetId": "treatment-037",
+          "menuIndex": 2
+        }
+      ]
+    },
+    {
+      "district": "강남구",
+      "regionCode": "11680",
+      "districtIndex": 6,
+      "number": 6,
+      "loginId": "demo164_s06",
+      "name": "여운 강남 네일 스튜디오",
+      "categoryId": 1,
+      "category": "nail",
+      "assetId": "shop-006",
+      "normalCount": 2,
+      "modelCount": 2,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "아이보리 프렌치 젤네일",
+          "assetId": "treatment-003",
+          "menuIndex": 2
+        },
+        {
+          "type": "NORMAL",
+          "name": "베이지 자석 젤네일",
+          "assetId": "treatment-004",
+          "menuIndex": 3
+        },
+        {
+          "type": "MODEL",
+          "name": "진주빛 크롬 젤네일 초보 시술 모델",
+          "assetId": "treatment-007",
+          "menuIndex": 6
+        },
+        {
+          "type": "MODEL",
+          "name": "작은 꽃 포인트 아트 초보 시술 모델",
+          "assetId": "treatment-008",
+          "menuIndex": 7
+        }
+      ]
+    },
+    {
+      "district": "강남구",
+      "regionCode": "11680",
+      "districtIndex": 7,
+      "number": 7,
+      "loginId": "demo164_s07",
+      "name": "여운 강남 헤어 스튜디오",
+      "categoryId": 2,
+      "category": "hair",
+      "assetId": "shop-007",
+      "normalCount": 2,
+      "modelCount": 2,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "긴 머리 C컬 펌",
+          "assetId": "treatment-013",
+          "menuIndex": 2
+        },
+        {
+          "type": "NORMAL",
+          "name": "미디엄 S컬 펌",
+          "assetId": "treatment-014",
+          "menuIndex": 3
+        },
+        {
+          "type": "MODEL",
+          "name": "긴 머리 C컬 펌 초보 시술 모델",
+          "assetId": "treatment-013",
+          "menuIndex": 2
+        },
+        {
+          "type": "MODEL",
+          "name": "미디엄 S컬 펌 초보 시술 모델",
+          "assetId": "treatment-014",
+          "menuIndex": 3
+        }
+      ]
+    },
+    {
+      "district": "강남구",
+      "regionCode": "11680",
+      "districtIndex": 8,
+      "number": 8,
+      "loginId": "demo164_s08",
+      "name": "여운 강남 속눈썹 스튜디오",
+      "categoryId": 3,
+      "category": "lash",
+      "assetId": "shop-008",
+      "normalCount": 3,
+      "modelCount": 2,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "J컬 자연 속눈썹 연장",
+          "assetId": "treatment-025",
+          "menuIndex": 2
+        },
+        {
+          "type": "NORMAL",
+          "name": "C컬 자연 속눈썹 연장",
+          "assetId": "treatment-026",
+          "menuIndex": 3
+        },
+        {
+          "type": "NORMAL",
+          "name": "영양 집중 속눈썹 펌",
+          "assetId": "treatment-027",
+          "menuIndex": 4
+        },
+        {
+          "type": "MODEL",
+          "name": "J컬 자연 속눈썹 연장 초보 시술 모델",
+          "assetId": "treatment-025",
+          "menuIndex": 2
+        },
+        {
+          "type": "MODEL",
+          "name": "C컬 자연 속눈썹 연장 초보 시술 모델",
+          "assetId": "treatment-026",
+          "menuIndex": 3
+        }
+      ]
+    },
+    {
+      "district": "마포구",
+      "regionCode": "11440",
+      "districtIndex": 1,
+      "number": 9,
+      "loginId": "demo164_s09",
+      "name": "여운 마포 피부 관리 스튜디오",
+      "categoryId": 4,
+      "category": "skin",
+      "assetId": "shop-009",
+      "normalCount": 4,
+      "modelCount": 2,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "기본 모공 클렌징",
+          "assetId": "treatment-032",
+          "menuIndex": 3
+        },
+        {
+          "type": "NORMAL",
+          "name": "촉촉한 수분 충전 관리",
+          "assetId": "treatment-033",
+          "menuIndex": 4
+        },
+        {
+          "type": "NORMAL",
+          "name": "유수분 밸런스 관리",
+          "assetId": "treatment-034",
+          "menuIndex": 5
+        },
+        {
+          "type": "NORMAL",
+          "name": "수분 집중 페이셜",
+          "assetId": "treatment-029",
+          "menuIndex": 0
+        },
+        {
+          "type": "MODEL",
+          "name": "부드러운 각질 케어 초보 시술 모델",
+          "assetId": "treatment-031",
+          "menuIndex": 2
+        },
+        {
+          "type": "MODEL",
+          "name": "기본 모공 클렌징 초보 시술 모델",
+          "assetId": "treatment-032",
+          "menuIndex": 3
+        }
+      ]
+    },
+    {
+      "district": "마포구",
+      "regionCode": "11440",
+      "districtIndex": 2,
+      "number": 10,
+      "loginId": "demo164_s10",
+      "name": "여운 마포 메이크업 스튜디오",
+      "categoryId": 5,
+      "category": "makeup",
+      "assetId": "shop-010",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "코랄 데일리 메이크업",
+          "assetId": "treatment-039",
+          "menuIndex": 4
+        },
+        {
+          "type": "NORMAL",
+          "name": "핑크 하객 메이크업",
+          "assetId": "treatment-040",
+          "menuIndex": 5
+        }
+      ]
+    },
+    {
+      "district": "마포구",
+      "regionCode": "11440",
+      "districtIndex": 3,
+      "number": 11,
+      "loginId": "demo164_s11",
+      "name": "소담 마포 네일 스튜디오",
+      "categoryId": 1,
+      "category": "nail",
+      "assetId": "shop-011",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "버건디 원컬러 젤네일",
+          "assetId": "treatment-005",
+          "menuIndex": 4
+        },
+        {
+          "type": "NORMAL",
+          "name": "기본 손 케어",
+          "assetId": "treatment-006",
+          "menuIndex": 5
+        }
+      ]
+    },
+    {
+      "district": "마포구",
+      "regionCode": "11440",
+      "districtIndex": 4,
+      "number": 12,
+      "loginId": "demo164_s12",
+      "name": "소담 마포 헤어 스튜디오",
+      "categoryId": 2,
+      "category": "hair",
+      "assetId": "shop-012",
+      "normalCount": 3,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "애쉬 브라운 전체 염색",
+          "assetId": "treatment-015",
+          "menuIndex": 4
+        },
+        {
+          "type": "NORMAL",
+          "name": "초콜릿 브라운 전체 염색",
+          "assetId": "treatment-016",
+          "menuIndex": 5
+        },
+        {
+          "type": "NORMAL",
+          "name": "쇼트 레이어드 커트",
+          "assetId": "treatment-017",
+          "menuIndex": 6
+        }
+      ]
+    },
+    {
+      "district": "마포구",
+      "regionCode": "11440",
+      "districtIndex": 5,
+      "number": 13,
+      "loginId": "demo164_s13",
+      "name": "소담 마포 속눈썹 스튜디오",
+      "categoryId": 3,
+      "category": "lash",
+      "assetId": "shop-013",
+      "normalCount": 4,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "눈꼬리 포인트 속눈썹 연장",
+          "assetId": "treatment-028",
+          "menuIndex": 5
+        },
+        {
+          "type": "NORMAL",
+          "name": "내추럴 속눈썹 펌",
+          "assetId": "treatment-023",
+          "menuIndex": 0
+        },
+        {
+          "type": "NORMAL",
+          "name": "C컬 속눈썹 펌",
+          "assetId": "treatment-024",
+          "menuIndex": 1
+        },
+        {
+          "type": "NORMAL",
+          "name": "J컬 자연 속눈썹 연장",
+          "assetId": "treatment-025",
+          "menuIndex": 2
+        }
+      ]
+    },
+    {
+      "district": "서초구",
+      "regionCode": "11650",
+      "districtIndex": 1,
+      "number": 14,
+      "loginId": "demo164_s14",
+      "name": "소담 서초 피부 관리 스튜디오",
+      "categoryId": 4,
+      "category": "skin",
+      "assetId": "shop-014",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "편안한 진정 페이셜",
+          "assetId": "treatment-030",
+          "menuIndex": 1
+        },
+        {
+          "type": "NORMAL",
+          "name": "부드러운 각질 케어",
+          "assetId": "treatment-031",
+          "menuIndex": 2
+        }
+      ]
+    },
+    {
+      "district": "서초구",
+      "regionCode": "11650",
+      "districtIndex": 2,
+      "number": 15,
+      "loginId": "demo164_s15",
+      "name": "소담 서초 메이크업 스튜디오",
+      "categoryId": 5,
+      "category": "makeup",
+      "assetId": "shop-015",
+      "normalCount": 2,
+      "modelCount": 1,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "피치 데일리 메이크업",
+          "assetId": "treatment-035",
+          "menuIndex": 0
+        },
+        {
+          "type": "NORMAL",
+          "name": "브라운 행사 메이크업",
+          "assetId": "treatment-036",
+          "menuIndex": 1
+        },
+        {
+          "type": "MODEL",
+          "name": "차분한 촬영 메이크업 초보 시술 모델",
+          "assetId": "treatment-038",
+          "menuIndex": 3
+        }
+      ]
+    },
+    {
+      "district": "서초구",
+      "regionCode": "11650",
+      "districtIndex": 3,
+      "number": 16,
+      "loginId": "demo164_s16",
+      "name": "온유 서초 네일 스튜디오",
+      "categoryId": 1,
+      "category": "nail",
+      "assetId": "shop-016",
+      "normalCount": 3,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "진주빛 크롬 젤네일",
+          "assetId": "treatment-007",
+          "menuIndex": 6
+        },
+        {
+          "type": "NORMAL",
+          "name": "작은 꽃 포인트 아트",
+          "assetId": "treatment-008",
+          "menuIndex": 7
+        },
+        {
+          "type": "NORMAL",
+          "name": "피치 시럽 젤네일",
+          "assetId": "treatment-009",
+          "menuIndex": 8
+        }
+      ]
+    },
+    {
+      "district": "서초구",
+      "regionCode": "11650",
+      "districtIndex": 4,
+      "number": 17,
+      "loginId": "demo164_s17",
+      "name": "온유 서초 헤어 스튜디오",
+      "categoryId": 2,
+      "category": "hair",
+      "assetId": "shop-017",
+      "normalCount": 4,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "윤기 집중 모발 클리닉",
+          "assetId": "treatment-018",
+          "menuIndex": 7
+        },
+        {
+          "type": "NORMAL",
+          "name": "미디엄 볼륨 펌",
+          "assetId": "treatment-019",
+          "menuIndex": 8
+        },
+        {
+          "type": "NORMAL",
+          "name": "체스트넛 뿌리 염색",
+          "assetId": "treatment-020",
+          "menuIndex": 9
+        },
+        {
+          "type": "NORMAL",
+          "name": "내추럴 컬 드라이",
+          "assetId": "treatment-021",
+          "menuIndex": 10
+        }
+      ]
+    },
+    {
+      "district": "송파구",
+      "regionCode": "11710",
+      "districtIndex": 1,
+      "number": 18,
+      "loginId": "demo164_s18",
+      "name": "온유 송파 속눈썹 스튜디오",
+      "categoryId": 3,
+      "category": "lash",
+      "assetId": "shop-018",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "C컬 자연 속눈썹 연장",
+          "assetId": "treatment-026",
+          "menuIndex": 3
+        },
+        {
+          "type": "NORMAL",
+          "name": "영양 집중 속눈썹 펌",
+          "assetId": "treatment-027",
+          "menuIndex": 4
+        }
+      ]
+    },
+    {
+      "district": "송파구",
+      "regionCode": "11710",
+      "districtIndex": 2,
+      "number": 19,
+      "loginId": "demo164_s19",
+      "name": "온유 송파 피부 관리 스튜디오",
+      "categoryId": 4,
+      "category": "skin",
+      "assetId": "shop-019",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "기본 모공 클렌징",
+          "assetId": "treatment-032",
+          "menuIndex": 3
+        },
+        {
+          "type": "NORMAL",
+          "name": "촉촉한 수분 충전 관리",
+          "assetId": "treatment-033",
+          "menuIndex": 4
+        }
+      ]
+    },
+    {
+      "district": "송파구",
+      "regionCode": "11710",
+      "districtIndex": 3,
+      "number": 20,
+      "loginId": "demo164_s20",
+      "name": "온유 송파 메이크업 스튜디오",
+      "categoryId": 5,
+      "category": "makeup",
+      "assetId": "shop-020",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "로즈 립 포인트 메이크업",
+          "assetId": "treatment-037",
+          "menuIndex": 2
+        },
+        {
+          "type": "NORMAL",
+          "name": "차분한 촬영 메이크업",
+          "assetId": "treatment-038",
+          "menuIndex": 3
+        }
+      ]
+    },
+    {
+      "district": "송파구",
+      "regionCode": "11710",
+      "districtIndex": 4,
+      "number": 21,
+      "loginId": "demo164_s21",
+      "name": "모은 송파 네일 스튜디오",
+      "categoryId": 1,
+      "category": "nail",
+      "assetId": "shop-021",
+      "normalCount": 4,
+      "modelCount": 1,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "누드 원컬러 젤네일",
+          "assetId": "treatment-010",
+          "menuIndex": 9
+        },
+        {
+          "type": "NORMAL",
+          "name": "핑크 시럽 젤네일",
+          "assetId": "treatment-001",
+          "menuIndex": 0
+        },
+        {
+          "type": "NORMAL",
+          "name": "코랄 원컬러 젤네일",
+          "assetId": "treatment-002",
+          "menuIndex": 1
+        },
+        {
+          "type": "NORMAL",
+          "name": "아이보리 프렌치 젤네일",
+          "assetId": "treatment-003",
+          "menuIndex": 2
+        },
+        {
+          "type": "MODEL",
+          "name": "피치 시럽 젤네일 초보 시술 모델",
+          "assetId": "treatment-009",
+          "menuIndex": 8
+        }
+      ]
+    },
+    {
+      "district": "성동구",
+      "regionCode": "11200",
+      "districtIndex": 1,
+      "number": 22,
+      "loginId": "demo164_s22",
+      "name": "모은 성동 헤어 스튜디오",
+      "categoryId": 2,
+      "category": "hair",
+      "assetId": "shop-022",
+      "normalCount": 2,
+      "modelCount": 1,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "기본 두피 스케일링",
+          "assetId": "treatment-022",
+          "menuIndex": 11
+        },
+        {
+          "type": "NORMAL",
+          "name": "미디엄 레이어드 커트",
+          "assetId": "treatment-011",
+          "menuIndex": 0
+        },
+        {
+          "type": "MODEL",
+          "name": "애쉬 브라운 전체 염색 초보 시술 모델",
+          "assetId": "treatment-015",
+          "menuIndex": 4
+        }
+      ]
+    },
+    {
+      "district": "성동구",
+      "regionCode": "11200",
+      "districtIndex": 2,
+      "number": 23,
+      "loginId": "demo164_s23",
+      "name": "모은 성동 속눈썹 스튜디오",
+      "categoryId": 3,
+      "category": "lash",
+      "assetId": "shop-023",
+      "normalCount": 2,
+      "modelCount": 1,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "눈꼬리 포인트 속눈썹 연장",
+          "assetId": "treatment-028",
+          "menuIndex": 5
+        },
+        {
+          "type": "NORMAL",
+          "name": "내추럴 속눈썹 펌",
+          "assetId": "treatment-023",
+          "menuIndex": 0
+        },
+        {
+          "type": "MODEL",
+          "name": "영양 집중 속눈썹 펌 초보 시술 모델",
+          "assetId": "treatment-027",
+          "menuIndex": 4
+        }
+      ]
+    },
+    {
+      "district": "성동구",
+      "regionCode": "11200",
+      "districtIndex": 3,
+      "number": 24,
+      "loginId": "demo164_s24",
+      "name": "모은 성동 피부 관리 스튜디오",
+      "categoryId": 4,
+      "category": "skin",
+      "assetId": "shop-024",
+      "normalCount": 2,
+      "modelCount": 1,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "유수분 밸런스 관리",
+          "assetId": "treatment-034",
+          "menuIndex": 5
+        },
+        {
+          "type": "NORMAL",
+          "name": "수분 집중 페이셜",
+          "assetId": "treatment-029",
+          "menuIndex": 0
+        },
+        {
+          "type": "MODEL",
+          "name": "촉촉한 수분 충전 관리 초보 시술 모델",
+          "assetId": "treatment-033",
+          "menuIndex": 4
+        }
+      ]
+    },
+    {
+      "district": "용산구",
+      "regionCode": "11170",
+      "districtIndex": 1,
+      "number": 25,
+      "loginId": "demo164_s25",
+      "name": "모은 용산 메이크업 스튜디오",
+      "categoryId": 5,
+      "category": "makeup",
+      "assetId": "shop-025",
+      "normalCount": 3,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "코랄 데일리 메이크업",
+          "assetId": "treatment-039",
+          "menuIndex": 4
+        },
+        {
+          "type": "NORMAL",
+          "name": "핑크 하객 메이크업",
+          "assetId": "treatment-040",
+          "menuIndex": 5
+        },
+        {
+          "type": "NORMAL",
+          "name": "피치 데일리 메이크업",
+          "assetId": "treatment-035",
+          "menuIndex": 0
+        }
+      ]
+    },
+    {
+      "district": "용산구",
+      "regionCode": "11170",
+      "districtIndex": 2,
+      "number": 26,
+      "loginId": "demo164_s26",
+      "name": "해봄 용산 네일 스튜디오",
+      "categoryId": 1,
+      "category": "nail",
+      "assetId": "shop-026",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "베이지 자석 젤네일",
+          "assetId": "treatment-004",
+          "menuIndex": 3
+        },
+        {
+          "type": "NORMAL",
+          "name": "버건디 원컬러 젤네일",
+          "assetId": "treatment-005",
+          "menuIndex": 4
+        }
+      ]
+    },
+    {
+      "district": "영등포구",
+      "regionCode": "11560",
+      "districtIndex": 1,
+      "number": 27,
+      "loginId": "demo164_s27",
+      "name": "해봄 영등포 헤어 스튜디오",
+      "categoryId": 2,
+      "category": "hair",
+      "assetId": "shop-027",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "턱선 보브 커트",
+          "assetId": "treatment-012",
+          "menuIndex": 1
+        },
+        {
+          "type": "NORMAL",
+          "name": "긴 머리 C컬 펌",
+          "assetId": "treatment-013",
+          "menuIndex": 2
+        }
+      ]
+    },
+    {
+      "district": "영등포구",
+      "regionCode": "11560",
+      "districtIndex": 2,
+      "number": 28,
+      "loginId": "demo164_s28",
+      "name": "해봄 영등포 속눈썹 스튜디오",
+      "categoryId": 3,
+      "category": "lash",
+      "assetId": "shop-028",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "C컬 속눈썹 펌",
+          "assetId": "treatment-024",
+          "menuIndex": 1
+        },
+        {
+          "type": "NORMAL",
+          "name": "J컬 자연 속눈썹 연장",
+          "assetId": "treatment-025",
+          "menuIndex": 2
+        }
+      ]
+    },
+    {
+      "district": "종로구",
+      "regionCode": "11110",
+      "districtIndex": 1,
+      "number": 29,
+      "loginId": "demo164_s29",
+      "name": "해봄 종로 피부 관리 스튜디오",
+      "categoryId": 4,
+      "category": "skin",
+      "assetId": "shop-029",
+      "normalCount": 3,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "편안한 진정 페이셜",
+          "assetId": "treatment-030",
+          "menuIndex": 1
+        },
+        {
+          "type": "NORMAL",
+          "name": "부드러운 각질 케어",
+          "assetId": "treatment-031",
+          "menuIndex": 2
+        },
+        {
+          "type": "NORMAL",
+          "name": "기본 모공 클렌징",
+          "assetId": "treatment-032",
+          "menuIndex": 3
+        }
+      ]
+    },
+    {
+      "district": "종로구",
+      "regionCode": "11110",
+      "districtIndex": 2,
+      "number": 30,
+      "loginId": "demo164_s30",
+      "name": "해봄 종로 메이크업 스튜디오",
+      "categoryId": 5,
+      "category": "makeup",
+      "assetId": "shop-030",
+      "normalCount": 4,
+      "modelCount": 1,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "브라운 행사 메이크업",
+          "assetId": "treatment-036",
+          "menuIndex": 1
+        },
+        {
+          "type": "NORMAL",
+          "name": "로즈 립 포인트 메이크업",
+          "assetId": "treatment-037",
+          "menuIndex": 2
+        },
+        {
+          "type": "NORMAL",
+          "name": "차분한 촬영 메이크업",
+          "assetId": "treatment-038",
+          "menuIndex": 3
+        },
+        {
+          "type": "NORMAL",
+          "name": "코랄 데일리 메이크업",
+          "assetId": "treatment-039",
+          "menuIndex": 4
+        },
+        {
+          "type": "MODEL",
+          "name": "코랄 데일리 메이크업 초보 시술 모델",
+          "assetId": "treatment-039",
+          "menuIndex": 4
+        }
+      ]
+    },
+    {
+      "district": "중구",
+      "regionCode": "11140",
+      "districtIndex": 1,
+      "number": 31,
+      "loginId": "demo164_s31",
+      "name": "느루 중구 네일 스튜디오",
+      "categoryId": 1,
+      "category": "nail",
+      "assetId": "shop-031",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "기본 손 케어",
+          "assetId": "treatment-006",
+          "menuIndex": 5
+        },
+        {
+          "type": "NORMAL",
+          "name": "진주빛 크롬 젤네일",
+          "assetId": "treatment-007",
+          "menuIndex": 6
+        }
+      ]
+    },
+    {
+      "district": "중구",
+      "regionCode": "11140",
+      "districtIndex": 2,
+      "number": 32,
+      "loginId": "demo164_s32",
+      "name": "느루 중구 헤어 스튜디오",
+      "categoryId": 2,
+      "category": "hair",
+      "assetId": "shop-032",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "미디엄 S컬 펌",
+          "assetId": "treatment-014",
+          "menuIndex": 3
+        },
+        {
+          "type": "NORMAL",
+          "name": "애쉬 브라운 전체 염색",
+          "assetId": "treatment-015",
+          "menuIndex": 4
+        }
+      ]
+    },
+    {
+      "district": "광진구",
+      "regionCode": "11215",
+      "districtIndex": 1,
+      "number": 33,
+      "loginId": "demo164_s33",
+      "name": "느루 광진 속눈썹 스튜디오",
+      "categoryId": 3,
+      "category": "lash",
+      "assetId": "shop-033",
+      "normalCount": 3,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "C컬 자연 속눈썹 연장",
+          "assetId": "treatment-026",
+          "menuIndex": 3
+        },
+        {
+          "type": "NORMAL",
+          "name": "영양 집중 속눈썹 펌",
+          "assetId": "treatment-027",
+          "menuIndex": 4
+        },
+        {
+          "type": "NORMAL",
+          "name": "눈꼬리 포인트 속눈썹 연장",
+          "assetId": "treatment-028",
+          "menuIndex": 5
+        }
+      ]
+    },
+    {
+      "district": "광진구",
+      "regionCode": "11215",
+      "districtIndex": 2,
+      "number": 34,
+      "loginId": "demo164_s34",
+      "name": "느루 광진 피부 관리 스튜디오",
+      "categoryId": 4,
+      "category": "skin",
+      "assetId": "shop-034",
+      "normalCount": 4,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "촉촉한 수분 충전 관리",
+          "assetId": "treatment-033",
+          "menuIndex": 4
+        },
+        {
+          "type": "NORMAL",
+          "name": "유수분 밸런스 관리",
+          "assetId": "treatment-034",
+          "menuIndex": 5
+        },
+        {
+          "type": "NORMAL",
+          "name": "수분 집중 페이셜",
+          "assetId": "treatment-029",
+          "menuIndex": 0
+        },
+        {
+          "type": "NORMAL",
+          "name": "편안한 진정 페이셜",
+          "assetId": "treatment-030",
+          "menuIndex": 1
+        }
+      ]
+    },
+    {
+      "district": "강동구",
+      "regionCode": "11740",
+      "districtIndex": 1,
+      "number": 35,
+      "loginId": "demo164_s35",
+      "name": "느루 강동 메이크업 스튜디오",
+      "categoryId": 5,
+      "category": "makeup",
+      "assetId": "shop-035",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "핑크 하객 메이크업",
+          "assetId": "treatment-040",
+          "menuIndex": 5
+        },
+        {
+          "type": "NORMAL",
+          "name": "피치 데일리 메이크업",
+          "assetId": "treatment-035",
+          "menuIndex": 0
+        }
+      ]
+    },
+    {
+      "district": "강동구",
+      "regionCode": "11740",
+      "districtIndex": 2,
+      "number": 36,
+      "loginId": "demo164_s36",
+      "name": "고운 강동 네일 스튜디오",
+      "categoryId": 1,
+      "category": "nail",
+      "assetId": "shop-036",
+      "normalCount": 2,
+      "modelCount": 1,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "작은 꽃 포인트 아트",
+          "assetId": "treatment-008",
+          "menuIndex": 7
+        },
+        {
+          "type": "NORMAL",
+          "name": "피치 시럽 젤네일",
+          "assetId": "treatment-009",
+          "menuIndex": 8
+        },
+        {
+          "type": "MODEL",
+          "name": "누드 원컬러 젤네일 초보 시술 모델",
+          "assetId": "treatment-010",
+          "menuIndex": 9
+        }
+      ]
+    },
+    {
+      "district": "강북구",
+      "regionCode": "11305",
+      "districtIndex": 1,
+      "number": 37,
+      "loginId": "demo164_s37",
+      "name": "고운 강북 헤어 스튜디오",
+      "categoryId": 2,
+      "category": "hair",
+      "assetId": "shop-037",
+      "normalCount": 3,
+      "modelCount": 1,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "초콜릿 브라운 전체 염색",
+          "assetId": "treatment-016",
+          "menuIndex": 5
+        },
+        {
+          "type": "NORMAL",
+          "name": "쇼트 레이어드 커트",
+          "assetId": "treatment-017",
+          "menuIndex": 6
+        },
+        {
+          "type": "NORMAL",
+          "name": "윤기 집중 모발 클리닉",
+          "assetId": "treatment-018",
+          "menuIndex": 7
+        },
+        {
+          "type": "MODEL",
+          "name": "초콜릿 브라운 전체 염색 초보 시술 모델",
+          "assetId": "treatment-016",
+          "menuIndex": 5
+        }
+      ]
+    },
+    {
+      "district": "강서구",
+      "regionCode": "11500",
+      "districtIndex": 1,
+      "number": 38,
+      "loginId": "demo164_s38",
+      "name": "고운 강서 속눈썹 스튜디오",
+      "categoryId": 3,
+      "category": "lash",
+      "assetId": "shop-038",
+      "normalCount": 4,
+      "modelCount": 1,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "내추럴 속눈썹 펌",
+          "assetId": "treatment-023",
+          "menuIndex": 0
+        },
+        {
+          "type": "NORMAL",
+          "name": "C컬 속눈썹 펌",
+          "assetId": "treatment-024",
+          "menuIndex": 1
+        },
+        {
+          "type": "NORMAL",
+          "name": "J컬 자연 속눈썹 연장",
+          "assetId": "treatment-025",
+          "menuIndex": 2
+        },
+        {
+          "type": "NORMAL",
+          "name": "C컬 자연 속눈썹 연장",
+          "assetId": "treatment-026",
+          "menuIndex": 3
+        },
+        {
+          "type": "MODEL",
+          "name": "눈꼬리 포인트 속눈썹 연장 초보 시술 모델",
+          "assetId": "treatment-028",
+          "menuIndex": 5
+        }
+      ]
+    },
+    {
+      "district": "관악구",
+      "regionCode": "11620",
+      "districtIndex": 1,
+      "number": 39,
+      "loginId": "demo164_s39",
+      "name": "고운 관악 피부 관리 스튜디오",
+      "categoryId": 4,
+      "category": "skin",
+      "assetId": "shop-039",
+      "normalCount": 2,
+      "modelCount": 1,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "부드러운 각질 케어",
+          "assetId": "treatment-031",
+          "menuIndex": 2
+        },
+        {
+          "type": "NORMAL",
+          "name": "기본 모공 클렌징",
+          "assetId": "treatment-032",
+          "menuIndex": 3
+        },
+        {
+          "type": "MODEL",
+          "name": "유수분 밸런스 관리 초보 시술 모델",
+          "assetId": "treatment-034",
+          "menuIndex": 5
+        }
+      ]
+    },
+    {
+      "district": "구로구",
+      "regionCode": "11530",
+      "districtIndex": 1,
+      "number": 40,
+      "loginId": "demo164_s40",
+      "name": "고운 구로 메이크업 스튜디오",
+      "categoryId": 5,
+      "category": "makeup",
+      "assetId": "shop-040",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "브라운 행사 메이크업",
+          "assetId": "treatment-036",
+          "menuIndex": 1
+        },
+        {
+          "type": "NORMAL",
+          "name": "로즈 립 포인트 메이크업",
+          "assetId": "treatment-037",
+          "menuIndex": 2
+        }
+      ]
+    },
+    {
+      "district": "금천구",
+      "regionCode": "11545",
+      "districtIndex": 1,
+      "number": 41,
+      "loginId": "demo164_s41",
+      "name": "담빛 금천 네일 스튜디오",
+      "categoryId": 1,
+      "category": "nail",
+      "assetId": "shop-041",
+      "normalCount": 3,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "누드 원컬러 젤네일",
+          "assetId": "treatment-010",
+          "menuIndex": 9
+        },
+        {
+          "type": "NORMAL",
+          "name": "핑크 시럽 젤네일",
+          "assetId": "treatment-001",
+          "menuIndex": 0
+        },
+        {
+          "type": "NORMAL",
+          "name": "코랄 원컬러 젤네일",
+          "assetId": "treatment-002",
+          "menuIndex": 1
+        }
+      ]
+    },
+    {
+      "district": "노원구",
+      "regionCode": "11350",
+      "districtIndex": 1,
+      "number": 42,
+      "loginId": "demo164_s42",
+      "name": "담빛 노원 헤어 스튜디오",
+      "categoryId": 2,
+      "category": "hair",
+      "assetId": "shop-042",
+      "normalCount": 4,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "미디엄 볼륨 펌",
+          "assetId": "treatment-019",
+          "menuIndex": 8
+        },
+        {
+          "type": "NORMAL",
+          "name": "체스트넛 뿌리 염색",
+          "assetId": "treatment-020",
+          "menuIndex": 9
+        },
+        {
+          "type": "NORMAL",
+          "name": "내추럴 컬 드라이",
+          "assetId": "treatment-021",
+          "menuIndex": 10
+        },
+        {
+          "type": "NORMAL",
+          "name": "기본 두피 스케일링",
+          "assetId": "treatment-022",
+          "menuIndex": 11
+        }
+      ]
+    },
+    {
+      "district": "도봉구",
+      "regionCode": "11320",
+      "districtIndex": 1,
+      "number": 43,
+      "loginId": "demo164_s43",
+      "name": "담빛 도봉 속눈썹 스튜디오",
+      "categoryId": 3,
+      "category": "lash",
+      "assetId": "shop-043",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "영양 집중 속눈썹 펌",
+          "assetId": "treatment-027",
+          "menuIndex": 4
+        },
+        {
+          "type": "NORMAL",
+          "name": "눈꼬리 포인트 속눈썹 연장",
+          "assetId": "treatment-028",
+          "menuIndex": 5
+        }
+      ]
+    },
+    {
+      "district": "동대문구",
+      "regionCode": "11230",
+      "districtIndex": 1,
+      "number": 44,
+      "loginId": "demo164_s44",
+      "name": "담빛 동대문 피부 관리 스튜디오",
+      "categoryId": 4,
+      "category": "skin",
+      "assetId": "shop-044",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "촉촉한 수분 충전 관리",
+          "assetId": "treatment-033",
+          "menuIndex": 4
+        },
+        {
+          "type": "NORMAL",
+          "name": "유수분 밸런스 관리",
+          "assetId": "treatment-034",
+          "menuIndex": 5
+        }
+      ]
+    },
+    {
+      "district": "동작구",
+      "regionCode": "11590",
+      "districtIndex": 1,
+      "number": 45,
+      "loginId": "demo164_s45",
+      "name": "담빛 동작 메이크업 스튜디오",
+      "categoryId": 5,
+      "category": "makeup",
+      "assetId": "shop-045",
+      "normalCount": 2,
+      "modelCount": 1,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "차분한 촬영 메이크업",
+          "assetId": "treatment-038",
+          "menuIndex": 3
+        },
+        {
+          "type": "NORMAL",
+          "name": "코랄 데일리 메이크업",
+          "assetId": "treatment-039",
+          "menuIndex": 4
+        },
+        {
+          "type": "MODEL",
+          "name": "핑크 하객 메이크업 초보 시술 모델",
+          "assetId": "treatment-040",
+          "menuIndex": 5
+        }
+      ]
+    },
+    {
+      "district": "서대문구",
+      "regionCode": "11410",
+      "districtIndex": 1,
+      "number": 46,
+      "loginId": "demo164_s46",
+      "name": "윤슬 서대문 네일 스튜디오",
+      "categoryId": 1,
+      "category": "nail",
+      "assetId": "shop-046",
+      "normalCount": 4,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "아이보리 프렌치 젤네일",
+          "assetId": "treatment-003",
+          "menuIndex": 2
+        },
+        {
+          "type": "NORMAL",
+          "name": "베이지 자석 젤네일",
+          "assetId": "treatment-004",
+          "menuIndex": 3
+        },
+        {
+          "type": "NORMAL",
+          "name": "버건디 원컬러 젤네일",
+          "assetId": "treatment-005",
+          "menuIndex": 4
+        },
+        {
+          "type": "NORMAL",
+          "name": "기본 손 케어",
+          "assetId": "treatment-006",
+          "menuIndex": 5
+        }
+      ]
+    },
+    {
+      "district": "성북구",
+      "regionCode": "11290",
+      "districtIndex": 1,
+      "number": 47,
+      "loginId": "demo164_s47",
+      "name": "윤슬 성북 헤어 스튜디오",
+      "categoryId": 2,
+      "category": "hair",
+      "assetId": "shop-047",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "미디엄 레이어드 커트",
+          "assetId": "treatment-011",
+          "menuIndex": 0
+        },
+        {
+          "type": "NORMAL",
+          "name": "턱선 보브 커트",
+          "assetId": "treatment-012",
+          "menuIndex": 1
+        }
+      ]
+    },
+    {
+      "district": "양천구",
+      "regionCode": "11470",
+      "districtIndex": 1,
+      "number": 48,
+      "loginId": "demo164_s48",
+      "name": "윤슬 양천 속눈썹 스튜디오",
+      "categoryId": 3,
+      "category": "lash",
+      "assetId": "shop-048",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "내추럴 속눈썹 펌",
+          "assetId": "treatment-023",
+          "menuIndex": 0
+        },
+        {
+          "type": "NORMAL",
+          "name": "C컬 속눈썹 펌",
+          "assetId": "treatment-024",
+          "menuIndex": 1
+        }
+      ]
+    },
+    {
+      "district": "은평구",
+      "regionCode": "11380",
+      "districtIndex": 1,
+      "number": 49,
+      "loginId": "demo164_s49",
+      "name": "윤슬 은평 피부 관리 스튜디오",
+      "categoryId": 4,
+      "category": "skin",
+      "assetId": "shop-049",
+      "normalCount": 2,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "수분 집중 페이셜",
+          "assetId": "treatment-029",
+          "menuIndex": 0
+        },
+        {
+          "type": "NORMAL",
+          "name": "편안한 진정 페이셜",
+          "assetId": "treatment-030",
+          "menuIndex": 1
+        }
+      ]
+    },
+    {
+      "district": "중랑구",
+      "regionCode": "11260",
+      "districtIndex": 1,
+      "number": 50,
+      "loginId": "demo164_s50",
+      "name": "윤슬 중랑 메이크업 스튜디오",
+      "categoryId": 5,
+      "category": "makeup",
+      "assetId": "shop-050",
+      "normalCount": 3,
+      "modelCount": 0,
+      "treatments": [
+        {
+          "type": "NORMAL",
+          "name": "핑크 하객 메이크업",
+          "assetId": "treatment-040",
+          "menuIndex": 5
+        },
+        {
+          "type": "NORMAL",
+          "name": "피치 데일리 메이크업",
+          "assetId": "treatment-035",
+          "menuIndex": 0
+        },
+        {
+          "type": "NORMAL",
+          "name": "브라운 행사 메이크업",
+          "assetId": "treatment-036",
+          "menuIndex": 1
+        }
+      ]
+    }
+  ]
+}
