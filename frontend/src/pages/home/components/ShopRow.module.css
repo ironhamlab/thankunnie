@@ -124,9 +124,29 @@
   border-color: var(--color-primary);
   color: var(--color-primary-text);
 }
+/* 여러 날짜를 보여줄 때는 날짜를 왼쪽에 두고 그날 시각을 옆에 늘어놓는다 */
+.dayRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.dayRow .slots {
+  flex: 1;
+}
+.dayLabel {
+  flex: none;
+  min-width: 72px;
+  padding-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
 .message {
   font-size: 13px;
   color: var(--color-text-secondary);
+}
+.message a {
+  color: var(--color-primary-text);
 }
 .message button {
   border: 0;
