@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { ERROR_MESSAGES } from '@/constants/errorMessages';
+import { selectableTreatments } from '@/utils/notificationRules';
 import { addDays, defaultHopePeriod, toKstDateTime, todayKst } from '@/utils/scheduleDate';
 import Button from '@/components/common/Button';
+import StoreTreatmentField from './StoreTreatmentField';
 import styles from './SubscriptionCreateForm.module.css';
 
 const HOPE_DAYS = 30;
@@ -11,10 +13,18 @@ const emptyTimeForm = () => defaultHopePeriod();
 
 /**
  * 업장 알림 희망 시간. 카테고리·지역 조건 추가와 같은 입력 칸을 쓴다.
+ * 판매 중인 일반 시술을 고르기 전에는 등록할 수 없다.
  * 희망 날짜는 오늘부터 30일 안만, 시각은 기본 time 입력(30분 단위)으로 고른다.
  * 종료가 시작보다 같거나 이르거나 이미 지났으면 요청 전에 막는다.
  */
-export default function StoreHopeForm({ onSubmit, saving = false, className = '' }) {
+export default function StoreHopeForm({
+  treatments = null,
+  treatmentId,
+  onTreatmentChange,
+  onSubmit,
+  saving = false,
+  className = '',
+}) {
   const [form, setForm] = useState(emptyTimeForm);
   const minDate = todayKst();
   const maxDate = addDays(minDate, HOPE_DAYS);
@@ -39,12 +49,17 @@ export default function StoreHopeForm({ onSubmit, saving = false, className = ''
     hasFullStamp && new Date(toKstDateTime(form.startDate, form.startTime)).getTime() <= Date.now();
   const expired =
     hasFullStamp && new Date(toKstDateTime(form.endDate, form.endTime)).getTime() <= Date.now();
-  const canSubmit = hasFullStamp && !invalidTime && !outOfRange && !startPast && !expired;
+  const treatmentChosen = selectableTreatments(treatments).some(
+    (item) => String(item.treatmentId) === String(treatmentId),
+  );
+  const canSubmit =
+    treatmentChosen && hasFullStamp && !invalidTime && !outOfRange && !startPast && !expired;
 
   const handleSubmit = (event) => {
     event.preventDefault();
     if (!canSubmit) return;
     onSubmit({
+      treatmentId: Number(treatmentId),
       startTime: toKstDateTime(form.startDate, form.startTime),
       endTime: toKstDateTime(form.endDate, form.endTime),
     });
@@ -56,6 +71,7 @@ export default function StoreHopeForm({ onSubmit, saving = false, className = ''
       onSubmit={handleSubmit}
       noValidate
     >
+      <StoreTreatmentField treatments={treatments} value={treatmentId ?? ''} onChange={onTreatmentChange} />
       <div className={styles.timeRow}>
         <div className={styles.field}>
           <label>

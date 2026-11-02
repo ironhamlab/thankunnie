@@ -131,6 +131,9 @@
   color: var(--color-info);
   background: var(--color-surface-blue);
 }
+.treatment {
+  color: var(--color-text-secondary);
+}
 .period {
   display: flex;
   align-items: center;

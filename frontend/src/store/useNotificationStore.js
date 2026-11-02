@@ -41,6 +41,8 @@ export const useNotificationStore = create((set, get) => ({
   categoryStatus: 'idle',
   // 업장 구독 카드용 매장명. 키는 매장 ID 문자열, 조회 실패면 null
   shopNames: {},
+  // 그 매장 상세에 들어 있는 시술. 키는 매장 ID 문자열. 조회 전이면 키가 없다
+  shopTreatments: {},
   loadingShopIds: {},
   saving: false,
 
@@ -90,11 +92,13 @@ export const useNotificationStore = create((set, get) => ({
         const shop = await shopDetailApi.getShop(shopId);
         set((state) => ({
           shopNames: { ...state.shopNames, [key]: shop?.shopName ?? null },
+          shopTreatments: { ...state.shopTreatments, [key]: shop?.treatments ?? [] },
           loadingShopIds: { ...state.loadingShopIds, [key]: false },
         }));
       } catch {
         set((state) => ({
           shopNames: { ...state.shopNames, [key]: null },
+          shopTreatments: { ...state.shopTreatments, [key]: [] },
           loadingShopIds: { ...state.loadingShopIds, [key]: false },
         }));
       }

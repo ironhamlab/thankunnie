@@ -274,6 +274,7 @@ CREATE TABLE NOTIFICATION_SUBSCRIPTION (
     SUBSCRIPTION_ID     NUMBER(19)          NOT NULL,
     USER_ID             NUMBER(19)          NOT NULL,
     SHOP_ID             NUMBER(19),
+    TREATMENT_ID        NUMBER(19),                     -- STORE 알림만. 고객이 고른 시술. 시간 없는 찜과 카테고리 구독은 비운다
     SUBSCRIPTION_TYPE   VARCHAR2(20 CHAR)   NOT NULL,   -- STORE(매장), CATEGORY_REGION(카테고리+지역)
     CATEGORY_ID         NUMBER(19),                     -- CATEGORY_REGION 구독만
     REGION_CODE         VARCHAR2(20 CHAR),              -- CATEGORY_REGION 구독만

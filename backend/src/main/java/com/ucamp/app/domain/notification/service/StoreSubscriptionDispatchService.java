@@ -22,6 +22,7 @@ import com.ucamp.app.domain.notification.repository.NotificationDispatchReposito
 public class StoreSubscriptionDispatchService {
 
     private final ExistingVacancyTargetService existingVacancyTargetService;
+    private final StoreSubscriptionTreatmentService storeSubscriptionTreatmentService;
     private final NotificationDispatchRepository notificationDispatchRepository;
 
     /**
@@ -42,6 +43,11 @@ public class StoreSubscriptionDispatchService {
         List<NotificationEvent> targets = existingVacancyTargetService.findForStore(
                 subscription.getShopId(), subscription.getStartTime(), subscription.getEndTime());
         for (NotificationEvent event : targets) {
+            // 고른 시술을 그 시각에 예약할 수 없으면 줄을 만들지 않는다.
+            if (!storeSubscriptionTreatmentService.canBook(
+                    subscription.getShopId(), subscription.getTreatmentId(), event.getSlotStartsAt())) {
+                continue;
+            }
             // 성공·실패·대기 중 어느 쪽이든 같은 이벤트·회원은 한 줄이다. 다시 만들면 문자가 두 번 나간다.
             if (notificationDispatchRepository.existsByEventIdAndUserId(event.getId(), subscription.getUserId())) {
                 continue;
