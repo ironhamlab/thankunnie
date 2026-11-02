@@ -3,7 +3,6 @@ import { regionNameOf } from '@/constants/regions';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { shopLabel, treatmentNameOf } from '@/utils/notificationRules';
 import { datePart, timePart } from '@/utils/scheduleDate';
-import SmsNotice from '@/components/notification/SmsNotice';
 import SubscriptionCreateForm from '@/components/notification/SubscriptionCreateForm';
 import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
@@ -65,7 +64,6 @@ export default function SubscriptionSettings() {
 
   return (
     <div className="b-stack">
-      <SmsNotice />
       <SubscriptionCreateForm />
 
       {result && (

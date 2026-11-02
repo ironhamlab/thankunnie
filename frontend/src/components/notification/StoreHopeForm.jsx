@@ -164,7 +164,20 @@ export default function StoreHopeForm({
           )}
         </div>
       </div>
-      <p className={styles.hint}>날짜는 오늘부터 {HOPE_DAYS}일 안, 시각은 30분 단위로 고를 수 있어요.</p>
+      <div className={styles.rule}>
+        <p className={styles.lead}>
+          희망 시간 안에 시작하는 빈자리만 알려 드립니다. 고른 시술은 그 시작 시각에 끝까지 받을 수
+          있을 때만 해당합니다.
+        </p>
+        <p className={styles.hint}>예) 희망 14:00~18:00, 시술 60분</p>
+        <ul className={styles.examples}>
+          <li>✅ 14:30~15:30 — 시작이 희망 안이고, 시술도 끝까지 가능</li>
+          <li>✅ 17:30~18:30 — 시술이 희망 종료(18:00)를 넘겨도, 시작만 희망 안이면 됩니다</li>
+          <li>❌ 18:30~19:30 — 시작이 희망 밖</li>
+          <li>❌ 16:30~17:30 · 매장 마감 17:00 — 시작은 희망 안이지만, 시술을 끝까지 못 받음</li>
+        </ul>
+        <p className={styles.hint}>날짜는 오늘부터 {HOPE_DAYS}일 안, 시각은 30분 단위로 고를 수 있어요.</p>
+      </div>
       <Button variant="primary" wide disabled={saving || !canSubmit}>
         알림 조건 추가
       </Button>

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import Panel from '@/components/common/Panel';
 import FavoriteShopList from '@/components/notification/FavoriteShopList';
-import SmsNotice from '@/components/notification/SmsNotice';
 import SubscriptionCreateForm from '@/components/notification/SubscriptionCreateForm';
 import SubscriptionList from '@/components/notification/SubscriptionList';
 import { useNotificationStore } from '@/store/useNotificationStore';
@@ -34,7 +33,6 @@ export default function MyNotificationsPage() {
 
   return (
     <div className={styles.root}>
-      <SmsNotice />
       <Panel as="nav" className={styles.tabs} role="tablist" aria-label="알림">
         {TABS.map(({ id, label }) => (
           <button
