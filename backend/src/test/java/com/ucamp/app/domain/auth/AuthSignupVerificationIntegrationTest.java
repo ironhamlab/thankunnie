@@ -1,13 +1,18 @@
 package com.ucamp.app.domain.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,11 +35,16 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ucamp.app.domain.auth.controller.AuthVerificationController;
 import com.ucamp.app.domain.auth.service.AuthPhoneVerificationService;
+import com.ucamp.app.domain.auth.service.AuthBusinessVerificationService;
+import com.ucamp.app.domain.auth.client.NtsBusinessClient;
+import com.ucamp.app.common.exception.BusinessException;
+import com.ucamp.app.common.exception.ErrorCode;
+import org.springframework.dao.DataIntegrityViolationException;
 import com.ucamp.app.domain.notification.client.SmsSendResult;
 import com.ucamp.app.domain.notification.client.SolapiSmsClient;
 
 @SpringBootTest(classes = AuthIntegrationTest.AuthTestConfiguration.class)
-@Import({AuthVerificationController.class, AuthPhoneVerificationService.class})
+@Import({AuthVerificationController.class, AuthPhoneVerificationService.class, AuthBusinessVerificationService.class})
 @AutoConfigureMockMvc
 @ActiveProfiles({"test", "auth-test"})
 @Transactional
@@ -51,6 +61,8 @@ class AuthSignupVerificationIntegrationTest {
     private JdbcTemplate jdbc;
     @MockitoBean
     private SolapiSmsClient smsClient;
+    @MockitoBean
+    private NtsBusinessClient ntsBusinessClient;
 
     private String phone;
 
@@ -121,17 +133,61 @@ class AuthSignupVerificationIntegrationTest {
     @DisplayName("매장 유선 연락처와 별개인 가입자 휴대폰 인증으로 매장 가입한다")
     void signupShop_verifiedMobileAndLandline_succeeds() throws Exception {
         String id = sendAndVerify();
+        mvc.perform(post("/api/v1/auth/business/verify").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"businessNumber":"1234567891","representativeName":"테스트 대표","openedOn":"2020-01-01"}
+                                """))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.verified").value(true));
         String body = """
                 {"loginId":"nailshop","password":"CHANGE_ME-1234","categoryId":9001,
                  "name":"언니네 네일","regionCode":"11680","address":"서울 강남구 테헤란로 1",
                  "latitude":37.4979,"longitude":127.0276,"phone":"02-111-1111",
-                 "verificationPhone":"%s","phoneVerificationId":"%s"}
+                 "verificationPhone":"%s","phoneVerificationId":"%s",
+                 "businessNumber":"1234567891","representativeName":"테스트 대표","openedOn":"2020-01-01"}
                 """.formatted(phone, id);
         mvc.perform(post("/api/v1/auth/shops/signup").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.role").value("OWNER"));
         assertThat(jdbc.queryForObject("SELECT PHONE FROM SHOP WHERE LOGIN_ID = 'nailshop'", String.class))
                 .isEqualTo("02-111-1111");
+        assertThat(jdbc.queryForObject("SELECT BUSINESS_NUMBER FROM SHOP WHERE LOGIN_ID = 'nailshop'", String.class))
+                .isEqualTo("1234567891");
+        verify(ntsBusinessClient, times(2)).validate("1234567891", "테스트 대표", LocalDate.of(2020, 1, 1));
+        mvc.perform(post("/api/v1/auth/shops/signup").contentType(MediaType.APPLICATION_JSON)
+                        .content(body.replace("nailshop", "secondshop")))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.error.code").value("AUTH_009"));
+        // 서비스 사전 검사와 별개로 DB에서도 동일 번호의 저장을 차단한다.
+        assertThatThrownBy(() -> jdbc.update("""
+                INSERT INTO SHOP (SHOP_ID, CATEGORY_ID, LOGIN_ID, PASSWORD_HASH, BUSINESS_NUMBER, NAME,
+                    REGION_CODE, ADDRESS, LATITUDE, LONGITUDE, PHONE, CREATED_AT, UPDATED_AT)
+                SELECT SHOP_ID + 1, CATEGORY_ID, 'other-owner', PASSWORD_HASH, BUSINESS_NUMBER, NAME,
+                    REGION_CODE, ADDRESS, LATITUDE, LONGITUDE, PHONE, CREATED_AT, UPDATED_AT
+                FROM SHOP WHERE LOGIN_ID = 'nailshop'
+                """))
+                .isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("UK_SHOP_BUSINESS_NUMBER");
+    }
+
+    @Test
+    @DisplayName("사업자 사전 확인 후 대표자명을 바꾸면 최종 가입에서 다시 조회하고 저장을 차단한다")
+    void signupShop_changedBusinessInformation_rechecksProvider() throws Exception {
+        String id = sendAndVerify();
+        mvc.perform(post("/api/v1/auth/business/verify").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"businessNumber":"1234567891","representativeName":"테스트 대표","openedOn":"2020-01-01"}
+                                """))
+                .andExpect(status().isOk());
+        doThrow(new BusinessException(ErrorCode.AUTH_BUSINESS_INVALID))
+                .when(ntsBusinessClient).validate("1234567891", "다른 대표", LocalDate.of(2020, 1, 1));
+        mvc.perform(post("/api/v1/auth/shops/signup").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"loginId":"changedshop","password":"CHANGE_ME-1234","categoryId":9001,
+                                 "name":"언니네 네일","regionCode":"11680","address":"서울 강남구 테헤란로 1",
+                                 "latitude":37.4979,"longitude":127.0276,"phone":"02-111-1111",
+                                 "verificationPhone":"%s","phoneVerificationId":"%s",
+                                 "businessNumber":"1234567891","representativeName":"다른 대표","openedOn":"2020-01-01"}
+                                """.formatted(phone, id)))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("AUTH_007"));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM SHOP WHERE LOGIN_ID = 'changedshop'", Integer.class)).isZero();
     }
 
     private String send() throws Exception {

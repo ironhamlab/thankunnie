@@ -63,3 +63,8 @@ solapi:
   api-secret: CHANGE_ME
   # 콘솔에 등록한 발신번호. 숫자만 (예: 01012345678)
   from-number: CHANGE_ME
+
+# 공공데이터포털 국세청 API의 일반 인증키(Decoding)를 사람이 직접 입력한다.
+# 실제 키는 Git 또는 프론트 환경변수에 넣지 않는다.
+nts:
+  service-key: ${NTS_SERVICE_KEY:CHANGE_ME}

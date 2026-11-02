@@ -9,12 +9,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ucamp.app.common.response.ApiResponse;
 import com.ucamp.app.domain.auth.dto.request.AuthLoginIdCheckRequest;
+import com.ucamp.app.domain.auth.dto.request.AuthBusinessVerificationRequest;
+import com.ucamp.app.domain.auth.dto.response.AuthBusinessVerificationResponse;
 import com.ucamp.app.domain.auth.dto.request.AuthPhoneSendRequest;
 import com.ucamp.app.domain.auth.dto.request.AuthPhoneVerifyRequest;
 import com.ucamp.app.domain.auth.dto.response.AuthLoginIdCheckResponse;
 import com.ucamp.app.domain.auth.dto.response.AuthPhoneResponse;
 import com.ucamp.app.domain.auth.service.AuthService;
 import com.ucamp.app.domain.auth.service.AuthPhoneVerificationService;
+import com.ucamp.app.domain.auth.service.AuthBusinessVerificationService;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -22,16 +25,26 @@ public class AuthVerificationController {
 
     private final AuthService authService;
     private final AuthPhoneVerificationService verificationService;
+    private final AuthBusinessVerificationService businessVerificationService;
 
-    public AuthVerificationController(AuthService authService, AuthPhoneVerificationService verificationService) {
+    public AuthVerificationController(AuthService authService, AuthPhoneVerificationService verificationService,
+            AuthBusinessVerificationService businessVerificationService) {
         this.authService = authService;
         this.verificationService = verificationService;
+        this.businessVerificationService = businessVerificationService;
     }
 
     @PostMapping("/login-id/check")
     public ApiResponse<AuthLoginIdCheckResponse> checkLoginId(@Valid @RequestBody AuthLoginIdCheckRequest request) {
         return ApiResponse.success(new AuthLoginIdCheckResponse(
                 authService.isLoginIdAvailable(request.loginId(), request.accountType())));
+    }
+
+    @PostMapping("/business/verify")
+    public ApiResponse<AuthBusinessVerificationResponse> verifyBusiness(
+            @Valid @RequestBody AuthBusinessVerificationRequest request) {
+        businessVerificationService.verify(request);
+        return ApiResponse.success(new AuthBusinessVerificationResponse(true));
     }
 
     @PostMapping("/phone/send")

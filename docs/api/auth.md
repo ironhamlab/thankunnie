@@ -90,7 +90,10 @@
   "description": "젤네일·케어 전문",
   "notice": "예약 시간 10분 전 도착해 주세요",
   "verificationPhone": "01012345678",
-  "phoneVerificationId": "휴대폰 인증 API에서 받은 verificationId"
+  "phoneVerificationId": "휴대폰 인증 API에서 받은 verificationId",
+  "businessNumber": "숫자 10자리 사업자등록번호",
+  "representativeName": "사업자등록증에 기재된 대표자명",
+  "openedOn": "2020-01-01"
 }
 ```
 
@@ -106,6 +109,9 @@
 | phone | 필수, 20자 이하 (유선 번호 가능) |
 | verificationPhone | 필수. 가입자 인증용 휴대폰 번호. 매장 연락처와 별개이며 현재 SHOP에는 저장하지 않음 |
 | phoneVerificationId | 필수. verificationPhone으로 인증 완료한 verificationId. 가입 성공 시 1회 소비 |
+| businessNumber | 필수, 숫자 10자리·체크섬 검사. 국세청 검증 후 SHOP.BUSINESS_NUMBER에 저장. 동일 번호로 매장 하나만 등록 가능 |
+| representativeName | 필수, 100자 이하. 사업자등록증에 기재된 대표자명. 외국인 대표자는 등록된 영문명 |
+| openedOn | 필수, YYYY-MM-DD, 미래일 불가. 사업자등록증의 개업연월일 |
 | description, notice | 선택, 2000자 이하 |
 
 오류: 형식 위반·없는 카테고리 `COMMON_400`, 아이디 중복 `AUTH_001`(409)
@@ -173,6 +179,56 @@
 - 오류: `AUTH_004` 인증 실패, `AUTH_005` 발송 제한, `AUTH_006` 발송 실패. 상세 메시지는 서버 응답을 표시한다.
 - 현재 인증 상태·발송 제한은 **단일 서버 메모리**에 보관한다. 재시작 시 재인증이 필요하며 다중 서버 배포 전 공유 저장소로 교체해야 한다.
 - 전화번호 소유 확인 기능이다. 대표자 본인 확인·사업자 조회·전화번호 중복 가입 차단은 이 API의 범위가 아니다.
+
+## POST /api/v1/auth/business/verify — 사업자 정보 확인 (UNNIE-173)
+
+요청:
+
+```json
+{
+  "businessNumber": "숫자 10자리 사업자등록번호",
+  "representativeName": "사업자등록증에 기재된 대표자명",
+  "openedOn": "2020-01-01"
+}
+```
+
+응답 data: `{ "verified": true }`. 정보 불일치·휴업·폐업은 `AUTH_007`,
+조회 실패는 `AUTH_008`, 이미 가입된 번호는 `AUTH_009`이다.
+
+- 번호 형식·체크섬·개업일·중복을 먼저 검사한다.
+- 국세청 `POST /api/nts-businessman/v1/validate`에 `b_no`, `p_nm`, `start_dt(YYYYMMDD)`를 보낸다.
+- `status_code=OK`, 대상 번호 일치, `valid=01`, `status.b_stt_cd=01`일 때만 통과한다.
+- 공식 진위확인 응답에 상태조회 결과가 포함되므로 별도 상태조회 호출은 하지 않는다.
+- HTTP 200이어도 불일치·누락·예상하지 못한 본문이면 성공으로 처리하지 않는다.
+- 연결 제한 2초, 읽기 제한 4초. 실패 시 자동 재시도하지 않는다.
+- 사전 확인 결과는 화면 안내용이다. 최종 매장 가입 시 입력한 값으로 국세청을 다시 조회한다.
+- 화면에서 번호·대표자명·개업일을 변경하면 확인 상태를 초기화한다. 이전 입력에 대한 늦은 응답도 무시한다.
+- 이 기능은 사업자 정보 일치와 계속사업 여부를 확인한다. 가입자가 실제 대표자인지를 인증하지 않는다.
+
+### 인증키 설정 (사람이 직접 입력)
+
+`backend/src/main/resources/application-local.yml.example`의 `nts` 항목을 참고하여
+기존 `application-local.yml`에 `nts.service-key`를 추가하거나, 백엔드 실행 환경에
+`NTS_SERVICE_KEY`를 설정한다. 공공데이터포털 **일반 인증키(Decoding)**를 사용한다.
+로컬 설정 파일에 키를 직접 넣었다면 해당 값이 환경변수보다 우선한다.
+
+키는 URI 변수로 인코딩하며 프론트로 전달하지 않는다. 키가 포함된 URL·원본 통신 예외·국세청
+원본 응답을 로그에 남기지 않는다. 키 미설정·예시 값 `CHANGE_ME`는 조회 실패로 처리한다.
+실제 키는 사람이 직접 입력·수정·삭제하며, Git에 커밋하지 않는다.
+
+### 스키마 변경과 기존 DB 적용
+
+- 원본 DDL: `docs/erd/01_schema_ddl.sql`의 `SHOP.BUSINESS_NUMBER VARCHAR2(10 CHAR)`.
+- 중복 제약: `UK_SHOP_BUSINESS_NUMBER`. 사전 확인 이후 동시 요청도 DB에서 차단한다.
+- 기존 매장·시연 데이터는 `NULL`을 유지한다. 임의의 사업자번호로 채우지 않는다.
+- 기존 Oracle DB에는 배포 전 `docs/erd/04_add_shop_business_number.sql`을 **한 번** 적용한다.
+- 신규 H2는 원본 DDL에서 생성한다. 생성된 `schema.sql`은 직접 수정하지 않는다.
+- 대표자명·개업일은 조회 입력으로만 사용하고 새 DB 컬럼에 저장하지 않는다.
+- 같은 사업자번호의 지점 추가는 현재 지원하지 않는다. 계정당 매장 하나 정책에 따른다.
+
+공식 기준: [공공데이터포털 국세청 API](https://www.data.go.kr/tcs/dss/selectApiDataDetailView.do?publicDataPk=15081808),
+[공식 Swagger 명세](https://infuser.odcloud.kr/api/stages/28493/api-docs?1728017570963).
+신규 개업 정보 반영에는 1~2일 걸릴 수 있다.
 
 ## 테스트 계정 (local 초기 데이터)
 

@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.auth.dto.request;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
@@ -35,7 +36,10 @@ public record AuthShopSignupRequest(
         @Size(max = 2000) String notice,
         @NotBlank @Pattern(regexp = AuthInputRules.MOBILE_PHONE, message = AuthInputRules.MOBILE_PHONE_MESSAGE)
         String verificationPhone,
-        @NotBlank @Size(max = 36) String phoneVerificationId) {
+        @NotBlank @Size(max = 36) String phoneVerificationId,
+        @NotBlank @Pattern(regexp = "[0-9]{10}") String businessNumber,
+        @NotBlank @Size(max = 100) String representativeName,
+        @NotNull LocalDate openedOn) {
 
     @AssertTrue(message = AuthInputRules.PASSWORD_BYTES_MESSAGE)
     public boolean isPasswordWithinBytes() {

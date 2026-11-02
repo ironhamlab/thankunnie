@@ -21,6 +21,8 @@ import ShopAddressFields from './components/ShopAddressFields';
 import styles from './ShopSignupPage.module.css';
 import useSignupVerification from '@/hooks/useSignupVerification';
 import SignupVerificationFields from './components/SignupVerificationFields';
+import BusinessVerificationFields from './components/BusinessVerificationFields';
+import useBusinessVerification from '@/hooks/useBusinessVerification';
 
 const EMPTY_FORM = {
   loginId: '',
@@ -30,6 +32,9 @@ const EMPTY_FORM = {
   name: '',
   phone: '',
   verificationPhone: '',
+  businessNumber: '',
+  representativeName: '',
+  openedOn: '',
   address: '',
   addressDetail: '',
   regionCode: '',
@@ -66,6 +71,7 @@ export default function ShopSignupPage() {
   const categoriesError = useAuthStore((state) => state.shopCategoriesError);
   const loadShopCategories = useAuthStore((state) => state.loadShopCategories);
   const [form, setForm] = useState(EMPTY_FORM);
+  const businessVerification = useBusinessVerification(form);
   const verification = useSignupVerification(
     ACCOUNT_TYPE.SHOP,
     form.loginId,
@@ -79,6 +85,9 @@ export default function ShopSignupPage() {
   }, [loadShopCategories, clearError]);
 
   const updateForm = (partial) => {
+    if (['businessNumber', 'representativeName', 'openedOn'].some((key) => key in partial)) {
+      businessVerification.reset();
+    }
     if ('loginId' in partial) verification.resetLoginId();
     if ('verificationPhone' in partial) verification.resetPhone();
     setForm((prev) => ({ ...prev, ...partial }));
@@ -93,11 +102,17 @@ export default function ShopSignupPage() {
     }));
   };
 
-  const handleChange = (event) => updateForm({ [event.target.name]: event.target.value });
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    updateForm({
+      [name]: name === 'businessNumber' ? value.replace(/[^0-9]/g, '').slice(0, 10) : value,
+    });
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     const errors = collectErrors({
+      businessNumber: businessVerification.verified ? '' : '사업자 정보 확인을 완료해 주세요.',
       loginId:
         validateLoginId(form.loginId) ||
         (!verification.isLoginIdChecked ? '아이디 중복 확인을 해 주세요.' : ''),
@@ -131,6 +146,9 @@ export default function ShopSignupPage() {
         phone: form.phone.trim(),
         verificationPhone: form.verificationPhone,
         phoneVerificationId: verification.phoneVerificationId,
+        businessNumber: form.businessNumber,
+        representativeName: form.representativeName.trim(),
+        openedOn: form.openedOn,
         description: toNullable(form.description),
         notice: toNullable(form.notice),
       });
@@ -175,6 +193,13 @@ export default function ShopSignupPage() {
           />
           <SignupVerificationFields verification={verification} mode="phone" />
         </section>
+
+        <BusinessVerificationFields
+          form={form}
+          onChange={handleChange}
+          verification={businessVerification}
+          error={fieldErrors.businessNumber}
+        />
 
         <section className="b-form-grid" aria-labelledby="shop-signup-shop">
           <h2 id="shop-signup-shop" className="b-span-two">

@@ -14,6 +14,7 @@ import com.ucamp.app.common.auth.JwtProvider;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.domain.auth.dto.request.AuthCustomerSignupRequest;
+import com.ucamp.app.domain.auth.dto.request.AuthBusinessVerificationRequest;
 import com.ucamp.app.domain.auth.dto.request.AuthLoginRequest;
 import com.ucamp.app.domain.auth.dto.request.AuthShopSignupRequest;
 import com.ucamp.app.domain.auth.dto.response.AuthShopCategoryResponse;
@@ -47,13 +48,15 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final TermsAgreementService termsAgreementService;
     private final AuthPhoneVerificationService phoneVerificationService;
+    private final AuthBusinessVerificationService businessVerificationService;
     // 없는 아이디로 로그인할 때 비교할 해시. 같은 인코더로 만들어 실제 계정과 비교 비용이 같다
     private final String dummyPasswordHash;
 
     public AuthService(AppUserRepository appUserRepository, ShopAccountRepository shopAccountRepository,
             ShopCategoryRepository shopCategoryRepository, PasswordEncoder passwordEncoder,
             JwtProvider jwtProvider, TermsAgreementService termsAgreementService,
-            AuthPhoneVerificationService phoneVerificationService) {
+            AuthPhoneVerificationService phoneVerificationService,
+            AuthBusinessVerificationService businessVerificationService) {
         this.appUserRepository = appUserRepository;
         this.shopAccountRepository = shopAccountRepository;
         this.shopCategoryRepository = shopCategoryRepository;
@@ -61,6 +64,7 @@ public class AuthService {
         this.jwtProvider = jwtProvider;
         this.termsAgreementService = termsAgreementService;
         this.phoneVerificationService = phoneVerificationService;
+        this.businessVerificationService = businessVerificationService;
         this.dummyPasswordHash = passwordEncoder.encode(DUMMY_PASSWORD);
     }
 
@@ -93,9 +97,12 @@ public class AuthService {
         if (!shopCategoryRepository.existsById(request.categoryId())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "존재하지 않는 매장 카테고리입니다.");
         }
+        businessVerificationService.verify(new AuthBusinessVerificationRequest(request.businessNumber(),
+                request.representativeName(), request.openedOn()));
         phoneVerificationService.consume(request.verificationPhone(), request.phoneVerificationId());
         ShopAccount account = ShopAccount.builder()
                 .loginId(request.loginId())
+                .businessNumber(request.businessNumber())
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .categoryId(request.categoryId())
                 .name(request.name().trim())
@@ -108,7 +115,7 @@ public class AuthService {
                 .description(request.description())
                 .notice(request.notice())
                 .build();
-        ShopAccount saved = saveUniqueLoginId(() -> shopAccountRepository.saveAndFlush(account));
+        ShopAccount saved = saveShopAccount(account);
         return issue(saved.toAuthUser());
     }
 
@@ -167,6 +174,24 @@ public class AuthService {
 
     private AuthTokenResponse issue(AuthUser authUser) {
         return AuthTokenResponse.of(jwtProvider.issue(authUser), authUser);
+    }
+
+    private ShopAccount saveShopAccount(ShopAccount account) {
+        try {
+            return shopAccountRepository.saveAndFlush(account);
+        } catch (DataIntegrityViolationException e) {
+            // 사전 확인 뒤 동시에 같은 번호로 가입해도 DB의 UNIQUE 제약으로 차단한다.
+            for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+                String message = cause.getMessage();
+                if (message != null && message.toUpperCase(java.util.Locale.ROOT).contains("UK_SHOP_BUSINESS_NUMBER")) {
+                    throw new BusinessException(ErrorCode.AUTH_DUPLICATE_BUSINESS_NUMBER);
+                }
+                if (message != null && message.toUpperCase(java.util.Locale.ROOT).contains("UK_SHOP_LOGIN_ID")) {
+                    throw new BusinessException(ErrorCode.AUTH_DUPLICATE_LOGIN_ID);
+                }
+            }
+            throw e;
+        }
     }
 
     // 사전 확인과 저장 사이에 같은 아이디가 먼저 가입되면 LOGIN_ID UNIQUE 위반이 난다.

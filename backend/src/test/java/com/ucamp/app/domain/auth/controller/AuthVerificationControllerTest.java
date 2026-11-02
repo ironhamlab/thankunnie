@@ -21,6 +21,7 @@ import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.domain.auth.service.AuthPhoneVerificationService;
 import com.ucamp.app.domain.auth.service.AuthService;
+import com.ucamp.app.domain.auth.service.AuthBusinessVerificationService;
 
 @WebMvcTest(controllers = AuthVerificationController.class)
 @Import(SecurityConfig.class)
@@ -35,6 +36,9 @@ class AuthVerificationControllerTest {
 
     @MockitoBean
     private AuthPhoneVerificationService verificationService;
+
+    @MockitoBean
+    private AuthBusinessVerificationService businessVerificationService;
 
     @Test
     @DisplayName("비로그인 상태에서 고객 아이디 중복 확인 결과를 받을 수 있다")
