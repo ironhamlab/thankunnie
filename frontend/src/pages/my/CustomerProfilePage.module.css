@@ -78,7 +78,7 @@
   justify-content: space-between;
   gap: 20px;
   border-color: var(--color-primary-line);
-  background: linear-gradient(120deg, var(--color-primary-faint), white 55%, var(--color-surface-raised));
+  background: linear-gradient(120deg, var(--color-primary-faint), var(--color-white) 55%, var(--color-surface-raised));
 }
 .nearest h2 {
   margin: 12px 0 4px;

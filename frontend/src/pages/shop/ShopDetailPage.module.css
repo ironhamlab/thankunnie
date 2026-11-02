@@ -383,7 +383,7 @@
 /* 공통 시간 칸(b-time-grid)의 선택 색 대신 앱 기본 색을 쓴다 */
 .slots button:global(.is-selected) {
   border-color: var(--color-primary);
-  background: var(--color-primary);
+  background: var(--color-primary-text);
   color: var(--color-white);
 }
 .favorite {
