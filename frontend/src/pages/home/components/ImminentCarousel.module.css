@@ -50,17 +50,14 @@
   height: 100%;
   object-fit: cover;
 }
-.urgency,
-.closes {
+.urgency {
   position: absolute;
   left: 14px;
+  top: 14px;
   border-radius: var(--radius-pill);
   padding: 5px 10px;
   font-size: 11px;
   font-weight: 700;
-}
-.urgency {
-  top: 14px;
   color: white;
   background: var(--color-primary);
 }
@@ -68,12 +65,30 @@
   background: #f59e0b;
 }
 .closes {
-  bottom: 14px;
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
   color: white;
-  background: #000000b3;
+  background: var(--color-primary);
+}
+.closes small {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 .closes b {
-  margin-left: 4px;
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
 }
 .body {
   display: flex;
@@ -144,6 +159,9 @@
   background: white;
   font-size: 18px;
   line-height: 1;
+}
+.controls > button + button {
+  margin-left: -4px;
 }
 .dots {
   flex: 1;

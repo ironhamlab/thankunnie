@@ -18,7 +18,7 @@
   gap: 24px;
 }
 .root :global(.b-brand) {
-  font-size: 20px;
+  font-size: 26px;
   white-space: nowrap;
 }
 .search {
@@ -233,6 +233,10 @@
   }
 }
 @media (max-width: 767px) {
+  /* design.css 의 540px 이하 18px !important 보다 앞서게 헤더 로고만 따로 정한다 */
+  .root :global(.b-brand) {
+    font-size: 22px !important;
+  }
   .root nav {
     display: none;
   }
@@ -264,17 +268,23 @@
   }
   .mobileNav a,
   .mobileNav button {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
+    line-height: 14px;
+    white-space: nowrap;
     background: none;
     border: 0;
     font: inherit;
     color: var(--color-text-secondary);
   }
-  .mobileNav span {
-    font-size: 20px;
+  .mobileNav a > svg {
+    flex: none;
+    width: 20px;
+    height: 20px;
   }
   .mobileNav span svg {
     width: 20px;

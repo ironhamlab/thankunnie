@@ -31,6 +31,31 @@ public interface ExploreShopDetailRepository extends Repository<Treatment, Long>
             """
             + SHOP_ACTIVE;
 
+    String FIND_SHOPS = """
+            select new com.ucamp.app.domain.explore.repository.ExploreShopCandidate(
+                   s.shopId, s.name, c.categoryId, c.name, s.regionCode, s.address, s.addressDetail,
+                   s.latitude, s.longitude, s.phone, s.description, s.notice, s.imageUrl)
+            from Shop s
+            join ShopAccount a on a.shopId = s.shopId
+            join ShopCategory c on c.categoryId = s.categoryId
+            where (:categoryId is null or s.categoryId = :categoryId)
+              and (:keyword is null
+                   or upper(s.name) like :keyword escape '!'
+                   or exists (select t.treatmentId from Treatment t
+                              where t.shop.shopId = s.shopId
+                                and t.status = """
+            + TREATMENT_ACTIVE
+            + """
+
+                                and upper(t.name) like :keyword escape '!'))
+              and a.status = \
+            """
+            + SHOP_ACTIVE
+            + """
+
+            order by s.shopId
+            """;
+
     String FIND_TREATMENTS = """
             select new com.ucamp.app.domain.explore.repository.ExploreShopTreatmentCandidate(
                    t.treatmentId, t.name, t.description, t.treatmentType, t.durationMinutes,
@@ -53,6 +78,16 @@ public interface ExploreShopDetailRepository extends Repository<Treatment, Long>
      */
     @Query(FIND_SHOP)
     Optional<ExploreShopCandidate> findShop(@Param("shopId") Long shopId);
+
+    /**
+     * 노출 중인 매장을 빈자리 유무와 상관없이 매장 ID 순으로 조회한다.
+     *
+     * @param categoryId 해당 분야 매장만. null 이면 전체
+     * @param keyword    매장명·판매 중인 시술명 LIKE 패턴(대문자, ! 로 이스케이프). null 이면 조건 없음
+     * @return 노출 중인 매장 목록
+     */
+    @Query(FIND_SHOPS)
+    List<ExploreShopCandidate> findShops(@Param("categoryId") Long categoryId, @Param("keyword") String keyword);
 
     /**
      * 매장의 판매 중인 시술을 시술 ID 순으로 조회한다.

@@ -21,3 +21,10 @@
   font-weight: 700;
   color: #c2410c;
 }
+
+/* 모바일 하단 메뉴(Header .mobileNav)를 가리지 않게 그 위에 띄운다 */
+@media (max-width: 767px) {
+  .devTestUserSwitch {
+    bottom: calc(75px + env(safe-area-inset-bottom));
+  }
+}
