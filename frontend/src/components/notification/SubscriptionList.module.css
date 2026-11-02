@@ -206,10 +206,32 @@
   }
 }
 @media (max-width: 767px) {
+  .intro {
+    margin-bottom: 16px;
+    text-align: left;
+  }
   .head {
     flex-wrap: wrap;
+    align-items: flex-start;
   }
   .title {
-    flex-basis: calc(100% - 88px);
+    flex: 1 1 100%;
+    order: 3;
+    overflow-wrap: anywhere;
+  }
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .actions > * {
+    min-height: 44px;
+  }
+  .note {
+    justify-content: flex-start;
+    text-align: left;
+    word-break: keep-all;
+  }
+  .timeRow {
+    grid-template-columns: 1fr;
   }
 }

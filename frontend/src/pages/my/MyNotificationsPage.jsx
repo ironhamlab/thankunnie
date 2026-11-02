@@ -9,9 +9,9 @@ import { isPendingFavorite } from '@/utils/notificationRules';
 import styles from './MyNotificationsPage.module.css';
 
 const TABS = [
-  { id: 'subscriptions', label: '내 알림 찾기' },
-  { id: 'favorites', label: '알림 전 찜 매장' },
-  { id: 'conditions', label: '카테고리·지역 알림 설정' },
+  { id: 'subscriptions', label: '내 알림 찾기', shortLabel: '내 알림' },
+  { id: 'favorites', label: '알림 전 찜 매장', shortLabel: '찜 매장' },
+  { id: 'conditions', label: '카테고리·지역 알림 설정', shortLabel: '조건 설정' },
 ];
 
 /**
@@ -34,19 +34,21 @@ export default function MyNotificationsPage() {
   return (
     <div className={styles.root}>
       <Panel as="nav" className={styles.tabs} role="tablist" aria-label="알림">
-        {TABS.map(({ id, label }) => (
+        {TABS.map(({ id, label, shortLabel }) => (
           <button
             key={id}
             id={`tab-${id}`}
             type="button"
             role="tab"
             className={styles.tab}
+            aria-label={label}
             aria-selected={tab === id}
             aria-controls="notification-tabpanel"
             disabled={tabsLocked}
             onClick={() => setTab(id)}
           >
-            {label}
+            <span className={styles.full}>{label}</span>
+            <span className={styles.short}>{shortLabel}</span>
             {id === 'favorites' && pendingFavoriteCount > 0 && (
               <b className={styles.count} aria-label={`${pendingFavoriteCount}개`}>
                 {pendingFavoriteCount}
