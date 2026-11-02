@@ -113,6 +113,7 @@ export function toVacancyCard(item, today = todayKst()) {
     day: dayLabel(datePart(item.startsAt), today),
     time: timePart(item.startsAt),
     closesAt: timePart(item.bookingClosesAt),
+    bookingClosesAt: item.bookingClosesAt,
     original: item.regularPrice,
     price: item.salePrice,
     discount: item.discountRate,
