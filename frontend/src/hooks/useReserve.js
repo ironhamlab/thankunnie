@@ -108,8 +108,22 @@ export default function useReserve() {
     }
   };
 
+  // 줄 서기 응답을 기다리는 사이 화면을 떠났는지. 대기 창이 뜨기 전이라 화면을 떠날 때 줄에서 나가는 처리가 걸리지 않는다
+  const unmountedRef = useRef(false);
+  useEffect(() => {
+    unmountedRef.current = false;
+    return () => {
+      unmountedRef.current = true;
+    };
+  }, []);
+
   // 서버가 알려준 내 순서에 따라 예약하거나, 결제 화면으로 가거나, 계속 기다린다
   const applyTicket = async (ticket, request) => {
+    // 떠난 화면에 늦게 온 응답으로 예약(5분 점유)을 만들거나 줄에 남지 않도록 줄에서만 나간다
+    if (unmountedRef.current) {
+      leaveQueue(toSlot(request));
+      return;
+    }
     if (ticket.status === 'WAITING') {
       waitingSlotRef.current = toSlot(request);
       setQueue({ request, aheadCount: ticket.aheadCount, paying: ticket.paying });
