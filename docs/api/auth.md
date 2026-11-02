@@ -220,7 +220,7 @@
 - 원본 DDL: `docs/erd/01_schema_ddl.sql`의 `SHOP.BUSINESS_NUMBER VARCHAR2(10 CHAR)`.
 - 중복 제약: `UK_SHOP_BUSINESS_NUMBER`. 사전 확인 이후 동시 요청도 DB에서 차단한다.
 - 기존 매장·시연 데이터는 `NULL`을 유지한다. 임의의 사업자번호로 채우지 않는다.
-- 기존 Oracle DB에는 배포 전 `docs/erd/04_add_shop_business_number.sql`을 **한 번** 적용한다.
+- 기존 Oracle DB에는 배포 전 PR에 기록한 `SHOP.BUSINESS_NUMBER` 추가 SQL을 **한 번** 적용한다.
 - 신규 H2는 원본 DDL에서 생성한다. 생성된 `schema.sql`은 직접 수정하지 않는다.
 - 대표자명·개업일은 조회 입력으로만 사용하고 새 DB 컬럼에 저장하지 않는다.
 - 같은 사업자번호의 지점 추가는 현재 지원하지 않는다. 계정당 매장 하나 정책에 따른다.
