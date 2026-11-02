@@ -231,11 +231,30 @@ class ReservationQueueServiceTest {
     }
 
     @Test
-    @DisplayName("사장님은 줄에 설 수 없다")
-    void join_owner_forbidden() {
-        AuthUser owner = new AuthUser(9L, UserRole.OWNER, SHOP_ID);
+    @DisplayName("기다려도 예약할 수 없는 빈자리는 CLOSED 를 주고 줄을 만들지 않는다")
+    void join_closedSlot_doesNotCreateQueue() {
+        ReservationQueueRequest unknownTreatment = new ReservationQueueRequest(99L, startsAtOffset());
 
-        assertThatThrownBy(() -> queueService.joinOrRefresh(owner, queueRequest()))
+        assertThat(queueService.joinOrRefresh(FIRST, unknownTreatment).status())
+                .isEqualTo(ReservationQueueStatus.CLOSED);
+        clock.advance(Duration.ofSeconds(30));
+        assertThat(queueService.sweepIdleQueues()).isZero();
+    }
+
+    @Test
+    @DisplayName("사장님은 줄에 서거나 나가거나 차례를 확인받을 수 없다")
+    void owner_forbidden() {
+        AuthUser owner = new AuthUser(9L, UserRole.OWNER, SHOP_ID);
+        queueService.joinOrRefresh(FIRST, queueRequest());
+
+        assertForbidden(() -> queueService.joinOrRefresh(owner, queueRequest()));
+        assertForbidden(() -> queueService.leave(owner, queueRequest()));
+        // 기다리는 사람이 있어도 차례(409)보다 역할(403)을 먼저 알린다
+        assertForbidden(() -> queueService.requireTurn(owner, createRequest()));
+    }
+
+    private static void assertForbidden(Runnable action) {
+        assertThatThrownBy(action::run)
                 .isInstanceOf(BusinessException.class)
                 .extracting(e -> ((BusinessException) e).getErrorCode())
                 .isEqualTo(ErrorCode.FORBIDDEN);

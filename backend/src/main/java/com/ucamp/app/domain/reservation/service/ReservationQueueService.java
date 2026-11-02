@@ -66,6 +66,11 @@ public class ReservationQueueService {
         loginUser.requireRole(UserRole.CUSTOMER);
         SlotKey key = toKey(request.treatmentId(), request.startsAt());
         LocalDateTime now = LocalDateTime.now(clock);
+        // 없는 시술·마감된 시각처럼 기다려도 예약할 수 없는 빈자리에는 줄을 만들지 않아 메모리에 쌓이지 않게 한다.
+        // 이 조회 결과는 줄을 만든 뒤의 상태 변경과 어긋날 수 있어 캐시하지 않는다
+        if (!queues.containsKey(key) && readState(key, now).kind() == SlotState.Kind.CLOSED) {
+            return ReservationQueueResponse.closed(now);
+        }
         ReservationQueue queue = acquire(key, now);
         SlotState state = loadState(queue, key, now);
 
@@ -89,8 +94,10 @@ public class ReservationQueueService {
      *
      * @param loginUser 로그인한 고객
      * @param request   시술 ID, 시작 일시
+     * @throws BusinessException 고객이 아니면 FORBIDDEN
      */
     public void leave(AuthUser loginUser, ReservationQueueRequest request) {
+        loginUser.requireRole(UserRole.CUSTOMER);
         ReservationQueue queue = queues.get(toKey(request.treatmentId(), request.startsAt()));
         if (queue != null) {
             queue.remove(loginUser.userId(), LocalDateTime.now(clock));
@@ -100,9 +107,11 @@ public class ReservationQueueService {
     /**
      * 예약 생성 전에 부른다. 이 빈자리에 기다리는 사람이 있으면 맨 앞 사람만 예약할 수 있다.
      *
-     * @throws BusinessException 앞에 기다리는 사람이 있으면 RESERVATION_QUEUE_NOT_YOUR_TURN
+     * @throws BusinessException 고객이 아니면 FORBIDDEN (예약 생성과 같은 응답이 되도록 차례보다 먼저 본다),
+     *                           앞에 기다리는 사람이 있으면 RESERVATION_QUEUE_NOT_YOUR_TURN
      */
     public void requireTurn(AuthUser loginUser, ReservationCreateRequest request) {
+        loginUser.requireRole(UserRole.CUSTOMER);
         ReservationQueue queue = queues.get(toKey(request.treatmentId(), request.startsAt()));
         if (queue != null && !queue.isTurnOf(loginUser.userId(), LocalDateTime.now(clock))) {
             throw new BusinessException(ErrorCode.RESERVATION_QUEUE_NOT_YOUR_TURN);
