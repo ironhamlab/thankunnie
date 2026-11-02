@@ -31,7 +31,7 @@
   flex-shrink: 0;
   min-width: 80px;
   padding: 10px 20px;
-  border: 1px solid #e2bdc3;
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-pill);
   background: white;
   font-size: 15px;
@@ -54,7 +54,7 @@
   border: 1px solid var(--color-primary);
   border-radius: var(--radius-pill);
   background: white;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 13px;
   font-weight: 700;
 }
@@ -77,8 +77,8 @@
 .mapPane {
   position: relative;
   overflow: hidden;
-  background: #dbe7ff;
-  border: 1px solid #c4d7fc;
+  background: var(--color-map-bg);
+  border: 1px solid var(--color-map-line);
   border-radius: 24px;
 }
 .refreshing {
@@ -89,8 +89,8 @@
   transform: translateX(-50%);
   padding: 6px 14px;
   border-radius: var(--radius-pill);
-  background: #fffffff0;
-  box-shadow: 0 2px 6px #0002;
+  background: color-mix(in srgb, var(--color-white) 94%, transparent);
+  box-shadow: 0 2px 6px color-mix(in srgb, black 13%, transparent);
   font-size: 12px;
   font-weight: 600;
 }
@@ -109,7 +109,7 @@
   font-size: 16px;
 }
 .listPane h2 span {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .notice {
   font-size: 13px;

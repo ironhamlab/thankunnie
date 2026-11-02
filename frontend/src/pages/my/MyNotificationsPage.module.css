@@ -44,7 +44,7 @@
 }
 .tab[aria-selected='true'] .count {
   background: white;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .panel {
   animation: tabStep 320ms ease;

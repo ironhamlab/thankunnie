@@ -21,7 +21,7 @@
   border: 0;
   padding: 0;
   background: none;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 600;
   text-decoration: underline;

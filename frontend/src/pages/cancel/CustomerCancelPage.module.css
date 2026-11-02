@@ -25,10 +25,10 @@
   font-size: 11px;
 }
 .amount.isZero {
-  background: #fff1f4;
+  background: var(--color-danger-bg);
 }
 .amount.isZero strong {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .tiers {
   list-style: none;
@@ -49,7 +49,7 @@
 }
 .tiers li:global(.is-current) {
   border-color: var(--color-primary);
-  background: #fff5f8;
+  background: var(--color-primary-faint);
 }
 .agree {
   display: flex;

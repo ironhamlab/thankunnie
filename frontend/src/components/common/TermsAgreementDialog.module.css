@@ -2,7 +2,7 @@
   border: 0;
   border-top: 4px solid var(--color-primary);
   width: min(440px, calc(100vw - 32px));
-  box-shadow: 0 24px 60px #b7005226;
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--color-primary) 15%, transparent);
 }
 
 .dialog :global(.b-pad) {
@@ -39,14 +39,14 @@
   margin-top: 2px;
   border-radius: 50%;
   background: linear-gradient(160deg, var(--color-primary-soft), var(--color-primary-faint));
-  color: var(--color-primary);
-  box-shadow: inset 0 0 0 1px #b7005214;
+  color: var(--color-primary-text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 
 .badgeMark {
   font-size: 18px;
   line-height: 1;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 /* Dialog 공통의 .root p 여백보다 구체적으로 잡는다 */
@@ -62,16 +62,16 @@
 .content {
   width: 100%;
   padding: 14px 16px;
-  border: 1px solid #ffd0e0;
+  border: 1px solid var(--color-primary-line);
   border-radius: var(--radius-md);
-  background: linear-gradient(180deg, #fff8fb, var(--color-white) 70%);
+  background: linear-gradient(180deg, var(--color-primary-faint), var(--color-white) 70%);
 }
 
 .content h3 {
   margin: 0 0 8px;
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .root .content p {

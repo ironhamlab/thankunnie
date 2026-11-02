@@ -15,7 +15,7 @@
   border-bottom: 3px solid var(--color-surface-blue);
 }
 .steps :global(.is-current) {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border-color: var(--color-primary);
   font-weight: 700;
 }
@@ -40,16 +40,16 @@
 .calendar button small {
   display: block;
   font-size: 10px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .calendar button:disabled {
   background: var(--color-surface);
   color: var(--color-text-muted);
 }
 .calendar button:global(.is-selected) {
-  background: #ff3589;
+  background: var(--color-primary);
   color: white;
-  border-color: #ff3589;
+  border-color: var(--color-primary);
 }
 .calendar button:global(.is-selected) small {
   color: white;

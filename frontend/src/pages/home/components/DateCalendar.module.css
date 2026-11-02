@@ -32,7 +32,7 @@
   font-size: 17px;
 }
 .current span:last-child {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 600;
 }
 .popover {
@@ -45,7 +45,7 @@
   background: white;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 12px 30px #0002;
+  box-shadow: 0 12px 30px color-mix(in srgb, black 13%, transparent);
 }
 .monthBar {
   display: flex;
@@ -83,14 +83,14 @@
   font-size: 13px;
 }
 .grid button:not(:disabled):hover {
-  background: #ffebf0;
+  background: var(--color-primary-tint);
 }
 .grid button:disabled {
-  color: #c9c9c9;
+  color: var(--color-text-disabled);
 }
 .grid button.today {
   font-weight: 800;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .grid button[aria-pressed='true'] {
   background: var(--color-primary);

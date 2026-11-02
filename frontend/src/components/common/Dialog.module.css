@@ -5,10 +5,10 @@
   width: min(600px, calc(100vw - 32px));
   max-height: 90vh;
   color: var(--color-text);
-  box-shadow: 0 20px 80px #111c2d33;
+  box-shadow: 0 20px 80px color-mix(in srgb, var(--color-text) 20%, transparent);
 }
 .root::backdrop {
-  background: #111c2d77;
+  background: color-mix(in srgb, var(--color-text) 47%, transparent);
 }
 .root :global(.beauty-app) {
   min-height: auto;

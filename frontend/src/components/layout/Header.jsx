@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import logo from '@/assets/images/logo.png';
 import { ROUTES } from '@/constants/routes';
 import { USER_ROLE } from '@/constants/userRole';
 import { useCurrentRole } from '@/hooks/useCurrentRole';
@@ -129,7 +130,8 @@ export default function Header() {
     <>
       <header className={styles.root}>
         <div className={`b-container ${styles.inner}`}>
-          <Link to={ROUTES.HOME} className="b-brand">
+          <Link to={ROUTES.HOME} className={`b-brand ${styles.brand}`}>
+            <img className={styles.logo} src={logo} alt="" />
             땡잡은 언니
           </Link>
 

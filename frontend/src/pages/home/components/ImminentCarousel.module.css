@@ -15,12 +15,12 @@
   font-size: 18px;
 }
 .heading h2 span {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .heading a {
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .slider {
   flex: 1;
@@ -37,13 +37,13 @@
   min-height: 330px;
   overflow: hidden;
   background: white;
-  border: 1px solid #e2bdc380;
+  border: 1px solid color-mix(in srgb, var(--color-border-strong) 50%, transparent);
   border-radius: 24px;
-  box-shadow: 0 4px 20px -2px #ff40810d;
+  box-shadow: 0 4px 20px -2px color-mix(in srgb, var(--color-primary) 5%, transparent);
 }
 .photo {
   position: relative;
-  background: #ffebf0;
+  background: var(--color-primary-tint);
 }
 .photo img {
   width: 100%;
@@ -62,7 +62,8 @@
   background: var(--color-primary);
 }
 .urgency.isSoon {
-  background: #f59e0b;
+  color: var(--color-text);
+  background: var(--color-accent);
 }
 .closes {
   position: absolute;
@@ -104,7 +105,7 @@
   font-size: 13px;
 }
 .meta span {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 600;
 }
 .body h3 {
@@ -116,7 +117,7 @@
   color: var(--color-text-secondary);
 }
 .time strong {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 16px;
 }
 .location {
@@ -139,7 +140,7 @@
   font-style: normal;
   font-size: 20px;
   font-weight: 800;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .price b {
   font-size: 22px;
@@ -174,7 +175,7 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: #e2bdc3;
+  background: var(--color-border-strong);
 }
 .dots button[aria-pressed='true'] {
   width: 22px;
@@ -188,13 +189,13 @@
   gap: 8px;
   min-height: 330px;
   text-align: center;
-  background: #ffebf0;
-  border: 1px dashed #e2bdc3;
+  background: var(--color-primary-tint);
+  border: 1px dashed var(--color-border-strong);
   border-radius: 24px;
 }
 .empty a {
   font-size: 13px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 @media (max-width: 767px) {
   .card {
@@ -213,7 +214,7 @@
   padding: 3px 10px;
   border: 1px solid var(--color-primary);
   border-radius: var(--radius-pill);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   text-decoration: none;
 }
 .slotLink:hover,
