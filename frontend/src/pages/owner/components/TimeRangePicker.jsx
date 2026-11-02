@@ -53,7 +53,7 @@ export default function TimeRangePicker({
   const isOff = (time) => (statusOf.get(time) ?? 'OFF') === 'OFF';
   const isSelected = (time) => time >= startTime && time < endTime;
   const times = TIME_OPTIONS.filter((time) =>
-    closing ? !isOff(time) : time >= from && time <= to,
+    closing ? !isOff(time) && time <= LAST_START : time >= from && time <= to,
   );
   const canExpand = !closing && (showAll || from > FIRST_START || to < LAST_START);
   // 오늘은 지금부터 30분 뒤 칸부터 열 수 있고, 늦어서 고를 칸이 없으면 입력란 아래 경고가 알려준다
