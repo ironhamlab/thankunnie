@@ -75,6 +75,7 @@ public class AuthService {
             throw new BusinessException(ErrorCode.AUTH_DUPLICATE_LOGIN_ID);
         }
         termsAgreementService.validateSignupAgreements(request.agreedTerms());
+        validatePhoneAvailable(request.phone());
         phoneVerificationService.consume(request.phone(), request.phoneVerificationId());
         AppUser user = AppUser.builder()
                 .loginId(request.loginId())
@@ -99,7 +100,6 @@ public class AuthService {
         }
         businessVerificationService.verify(new AuthBusinessVerificationRequest(request.businessNumber(),
                 request.representativeName(), request.openedOn()));
-        phoneVerificationService.consume(request.verificationPhone(), request.phoneVerificationId());
         ShopAccount account = ShopAccount.builder()
                 .loginId(request.loginId())
                 .businessNumber(request.businessNumber())
@@ -160,6 +160,13 @@ public class AuthService {
         };
     }
 
+    /** 휴대폰 인증은 고객 가입에만 쓰며, 번호당 고객 계정 하나만 허용한다. */
+    public void validatePhoneAvailable(String phone) {
+        if (appUserRepository.existsByPhone(normalizeMobilePhone(phone))) {
+            throw new BusinessException(ErrorCode.AUTH_DUPLICATE_PHONE);
+        }
+    }
+
     // 계정이 없어도 같은 비용의 BCrypt 비교를 한 번 수행해 응답 시간으로 아이디 존재 여부가 드러나지 않게 한다.
     // 72바이트를 넘는 입력은 BCrypt 가 예외(500)를 던지므로 비교하지 않고 실패로 본다. 가입에서 막아 그런 계정은 없다
     private boolean matchesPassword(String rawPassword, String passwordHash) {
@@ -181,28 +188,36 @@ public class AuthService {
             return shopAccountRepository.saveAndFlush(account);
         } catch (DataIntegrityViolationException e) {
             // 사전 확인 뒤 동시에 같은 번호로 가입해도 DB의 UNIQUE 제약으로 차단한다.
-            for (Throwable cause = e; cause != null; cause = cause.getCause()) {
-                String message = cause.getMessage();
-                if (message != null && message.toUpperCase(java.util.Locale.ROOT).contains("UK_SHOP_BUSINESS_NUMBER")) {
-                    throw new BusinessException(ErrorCode.AUTH_DUPLICATE_BUSINESS_NUMBER);
-                }
-                if (message != null && message.toUpperCase(java.util.Locale.ROOT).contains("UK_SHOP_LOGIN_ID")) {
-                    throw new BusinessException(ErrorCode.AUTH_DUPLICATE_LOGIN_ID);
-                }
+            if (violates(e, "UK_SHOP_BUSINESS_NUMBER")) {
+                throw new BusinessException(ErrorCode.AUTH_DUPLICATE_BUSINESS_NUMBER);
+            }
+            if (violates(e, "UK_SHOP_LOGIN_ID")) {
+                throw new BusinessException(ErrorCode.AUTH_DUPLICATE_LOGIN_ID);
             }
             throw e;
         }
     }
 
-    // 사전 확인과 저장 사이에 같은 아이디가 먼저 가입되면 LOGIN_ID UNIQUE 위반이 난다.
-    // 필수값·길이·카테고리는 앞에서 검증했으므로 이 시점의 제약 위반은 아이디 중복으로 본다
+    // 사전 확인과 저장 사이에 같은 아이디나 휴대폰 번호가 먼저 가입되면 UNIQUE 위반이 난다.
+    // 필수값·길이·카테고리는 앞에서 검증했으므로 휴대폰 제약이 아닌 위반은 아이디 중복으로 본다
     private static <T> T saveUniqueLoginId(Supplier<T> save) {
         try {
             return save.get();
         } catch (DataIntegrityViolationException e) {
-            ErrorCode errorCode = ErrorCode.AUTH_DUPLICATE_LOGIN_ID;
+            ErrorCode errorCode = violates(e, "UK_APP_USER_PHONE")
+                    ? ErrorCode.AUTH_DUPLICATE_PHONE : ErrorCode.AUTH_DUPLICATE_LOGIN_ID;
             throw new BusinessException(errorCode, errorCode.getMessage(), e);
         }
+    }
+
+    private static boolean violates(Throwable e, String constraint) {
+        for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+            String message = cause.getMessage();
+            if (message != null && message.toUpperCase(java.util.Locale.ROOT).contains(constraint)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // 요청 검증을 통과한 휴대폰 번호를 문자 발송·초기 데이터와 같은 010-0000-0000 형식으로 맞춘다

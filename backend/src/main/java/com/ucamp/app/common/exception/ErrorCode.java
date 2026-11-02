@@ -30,6 +30,7 @@ public enum ErrorCode {
     AUTH_BUSINESS_INVALID(HttpStatus.BAD_REQUEST, "AUTH_007", "사업자 정보를 확인해 주세요."),
     AUTH_BUSINESS_LOOKUP_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AUTH_008", "국세청 사업자 정보를 조회하지 못했습니다. 잠시 후 다시 시도해 주세요."),
     AUTH_DUPLICATE_BUSINESS_NUMBER(HttpStatus.CONFLICT, "AUTH_009", "이미 등록된 사업자등록번호입니다."),
+    AUTH_DUPLICATE_PHONE(HttpStatus.CONFLICT, "AUTH_010", "이미 가입된 휴대폰 번호입니다."),
 
     // TERMS
     TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "TERMS_001", "약관을 찾을 수 없습니다."),

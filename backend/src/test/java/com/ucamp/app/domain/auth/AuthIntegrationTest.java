@@ -398,7 +398,6 @@ class AuthIntegrationTest {
                 {"loginId":"%s","password":"%s","categoryId":%d,"name":"언니네 네일","regionCode":"11680",
                  "address":"서울특별시 강남구 테헤란로 1","addressDetail":"2층",
                  "latitude":37.4979,"longitude":127.0276,"phone":"02-111-1111",
-                 "verificationPhone":"01012345678","phoneVerificationId":"test-verification",
                  "businessNumber":"1234567891","representativeName":"테스트 대표","openedOn":"2020-01-01"}
                 """.formatted(loginId, PASSWORD, categoryId);
     }

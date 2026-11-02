@@ -10,7 +10,6 @@ import {
   validateCoordinate,
   validatePasswordConfirm,
   validateRequired,
-  validateMobilePhone,
 } from '@/utils/authValidation';
 import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
@@ -20,7 +19,6 @@ import AuthField from './components/AuthField';
 import ShopAddressFields from './components/ShopAddressFields';
 import styles from './ShopSignupPage.module.css';
 import useSignupVerification from '@/hooks/useSignupVerification';
-import SignupVerificationFields from './components/SignupVerificationFields';
 import BusinessVerificationFields from './components/BusinessVerificationFields';
 import useBusinessVerification from '@/hooks/useBusinessVerification';
 
@@ -31,7 +29,6 @@ const EMPTY_FORM = {
   categoryId: '',
   name: '',
   phone: '',
-  verificationPhone: '',
   businessNumber: '',
   representativeName: '',
   openedOn: '',
@@ -72,11 +69,8 @@ export default function ShopSignupPage() {
   const loadShopCategories = useAuthStore((state) => state.loadShopCategories);
   const [form, setForm] = useState(EMPTY_FORM);
   const businessVerification = useBusinessVerification(form);
-  const verification = useSignupVerification(
-    ACCOUNT_TYPE.SHOP,
-    form.loginId,
-    form.verificationPhone,
-  );
+  // 매장은 사업자등록번호로 가입자를 확인하므로 아이디 중복 확인만 사용한다
+  const verification = useSignupVerification(ACCOUNT_TYPE.SHOP, form.loginId, '');
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
@@ -89,7 +83,6 @@ export default function ShopSignupPage() {
       businessVerification.reset();
     }
     if ('loginId' in partial) verification.resetLoginId();
-    if ('verificationPhone' in partial) verification.resetPhone();
     setForm((prev) => ({ ...prev, ...partial }));
     // 위치(지역코드·좌표) 오류는 주소 칸에 표시하므로 위치가 바뀌면 주소 오류도 함께 지운다
     const changedKeys = Object.keys(partial);
@@ -116,9 +109,6 @@ export default function ShopSignupPage() {
       loginId:
         validateLoginId(form.loginId) ||
         (!verification.isLoginIdChecked ? '아이디 중복 확인을 해 주세요.' : ''),
-      verificationPhone:
-        validateMobilePhone(form.verificationPhone) ||
-        (!verification.isPhoneVerified ? '휴대폰 인증을 완료해 주세요.' : ''),
       password: validatePassword(form.password),
       passwordConfirm: validatePasswordConfirm(form.password, form.passwordConfirm),
       categoryId: form.categoryId ? '' : '카테고리를 선택해 주세요.',
@@ -144,8 +134,6 @@ export default function ShopSignupPage() {
         latitude: toCoordinate(form.latitude),
         longitude: toCoordinate(form.longitude),
         phone: form.phone.trim(),
-        verificationPhone: form.verificationPhone,
-        phoneVerificationId: verification.phoneVerificationId,
         businessNumber: form.businessNumber,
         representativeName: form.representativeName.trim(),
         openedOn: form.openedOn,
@@ -179,19 +167,6 @@ export default function ShopSignupPage() {
             loginIdClassName="b-span-two"
             verification={verification}
           />
-          <AuthField
-            className="b-span-two"
-            label="가입자 휴대폰 번호"
-            name="verificationPhone"
-            type="tel"
-            value={form.verificationPhone}
-            onChange={handleChange}
-            autoComplete="tel"
-            placeholder="010-1234-5678"
-            hint="매장 연락처와 별도로 가입할 휴대폰 번호를 인증해 주세요."
-            error={verification.isPhoneVerified ? '' : fieldErrors.verificationPhone}
-          />
-          <SignupVerificationFields verification={verification} mode="phone" />
         </section>
 
         <BusinessVerificationFields

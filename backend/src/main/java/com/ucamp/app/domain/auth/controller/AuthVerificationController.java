@@ -49,6 +49,8 @@ public class AuthVerificationController {
 
     @PostMapping("/phone/send")
     public ApiResponse<AuthPhoneResponse> send(@Valid @RequestBody AuthPhoneSendRequest request) {
+        // 이미 가입된 번호에는 문자를 보내지 않아 발송 비용과 가입 단계 낭비를 막는다.
+        authService.validatePhoneAvailable(request.phone());
         return ApiResponse.success(verificationService.send(request.phone()));
     }
 

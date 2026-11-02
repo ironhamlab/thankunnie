@@ -105,8 +105,8 @@ class AuthSignupVerificationIntegrationTest {
                 .andExpect(jsonPath("$.data.role").value("CUSTOMER"));
         mvc.perform(post("/api/v1/auth/signup").contentType(MediaType.APPLICATION_JSON)
                         .content(customerBody("unnie03", phone, id)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("AUTH_004"));
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("AUTH_010"));
         mvc.perform(post("/api/v1/auth/login-id/check").contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"loginId":"unnie02","accountType":"customer"}
@@ -130,9 +130,39 @@ class AuthSignupVerificationIntegrationTest {
     }
 
     @Test
-    @DisplayName("매장 유선 연락처와 별개인 가입자 휴대폰 인증으로 매장 가입한다")
-    void signupShop_verifiedMobileAndLandline_succeeds() throws Exception {
+    @DisplayName("이미 가입된 휴대폰 번호는 고객 인증번호 발송과 가입을 차단한다")
+    void signupCustomer_duplicatePhone_rejected() throws Exception {
         String id = sendAndVerify();
+        mvc.perform(post("/api/v1/auth/signup").contentType(MediaType.APPLICATION_JSON)
+                        .content(customerBody("unnie05", phone, id)))
+                .andExpect(status().isCreated());
+
+        mvc.perform(post("/api/v1/auth/phone/send").contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of("phone", phone))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("AUTH_010"));
+        verify(smsClient, times(1)).send(anyString(), anyString());
+
+        // 화면을 거치지 않고 다른 번호로 받은 인증을 써도 가입 번호 기준으로 차단한다.
+        String otherId = sendAndVerify("0109876" + PHONE_SEQUENCE.incrementAndGet());
+        mvc.perform(post("/api/v1/auth/signup").contentType(MediaType.APPLICATION_JSON)
+                        .content(customerBody("unnie06", phone, otherId)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("AUTH_010"));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM APP_USER WHERE LOGIN_ID = 'unnie06'", Integer.class))
+                .isZero();
+        // 서비스 사전 검사와 별개로 DB에서도 같은 번호의 저장을 차단한다.
+        assertThatThrownBy(() -> jdbc.update("""
+                INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
+                SELECT USER_ID + 1, 'other-user', PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT
+                FROM APP_USER WHERE LOGIN_ID = 'unnie05'
+                """))
+                .isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("UK_APP_USER_PHONE");
+    }
+
+    @Test
+    @DisplayName("휴대폰 인증 없이 사업자 확인만으로 유선 연락처 매장을 가입한다")
+    void signupShop_businessVerifiedWithLandline_succeeds() throws Exception {
         mvc.perform(post("/api/v1/auth/business/verify").contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"businessNumber":"1234567891","representativeName":"테스트 대표","openedOn":"2020-01-01"}
@@ -142,9 +172,8 @@ class AuthSignupVerificationIntegrationTest {
                 {"loginId":"nailshop","password":"CHANGE_ME-1234","categoryId":9001,
                  "name":"언니네 네일","regionCode":"11680","address":"서울 강남구 테헤란로 1",
                  "latitude":37.4979,"longitude":127.0276,"phone":"02-111-1111",
-                 "verificationPhone":"%s","phoneVerificationId":"%s",
                  "businessNumber":"1234567891","representativeName":"테스트 대표","openedOn":"2020-01-01"}
-                """.formatted(phone, id);
+                """;
         mvc.perform(post("/api/v1/auth/shops/signup").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.role").value("OWNER"));
@@ -170,7 +199,6 @@ class AuthSignupVerificationIntegrationTest {
     @Test
     @DisplayName("사업자 사전 확인 후 대표자명을 바꾸면 최종 가입에서 다시 조회하고 저장을 차단한다")
     void signupShop_changedBusinessInformation_rechecksProvider() throws Exception {
-        String id = sendAndVerify();
         mvc.perform(post("/api/v1/auth/business/verify").contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"businessNumber":"1234567891","representativeName":"테스트 대표","openedOn":"2020-01-01"}
@@ -183,16 +211,19 @@ class AuthSignupVerificationIntegrationTest {
                                 {"loginId":"changedshop","password":"CHANGE_ME-1234","categoryId":9001,
                                  "name":"언니네 네일","regionCode":"11680","address":"서울 강남구 테헤란로 1",
                                  "latitude":37.4979,"longitude":127.0276,"phone":"02-111-1111",
-                                 "verificationPhone":"%s","phoneVerificationId":"%s",
                                  "businessNumber":"1234567891","representativeName":"다른 대표","openedOn":"2020-01-01"}
-                                """.formatted(phone, id)))
+                                """))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("AUTH_007"));
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM SHOP WHERE LOGIN_ID = 'changedshop'", Integer.class)).isZero();
     }
 
     private String send() throws Exception {
+        return send(phone);
+    }
+
+    private String send(String targetPhone) throws Exception {
         String response = mvc.perform(post("/api/v1/auth/phone/send").contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(Map.of("phone", phone))))
+                        .content(mapper.writeValueAsString(Map.of("phone", targetPhone))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.verified").value(false))
                 .andExpect(jsonPath("$.data.code").doesNotExist())
@@ -201,7 +232,11 @@ class AuthSignupVerificationIntegrationTest {
     }
 
     private String sendAndVerify() throws Exception {
-        String id = send();
+        return sendAndVerify(phone);
+    }
+
+    private String sendAndVerify(String targetPhone) throws Exception {
+        String id = send(targetPhone);
         mvc.perform(post("/api/v1/auth/phone/verify").contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(Map.of("verificationId", id, "code", sentCode.get()))))
                 .andExpect(status().isOk())

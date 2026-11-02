@@ -34,9 +34,6 @@ public record AuthShopSignupRequest(
         @NotBlank @Size(max = 20) String phone,
         @Size(max = 2000) String description,
         @Size(max = 2000) String notice,
-        @NotBlank @Pattern(regexp = AuthInputRules.MOBILE_PHONE, message = AuthInputRules.MOBILE_PHONE_MESSAGE)
-        String verificationPhone,
-        @NotBlank @Size(max = 36) String phoneVerificationId,
         @NotBlank @Pattern(regexp = "[0-9]{10}") String businessNumber,
         @NotBlank @Size(max = 100) String representativeName,
         @NotNull LocalDate openedOn) {
