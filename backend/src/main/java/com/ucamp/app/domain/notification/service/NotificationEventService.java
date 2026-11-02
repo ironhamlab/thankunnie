@@ -24,7 +24,7 @@ import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 /**
  * 빈자리 알림 소식을 만드는 곳.
- * 임박·초임박은 1분마다 찾고, 재공개는 취소가 끝난 뒤에 만든다.
+ * 임박·초임박은 10초마다 찾고, 재공개는 취소가 끝난 뒤에 만든다.
  */
 @Slf4j
 @Service
