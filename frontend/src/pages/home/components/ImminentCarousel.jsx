@@ -101,6 +101,8 @@ export default function ImminentCarousel() {
                 className={styles.closes}
                 closesAt={current.bookingClosesAt}
                 closesTime={current.closesAt}
+                // 마감된 빈자리를 계속 고르지 않게 목록을 다시 받아 카드를 바꾼다
+                onExpire={loadImminentVacancies}
               />
             </div>
             <div className={styles.body}>

@@ -94,6 +94,7 @@ export default function VacancySearch() {
   const status = useExploreStore((s) => s.searchShopsStatus);
   const error = useExploreStore((s) => s.searchShopsError);
   const allShops = useExploreStore((s) => s.allShops);
+  const allShopsStatus = useExploreStore((s) => s.allShopsStatus);
   const loadAllShops = useExploreStore((s) => s.loadAllShops);
   const shopVacancies = useExploreStore((s) => s.shopVacancies);
   const categories = useExploreStore((s) => s.categories);
@@ -157,6 +158,8 @@ export default function VacancySearch() {
   // 하루씩 보므로 빈 날짜를 자주 만난다. 같은 조건으로 다음 날부터 찾아 가장 가까운 날짜를 안내한다
   // 타임세일은 오늘만 보는 화면이라 다른 날짜를 안내하지 않는다
   const noVacancy = status === 'succeeded' && shops.length === 0;
+  // 전체 날짜 보기는 다른 날짜를 찾지 않으므로, 이전 검색에서 찾아 둔 날짜를 안내하지 않는다
+  const suggestNextDate = nextVacancyDate && !saleOnly && !allDates;
   useEffect(() => {
     if (!noVacancy || saleOnly || allDates || date >= lastDay) return;
     const end = addDays(date, NEXT_SEARCH_DAYS);
@@ -304,7 +307,7 @@ export default function VacancySearch() {
       </section>
       <div className={`b-row ${styles.resultsHeading}`}>
         <h2>
-          {allDates ? allDatesTitle : listTitle} <Badge>{sortedShops.length}곳</Badge>
+          {allDates && allShopsStatus !== 'failed' ? allDatesTitle : listTitle} <Badge>{sortedShops.length}곳</Badge>
         </h2>
       </div>
       <div className={styles.layout}>
@@ -357,7 +360,7 @@ export default function VacancySearch() {
                 {allDates ? '예약 가능한 기간' : dayLabel(date, today)}에는 조건에 맞는 빈자리가
                 없어요
               </h2>
-              {nextVacancyDate && !saleOnly ? (
+              {suggestNextDate ? (
                 <>
                   <p>가장 가까운 빈자리는 {dayLabel(nextVacancyDate, today)}에 있어요.</p>
                   <Button
@@ -372,7 +375,7 @@ export default function VacancySearch() {
               ) : (
                 <p>다른 날짜나 분야를 선택해 보세요.</p>
               )}
-              <Button variant={nextVacancyDate && !saleOnly ? 'soft' : 'primary'} onClick={reset}>
+              <Button variant={suggestNextDate ? 'soft' : 'primary'} onClick={reset}>
                 필터 초기화
               </Button>
             </EmptyState>

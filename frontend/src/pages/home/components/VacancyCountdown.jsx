@@ -14,8 +14,9 @@ const formatRemaining = (milliseconds) => {
  * @param closesAt   예약 마감 시각 (ISO 문자열)
  * @param closesTime 화면 낭독기로 읽어 줄 마감 시각 (HH:mm)
  * @param className  겉모양
+ * @param onExpire   마감 시각이 지나면 부른다
  */
-export default function VacancyCountdown({ closesAt, closesTime, className }) {
+export default function VacancyCountdown({ closesAt, closesTime, className, onExpire }) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -24,10 +25,15 @@ export default function VacancyCountdown({ closesAt, closesTime, className }) {
   }, []);
 
   const remaining = Date.parse(closesAt) - now;
+  const expired = remaining <= 0;
+
+  useEffect(() => {
+    if (expired) onExpire?.();
+  }, [expired, onExpire]);
 
   return (
     <span className={className} role="timer" aria-label={`예약 마감 ${closesTime}`}>
-      {remaining > 0 ? (
+      {!expired ? (
         <>
           <small>마감까지</small>
           <b>{formatRemaining(remaining)}</b>
