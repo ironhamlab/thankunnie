@@ -19,7 +19,7 @@
 .heading > span {
   font-size: 10px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .heading > button {
   margin-left: auto;
@@ -34,12 +34,12 @@
   flex: 1;
   min-height: 380px;
   overflow: hidden;
-  background-color: #dbe7ff;
+  background-color: var(--color-map-bg);
   background-image:
-    linear-gradient(#8e6f750d 1px, transparent 1px),
-    linear-gradient(90deg, #8e6f750d 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--color-text-muted) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-text-muted) 5%, transparent) 1px, transparent 1px);
   background-size: 24px 24px;
-  border: 1px solid #c4d7fc;
+  border: 1px solid var(--color-map-line);
   border-radius: 24px;
   padding: 16px;
 }
@@ -55,10 +55,10 @@
 }
 .toolbar > span,
 .toolbar > div {
-  background: #fffffff0;
+  background: color-mix(in srgb, var(--color-white) 94%, transparent);
   border: 1px solid var(--color-border);
   border-radius: 24px;
-  box-shadow: 0 1px 3px #0001;
+  box-shadow: 0 1px 3px color-mix(in srgb, black 7%, transparent);
   padding: 6px 10px;
   font-size: 10px;
 }
@@ -83,7 +83,7 @@
   bottom: 94px;
   left: 20px;
   font-size: 10px;
-  color: #5a6070;
+  color: var(--color-text-secondary);
 }
 .preview {
   display: flex;
@@ -94,16 +94,16 @@
   right: 16px;
   bottom: 16px;
   padding: 12px;
-  background: #fffffff2;
+  background: color-mix(in srgb, var(--color-white) 95%, transparent);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 4px 6px #0001;
+  box-shadow: 0 4px 6px color-mix(in srgb, black 7%, transparent);
 }
 .storeIcon {
   display: grid;
   place-items: center;
   background: var(--color-primary-soft);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);
@@ -117,8 +117,8 @@
 }
 .preview > div > span {
   margin-left: 6px;
-  color: var(--color-primary);
-  background: #ffebf0;
+  color: var(--color-primary-text);
+  background: var(--color-primary-tint);
   padding: 2px 4px;
   border-radius: 4px;
   font-size: 10px;
@@ -169,5 +169,5 @@
 .mapLink {
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }

@@ -1,5 +1,5 @@
 .settlement {
-  border-color: #ffc1d9;
+  border-color: var(--color-primary-line);
 }
 .settlement :global(.b-details) {
   margin: 6px 0 14px;

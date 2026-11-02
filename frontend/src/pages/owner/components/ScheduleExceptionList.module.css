@@ -27,7 +27,7 @@
   cursor: pointer;
 }
 .date:hover {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   text-decoration: underline;
 }
 .bar {
@@ -104,7 +104,7 @@
 .rows .toggle:hover,
 .rows .toggle[aria-expanded='true'] {
   background: var(--color-primary-faint);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .reasonLabel {
   grid-area: label;

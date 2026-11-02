@@ -30,9 +30,9 @@
   width: 72px;
   height: 72px;
   flex-shrink: 0;
-  background: #ffdfeb;
-  border: 5px solid #fff1f6;
-  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border: 5px solid var(--color-primary-faint);
+  color: var(--color-primary-text);
   border-radius: 50%;
   font-size: 20px;
   font-weight: 800;
@@ -57,7 +57,7 @@
 }
 .stats > div {
   text-align: center;
-  background: #f5f6ff;
+  background: var(--color-surface-raised);
   border-radius: var(--radius-md);
   padding: 16px 8px;
   font-size: 11px;
@@ -77,8 +77,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  border-color: #ffacd0;
-  background: linear-gradient(120deg, #fff4f8, white 55%, #f1f3ff);
+  border-color: var(--color-primary-line);
+  background: linear-gradient(120deg, var(--color-primary-faint), white 55%, var(--color-surface-raised));
 }
 .nearest h2 {
   margin: 12px 0 4px;
@@ -110,7 +110,7 @@
   padding: 2px 10px;
   border-radius: var(--radius-pill);
   background: var(--color-white);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 800;
 }
@@ -144,7 +144,7 @@
   font-size: 11px;
 }
 .nearestPrices span {
-  background: #ffffffbb;
+  background: color-mix(in srgb, var(--color-white) 73%, transparent);
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 4px 10px;

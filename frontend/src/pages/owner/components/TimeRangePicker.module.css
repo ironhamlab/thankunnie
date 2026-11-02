@@ -7,7 +7,7 @@
   margin: 0;
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .rule {
   margin: 0;
@@ -74,7 +74,7 @@
 }
 .closed {
   border-color: var(--color-danger);
-  background: #fff1f2;
+  background: var(--color-primary-faint);
   color: var(--color-danger);
 }
 .off {
@@ -94,7 +94,7 @@
 /* 고른 구간 안의 닫음·예약됨 칸은 선택 색을 옅게 하고 안쪽 흰 테두리로 다른 칸과 구분한다 */
 .selected.closed,
 .selected.booked {
-  background: #e887ab;
+  background: var(--color-primary-light);
   box-shadow: inset 0 0 0 2px white;
 }
 .more {
@@ -103,7 +103,7 @@
   padding: 6px 0;
   border: 0;
   background: none;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 700;
   text-decoration: underline;

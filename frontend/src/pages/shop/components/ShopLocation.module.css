@@ -29,7 +29,7 @@
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
-  box-shadow: 0 2px 5px #0002;
+  box-shadow: 0 2px 5px color-mix(in srgb, black 13%, transparent);
   cursor: default;
 }
 .links {
@@ -40,7 +40,7 @@
   font-size: 13px;
 }
 .links a {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 700;
 }
 @media (max-width: 540px) {
