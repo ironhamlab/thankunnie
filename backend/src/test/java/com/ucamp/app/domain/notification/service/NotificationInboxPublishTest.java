@@ -2,6 +2,7 @@ package com.ucamp.app.domain.notification.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter.SseEventBuilder;
 
 import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.TestUser;
@@ -132,6 +134,19 @@ class NotificationInboxPublishTest {
         verify(broken).send("3");
         assertThat(connections.count(CUSTOMER.userId())).isEqualTo(1);
         verify(otherEmitter, never()).send(anyString());
+    }
+
+    @Test
+    @DisplayName("연결 유지 신호는 모든 연결에 보내고 끊긴 연결만 뺀다")
+    void sendHeartbeat_removesBrokenConnection() throws Exception {
+        doThrow(new IOException("closed")).when(otherEmitter).send(any(SseEventBuilder.class));
+
+        connections.sendHeartbeat();
+
+        verify(customerEmitter).send(any(SseEventBuilder.class));
+        verify(customerEmitter, never()).send(anyString());
+        assertThat(connections.count(CUSTOMER.userId())).isEqualTo(1);
+        assertThat(connections.count(OTHER_CUSTOMER.userId())).isZero();
     }
 
     private static void commit() {

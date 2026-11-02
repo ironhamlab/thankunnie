@@ -147,9 +147,24 @@
   .chips button {
     min-height: 44px;
   }
-  .summary {
-    padding: 10px 12px;
-    font-size: 13px;
+  .section {
+    gap: 10px;
+  }
+  /* 저장 막대를 화면 끝까지 넓히고, 요약은 배경 없이 한 줄로 줄여 칸을 덜 가린다 */
+  .footer {
+    gap: 8px;
+    margin: 0 -16px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    border-top: 0;
+    box-shadow: 0 -4px 16px #0000000f;
+  }
+  .summary,
+  .summary.close,
+  .summary.open {
+    padding: 0;
+    background: none;
+    font-size: 12px;
+    text-align: center;
   }
   .footer button {
     min-height: 48px;

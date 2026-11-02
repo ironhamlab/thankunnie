@@ -10,6 +10,11 @@
 .expanded {
   border-color: var(--color-primary);
 }
+/* 옆 지도에서 보여주는 매장. 지도 핀과 짝이 보이게 테두리와 바탕을 같이 바꾼다 */
+.located {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
 .thumb {
   width: 72px;
   height: 72px;
@@ -197,7 +202,23 @@
   .price b {
     font-size: 15px;
   }
-  .toggle {
+  /* 지도에서 보기와 시간 보기가 함께 있으면 둘을 오른쪽에 나란히 둔다 */
+  .toggle:first-of-type {
+    margin-left: auto;
+  }
+}
+/* 지도에서 보기와 시간 보기를 함께 두면 매장명이 잘리므로, 조금 넓은 카드에서도 두 버튼을 아래 줄로 내린다 */
+@container (max-width: 600px) {
+  .twoActions {
+    flex-wrap: wrap;
+    gap: 0;
+    padding: 0 12px 6px 0;
+  }
+  .twoActions .shopLink {
+    flex-basis: 100%;
+    padding-bottom: 4px;
+  }
+  .twoActions .toggle:first-of-type {
     margin-left: auto;
   }
 }

@@ -9,6 +9,20 @@
   margin-bottom: 10px;
   color: var(--color-text-secondary);
 }
+@media (max-width: 540px) {
+  /* 레이아웃의 오른쪽 밀기 규칙보다 우선해 매장 정보를 왼쪽에 두고, 버튼은 칸을 채워 줄을 맞춘다 */
+  .profile.profile:global(.b-panel):global(.b-row) > :global(.b-flex) {
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+    margin-left: 0;
+  }
+  .profile p {
+    margin-bottom: 0;
+  }
+  .profile > :global(.b-button) {
+    width: 100%;
+  }
+}
 .error {
   display: flex;
   align-items: center;
