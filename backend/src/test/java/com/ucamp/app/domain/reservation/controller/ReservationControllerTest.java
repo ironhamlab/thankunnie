@@ -3,6 +3,7 @@ package com.ucamp.app.domain.reservation.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -27,6 +28,7 @@ import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.domain.reservation.dto.response.ReservationCreateResponse;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
+import com.ucamp.app.domain.reservation.service.ReservationQueueService;
 import com.ucamp.app.domain.reservation.service.ReservationService;
 
 @WebMvcTest(controllers = ReservationController.class)
@@ -44,6 +46,9 @@ class ReservationControllerTest {
 
     @MockitoBean
     private ReservationService reservationService;
+
+    @MockitoBean
+    private ReservationQueueService reservationQueueService;
 
     @Test
     @DisplayName("고객이 예약하면 201 과 점유 예약 정보를 반환한다")
@@ -102,5 +107,20 @@ class ReservationControllerTest {
                         .content(VALID_BODY))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("VACANCY_006"));
+    }
+
+    @Test
+    @DisplayName("대기열에서 차례가 아니면 409 와 RESERVATION_007 을 반환하고 예약을 만들지 않는다")
+    void createReservation_notYourTurn_returnsConflict() throws Exception {
+        willThrow(new BusinessException(ErrorCode.RESERVATION_QUEUE_NOT_YOUR_TURN))
+                .given(reservationQueueService).requireTurn(any(), any());
+
+        mockMvc.perform(post(URL)
+                        .header(StubAuthFilter.HEADER_NAME, "CUSTOMER_1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_BODY))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("RESERVATION_007"));
+        verifyNoInteractions(reservationService);
     }
 }

@@ -10,6 +10,8 @@
 | 메서드 | 경로 | 동작 | 권한 | 성공 |
 |---|---|---|---|---|
 | POST | `/api/v1/reservations` | 예약 생성(점유) | 고객 | 201 |
+| POST | `/api/v1/reservations/queue` | 예약 대기열 서기·순서 조회 | 고객 | 200 |
+| POST | `/api/v1/reservations/queue/leave` | 예약 대기열 나가기 | 고객 | 204 |
 | GET | `/api/v1/my/reservations` | 내 예약 목록 | 고객 | 200 |
 | GET | `/api/v1/my/reservations/{reservationId}` | 내 예약 상세 | 고객 | 200 |
 | GET | `/api/v1/my/reservations/current-hold` | 내 현재 점유 | 고객 | 200 |
@@ -57,6 +59,58 @@
 - `holdExpiresAt`은 생성 시각 + 5분이다. 이 시각까지 결제하지 않으면 예약은 EXPIRED가 되고 시간이 풀린다.
 - 같은 고객이 여러 매장에 동시에 누르거나 두 고객이 같은 시간을 동시에 눌러도 한 건만 점유되도록
   회원 → 매장 순으로 잠근 뒤 가용 시간과 본인 예약 겹침을 다시 검사한다.
+
+## 예약 대기열 (UNNIE-174)
+
+알림을 받은 여러 고객이 같은 빈자리를 동시에 누르면, 누른 순서대로 번호표를 주고 한 명씩 예약하게 한다.
+빈자리 하나는 자리 하나이므로 줄은 **같은 시술 + 같은 시작 일시** 단위로 나눈다.
+
+- 맨 앞 사람의 차례(`MY_TURN`)가 되면 예약 생성(점유)을 부른다. 점유하면 그 사람은 줄에서 빠지고, 뒷사람은 결제 중(`paying`)으로 기다린다.
+- 점유가 결제 없이 풀리면(점유 풀기·5분 만료) 다음 사람 차례가 된다. 확정되거나 마감·닫힘이면 모두 `CLOSED`를 받는다.
+- 같은 시간 두 명 점유를 막는 것은 여전히 예약 생성의 회원·매장 잠금이다. 대기열은 순서만 정한다.
+- 줄은 서버 메모리에 둔다(백엔드 1대 기준). 재시작·배포하면 줄이 비워지고 다시 선다. 점유·예약은 DB에 있어 영향이 없다.
+- 기다리는 사람이 없는 빈자리는 줄에 서지 않고 예약해도 된다. 기다리는 사람이 있으면 맨 앞 사람만 예약할 수 있다(`RESERVATION_007`).
+
+| 규칙 | 값 |
+|---|---|
+| 순서 다시 묻기(화면) | 2초마다 |
+| 줄에서 빠짐 | 15초 동안 순서를 묻지 않으면 (대기 화면을 닫음·탭 종료) |
+| 차례 유지 | 차례가 온 뒤 15초 안에 예약하지 않으면 다음 사람에게 넘어감 |
+| 빈자리 상태 조회 | 같은 줄은 1초에 한 번만 DB에서 읽음 |
+| 빈 줄 정리 | 1분마다 |
+
+### 줄 서기·순서 조회 `POST /api/v1/reservations/queue`
+
+요청은 예약 생성과 같은 빈자리다. 이미 서 있으면 순서를 바꾸지 않고 지금 순서를 돌려준다.
+
+```json
+{ "treatmentId": 1, "startsAt": "2026-10-29T15:00:00+09:00" }
+```
+
+응답 `data` (200):
+
+```json
+{
+  "status": "WAITING",
+  "aheadCount": 2,
+  "paying": true,
+  "turnExpiresAt": null,
+  "reservationId": null,
+  "serverTime": "2026-10-29T13:00:02.120+09:00"
+}
+```
+
+| `status` | 뜻 | 화면 |
+|---|---|---|
+| WAITING | 앞사람이 있거나 앞사람이 결제 중 | 대기 화면에 `aheadCount`(결제 중인 사람 제외)와 결제 중 여부 표시 |
+| MY_TURN | 내 차례. `turnExpiresAt` 전에 예약해야 함 | 바로 예약 생성 → 결제 화면 |
+| HOLDING | 내가 이미 이 빈자리를 점유 중 (`reservationId`) | 결제 화면으로 이동 |
+| CLOSED | 확정·마감·닫힘으로 더 기다려도 예약 불가 | 다른 시간을 고르라고 안내 |
+
+### 줄 나가기 `POST /api/v1/reservations/queue/leave`
+
+- 요청은 줄 서기와 같다. 줄에 없어도 204.
+- 화면은 대기 취소, 대기 중 다른 화면으로 이동할 때 부른다. 실패해도 15초 뒤 서버가 줄에서 뺀다.
 
 ## 예약 목록 `GET /api/v1/my/reservations`, `GET /api/v1/owner/reservations`
 
@@ -299,6 +353,7 @@ export default function App() {
 | VACANCY_016 | 409 | 본인의 다른 예약과 시간이 겹침 |
 | TERMS_004 | 409 | 초보 시술인데 촬영(`MODEL_PHOTO`) 동의가 없음. 동의 모달 → `PUT /api/v1/users/me/terms-agreements/MODEL_PHOTO` → 예약 생성 재요청 (`terms.md`) |
 | RESERVATION_006 | 409 | 다른 시간의 결제 대기 예약이 있는데 그 예약 ID를 `replaceReservationId`로 보내지 않고 생성 |
+| RESERVATION_007 | 409 | 같은 빈자리 대기열에 먼저 선 사람이 있어 아직 내 차례가 아님 (차례 시간 초과 포함) |
 | RESERVATION_001 | 404 | 없는 예약 또는 다른 고객의 예약 (점유 풀기) |
 | RESERVATION_002 | 409 | 이미 확정된 예약 (점유 풀기·교체) |
 | RESERVATION_004 | 409 | 취소 처리 중·취소 완료 예약 (점유 풀기·교체) |
@@ -308,8 +363,10 @@ export default function App() {
 ## 화면 연결
 
 - 요청 순서: 화면 → `useReservationStore` → `reservationApi` → `axiosInstance`.
-- `/shops/:shopId`: 시술·날짜·시간을 고르고 예약하기 버튼을 누르면 `createReservation`을 호출하고,
-  성공하면 `/checkout?reservationId={번호}`로 이동한다. 실패하면 화면에 머물며 서버 오류 메시지를 보여준다.
+- `/shops/:shopId`: 시술·날짜·시간을 고르고 예약하기 버튼을 누르면 먼저 대기열에 선다(`joinQueue`).
+  내 차례면 `createReservation`을 호출하고 성공하면 `/checkout?reservationId={번호}`로 이동한다.
+  앞사람이 있으면 대기 창(`QueueWaitingDialog`)을 띄우고 2초마다 순서를 다시 물어, 차례가 오면 자동으로 예약한다.
+  실패하면 화면에 머물며 서버 오류 메시지를 보여준다. `/reserve/:id`도 같은 훅(`useReserve`)을 쓴다.
 - `/reserve/:id`: 시연용 시술 주소(`/reserve/nail` 등)를 쓰는 예전 예약 화면. `utils/demoData.js`의 `treatmentId`로
   초기 데이터의 실제 시술과 연결했고, 빈 시간 표시는 시연용 계산이라 비어 있지 않은 시간은 서버가 거절한다.
 - `/checkout?reservationId={번호}`: 내 예약 상세 API로 예약을 불러와 매장·시술·시각·금액·예약금·잔금을 표시한다.
