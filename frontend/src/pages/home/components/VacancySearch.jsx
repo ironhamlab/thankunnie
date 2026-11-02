@@ -28,8 +28,8 @@ const SHOP_SORTS = {
   '낮은 가격순': (a, b) => a.minSalePrice - b.minSalePrice,
 };
 const sorts = Object.keys(SHOP_SORTS);
-// 한 페이지에 보여줄 매장 수. 펼친 매장의 시간 버튼까지 있으면 길어지므로 10곳씩 나눈다
-const PAGE_SIZE = 10;
+// 한 페이지에 보여줄 매장 수. 펼친 매장의 시간 버튼까지 있으면 길어지므로 8곳씩 나눈다
+const PAGE_SIZE = 8;
 // 예약은 오늘 포함 60일까지 가능하다
 const MAX_DAYS = 60;
 // 헤더 검색어는 글자마다 바뀌므로 입력이 멈춘 뒤 조회한다
