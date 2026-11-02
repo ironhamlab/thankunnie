@@ -7,7 +7,7 @@
   gap: 6px;
   align-items: center;
   white-space: nowrap;
-  background: #ffffffcc;
+  background: color-mix(in srgb, var(--color-white) 80%, transparent);
   padding: 9px 14px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -15,10 +15,10 @@
 }
 .noteIcon,
 .previewIcon {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .demoNote strong {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .filters {
   padding: 20px;
@@ -63,7 +63,7 @@
 }
 .segmented :global(.b-options) button:global(.is-selected) {
   background: white;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .resultsHeading {
   padding: 4px;
@@ -103,7 +103,7 @@
   }
 }
 .description {
-  color: #777;
+  color: var(--color-text-muted);
   font-size: 13px;
   margin: 10px 0 22px;
 }
@@ -118,7 +118,7 @@
   flex-shrink: 0;
   min-width: 96px;
   padding: 12px 24px;
-  border: 1px solid #e2bdc3;
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-pill);
   background: white;
   font-size: 16px;

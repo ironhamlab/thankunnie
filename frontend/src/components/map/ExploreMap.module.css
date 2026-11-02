@@ -24,7 +24,7 @@
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
-  box-shadow: 0 2px 5px #0002;
+  box-shadow: 0 2px 5px color-mix(in srgb, black 13%, transparent);
   cursor: pointer;
 }
 .pin:global(.is-selected) {
@@ -58,10 +58,10 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   background: white;
-  box-shadow: 0 2px 6px #0002;
+  box-shadow: 0 2px 6px color-mix(in srgb, black 13%, transparent);
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   cursor: pointer;
 }
 .locate:disabled {
@@ -77,7 +77,7 @@
   max-width: calc(100% - 32px);
   padding: 8px 14px;
   border-radius: var(--radius-md);
-  background: #000000c0;
+  background: color-mix(in srgb, black 75%, transparent);
   color: white;
   font-size: 12px;
   text-align: center;
@@ -89,6 +89,6 @@
   height: 16px;
   border: 3px solid white;
   border-radius: 50%;
-  background: #2f7cf6;
-  box-shadow: 0 0 0 6px #2f7cf633;
+  background: var(--color-map-me);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-map-me) 20%, transparent);
 }

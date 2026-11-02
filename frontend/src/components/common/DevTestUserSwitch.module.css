@@ -4,9 +4,9 @@
   left: 16px;
   z-index: 1000;
   padding: 8px 12px;
-  border: 1px dashed #c2410c;
+  border: 1px dashed var(--color-dev);
   border-radius: var(--radius-sm);
-  background: #fff7ed;
+  background: var(--color-dev-bg);
   box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
   font-size: 13px;
 }
@@ -19,7 +19,7 @@
 
 .label {
   font-weight: 700;
-  color: #c2410c;
+  color: var(--color-dev);
 }
 
 /* 모바일 하단 메뉴(Header .mobileNav)를 가리지 않게 그 위에 띄운다 */

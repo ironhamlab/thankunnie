@@ -5,7 +5,7 @@
   padding: 14px;
   border: 1px solid var(--color-danger);
   border-radius: var(--radius-md);
-  background: #fff1f2;
+  background: var(--color-primary-faint);
   color: var(--color-danger);
 }
 .root strong {
@@ -84,5 +84,5 @@
 .root .toggle:hover,
 .root .toggle[aria-expanded='true'] {
   background: var(--color-primary-faint);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }

@@ -16,7 +16,7 @@
 }
 .tabs button[aria-selected='true'] {
   background: var(--color-white);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   box-shadow: 0 1px 3px var(--color-border-strong);
 }
 .form {
@@ -34,7 +34,7 @@
   color: var(--color-text-secondary);
 }
 .signup a {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 700;
 }
 .actions {

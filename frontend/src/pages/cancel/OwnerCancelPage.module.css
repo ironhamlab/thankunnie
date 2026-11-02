@@ -25,7 +25,7 @@
 }
 .choices label:global(.is-selected) {
   border-color: var(--color-primary);
-  background: #fff5f8;
+  background: var(--color-primary-faint);
 }
 .choices input {
   margin-top: 3px;

@@ -58,7 +58,7 @@
   border-color: var(--color-primary);
   background: var(--color-primary-faint);
   box-shadow: 0 0 0 1px var(--color-primary);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 /* 매장 상세는 2단계, 초보 시술 모집은 3단계라 단계 수만큼 같은 너비로 나눈다 */
 .steps {
@@ -134,7 +134,7 @@
 .category {
   margin-bottom: 4px;
   font-size: 12px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 700;
 }
 .shopInfo {
@@ -260,7 +260,7 @@
 }
 .treatmentMeta strong {
   font-size: 14px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .help {
   font-size: 12px;
@@ -301,7 +301,7 @@
   color: var(--color-text-muted);
 }
 .weekday:first-child {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .calendarGrid button {
   display: grid;
@@ -347,6 +347,8 @@
 }
 .tier {
   margin-left: 6px;
+  color: var(--color-text);
+  background: var(--color-accent);
 }
 .slots {
   margin-bottom: 4px;
@@ -373,7 +375,7 @@
   padding: 8px 12px;
   border-radius: var(--radius-md);
   background: var(--color-primary-soft);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 600;
   word-break: keep-all;
@@ -409,19 +411,19 @@
 .favorite button:global(.is-selected) {
   border-color: var(--color-primary);
   background: var(--color-primary-soft);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .favoriteError {
   max-width: 200px;
   font-size: 11px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   text-align: right;
 }
 .alertDialog,
 .alertDialogForm {
   border: 0;
   border-top: 4px solid var(--color-primary);
-  box-shadow: 0 24px 60px #b7005226;
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--color-primary) 15%, transparent);
   transition: width 320ms ease;
 }
 .alertDialog {
@@ -452,7 +454,7 @@
 .alertShop {
   margin: 4px 0 0;
   text-align: center;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 13px;
   font-weight: 700;
 }
@@ -501,7 +503,7 @@
 .slots button.inRange:disabled {
   border-color: var(--color-primary);
   background: var(--color-primary-soft);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   text-decoration: none;
 }
 .empty {
@@ -537,7 +539,7 @@
   opacity: 1;
   border-color: var(--color-border-strong);
   background: var(--color-primary-soft);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .aside :global(.b-summary) :global(.b-details) dt {
   color: var(--color-text-secondary);
