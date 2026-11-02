@@ -2,8 +2,10 @@ package com.ucamp.app.domain.notification.service;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -215,8 +217,9 @@ public class NotificationDispatchService {
             return SummaryResult.skipped();
         }
 
-        int openSlotCount = countOpenCategoryRegionSlots(subscriptionId, eventIds, now);
-        if (openSlotCount == 0) {
+        // 건수와 날짜를 같은 목록에서 구한다. 두 번 조회하면 그사이 예약된 슬롯 때문에 숫자가 어긋날 수 있다.
+        List<NotificationEvent> openEvents = openCategoryRegionEvents(subscriptionId, eventIds, now);
+        if (openEvents.isEmpty()) {
             categoryRegionPendingQueue.clearPendingEvents(subscriptionId);
             log.info("카테고리 묶음 문자 생략(남은 빈자리 없음) subscriptionId={}", subscriptionId);
             return SummaryResult.skipped();
@@ -235,6 +238,8 @@ public class NotificationDispatchService {
             return SummaryResult.skipped();
         }
 
+        int openSlotCount = openEvents.size();
+        LocalDate earliestDate = earliestSlotDate(openEvents);
         String messageBody = "땡 잡을 기회 " + openSlotCount + "건이 생겼어요!";
         log.info("카테고리 묶음 문자 발송 시작 subscriptionId={}, userId={}, count={}, to={}",
                 subscriptionId, subscription.getUserId(), openSlotCount, maskPhone(phone.get()));
@@ -251,13 +256,27 @@ public class NotificationDispatchService {
                 NotificationInboxCategory.INTEREST,
                 "빈자리 알림",
                 messageBody,
-                NotificationInboxService.TIME_SALE_PATH));
+                NotificationInboxService.categoryRegionListPath(
+                        subscription.getCategoryId(), subscription.getRegionCode(), earliestDate)));
     }
 
-    // 구독이 해제되지 않았고 희망 시간이 남은 이벤트만 센다. 그 슬롯이 아직 팔려야 한다.
-    private int countOpenCategoryRegionSlots(Long subscriptionId, List<Long> eventIds, LocalDateTime now) {
+    // 남은 빈자리 중 가장 빠른 날. 목록이 비면 null 이다.
+    private static LocalDate earliestSlotDate(List<NotificationEvent> openEvents) {
+        LocalDate earliest = null;
+        for (NotificationEvent event : openEvents) {
+            LocalDate slotDate = event.getSlotStartsAt().toLocalDate();
+            if (earliest == null || slotDate.isBefore(earliest)) {
+                earliest = slotDate;
+            }
+        }
+        return earliest;
+    }
+
+    // 아직 팔리고 구독과도 맞는 묶음 대기 이벤트만 모은다.
+    private List<NotificationEvent> openCategoryRegionEvents(Long subscriptionId, List<Long> eventIds,
+            LocalDateTime now) {
         NotificationSubscription subscription = notificationSubscriptionRepository.findById(subscriptionId).orElse(null);
-        int count = 0;
+        List<NotificationEvent> openEvents = new ArrayList<>();
         for (Long eventId : eventIds) {
             NotificationEvent event = notificationEventRepository.findById(eventId).orElse(null);
             if (event == null) {
@@ -269,9 +288,9 @@ public class NotificationDispatchService {
             if (!slotStillSellable(event)) {
                 continue;
             }
-            count++;
+            openEvents.add(event);
         }
-        return count;
+        return openEvents;
     }
 
     // 해제한 구독, 희망 종료가 지난 구독, 빈자리 시작이 희망 시간 밖인 구독은 세지 않는다.
