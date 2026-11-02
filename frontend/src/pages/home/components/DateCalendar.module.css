@@ -45,7 +45,7 @@
   background: white;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 12px 30px color-mix(in srgb, black 13%, transparent);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--color-shadow) 13%, transparent);
 }
 .monthBar {
   display: flex;
