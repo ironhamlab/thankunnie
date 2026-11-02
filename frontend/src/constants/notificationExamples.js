@@ -6,6 +6,6 @@ export const EXAMPLE_CATEGORIES = [
   { categoryId: 1, name: '네일' },
   { categoryId: 2, name: '헤어' },
   { categoryId: 3, name: '속눈썹' },
-  { categoryId: 4, name: '왁싱' },
-  { categoryId: 5, name: '바버' },
+  { categoryId: 4, name: '피부 관리' },
+  { categoryId: 5, name: '메이크업' },
 ];
