@@ -5,7 +5,8 @@
 --   (build.gradle 에서 classpath:demo-data.sql 로 복사). test 프로필과 init-data.sql 을 쓰는 테스트에는 넣지 않는다.
 -- - 로컬 Oracle 은 01·02 실행 후 이 파일을 SCOTT 계정에 직접 실행한다.
 --   기존 DB에 UNNIE-164 데이터만 추가할 때는 전체 파일이나 cleanup을 실행하지 않고
---   이 파일의 "BEGIN UNNIE-164 SEOUL DEMO ADDITIONS" 아래 블록만 대상 환경 확인 후 실행한다. 기존 데이터는 삭제하지 않는다.
+--   이 파일의 "BEGIN UNNIE-164 SEOUL DEMO ADDITIONS"부터 "END UNNIE-164 VERIFIED IMAGE LINKS"까지
+--   (데이터 블록과 이미지 링크 블록)만 대상 환경 확인 후 실행한다. 기존 데이터는 삭제하지 않는다.
 --   기존 UNNIE-144 데이터의 재생성이 필요하면 cleanup의 삭제 범위를 별도로 확인한 뒤 사람이 판단한다.
 -- - 기초 데이터(02)와 분리해, 시연 매장을 늘리거나 날짜를 옮겨도 02 를 기준으로 쓰는 테스트에 영향이 없게 한다.
 -- ---------------------------------------------------------------------
@@ -2030,7 +2031,7 @@ VALUES (602, 101, 586, 'CLOSE', TIMESTAMP '2026-11-04 19:00:00', TIMESTAMP '2026
         TIMESTAMP '2026-11-01 19:00:00', TIMESTAMP '2026-11-01 19:00:00');
 
 -- BEGIN UNNIE-164 SEOUL DEMO ADDITIONS
--- 서울 신규 가상 매장 50 / 일반 시술 130 / 초보 시술 20 (16개 매장).
+-- 서울 신규 가상 매장 50 / 일반 시술 130 / 초보 시술 20(16개 매장에 배치).
 -- 기존 02 및 03의 시연·결제·예약 데이터는 유지한다. 01 스키마와 CATEGORY 1~5가 선행 조건이다.
 -- ID는 SEQ_SHOP / SEQ_TREATMENT / SEQ_SHOP_BUSINESS_HOUR / SEQ_SHOP_SCHEDULE_EXCEPTION.NEXTVAL로 발급한다.
 -- 앱과 같은 시퀀스를 소비하므로 고정 PK나 시퀀스 재시작 없이 이후 앱 생성과 충돌하지 않는다.
@@ -2044,7 +2045,7 @@ VALUES (602, 101, 586, 'CLOSE', TIMESTAMP '2026-11-04 19:00:00', TIMESTAMP '2026
 -- local H2는 앱 시작 시 전체 03을 자동 로드한다. Oracle은 수동 실행한다.
 -- 신규 블록만 재실행하면 로그인 ID/매장별 시술명/요일/OPEN 시작·종료로 중복을 건너뛴다.
 -- 기존 03 본문은 고정 PK를 사용하므로 이미 적용한 DB에 전체 03을 재실행하지 않는다.
--- 기존 DB에는 대상 환경 확인 후 이 블록만 실행한다.
+-- 기존 DB에는 대상 환경 확인 후 이 블록과 아래 VERIFIED IMAGE LINKS 블록만 실행한다.
 -- 전용 시연 DB에서 트랜잭션으로 실행하고 집계/FK/필수값 확인 후 사람이 COMMIT한다.
 -- 이 파일은 DB에 자동 COMMIT하거나 기존 데이터를 삭제하지 않는다.
 
