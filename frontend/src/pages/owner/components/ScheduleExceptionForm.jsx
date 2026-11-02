@@ -1,5 +1,6 @@
 import { formatDayLabel, overlappingCloses } from '@/utils/scheduleSlots';
-import { durationLabel, NO_MORE_TODAY } from '@/utils/scheduleForm';
+import { durationLabel, LAST_START } from '@/utils/scheduleForm';
+import { TIME_OPTIONS } from '@/utils/vacancyPreview';
 import CloseOverlapNotice from '@/pages/owner/components/CloseOverlapNotice';
 import DateShortcuts from '@/pages/owner/components/DateShortcuts';
 import TimeRangePicker from '@/pages/owner/components/TimeRangePicker';
@@ -11,7 +12,7 @@ import styles from './ScheduleExceptionForm.module.css';
 
 /**
  * 빈자리 닫기·열기 입력란. 30분 칸을 눌러 시간을 고르고,
- * 예약이 걸린 시간 닫기·닫아 둔 시간 열기·지난 시각은 저장 전에 알려준다.
+ * 예약이 걸린 시간 닫기·영업 외 시간 닫기·닫아 둔 시간 열기·지난 시각은 저장 전에 알려준다.
  */
 export default function ScheduleExceptionForm({
   form,
@@ -36,6 +37,17 @@ export default function ScheduleExceptionForm({
   const inRange = slots.filter((slot) => slot.time >= form.startTime && slot.time < form.endTime);
   const hasBooking =
     form.exceptionType === 'CLOSE' && inRange.some((slot) => slot.status === 'BOOKED');
+  // 영업 외 시간을 닫아 두면 나중에 영업시간을 늘리거나 열어도 이유가 보이지 않는 채로 예약을 막는다
+  const sellableTimes = new Set(
+    slots.filter((slot) => slot.status !== 'OFF').map((slot) => slot.time),
+  );
+  const closesOffHours =
+    form.exceptionType === 'CLOSE' &&
+    fresh &&
+    !failed &&
+    TIME_OPTIONS.some(
+      (time) => time >= form.startTime && time < form.endTime && !sellableTimes.has(time),
+    );
   const closes =
     form.exceptionType === 'OPEN'
       ? overlappingCloses(exceptions, form.date, form.startTime, form.endTime, editingId)
@@ -99,6 +111,9 @@ export default function ScheduleExceptionForm({
         {!failed && !ready && <p role="status">시간 칸을 불러오는 중입니다.</p>}
         {!failed && ready && (
           <TimeRangePicker
+            // 열기와 닫기는 고를 수 있는 칸이 달라 구분을 바꾸면 고르던 상태를 비운다
+            key={form.exceptionType}
+            closing={form.exceptionType === 'CLOSE'}
             slots={slots}
             startTime={form.startTime}
             endTime={form.endTime}
@@ -135,9 +150,9 @@ export default function ScheduleExceptionForm({
 
       {tooEarly && (
         <Alert as="p" tone="error" role="alert">
-          {minStart === NO_MORE_TODAY &&
+          {minStart > LAST_START &&
             '오늘은 더 고를 수 있는 시간이 없어요. 다른 날짜를 골라 주세요.'}
-          {minStart !== NO_MORE_TODAY &&
+          {minStart <= LAST_START &&
             (form.exceptionType === 'OPEN'
               ? `빈자리는 시작 30분 전까지만 열 수 있어요. 오늘은 ${minStart}부터 고를 수 있어요.`
               : '이미 지난 시간은 닫을 수 없어요.')}
@@ -146,6 +161,12 @@ export default function ScheduleExceptionForm({
       {hasBooking && (
         <Alert as="p" tone="error" role="alert">
           예약이 있는 칸이 포함돼 있어 닫을 수 없어요. 예약이 없는 시간만 골라 주세요.
+        </Alert>
+      )}
+      {/* 영업하지 않는 날은 시간 칸 자리에서 이미 알려준다 */}
+      {closesOffHours && slots.length > 0 && (
+        <Alert as="p" tone="error" role="alert">
+          영업 외 시간은 닫을 필요가 없어요. 영업 중인 칸만 골라 주세요.
         </Alert>
       )}
       <CloseOverlapNotice closes={closes} disabled={isSaving} onDelete={onDeleteClose} />
@@ -164,7 +185,7 @@ export default function ScheduleExceptionForm({
           variant="primary"
           wide
           type="submit"
-          disabled={isSaving || tooEarly || hasBooking || closeUnchecked}
+          disabled={isSaving || tooEarly || hasBooking || closesOffHours || closeUnchecked}
         >
           {editingId ? '수정 저장' : `${form.startTime}~${form.endTime} ${type.verb}`}
         </Button>

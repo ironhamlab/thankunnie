@@ -1,13 +1,12 @@
 import Panel from '@/components/common/Panel';
 import { DAY_LABELS } from '@/utils/scheduleSlots';
-import { toClock, toMinutes } from '@/utils/vacancyPreview';
+import { toMinutes } from '@/utils/vacancyPreview';
 import styles from './WeekHoursSummary.module.css';
 
 const MINUTES_PER_DAY = 24 * 60;
 const TICKS = [0, 6, 12, 18, 24];
 
 const percent = (minutes) => `${(minutes / MINUTES_PER_DAY) * 100}%`;
-const clockLabel = (time) => `${toClock(time).period} ${toClock(time).label}`;
 
 /**
  * 고치는 중인 요일별 영업시간을 하루 0~24시 막대로 보여준다. 저장 전 값이 바로 반영된다.
@@ -40,7 +39,7 @@ export default function WeekHoursSummary({ days }) {
                 role="img"
                 aria-label={
                   open
-                    ? `${DAY_LABELS[day.dayOfWeek]}요일 ${clockLabel(day.openTime)}부터 ${clockLabel(day.closeTime)}까지`
+                    ? `${DAY_LABELS[day.dayOfWeek]}요일 ${day.openTime}부터 ${day.closeTime}까지`
                     : `${DAY_LABELS[day.dayOfWeek]}요일 휴무`
                 }
               >

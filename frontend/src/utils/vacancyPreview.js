@@ -18,15 +18,6 @@ export const toMinutes = (time) => {
 export const toTime = (minutes) =>
   `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 
-// 13:30 → { period: '오후', label: '1:30' }
-export const toClock = (time) => {
-  const [hours, minutes] = time.split(':').map(Number);
-  return {
-    period: hours < 12 ? '오전' : '오후',
-    label: `${hours % 12 || 12}:${String(minutes).padStart(2, '0')}`,
-  };
-};
-
 // 하루의 30분 단위 시각. 열기는 하루 안에서 끝나야 해서 23:30 까지만 고른다
 export const TIME_OPTIONS = Array.from(
   { length: MINUTES_PER_DAY / P.TIME_UNIT_MINUTES },

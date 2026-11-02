@@ -8,6 +8,8 @@ import styles from './ExploreMap.module.css';
 // 처음 열 때 위치 (강남역). 위치 권한은 처음에 묻지 않고 "내 위치" 버튼을 눌렀을 때만 묻는다
 const DEFAULT_CENTER = { lat: 37.4979, lng: 127.0276 };
 const DEFAULT_LEVEL = 6;
+// 목록에서 고른 매장으로 갈 때 확대 단계. 묶음(CLUSTER_MIN_LEVEL)이 풀리고 주변 길까지 보이는 정도다
+const FOCUS_LEVEL = 4;
 // 지도를 움직이다 멈춘 뒤 이만큼 기다렸다가 마지막 범위로만 조회한다
 const IDLE_DELAY_MS = 300;
 // 이 확대 단계 이상(숫자가 클수록 넓게 보인다)에서 가까운 핀을 하나로 묶는다
@@ -57,7 +59,8 @@ const round = (value) => Number(value.toFixed(COORD_DIGITS));
  * @param onBoundsChange 지도 범위 { minLat, maxLat, minLng, maxLng } 를 받는다
  * @param onUnavailable  키가 없거나 SDK 를 불러오지 못했을 때 부른다
  * @param resetSignal    바뀔 때마다 지도를 처음 위치로 돌린다 (지도 초기화 버튼). 0 이면 무시한다
- * @param focusPosition  { lat, lng } 가 들어오면 그 위치로 지도를 옮긴다 (새로고침 때 고른 매장 위치 복원)
+ * @param focusPosition  { lat, lng, zoom } 가 들어오면 그 위치로 지도를 옮긴다 (새로고침 때 고른 매장 위치 복원).
+ *                       zoom 이 true 면 묶음이 풀리도록 가까이 확대한다 (목록에서 고른 매장 보여주기)
  * @param fitToShops     true 면 받은 매장이 다 보이게 범위를 맞춘다 (검색 화면처럼 목록이 지도 범위와 상관없는 곳).
  *                       이때는 onBoundsChange 를 넘기지 않아 지도를 움직여도 다시 조회하지 않고, 내 위치 버튼도 숨긴다
  * @param boundsPadding  fitToShops 로 범위를 맞출 때 띄울 여백(px). 지도 위에 패널이 겹치는 쪽을 넓게 준다
@@ -77,6 +80,8 @@ export default function ExploreMap({
   const mapRef = useRef(null);
   const clustererRef = useRef(null);
   const elementsRef = useRef(new Map());
+  // 고른 핀을 이웃 핀 위로 올리려고 매장 ID → 오버레이를 기억해 둔다
+  const overlaysRef = useRef(new Map());
   // 묶음에 최저가를 쓰려고 핀(오버레이) → 최저가를 기억해 둔다
   const pricesRef = useRef(new Map());
   const callbacksRef = useRef({ onSelect, onBoundsChange, onUnavailable });
@@ -174,8 +179,10 @@ export default function ExploreMap({
     if (status !== 'ready' || !clusterer) return;
     const { maps } = window.kakao;
     const elements = elementsRef.current;
+    const overlaysById = overlaysRef.current;
     const prices = pricesRef.current;
     elements.clear();
+    overlaysById.clear();
     prices.clear();
     const overlays = shops.map((shop) => {
       const element = document.createElement('button');
@@ -197,6 +204,7 @@ export default function ExploreMap({
         yAnchor: 1.3,
       });
       prices.set(overlay, shop.minSalePrice);
+      overlaysById.set(String(shop.shopId), overlay);
       return overlay;
     });
     clusterer.addMarkers(overlays);
@@ -218,15 +226,21 @@ export default function ExploreMap({
       const selected = id === selectedId;
       element.classList.toggle('is-selected', selected);
       element.setAttribute('aria-pressed', String(selected));
+      overlaysRef.current.get(id)?.setZIndex(selected ? 2 : 0);
     });
-    // 목록에서 고른 매장이 화면 밖에 있을 때만 옮긴다. 화면 안이면 그대로 둬야 다시 조회가 일어나지 않는다
+    // 목록에서 고른 매장이 화면 밖에 있을 때만 옮긴다. 화면 안이면 그대로 둬야 다시 조회가 일어나지 않는다.
+    // 그 매장으로 확대해 옮기는 중(focusPosition.zoom)이면 천천히 옮기는 panTo 가 확대 이동을 덮어쓰므로 건너뛴다
     const shop = shops.find((item) => String(item.shopId) === selectedId);
     const map = mapRef.current;
-    if (shop && map) {
+    const focusing =
+      focusPosition?.zoom &&
+      focusPosition.lat === shop?.latitude &&
+      focusPosition.lng === shop?.longitude;
+    if (shop && map && !focusing) {
       const position = new window.kakao.maps.LatLng(shop.latitude, shop.longitude);
       if (!map.getBounds().contain(position)) map.panTo(position);
     }
-  }, [status, shops, selectedId]);
+  }, [status, shops, selectedId, focusPosition]);
 
   // 지도 초기화: 값이 바뀔 때마다 처음 위치·확대 단계로 돌린다. 옮기면 idle 로 그 범위를 다시 조회한다
   useEffect(() => {
@@ -236,10 +250,11 @@ export default function ExploreMap({
     map.setCenter(new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng));
   }, [status, resetSignal]);
 
-  // 옮기면 idle 로 그 범위를 다시 조회한다. 확대 단계는 그대로 둔다
+  // 옮기면 idle 로 그 범위를 다시 조회한다. zoom 이 없으면 확대 단계는 그대로 둔다
   useEffect(() => {
     const map = mapRef.current;
     if (status !== 'ready' || !map || !focusPosition) return;
+    if (focusPosition.zoom) map.setLevel(FOCUS_LEVEL);
     map.setCenter(new window.kakao.maps.LatLng(focusPosition.lat, focusPosition.lng));
   }, [status, focusPosition]);
 

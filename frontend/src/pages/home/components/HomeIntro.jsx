@@ -4,23 +4,32 @@ import styles from './HomeIntro.module.css';
 
 /**
  * 홈 첫 줄. 서비스 소개와 앞으로 7일(서버 기본 기간) 빈자리 현황을 실제 조회 값으로 보여준다.
+ * 최대 할인은 사장님이 연 시간의 요약에 타임세일과 임박 카드를 더해 아래 카드보다 낮게 보이지 않게 한다.
  * 숫자를 받지 못하면 소개 문구만 남긴다.
  */
 export default function HomeIntro() {
   const shops = useExploreStore((s) => s.summaryShops);
   const status = useExploreStore((s) => s.summaryShopsStatus);
+  const saleShops = useExploreStore((s) => s.saleShops);
+  const imminentVacancies = useExploreStore((s) => s.imminentVacancies);
   const loadSummaryShops = useExploreStore((s) => s.loadSummaryShops);
+  const loadSaleShops = useExploreStore((s) => s.loadSaleShops);
 
   useEffect(() => {
     loadSummaryShops();
-  }, [loadSummaryShops]);
+    loadSaleShops();
+  }, [loadSummaryShops, loadSaleShops]);
 
   const vacancyCount = shops.reduce(
     // 초보 시술만 있는 매장은 vacancyCount 에 이미 초보 시술 빈자리가 담겨 있다
     (sum, shop) => sum + shop.vacancyCount + (shop.modelOnly ? 0 : shop.modelVacancyCount),
     0,
   );
-  const maxDiscount = Math.max(0, ...shops.map((shop) => shop.maxDiscountRate));
+  const maxDiscount = Math.max(
+    0,
+    ...[...shops, ...saleShops].map((shop) => shop.maxDiscountRate),
+    ...imminentVacancies.map((vacancy) => vacancy.discount),
+  );
   const stats = [
     { label: '빈자리 매장', value: `${shops.length}곳` },
     { label: '이번 주 빈자리', value: `${vacancyCount}개` },

@@ -1,0 +1,14 @@
+@media (max-width: 540px) {
+  /* 좁은 칸에서 이름 중간이 끊기지 않게 시간을 윗줄, 고객·시술을 아랫줄로 나눈다 */
+  .list {
+    gap: 12px;
+  }
+  .row {
+    gap: 8px;
+    font-size: 13px;
+  }
+  .row strong {
+    display: block;
+    margin-bottom: 2px;
+  }
+}
