@@ -29,7 +29,7 @@
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
-  box-shadow: 0 2px 5px color-mix(in srgb, black 13%, transparent);
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--color-shadow) 13%, transparent);
   cursor: default;
 }
 .links {
