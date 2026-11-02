@@ -22,6 +22,7 @@ import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.domain.explore.dto.response.ExploreShopDetailResponse;
+import com.ucamp.app.domain.explore.dto.response.ExploreShopListResponse;
 import com.ucamp.app.domain.explore.dto.response.ExploreShopDetailResponse.ShopTreatment;
 import com.ucamp.app.domain.explore.service.ExploreShopDetailService;
 import com.ucamp.app.domain.schedule.dto.response.BusinessHourResponse;
@@ -71,5 +72,19 @@ class ExploreShopControllerTest {
         mockMvc.perform(get(SHOP_URL, 9999L))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("COMMON_404"));
+    }
+
+    @Test
+    @DisplayName("로그인 없이 전체 매장 목록을 조회하고, 매장 상세 주소와 겹치지 않는다")
+    void getAllShops_anonymous_ok() throws Exception {
+        given(exploreShopDetailService.getShops(1L, "언니")).willReturn(List.of(
+                new ExploreShopListResponse(1L, "언니네 네일", 1L, "네일", "11680", "서울특별시 강남구 테헤란로 1",
+                        new BigDecimal("37.4979000"), new BigDecimal("127.0276000"), null)));
+
+        mockMvc.perform(get("/api/v1/explore/shops/all").param("categoryId", "1").param("keyword", "언니"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].shopId").value(1))
+                .andExpect(jsonPath("$.data[0].categoryName").value("네일"));
     }
 }
