@@ -1,0 +1,31 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.root h3 {
+  margin: 0 0 8px;
+  color: var(--color-primary-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+.item {
+  border-bottom: 1px solid var(--color-border);
+}
+.item summary {
+  min-height: 44px;
+  padding: 11px 0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.item summary:hover {
+  color: var(--color-primary-text);
+}
+.root .item p {
+  margin: 0 0 14px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+  word-break: keep-all;
+}
