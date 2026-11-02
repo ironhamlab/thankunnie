@@ -70,11 +70,26 @@ export function validDate(value, min, max) {
   return isRealDate && value >= min && value <= max ? value : null;
 }
 
+// API가 반환한 상대 이미지 경로는 로컬에서도 백엔드 origin으로 요청한다.
+// '/' 경로와 http(s) 주소가 아니면 API 요청으로 바꾸지 않고 기본 그림을 쓴다.
+function apiImageUrl(imageUrl, fallback) {
+  if (!imageUrl || !(imageUrl.startsWith('/') || /^https?:\/\//i.test(imageUrl))) return fallback;
+  try {
+    const apiBase = new URL(
+      import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api',
+      window.location.origin,
+    );
+    return new URL(imageUrl, apiBase).href;
+  } catch {
+    return fallback;
+  }
+}
+
 /** 이미지가 없으면 기본 시술 그림을 쓴다 */
-export const vacancyImage = (imageUrl) => imageUrl || defaultTreatmentImage;
+export const vacancyImage = (imageUrl) => apiImageUrl(imageUrl, defaultTreatmentImage);
 
 /** 이미지가 없으면 기본 매장 그림을 쓴다 */
-export const shopImage = (imageUrl) => imageUrl || defaultShopImage;
+export const shopImage = (imageUrl) => apiImageUrl(imageUrl, defaultShopImage);
 
 /** '서울특별시 강남구 테헤란로 1' 에서 카드에 쓸 동네 '강남구 테헤란로' 만 꺼낸다 */
 export const areaName = (address) => address.split(' ').slice(1, 3).join(' ');
@@ -117,6 +132,7 @@ export function toVacancyCard(item, today = todayKst()) {
     original: item.regularPrice,
     price: item.salePrice,
     discount: item.discountRate,
+    priceTier: item.priceTier,
     urgency: URGENCY[item.priceTier] ?? URGENCY.NORMAL,
     image: vacancyImage(item.imageUrl),
     // 이 시술 · 시각이 골라진 매장 페이지. 초보 시술은 참여 조건·촬영 안내가 보이는 모집 상세로 간다

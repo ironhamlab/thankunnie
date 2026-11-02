@@ -21,7 +21,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 import com.ucamp.app.common.util.TimeUtils;
+import com.ucamp.app.domain.explore.dto.request.ExploreVacancyFilter;
+import com.ucamp.app.domain.explore.dto.request.ExploreVacancySearchRequest;
+import com.ucamp.app.domain.explore.dto.request.ExploreVacancySort;
 import com.ucamp.app.domain.explore.dto.response.ExploreVacancyResponse;
+import com.ucamp.app.domain.vacancy.policy.PriceTier;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 // 임박 빈자리의 8시간 범위가 자정을 넘는 경우. 지금은 2026-11-06(금) 22:00 이라 범위는 다음 날 06:00 전까지다.
@@ -49,6 +53,18 @@ class ExploreImminentMidnightTest {
         // 매장 2 다음 날 01:00: 디지털 펌(할인 있음)이 남성 커트(할인 없음)보다 앞선다
         assertThat(exploreVacancyService.searchImminent()).extracting(ExploreVacancyResponse::vacancyId)
                 .containsExactly("4-202611070100");
+    }
+
+    @Test
+    @DisplayName("타임세일도 날짜를 생략하면 자정을 넘은 3시간 이내 새벽 빈 시각을 낸다")
+    void search_lastMinuteTier_rangeCrossesMidnight_includesNextDayEarlyMorning() {
+        openShopTwo(NOW.plusHours(3), NOW.plusHours(5));
+        ExploreVacancyFilter filter = new ExploreVacancyFilter(null, null, null, null, null, null, null, null,
+                PriceTier.LAST_MINUTE, null, null, null, null, null);
+
+        // 정확히 3시간 전인 01:00 은 초임박 구간이다. 01:30 은 3시간을 넘어 빠진다
+        assertThat(exploreVacancyService.search(new ExploreVacancySearchRequest(filter, ExploreVacancySort.START_ASC,
+                0, 20)).content()).extracting(ExploreVacancyResponse::vacancyId).containsExactly("4-202611070100");
     }
 
     @Test

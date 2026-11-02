@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ROUTES } from '@/constants/routes';
+import { GRACE_CANCEL_MESSAGE } from '@/constants/cancelPolicy';
 import { useDesignStore } from '@/store/useDesignStore';
 import { useExploreStore } from '@/store/useExploreStore';
 import { regionNameOf } from '@/constants/regions';
@@ -26,8 +28,8 @@ const SHOP_SORTS = {
   '낮은 가격순': (a, b) => a.minSalePrice - b.minSalePrice,
 };
 const sorts = Object.keys(SHOP_SORTS);
-// 처음에 보여줄 매장 수. 더보기를 누를 때마다 이만큼 늘린다
-const PAGE_SIZE = 12;
+// 한 페이지에 보여줄 매장 수. 펼친 매장의 시간 버튼까지 있으면 길어지므로 8곳씩 나눈다
+const PAGE_SIZE = 8;
 // 예약은 오늘 포함 60일까지 가능하다
 const MAX_DAYS = 60;
 // 헤더 검색어는 글자마다 바뀌므로 입력이 멈춘 뒤 조회한다
@@ -72,7 +74,7 @@ export default function VacancySearch() {
   // 알림 링크의 region. 없으면 지역으로 좁히지 않는다
   const regionCode = params.get('region') || undefined;
   const dateParam = params.get('date');
-  // 타임세일은 오늘 시작하는 빈자리만 보고, 그 밖에는 고른 날짜(기본 오늘)를 본다
+  // 타임세일은 날짜 대신 지금부터 3시간 안을 보고, 그 밖에는 고른 날짜(기본 오늘)를 본다
   const date = (!saleOnly && validDate(dateParam, today, lastDay)) || today;
   // 전체 날짜(date=all)는 예약 가능한 기간 전체에서 빈자리가 있는 매장을 모아 본다
   const allDates = !saleOnly && dateParam === ALL_DATES;
@@ -106,7 +108,7 @@ export default function VacancySearch() {
   const [time, setTime] = useState(ALL);
   const [sort, setSort] = useState(sorts[0]);
   const [keyword, setKeyword] = useState(search);
-  const [paging, setPaging] = useState({ key: '', count: PAGE_SIZE });
+  const [paging, setPaging] = useState({ key: '', page: 0 });
   const categoryName =
     categories.find((item) => String(item.categoryId) === categoryId)?.name ?? ALL;
   // 주소에 region이 있을 때만 제목 앞에 구 이름을 붙인다. 11680 → 강남구
@@ -132,20 +134,24 @@ export default function VacancySearch() {
   }, [search]);
 
   // 매장 목록·지도·펼친 매장의 빈자리가 같이 쓰는 조건
+  // 타임세일은 날짜를 보내지 않는다. 서버가 영업시간 기준으로 시작 3시간 이내(자정 넘어 새벽 포함)를 본다
   const filter = useMemo(
     () => ({
-      startDate: allDates ? today : date,
-      endDate: allDates ? lastDay : date,
+      startDate: saleOnly ? undefined : allDates ? today : date,
+      endDate: saleOnly ? undefined : allDates ? lastDay : date,
       categoryId: categoryId ?? undefined,
       regionCode,
       timeOfDay: TIME_OF_DAY[time],
-      priceTier: saleOnly ? 'IMMINENT' : undefined,
+      priceTier: saleOnly ? 'LAST_MINUTE' : undefined,
       treatmentType: modelOnly ? MODEL : undefined,
       keyword: keyword || undefined,
     }),
     [allDates, today, lastDay, date, categoryId, regionCode, time, saleOnly, modelOnly, keyword],
   );
   const filterKey = JSON.stringify(filter);
+  // 정렬은 조회 조건이 아니지만 목록 순서를 바꾸므로, 정렬이 바뀌어도 첫 페이지로 돌아가게 키에 넣는다
+  const pagingKeyOf = (sortName) => `${filterKey}|${sortName}`;
+  const pagingKey = pagingKeyOf(sort);
 
   useEffect(() => {
     if (allDates) loadAllShops({ categoryId: categoryId ?? undefined, keyword: keyword || undefined });
@@ -196,10 +202,26 @@ export default function VacancySearch() {
     );
     return [...withVacancy, ...noVacancyShops];
   }, [shops, sort, allDates, time, allShops, regionCode]);
-  // 조건이 바뀌면 처음 개수로 돌아간다. 펼친 매장은 뒤쪽에 있어도 보이게 한다
-  const pageCount = paging.key === filterKey ? paging.count : PAGE_SIZE;
-  const expandedIndex = sortedShops.findIndex((shop) => String(shop.shopId) === expandedId);
-  const visibleShops = sortedShops.slice(0, Math.max(pageCount, expandedIndex + 1));
+  // 조건이 바뀌면 첫 페이지로 돌아간다. 주소로 고른 매장이 있으면 그 매장이 있는 페이지를 연다
+  const pageOf = (shopId) => {
+    const index = sortedShops.findIndex((shop) => String(shop.shopId) === String(shopId));
+    return index < 0 ? 0 : Math.floor(index / PAGE_SIZE);
+  };
+  const totalPages = Math.ceil(sortedShops.length / PAGE_SIZE);
+  const page = Math.min(
+    paging.key === pagingKey ? paging.page : pageOf(expandedId),
+    Math.max(totalPages - 1, 0),
+  );
+  const visibleShops = sortedShops.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const goToPage = (next) => {
+    setPaging({ key: pagingKey, page: next });
+    document.getElementById('vacancy-results')?.scrollIntoView({ block: 'start' });
+  };
+  // 펼친 매장이 있어도 그 매장 페이지로 가지 않고 첫 페이지를 보이게 새 키와 0페이지를 같이 둔다
+  const chooseSort = (sortName) => {
+    setSort(sortName);
+    setPaging({ key: pagingKeyOf(sortName), page: 0 });
+  };
 
   const toggleShop = (shopId) =>
     updateOption('shop', String(shopId) === expandedId ? '' : String(shopId));
@@ -220,7 +242,7 @@ export default function VacancySearch() {
   };
   const reset = () => {
     setTime(ALL);
-    setSort(sorts[0]);
+    chooseSort(sorts[0]);
     setParams(
       modelOnly
         ? { view: 'list', type: MODEL }
@@ -298,14 +320,17 @@ export default function VacancySearch() {
           />
         </div>
         {saleOnly && (
-          <p className={styles.description}>오늘 시작하는 임박·초임박 특가 빈자리만 보여드려요.</p>
+          <p className={styles.description}>
+            시작 3시간 안에 할인 중인 초임박 특가 빈자리만 보여드려요.{' '}
+            {GRACE_CANCEL_MESSAGE.LAST_MINUTE_HOLD}
+          </p>
         )}
         <div className={`b-row ${styles.filterLine}`}>
           <Filter label="시작 시간" options={times} value={time} onChange={setTime} segmented />
-          <Filter label="정렬" options={sorts} value={sort} onChange={setSort} segmented />
+          <Filter label="정렬" options={sorts} value={sort} onChange={chooseSort} segmented />
         </div>
       </section>
-      <div className={`b-row ${styles.resultsHeading}`}>
+      <div id="vacancy-results" className={`b-row ${styles.resultsHeading}`}>
         <h2>
           {allDates && allShopsStatus !== 'failed' ? allDatesTitle : listTitle} <Badge>{sortedShops.length}곳</Badge>
         </h2>
@@ -343,17 +368,40 @@ export default function VacancySearch() {
                   </div>
                 ))}
               </div>
-              {visibleShops.length < sortedShops.length && (
-                <div className={styles.more}>
-                  <Button
-                    variant="soft"
-                    onClick={() => setPaging({ key: filterKey, count: pageCount + PAGE_SIZE })}
-                  >
-                    매장 더보기 ({sortedShops.length - visibleShops.length}곳 더)
+              {totalPages > 1 && (
+                <nav className={styles.pagination} aria-label="매장 목록 페이지">
+                  <Button size="small" disabled={page === 0} onClick={() => goToPage(page - 1)}>
+                    이전
                   </Button>
-                </div>
+                  {Array.from({ length: totalPages }, (_, index) => (
+                    <Button
+                      key={index}
+                      size="small"
+                      variant={index === page ? 'primary' : undefined}
+                      aria-current={index === page ? 'page' : undefined}
+                      onClick={() => goToPage(index)}
+                    >
+                      {index + 1}
+                    </Button>
+                  ))}
+                  <Button
+                    size="small"
+                    disabled={page === totalPages - 1}
+                    onClick={() => goToPage(page + 1)}
+                  >
+                    다음
+                  </Button>
+                </nav>
               )}
             </>
+          ) : saleOnly ? (
+            <EmptyState className="b-panel">
+              <h2>지금 세일 중인 자리가 없어요</h2>
+              <p>시작 3시간 전부터 할인하는 자리가 생기면 여기에 보여드려요.</p>
+              <Button as={Link} variant="primary" to={`${ROUTES.HOME}?view=list&date=all`}>
+                일반 예약하기
+              </Button>
+            </EmptyState>
           ) : (
             <EmptyState className="b-panel">
               <h2>
@@ -387,7 +435,11 @@ export default function VacancySearch() {
             showTimes={!allDates}
             status={status}
             expandedShopId={expandedId}
-            onShowShop={(id) => updateOption('shop', id ? String(id) : '')}
+            onShowShop={(id) => {
+              // 지도에서 고른 매장이 다른 페이지에 있으면 그 페이지로 넘긴다
+              if (id) setPaging({ key: pagingKey, page: pageOf(id) });
+              updateOption('shop', id ? String(id) : '');
+            }}
             model={modelOnly}
           />
         </aside>

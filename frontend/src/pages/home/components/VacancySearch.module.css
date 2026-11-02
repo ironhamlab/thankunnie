@@ -151,9 +151,11 @@
   height: calc(100vh - 140px);
   max-height: 640px;
 }
-.more {
+.pagination {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 6px;
   margin-top: 20px;
 }
 @media (max-width: 900px) {

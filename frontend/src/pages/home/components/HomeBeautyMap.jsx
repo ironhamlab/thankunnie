@@ -27,7 +27,8 @@ export default function HomeBeautyMap() {
   // 지도가 첫 범위를 알려 주기 전에는 조회하지 않는다
   useEffect(() => {
     if (!bounds && !mapUnavailable) return;
-    loadShops({ priceTier: saleOnly ? 'IMMINENT' : undefined, ...(mapUnavailable ? {} : bounds) });
+    // 타임세일은 타임세일 화면과 같게 시작 3시간 이내 초임박 할인만 본다
+    loadShops({ priceTier: saleOnly ? 'LAST_MINUTE' : undefined, ...(mapUnavailable ? {} : bounds) });
   }, [saleOnly, bounds, mapUnavailable, loadShops]);
 
   const handleUnavailable = useCallback(() => setMapUnavailable(true), []);
