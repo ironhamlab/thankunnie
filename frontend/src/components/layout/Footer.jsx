@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Dialog from '@/components/common/Dialog';
-import FaqList from '@/components/common/FaqList';
-import { FAQ_GROUPS, KAKAO_OPEN_CHAT_URL } from '@/constants/customerSupport';
+import { KAKAO_OPEN_CHAT_URL } from '@/constants/customerSupport';
 import { ROUTES } from '@/constants/routes';
 import Button from '@/components/common/Button';
+import FaqTabs from './FaqTabs';
 import styles from './Footer.module.css';
 
 const FAQ = '자주 묻는 질문';
@@ -42,7 +42,7 @@ export default function Footer() {
       </footer>
       {notice === FAQ && (
         <Dialog title={FAQ} onClose={() => setNotice('')}>
-          <FaqList groups={FAQ_GROUPS} />
+          <FaqTabs />
         </Dialog>
       )}
       {notice === CUSTOMER_CENTER && (

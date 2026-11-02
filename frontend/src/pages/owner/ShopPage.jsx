@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { canGeocode, geocodeAddress } from '@/utils/geocodeAddress';
 import { useShopStore } from '@/store/useShopStore';
-import { KAKAO_OPEN_CHAT_URL, SHOP_FAQ_GROUPS } from '@/constants/customerSupport';
 import Button from '@/components/common/Button';
-import FaqList from '@/components/common/FaqList';
 import Panel from '@/components/common/Panel';
 import Alert from '@/components/common/Alert';
 import EmptyState from '@/components/common/EmptyState';
@@ -178,14 +176,6 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
             </Button>
           </div>
         </form>
-      </Panel>
-      <Panel padded>
-        <h2 className="b-panel-heading">매장 운영 자주 묻는 질문</h2>
-        <FaqList groups={SHOP_FAQ_GROUPS} />
-        <p>찾는 내용이 없으면 카카오톡으로 문의해 주세요.</p>
-        <Button as="a" href={KAKAO_OPEN_CHAT_URL} target="_blank" rel="noreferrer">
-          카카오톡 문의하기
-        </Button>
       </Panel>
     </div>
   );

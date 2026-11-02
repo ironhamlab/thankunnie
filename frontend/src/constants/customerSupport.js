@@ -1,8 +1,18 @@
 // 고객센터 문의 창구 (카카오톡 1:1 오픈채팅)
 export const KAKAO_OPEN_CHAT_URL = 'https://open.kakao.com/o/sRzDFgVi';
 
-// 매장 운영 자주 묻는 질문 (매장 관리 화면). 고객용과 같이 정책이 바뀌면 함께 고친다
+// 매장용 자주 묻는 질문. 가입 전에도 보도록 푸터 창에 둔다. 고객용과 같이 정책이 바뀌면 함께 고친다
 export const SHOP_FAQ_GROUPS = [
+  {
+    title: '가입',
+    items: [
+      {
+        question: '매장 계정은 어떻게 만드나요?',
+        answer:
+          '회원가입 화면의 매장 가입에서 계정과 매장 정보를 입력하면 바로 이용할 수 있어요. 계정 하나에 매장 하나를 등록할 수 있어요.',
+      },
+    ],
+  },
   {
     title: '영업시간·일정',
     items: [
