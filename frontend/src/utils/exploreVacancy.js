@@ -71,8 +71,9 @@ export function validDate(value, min, max) {
 }
 
 // API가 반환한 상대 이미지 경로는 로컬에서도 백엔드 origin으로 요청한다.
+// '/' 경로와 http(s) 주소가 아니면 API 요청으로 바꾸지 않고 기본 그림을 쓴다.
 function apiImageUrl(imageUrl, fallback) {
-  if (!imageUrl) return fallback;
+  if (!imageUrl || !(imageUrl.startsWith('/') || /^https?:\/\//i.test(imageUrl))) return fallback;
   try {
     const apiBase = new URL(
       import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api',
