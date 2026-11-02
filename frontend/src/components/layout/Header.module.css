@@ -21,6 +21,16 @@
   font-size: 26px;
   white-space: nowrap;
 }
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.logo {
+  flex-shrink: 0;
+  width: 1.3em;
+  height: 1.3em;
+}
 .search {
   flex: 1;
   max-width: 360px;
