@@ -149,6 +149,9 @@ export default function VacancySearch() {
     [allDates, today, lastDay, date, categoryId, regionCode, time, saleOnly, modelOnly, keyword],
   );
   const filterKey = JSON.stringify(filter);
+  // 정렬은 조회 조건이 아니지만 목록 순서를 바꾸므로, 정렬이 바뀌어도 첫 페이지로 돌아가게 키에 넣는다
+  const pagingKeyOf = (sortName) => `${filterKey}|${sortName}`;
+  const pagingKey = pagingKeyOf(sort);
 
   useEffect(() => {
     if (allDates) loadAllShops({ categoryId: categoryId ?? undefined, keyword: keyword || undefined });
@@ -206,13 +209,18 @@ export default function VacancySearch() {
   };
   const totalPages = Math.ceil(sortedShops.length / PAGE_SIZE);
   const page = Math.min(
-    paging.key === filterKey ? paging.page : pageOf(expandedId),
+    paging.key === pagingKey ? paging.page : pageOf(expandedId),
     Math.max(totalPages - 1, 0),
   );
   const visibleShops = sortedShops.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const goToPage = (next) => {
-    setPaging({ key: filterKey, page: next });
+    setPaging({ key: pagingKey, page: next });
     document.getElementById('vacancy-results')?.scrollIntoView({ block: 'start' });
+  };
+  // 펼친 매장이 있어도 그 매장 페이지로 가지 않고 첫 페이지를 보이게 새 키와 0페이지를 같이 둔다
+  const chooseSort = (sortName) => {
+    setSort(sortName);
+    setPaging({ key: pagingKeyOf(sortName), page: 0 });
   };
 
   const toggleShop = (shopId) =>
@@ -234,7 +242,7 @@ export default function VacancySearch() {
   };
   const reset = () => {
     setTime(ALL);
-    setSort(sorts[0]);
+    chooseSort(sorts[0]);
     setParams(
       modelOnly
         ? { view: 'list', type: MODEL }
@@ -319,7 +327,7 @@ export default function VacancySearch() {
         )}
         <div className={`b-row ${styles.filterLine}`}>
           <Filter label="시작 시간" options={times} value={time} onChange={setTime} segmented />
-          <Filter label="정렬" options={sorts} value={sort} onChange={setSort} segmented />
+          <Filter label="정렬" options={sorts} value={sort} onChange={chooseSort} segmented />
         </div>
       </section>
       <div id="vacancy-results" className={`b-row ${styles.resultsHeading}`}>
@@ -429,7 +437,7 @@ export default function VacancySearch() {
             expandedShopId={expandedId}
             onShowShop={(id) => {
               // 지도에서 고른 매장이 다른 페이지에 있으면 그 페이지로 넘긴다
-              if (id) setPaging({ key: filterKey, page: pageOf(id) });
+              if (id) setPaging({ key: pagingKey, page: pageOf(id) });
               updateOption('shop', id ? String(id) : '');
             }}
             model={modelOnly}
