@@ -24,6 +24,9 @@ public enum ErrorCode {
     AUTH_DUPLICATE_LOGIN_ID(HttpStatus.CONFLICT, "AUTH_001", "이미 사용 중인 아이디입니다."),
     AUTH_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "AUTH_002", "아이디 또는 비밀번호가 올바르지 않습니다."),
     AUTH_INACTIVE_ACCOUNT(HttpStatus.FORBIDDEN, "AUTH_003", "사용할 수 없는 계정입니다."),
+    AUTH_PHONE_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "AUTH_004", "휴대폰 인증을 확인해 주세요."),
+    AUTH_PHONE_SEND_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "AUTH_005", "인증번호 요청 횟수를 초과했습니다."),
+    AUTH_PHONE_SEND_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AUTH_006", "인증번호 발송에 실패했습니다."),
 
     // TERMS
     TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "TERMS_001", "약관을 찾을 수 없습니다."),

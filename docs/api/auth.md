@@ -47,7 +47,8 @@
   "password": "password1!",
   "name": "김언니",
   "phone": "01012345678",
-  "agreedTerms": ["AGE_14", "SERVICE", "PRIVACY", "THIRD_PARTY", "SMS_NOTIFICATION"]
+  "agreedTerms": ["AGE_14", "SERVICE", "PRIVACY", "THIRD_PARTY", "SMS_NOTIFICATION"],
+  "phoneVerificationId": "휴대폰 인증 API에서 받은 verificationId"
 }
 ```
 
@@ -57,6 +58,7 @@
 | password | 8~64자, UTF-8 72바이트 이하 (BCrypt 한도. 한글은 24자까지) |
 | name | 필수, 50자 이하 |
 | phone | 휴대폰 번호(010·011·016~019), 하이픈 선택. `010-1234-5678` 형식으로 저장. 문자 알림 수신 번호 |
+| phoneVerificationId | 필수. 해당 phone으로 인증 완료한 verificationId. 인증 완료 후 10분 이내, 가입 성공 시 1회 소비 |
 | agreedTerms | 필수. 동의한 약관 코드 배열. 필수 약관(`AGE_14`·`SERVICE`·`PRIVACY`·`THIRD_PARTY`)은 모두 포함, 선택 약관은 동의한 것만. 중복은 무시. 코드 목록은 `GET /api/v1/terms` (`terms.md`) |
 
 오류: 형식 위반·`agreedTerms` 누락 `COMMON_400`, 필수 약관 누락 `TERMS_002`(400), 없는 약관 코드 `TERMS_001`(404), 아이디 중복 `AUTH_001`(409)
@@ -86,7 +88,9 @@
   "longitude": 127.0276000,
   "phone": "02-111-1111",
   "description": "젤네일·케어 전문",
-  "notice": "예약 시간 10분 전 도착해 주세요"
+  "notice": "예약 시간 10분 전 도착해 주세요",
+  "verificationPhone": "01012345678",
+  "phoneVerificationId": "휴대폰 인증 API에서 받은 verificationId"
 }
 ```
 
@@ -100,6 +104,8 @@
 | addressDetail | 선택, 200자 이하 |
 | latitude / longitude | 필수, -90~90 / -180~180, 소수점 7자리 이하 |
 | phone | 필수, 20자 이하 (유선 번호 가능) |
+| verificationPhone | 필수. 가입자 인증용 휴대폰 번호. 매장 연락처와 별개이며 현재 SHOP에는 저장하지 않음 |
+| phoneVerificationId | 필수. verificationPhone으로 인증 완료한 verificationId. 가입 성공 시 1회 소비 |
 | description, notice | 선택, 2000자 이하 |
 
 오류: 형식 위반·없는 카테고리 `COMMON_400`, 아이디 중복 `AUTH_001`(409)
@@ -123,6 +129,50 @@
 ## GET /api/v1/auth/me — 현재 사용자
 
 기존과 같다. 비로그인이면 `COMMON_401`.
+
+## 가입 사전 확인 (UNNIE-173)
+
+### POST /api/v1/auth/login-id/check
+
+요청: `{ "loginId": "unnie01", "accountType": "customer" }`
+
+`accountType`은 `customer` 또는 `shop`. 응답 data: `{ "available": true }`.
+형식 오류는 `COMMON_400`. 이 결과는 사전 안내이며 최종 가입에서도 중복을 다시 검사한다.
+
+### POST /api/v1/auth/phone/send
+
+요청: `{ "phone": "01012345678" }`
+
+응답 data 예시:
+
+```json
+{
+  "verificationId": "ce79983d-c4b3-4e64-b8eb-bbcd32206e17",
+  "expiresAt": "2026-11-02T09:03:00+09:00",
+  "resendAvailableAt": "2026-11-02T09:01:00+09:00",
+  "verified": false
+}
+```
+
+- 6자리 난수, 3분 만료. 인증번호는 API 응답에 포함하지 않고 해시로 보관한다.
+- 재발송 60초 대기, 번호당 시간당 10회, 서버 전체 시간당 100회. 실패·응답 불명도 시도 횟수에 포함한다.
+- 재발송하면 이전 인증은 무효화한다. 발송 실패·응답 불명을 성공으로 처리하지 않는다.
+- 문자 발송에는 기존 `solapi.api-key`, `solapi.api-secret`, `solapi.from-number` 설정을 사용한다.
+- 실제 문자 발송 검증에는 사람이 설정한 SOLAPI 계정·등록 발신번호·발송 잔액이 필요하다.
+
+### POST /api/v1/auth/phone/verify
+
+요청: `{ "verificationId": "발송 응답 ID", "code": "문자로 받은 6자리" }`
+
+성공 시 발송 응답과 같은 형식이며 `verified: true`, `expiresAt`은 인증 완료부터 10분 후이다.
+오입력 5회 이후 새 인증번호가 필요하다. 재확인으로 유효기간을 연장하지 않는다.
+
+- 고객 가입에는 `phone`, 매장 가입에는 별도 `verificationPhone`과 일치하는 인증 ID를 보낸다.
+- 인증 ID 누락·번호 변경·만료·미인증·재사용은 서버에서 차단한다.
+- 가입 트랜잭션 커밋 때 인증을 소비하며, 롤백하면 유효시간 내 재시도가 가능하다.
+- 오류: `AUTH_004` 인증 실패, `AUTH_005` 발송 제한, `AUTH_006` 발송 실패. 상세 메시지는 서버 응답을 표시한다.
+- 현재 인증 상태·발송 제한은 **단일 서버 메모리**에 보관한다. 재시작 시 재인증이 필요하며 다중 서버 배포 전 공유 저장소로 교체해야 한다.
+- 전화번호 소유 확인 기능이다. 대표자 본인 확인·사업자 조회·전화번호 중복 가입 차단은 이 API의 범위가 아니다.
 
 ## 테스트 계정 (local 초기 데이터)
 

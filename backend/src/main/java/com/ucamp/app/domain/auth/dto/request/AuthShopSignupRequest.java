@@ -32,7 +32,10 @@ public record AuthShopSignupRequest(
         @NotNull @DecimalMin("-180") @DecimalMax("180") @Digits(integer = 3, fraction = 7) BigDecimal longitude,
         @NotBlank @Size(max = 20) String phone,
         @Size(max = 2000) String description,
-        @Size(max = 2000) String notice) {
+        @Size(max = 2000) String notice,
+        @NotBlank @Pattern(regexp = AuthInputRules.MOBILE_PHONE, message = AuthInputRules.MOBILE_PHONE_MESSAGE)
+        String verificationPhone,
+        @NotBlank @Size(max = 36) String phoneVerificationId) {
 
     @AssertTrue(message = AuthInputRules.PASSWORD_BYTES_MESSAGE)
     public boolean isPasswordWithinBytes() {

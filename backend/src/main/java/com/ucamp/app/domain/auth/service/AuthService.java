@@ -46,18 +46,21 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final TermsAgreementService termsAgreementService;
+    private final AuthPhoneVerificationService phoneVerificationService;
     // 없는 아이디로 로그인할 때 비교할 해시. 같은 인코더로 만들어 실제 계정과 비교 비용이 같다
     private final String dummyPasswordHash;
 
     public AuthService(AppUserRepository appUserRepository, ShopAccountRepository shopAccountRepository,
             ShopCategoryRepository shopCategoryRepository, PasswordEncoder passwordEncoder,
-            JwtProvider jwtProvider, TermsAgreementService termsAgreementService) {
+            JwtProvider jwtProvider, TermsAgreementService termsAgreementService,
+            AuthPhoneVerificationService phoneVerificationService) {
         this.appUserRepository = appUserRepository;
         this.shopAccountRepository = shopAccountRepository;
         this.shopCategoryRepository = shopCategoryRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtProvider = jwtProvider;
         this.termsAgreementService = termsAgreementService;
+        this.phoneVerificationService = phoneVerificationService;
         this.dummyPasswordHash = passwordEncoder.encode(DUMMY_PASSWORD);
     }
 
@@ -68,6 +71,7 @@ public class AuthService {
             throw new BusinessException(ErrorCode.AUTH_DUPLICATE_LOGIN_ID);
         }
         termsAgreementService.validateSignupAgreements(request.agreedTerms());
+        phoneVerificationService.consume(request.phone(), request.phoneVerificationId());
         AppUser user = AppUser.builder()
                 .loginId(request.loginId())
                 .passwordHash(passwordEncoder.encode(request.password()))
@@ -89,6 +93,7 @@ public class AuthService {
         if (!shopCategoryRepository.existsById(request.categoryId())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "존재하지 않는 매장 카테고리입니다.");
         }
+        phoneVerificationService.consume(request.verificationPhone(), request.phoneVerificationId());
         ShopAccount account = ShopAccount.builder()
                 .loginId(request.loginId())
                 .passwordHash(passwordEncoder.encode(request.password()))
@@ -137,6 +142,15 @@ public class AuthService {
         return shopCategoryRepository.findAllByOrderByNameAsc().stream()
                 .map(AuthShopCategoryResponse::from)
                 .toList();
+    }
+
+    /** 고객과 매장 계정은 기존 로그인 정책과 동일하게 각각 중복을 검사한다. */
+    public boolean isLoginIdAvailable(String loginId, String accountType) {
+        return switch (accountType) {
+            case "customer" -> !appUserRepository.existsByLoginId(loginId);
+            case "shop" -> !shopAccountRepository.existsByLoginId(loginId);
+            default -> throw new BusinessException(ErrorCode.INVALID_INPUT, "계정 종류가 올바르지 않습니다.");
+        };
     }
 
     // 계정이 없어도 같은 비용의 BCrypt 비교를 한 번 수행해 응답 시간으로 아이디 존재 여부가 드러나지 않게 한다.
