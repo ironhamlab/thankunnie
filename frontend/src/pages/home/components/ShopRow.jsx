@@ -8,6 +8,7 @@ import {
   shopPagePath,
 } from '@/utils/exploreVacancy';
 import { datePart } from '@/utils/scheduleDate';
+import LocationIcon from '@/components/icons/LocationIcon';
 import styles from './ShopRow.module.css';
 
 /**
@@ -19,7 +20,9 @@ import styles from './ShopRow.module.css';
  * @param detail   펼친 매장의 빈자리 { status, vacancies }. 아직 안 받았으면 undefined
  * @param onToggle 펼치기·접기
  * @param onRetry  빈자리를 다시 받기
- * @param showTimes 시간 보기 버튼을 보일지. 전체 날짜 보기는 날짜가 섞여 매장 상세에서 날짜를 고른다
+ * @param showTimes 시간 보기 버튼을 보일지
+ * @param onLocate  있으면 '지도에서 보기' 버튼을 보이고, 누르면 옆 지도에서 이 매장을 가까이 보여준다
+ * @param located   옆 지도에서 지금 이 매장을 보여주는 중인지
  * @param model    초보 시술 모집 목록이면 매장 대신 초보 시술 모집 상세로 보낸다. 초보 시술 빈자리만 있는 매장(shop.modelOnly)도 그렇다.
  *                 일반·초보 시술이 섞인 매장은 카드 아래에 초보 시술 모집 상세 링크를 따로 둔다
  */
@@ -31,12 +34,27 @@ export default function ShopRow({
   onRetry,
   model,
   showTimes = true,
+  onLocate,
+  located = false,
 }) {
   const panelId = `shop-${shop.shopId}-vacancies`;
+  // 전체 날짜 보기처럼 여러 날짜의 빈자리가 섞이면 시각 앞에 날짜를 붙인다
+  const multiDay = new Set(detail?.vacancies?.map((vacancy) => vacancy.day)).size > 1;
+  const locateButton = onLocate && (
+    <button
+      type="button"
+      className={styles.toggle}
+      aria-pressed={located}
+      onClick={() => onLocate(shop)}
+    >
+      <LocationIcon size={16} />
+      {located ? '지도에 표시 중' : '지도에서 보기'}
+    </button>
+  );
   // 전체 매장 목록에서 온 매장은 빈자리 요약이 없다. 매장 상세에서 날짜를 골라 다시 찾아보게 한다
   if (shop.earliestStartsAt == null) {
     return (
-      <article className={`${styles.root} ${styles.noVacancy}`}>
+      <article className={`${styles.root} ${styles.noVacancy} ${located ? styles.located : ''}`}>
         <div className={styles.summary}>
           <Link className={styles.shopLink} to={shopPagePath(shop.shopId)}>
             <img className={styles.thumb} src={shopImage(shop.imageUrl)} alt="" />
@@ -46,13 +64,16 @@ export default function ShopRow({
               <span className={styles.none}>지금은 빈자리가 없어요</span>
             </span>
           </Link>
+          {locateButton}
         </div>
       </article>
     );
   }
   return (
-    <article className={`${styles.root} ${expanded ? styles.expanded : ''}`}>
-      <div className={styles.summary}>
+    <article
+      className={`${styles.root} ${expanded ? styles.expanded : ''} ${located ? styles.located : ''}`}
+    >
+      <div className={`${styles.summary} ${onLocate && showTimes ? styles.twoActions : ''}`}>
         <Link
           className={styles.shopLink}
           to={shopPagePath(shop.shopId, {
@@ -73,6 +94,7 @@ export default function ShopRow({
             <b>{money(shop.minSalePrice)}~</b>
           </span>
         </Link>
+        {locateButton}
         {showTimes && (
           <button
             type="button"
@@ -127,7 +149,7 @@ export default function ShopRow({
                       className={slot.urgency !== '일반 빈자리' ? styles.urgent : ''}
                       aria-label={`${treatment.name} ${slot.day} ${slot.time} ${money(slot.price)}`}
                     >
-                      {slot.time}
+                      {multiDay ? `${slot.day} ${slot.time}` : slot.time}
                     </Link>
                   ))}
                 </div>
