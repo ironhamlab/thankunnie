@@ -5,7 +5,9 @@ import { earliestTodayStart, toMinutes, toTime } from '@/utils/vacancyPreview';
 const LEAD_MINUTES = { CLOSE: 0, OPEN: 30 };
 // 처음 잡아 두는 길이: 닫기는 점심 1시간, 열기는 2시간
 const DEFAULT_LENGTH_MINUTES = { CLOSE: 60, OPEN: 120 };
-const LAST_END = '23:30';
+export const LAST_END = '23:30';
+// 열기·닫기는 하루 안에서 끝나야 해서 23:00 칸(~23:30)까지만 고른다
+export const LAST_START = '23:00';
 // 오늘 더 고를 칸이 없을 때의 값. 모든 칸이 이보다 이르므로 전부 막힌다
 export const NO_MORE_TODAY = '24:00';
 
@@ -17,7 +19,7 @@ export const minStartOf = (type, date) =>
 export const newForm = (exceptionType, date = todayKst()) => {
   let target = date;
   let minStart = minStartOf(exceptionType, target);
-  if (minStart && minStart > '23:00') {
+  if (minStart && minStart > LAST_START) {
     target = addDays(target, 1);
     minStart = null;
   }
