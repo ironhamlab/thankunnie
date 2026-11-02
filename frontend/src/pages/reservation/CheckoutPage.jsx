@@ -98,7 +98,7 @@ export default function CheckoutPage() {
   const [headerHeight, setHeaderHeight] = useState(0);
   const [showExpiredDialog, setShowExpiredDialog] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  // 결제 담당: 결제창을 열 때 true 로 바꿔, 결제 중 이동(결제 완료 화면 등)은 막지도 풀지도 않게 한다 (R5)
+  // 결제 중 이동(결제 완료 화면, 모바일 결제창 페이지 이동)은 막지도 풀지도 않도록 결제하는 동안 true 로 둔다 (R5)
   const payingRef = useRef(false);
 
   // 기기 시계가 서버와 달라도 서버가 만료로 보는 순간에 맞춰 세도록, 응답 때 잰 차이만큼 보정한 서버 기준 현재 시각
@@ -497,8 +497,8 @@ export default function CheckoutPage() {
       {showExpiredDialog && expired && (
         <Dialog title="빈자리 확보가 풀렸어요" onClose={() => setShowExpiredDialog(false)}>
           <p>
-            결제 제한 시간 5분이 지나 잡아 둔 시간이 풀렸어요. 결제는 진행되지 않았어요. 같은 시간이
-            아직 비어 있으면 다시 선택할 수 있어요.
+            결제 제한 시간 5분이 지나 잡아 둔 시간이 풀렸어요. 결제창에서 결제를 마쳤다면 자동으로
+            취소돼요. 같은 시간이 아직 비어 있으면 다시 선택할 수 있어요.
           </p>
           <div className={`b-flex ${styles.dialogActions}`}>
             <Button as={Link} variant="primary" to={shopLink}>
