@@ -2,21 +2,15 @@
   max-width: 1200px;
   padding-top: 20px;
 }
-.ribbon {
-  border-radius: 0;
-  margin-bottom: 30px;
-  padding: 10px 20px;
-  font-size: 11px;
-}
 .summary {
   padding: 28px;
 }
 .summary > :global(.b-row) {
   flex-wrap: wrap;
 }
+/* 좁은 화면에서도 아바타와 이름을 한 줄에 두고, 긴 글자는 오른쪽 칸 안에서 줄바꿈한다 */
 .summary > :global(.b-row) > :global(.b-flex) {
   min-width: 0;
-  flex-wrap: wrap;
 }
 .summary h1 {
   font-size: 23px;
@@ -54,10 +48,6 @@
   font-size: 13px;
   padding: 4px;
   border: 2px solid white;
-}
-.shareButton {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
 }
 .stats {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -103,6 +93,49 @@
 .nearest :global(.b-flex) {
   flex-wrap: wrap;
 }
+/* 언제 가는지가 가장 먼저 보이도록 날짜·시간을 왼쪽 블록으로 뺀다 */
+.nearestWhen {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  flex-shrink: 0;
+  min-width: 180px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+.nearestDay {
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-white);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+.nearestDate {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.nearestTime {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+.nearestTime small {
+  font-size: 14px;
+  font-weight: 600;
+}
+.nearest .nearestInfo {
+  flex: 1;
+  min-width: 220px;
+}
+.nearestActions {
+  flex-shrink: 0;
+}
 .nearestState {
   margin-top: 24px;
 }
@@ -120,6 +153,15 @@
   .nearest {
     flex-wrap: wrap;
   }
+  /* 버튼이 아랫줄로 내려가면 왼쪽에 몰리지 않게 줄을 채운다 */
+  .nearest .nearestActions {
+    width: 100%;
+  }
+  .nearestActions > * {
+    flex: 1;
+    justify-content: center;
+    text-align: center;
+  }
 }
 @media (max-width: 540px) {
   .summary {
@@ -131,5 +173,8 @@
   }
   .nearest :global(.b-badge) {
     white-space: normal;
+  }
+  .nearestWhen {
+    width: 100%;
   }
 }

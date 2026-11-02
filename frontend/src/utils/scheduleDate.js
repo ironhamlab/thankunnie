@@ -14,6 +14,10 @@ export const addDays = (date, days) => {
 /** 날짜와 HH:mm 을 서버 요청용 시각으로 만든다 */
 export const toKstDateTime = (date, time) => `${date}T${time}:00${KST_OFFSET}`;
 
+/** 다음 한국 시간 자정까지 남은 밀리초 */
+export const msUntilNextKstMidnight = () =>
+  Date.parse(toKstDateTime(addDays(todayKst(), 1), '00:00')) - Date.now();
+
 /** 서버 시각에서 날짜(YYYY-MM-DD)만 꺼낸다 */
 export const datePart = (dateTime) => dateTime.slice(0, 10);
 
