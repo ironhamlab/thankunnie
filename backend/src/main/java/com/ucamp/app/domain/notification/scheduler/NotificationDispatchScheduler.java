@@ -12,8 +12,8 @@ import com.ucamp.app.domain.notification.entity.NotificationDispatch;
 import com.ucamp.app.domain.notification.service.NotificationDispatchService;
 
 /**
- * 1분마다 알림 대기 줄을 만들고, 보내기 전에 다시 확인하는 곳.
- * 카테고리·지역 구독은 60분이 지난 묶음도 여기서 비운다.
+ * 10초마다 알림 대기 줄을 만들고, 보내기 전에 다시 확인하는 곳.
+ * 카테고리·지역 구독은 60분이 지난 묶음을 1분마다 여기서 비운다.
  * 빈자리를 찾는 일과 예약 임시 점유를 푸는 일과 메서드를 나눠 두었다.
  */
 @Slf4j
@@ -24,11 +24,11 @@ public class NotificationDispatchScheduler {
     private final NotificationDispatchService notificationDispatchService;
 
     /**
-     * 직전 실행이 끝나고 1분 뒤 다시 실행한다.
+     * 직전 실행이 끝나고 10초 뒤 다시 실행한다.
      * PENDING 이벤트가 없을 때까지 하나씩 대기 작업으로 저장한다.
      * 맞는 회원이 없어 만든 수가 0이어도 그 이벤트는 끝난 것이므로 다음 이벤트를 본다.
      */
-    @Scheduled(fixedDelay = 60_000, initialDelay = 60_000)
+    @Scheduled(fixedDelay = 10_000, initialDelay = 10_000)
     public void saveDispatchJobs() {
         Optional<Integer> created = notificationDispatchService.createDispatchJobs();
         while (created.isPresent()) {
@@ -43,7 +43,7 @@ public class NotificationDispatchScheduler {
      * 대기 작업이 없을 때까지 한 장씩 가져온 뒤 다시 확인하고, 통과하면 문자를 보낸다.
      * 한 명이 재검사에 걸려도 다음 대기 작업은 계속 확인한다.
      */
-    @Scheduled(fixedDelay = 60_000, initialDelay = 60_000)
+    @Scheduled(fixedDelay = 10_000, initialDelay = 10_000)
     public void claimAndRecheck() {
         Optional<NotificationDispatch> claimed = notificationDispatchService.claimDispatchJob();
         while (claimed.isPresent()) {
