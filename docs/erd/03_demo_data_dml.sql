@@ -7,6 +7,7 @@
 --   기존 DB에 UNNIE-164 데이터만 추가할 때는 전체 파일이나 cleanup을 실행하지 않고
 --   이 파일의 "BEGIN UNNIE-164 SEOUL DEMO ADDITIONS"부터 "END UNNIE-164 VERIFIED IMAGE LINKS"까지
 --   (데이터 블록과 이미지 링크 블록)만 대상 환경 확인 후 실행한다. 기존 데이터는 삭제하지 않는다.
+--   기존 매장·시술에 사진만 연결할 때는 "BEGIN UNNIE-169 EXISTING DEMO IMAGE LINKS" 블록만 실행한다.
 --   기존 UNNIE-144 데이터의 재생성이 필요하면 cleanup의 삭제 범위를 별도로 확인한 뒤 사람이 판단한다.
 -- - 기초 데이터(02)와 분리해, 시연 매장을 늘리거나 날짜를 옮겨도 02 를 기준으로 쓰는 테스트에 영향이 없게 한다.
 -- ---------------------------------------------------------------------
@@ -7252,3 +7253,126 @@ UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/' || TO_CHAR(SHOP_ID) || '/treat
 WHERE SHOP_ID = (SELECT SHOP_ID FROM SHOP WHERE LOGIN_ID = 'demo164_s50')
   AND NAME = '브라운 행사 메이크업' AND TREATMENT_TYPE = 'NORMAL' AND IMAGE_URL IS NULL;
 -- END UNNIE-164 VERIFIED IMAGE LINKS
+
+-- BEGIN UNNIE-169 EXISTING DEMO IMAGE LINKS
+-- 02 초기 매장 2곳과 03 기존 시연 매장 11곳, 그 시술 25개에 UNNIE-164 생성 사진을 재사용해 연결한다.
+-- 매장 사진은 같은 업종이면서 지역이 겹치지 않는 UNNIE-164 매장 사진을 고른다.
+-- S3 원본 객체를 슬롯마다 새 UUID 이름으로 복사했다. 한 매장·시술의 사진을 교체·삭제해도 다른 곳의 객체는 지워지지 않는다.
+-- 대상: thankunnie-images-dev / ap-southeast-2 / shop-images/. DB에는 백엔드 이미지 API 상대 경로만 저장한다.
+-- 기존 이미지가 있는 행은 보존한다. 재실행해도 이미 연결한 행은 변경하지 않는다.
+-- 기존 DB에는 대상 환경 확인 후 이 블록만 실행하고, 결과를 확인한 뒤 사람이 COMMIT한다.
+-- 매장 1 언니네 네일(강남) ← UNNIE-164 shop-041
+UPDATE SHOP SET IMAGE_URL = '/api/v1/shops/1/images/eadb3e3b-2eb8-4cab-a3fe-1b5123d22d5f.jpg'
+WHERE SHOP_ID = 1 AND IMAGE_URL IS NULL;
+-- 매장 2 땡잡은 헤어(서초) ← UNNIE-164 shop-042
+UPDATE SHOP SET IMAGE_URL = '/api/v1/shops/2/images/52ac0485-01b9-4b92-a2e8-f280f34c60ff.jpg'
+WHERE SHOP_ID = 2 AND IMAGE_URL IS NULL;
+-- 매장 101 홍대 핑크네일(마포) ← UNNIE-164 shop-036
+UPDATE SHOP SET IMAGE_URL = '/api/v1/shops/101/images/93d86605-c5f2-484a-b42c-c2fc43568b5e.jpg'
+WHERE SHOP_ID = 101 AND IMAGE_URL IS NULL;
+-- 매장 102 성수 무드네일(성동) ← UNNIE-164 shop-026
+UPDATE SHOP SET IMAGE_URL = '/api/v1/shops/102/images/f2c877ce-e9ae-4895-9d1c-e040dbf4454b.jpg'
+WHERE SHOP_ID = 102 AND IMAGE_URL IS NULL;
+-- 매장 103 잠실 바른헤어(송파) ← UNNIE-164 shop-047
+UPDATE SHOP SET IMAGE_URL = '/api/v1/shops/103/images/f8db9e15-2df0-4a39-b6ed-9bb0595e54a6.jpg'
+WHERE SHOP_ID = 103 AND IMAGE_URL IS NULL;
+-- 매장 104 판교 살롱드헤어(판교) ← UNNIE-164 shop-037
+UPDATE SHOP SET IMAGE_URL = '/api/v1/shops/104/images/96f9155e-d069-47e8-90f9-6713943ad2f5.jpg'
+WHERE SHOP_ID = 104 AND IMAGE_URL IS NULL;
+-- 매장 105 강남 래쉬룸(강남) ← UNNIE-164 shop-043
+UPDATE SHOP SET IMAGE_URL = '/api/v1/shops/105/images/bcb21f0c-6515-432a-88f1-7496d1482884.jpg'
+WHERE SHOP_ID = 105 AND IMAGE_URL IS NULL;
+-- 매장 106 건대 아이래쉬(광진) ← UNNIE-164 shop-048
+UPDATE SHOP SET IMAGE_URL = '/api/v1/shops/106/images/c8903b78-583b-4139-9732-873894827c8a.jpg'
+WHERE SHOP_ID = 106 AND IMAGE_URL IS NULL;
+-- 매장 107 서초 맑은피부(서초) ← UNNIE-164 shop-044
+UPDATE SHOP SET IMAGE_URL = '/api/v1/shops/107/images/2e5a813c-5981-432e-9d9f-d3cfa6637f47.jpg'
+WHERE SHOP_ID = 107 AND IMAGE_URL IS NULL;
+-- 매장 108 홍대 스킨랩(마포) ← UNNIE-164 shop-039
+UPDATE SHOP SET IMAGE_URL = '/api/v1/shops/108/images/e60a975f-4978-48d6-b4f4-72a21a9979d4.jpg'
+WHERE SHOP_ID = 108 AND IMAGE_URL IS NULL;
+-- 매장 109 성수 메이크업룸(성동) ← UNNIE-164 shop-045
+UPDATE SHOP SET IMAGE_URL = '/api/v1/shops/109/images/615a2ea9-a438-4a55-83bd-d57d934e3d27.jpg'
+WHERE SHOP_ID = 109 AND IMAGE_URL IS NULL;
+-- 매장 110 판교 뷰티스튜디오(판교) ← UNNIE-164 shop-050
+UPDATE SHOP SET IMAGE_URL = '/api/v1/shops/110/images/aeada1e0-1e30-4029-9abc-e2591c5927d5.jpg'
+WHERE SHOP_ID = 110 AND IMAGE_URL IS NULL;
+-- 매장 111 신촌 백원네일(서대문) ← UNNIE-164 shop-021
+UPDATE SHOP SET IMAGE_URL = '/api/v1/shops/111/images/65f11cb3-19bc-4b69-a22c-c15c69b67d6d.jpg'
+WHERE SHOP_ID = 111 AND IMAGE_URL IS NULL;
+-- 시술 1 젤네일 원컬러 ← UNNIE-164 treatment-010
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/1/treatments/1/images/1fc2c70b-c153-4c96-a08e-28f36cc5b9e8.jpg'
+WHERE TREATMENT_ID = 1 AND SHOP_ID = 1 AND IMAGE_URL IS NULL;
+-- 시술 2 손 케어 ← UNNIE-164 treatment-006
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/1/treatments/2/images/9f61c106-bcf6-48ea-9d12-fc8d9003b560.jpg'
+WHERE TREATMENT_ID = 2 AND SHOP_ID = 1 AND IMAGE_URL IS NULL;
+-- 시술 3 남성 커트 ← UNNIE-164 treatment-017
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/2/treatments/3/images/35192a12-bdf1-40b5-9a6f-12c6786553f6.jpg'
+WHERE TREATMENT_ID = 3 AND SHOP_ID = 2 AND IMAGE_URL IS NULL;
+-- 시술 4 디지털 펌 ← UNNIE-164 treatment-019
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/2/treatments/4/images/1a486795-04e8-447a-af0d-1fd4c0b52914.jpg'
+WHERE TREATMENT_ID = 4 AND SHOP_ID = 2 AND IMAGE_URL IS NULL;
+-- 시술 201 젤네일 원컬러 ← UNNIE-164 treatment-002
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/101/treatments/201/images/261a943d-e235-40d9-be3c-04db729534ea.jpg'
+WHERE TREATMENT_ID = 201 AND SHOP_ID = 101 AND IMAGE_URL IS NULL;
+-- 시술 202 아트 초보 시술 모집 ← UNNIE-164 treatment-008
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/101/treatments/202/images/21cddcea-07de-4635-a479-0856bed8393e.jpg'
+WHERE TREATMENT_ID = 202 AND SHOP_ID = 101 AND IMAGE_URL IS NULL;
+-- 시술 203 시럽 젤네일 ← UNNIE-164 treatment-001
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/102/treatments/203/images/e34ef3f0-1705-4bc6-91b9-63b82f7f0d0b.jpg'
+WHERE TREATMENT_ID = 203 AND SHOP_ID = 102 AND IMAGE_URL IS NULL;
+-- 시술 204 손 케어 ← UNNIE-164 treatment-006
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/102/treatments/204/images/8a2e0582-6659-47d7-ac8f-0f7b5ae23508.jpg'
+WHERE TREATMENT_ID = 204 AND SHOP_ID = 102 AND IMAGE_URL IS NULL;
+-- 시술 205 여성 커트 ← UNNIE-164 treatment-011
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/103/treatments/205/images/abe5c7ad-7a1a-49a2-a62d-1166b362cbea.jpg'
+WHERE TREATMENT_ID = 205 AND SHOP_ID = 103 AND IMAGE_URL IS NULL;
+-- 시술 206 두피 스케일링 ← UNNIE-164 treatment-022
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/103/treatments/206/images/5e30bb5c-525e-4510-accb-cb7ab9e259c1.jpg'
+WHERE TREATMENT_ID = 206 AND SHOP_ID = 103 AND IMAGE_URL IS NULL;
+-- 시술 207 디지털 펌 ← UNNIE-164 treatment-014
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/104/treatments/207/images/091bcf8e-440e-43b4-9a8a-4e7aebe64fb9.jpg'
+WHERE TREATMENT_ID = 207 AND SHOP_ID = 104 AND IMAGE_URL IS NULL;
+-- 시술 208 뿌리 염색 ← UNNIE-164 treatment-020
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/104/treatments/208/images/97a576fb-0544-46b3-9625-04b7ca0c817d.jpg'
+WHERE TREATMENT_ID = 208 AND SHOP_ID = 104 AND IMAGE_URL IS NULL;
+-- 시술 209 속눈썹 펌 ← UNNIE-164 treatment-023
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/105/treatments/209/images/56cf8002-5793-4d33-aa70-4959c2deb2a8.jpg'
+WHERE TREATMENT_ID = 209 AND SHOP_ID = 105 AND IMAGE_URL IS NULL;
+-- 시술 210 연장 초보 시술 모집 ← UNNIE-164 treatment-026
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/105/treatments/210/images/846e36e9-bf4d-4f5e-8e95-03cecad7ea49.jpg'
+WHERE TREATMENT_ID = 210 AND SHOP_ID = 105 AND IMAGE_URL IS NULL;
+-- 시술 211 속눈썹 펌 ← UNNIE-164 treatment-024
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/106/treatments/211/images/b20bb95a-d00a-4398-8949-5e88fd60dad0.jpg'
+WHERE TREATMENT_ID = 211 AND SHOP_ID = 106 AND IMAGE_URL IS NULL;
+-- 시술 212 속눈썹 연장 120가닥 ← UNNIE-164 treatment-025
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/106/treatments/212/images/95003b61-0aee-470e-8c2e-8f4d3bd829de.jpg'
+WHERE TREATMENT_ID = 212 AND SHOP_ID = 106 AND IMAGE_URL IS NULL;
+-- 시술 213 수분 진정 관리 ← UNNIE-164 treatment-030
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/107/treatments/213/images/c1b65ddc-f66f-4f9b-898f-d7b0a358dc47.jpg'
+WHERE TREATMENT_ID = 213 AND SHOP_ID = 107 AND IMAGE_URL IS NULL;
+-- 시술 214 여드름 압출 관리 ← UNNIE-164 treatment-032
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/107/treatments/214/images/7e8f95ad-2dab-4cd1-ad04-31b688cfb41f.jpg'
+WHERE TREATMENT_ID = 214 AND SHOP_ID = 107 AND IMAGE_URL IS NULL;
+-- 시술 215 아쿠아 필링 ← UNNIE-164 treatment-031
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/108/treatments/215/images/a0afa946-9e33-4081-905f-6b57cf46dadf.jpg'
+WHERE TREATMENT_ID = 215 AND SHOP_ID = 108 AND IMAGE_URL IS NULL;
+-- 시술 216 모공 관리 초보 시술 모집 ← UNNIE-164 treatment-029
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/108/treatments/216/images/1e692abd-74c6-47a3-8313-89799ac6fa86.jpg'
+WHERE TREATMENT_ID = 216 AND SHOP_ID = 108 AND IMAGE_URL IS NULL;
+-- 시술 217 데일리 메이크업 ← UNNIE-164 treatment-035
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/109/treatments/217/images/760f34df-d811-4196-aafa-ab41c0ace851.jpg'
+WHERE TREATMENT_ID = 217 AND SHOP_ID = 109 AND IMAGE_URL IS NULL;
+-- 시술 218 촬영 메이크업 초보 시술 모집 ← UNNIE-164 treatment-038
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/109/treatments/218/images/cb0627d7-4d35-474c-9858-f4289fda6009.jpg'
+WHERE TREATMENT_ID = 218 AND SHOP_ID = 109 AND IMAGE_URL IS NULL;
+-- 시술 219 웨딩 게스트 메이크업 ← UNNIE-164 treatment-040
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/110/treatments/219/images/77a66a7f-6d13-47ae-8774-552dccfa91be.jpg'
+WHERE TREATMENT_ID = 219 AND SHOP_ID = 110 AND IMAGE_URL IS NULL;
+-- 시술 220 퍼스널 컬러 메이크업 레슨 ← UNNIE-164 treatment-039
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/110/treatments/220/images/0d054df3-2621-4fe2-9d27-71e2de3ce8ad.jpg'
+WHERE TREATMENT_ID = 220 AND SHOP_ID = 110 AND IMAGE_URL IS NULL;
+-- 시술 221 100원 결제 시연 손 케어 ← UNNIE-164 treatment-006
+UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/111/treatments/221/images/6be71120-ede4-48f2-b797-8196d0c437a7.jpg'
+WHERE TREATMENT_ID = 221 AND SHOP_ID = 111 AND IMAGE_URL IS NULL;
+-- END UNNIE-169 EXISTING DEMO IMAGE LINKS
