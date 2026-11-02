@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Dialog from '@/components/common/Dialog';
 import FaqList from '@/components/common/FaqList';
-import { KAKAO_OPEN_CHAT_URL } from '@/constants/customerSupport';
+import { FAQ_GROUPS, KAKAO_OPEN_CHAT_URL } from '@/constants/customerSupport';
 import { ROUTES } from '@/constants/routes';
 import Button from '@/components/common/Button';
 import styles from './Footer.module.css';
@@ -42,7 +42,7 @@ export default function Footer() {
       </footer>
       {notice === FAQ && (
         <Dialog title={FAQ} onClose={() => setNotice('')}>
-          <FaqList />
+          <FaqList groups={FAQ_GROUPS} />
         </Dialog>
       )}
       {notice === CUSTOMER_CENTER && (
