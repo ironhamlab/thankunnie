@@ -32,6 +32,10 @@
 
 - 대상: `SHOP.STATUS = ACTIVE` 매장의 `TREATMENT.STATUS = ACTIVE` 시술
 - 시작 시각: 사장님이 연 시간대(`SHOP_SCHEDULE_EXCEPTION.EXCEPTION_TYPE = OPEN`) 안에서 시작하는 30분 단위 시각. 영업시간 안의 일반 빈 시간은 목록에 넣지 않는다
+  - 예외 (UNNIE-165, 타임세일): `priceTier=LAST_MINUTE`이면 메인 임박 빈자리(4-1장)처럼 OPEN 없이 영업시간 안 빈 시각을 찾는다.
+    - 범위: 시작 3시간 이내(초임박 구간, 정확히 3시간 전 포함). 예약 클릭 마감(시작 20분 전)은 B의 가용 시간 계산을 그대로 따른다. 날짜를 생략하면 자정을 넘은 새벽 시각도 본다.
+    - 할인 조건: 초임박가(`LAST_MINUTE_PRICE`)가 일반 판매가(`PRICE`)보다 싼 시술만. 8~3시간 전(임박) 구간은 판매가와 같아 타임세일에 넣지 않는다.
+    - 지역·분야·시간대·검색어·지도 범위·시술 유형(초보 시술) 조건은 똑같이 적용한다. `IMMINENT`나 조건 없는 조회는 OPEN 기준 그대로다.
 - 예약 가능 판단은 B-06과 같은 규칙을 쓴다 (`AvailabilityCalculator`, `SalePolicy.isBookable`)
   - 시술 구간 `[시작, 시작 + 소요 시간)`이 열린 구간 안에 모두 들어가고, 닫기·잡혀 있는 예약과 겹치지 않는다
   - 시작 20분 전까지, 오늘 포함 60일 이내
@@ -62,7 +66,7 @@
 | `treatmentType` | `NORMAL`·`MODEL` | 전체 | 해당 시술 유형만. 초보 시술 모집 목록에서 `MODEL` 로 사용 |
 | `timeOfDay` | `MORNING`·`AFTERNOON`·`EVENING` | 전체 | 시작 시각 기준 09~12시 / 12~18시 / 18시 이후 |
 | `closingWithinHours` | number (1~72) | 없음 | 예약 마감(시작 20분 전)이 지금부터 N시간 안인 빈자리만. 메인 "마감 임박" 영역용 |
-| `priceTier` | `IMMINENT`·`LAST_MINUTE` | 전체 | 해당 가격 구간 이상만. 홈 "임박 특가만 보기"는 `IMMINENT` |
+| `priceTier` | `IMMINENT`·`LAST_MINUTE` | 전체 | 해당 가격 구간 이상만. 타임세일(`/?sale=1`·`/map?sale=1`·홈 지도 "타임세일만")은 `LAST_MINUTE`. `LAST_MINUTE`이면 OPEN 대신 영업시간 기준으로 찾고 초임박가가 판매가보다 싼 시술만 낸다 (2장 예외) |
 | `keyword` | string (최대 50자) | 없음 | 매장명·시술명 부분 일치 |
 | `minLat`, `maxLat`, `minLng`, `maxLng` | number | 없음 | 지도 화면 범위. 4개를 함께 보내야 하며 `min < max`. 매장 좌표가 범위 안인 빈자리만 |
 | `sort` | `START_ASC`·`DISCOUNT_DESC`·`PRICE_ASC` | `START_ASC` | 빠른 시작순 / 할인율 높은 순 / 판매가 낮은 순 |
@@ -321,6 +325,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 
 1. **빈자리의 범위**: 사장님이 연 시간대(OPEN) 안의 시각만 목록에 노출한다. 서비스 취지(사장님이 등록한 타임세일 빈자리), 알림 이벤트(`NOTIFICATION_EVENT`가 OPEN 행 기준)와 맞고 결과 수가 과도하게 늘지 않는다.
    - 예외 (UNNIE-157): 메인 임박 카드는 8시간 안 빈 시각을 영업시간 기준으로 노출한다. 범위가 짧고 매장당 1건이라 결과 수가 늘지 않는다 (4-1장).
+   - 예외 (UNNIE-165): 타임세일(`priceTier=LAST_MINUTE`)도 영업시간 기준으로 찾는다. 메인 임박 카드와 기준이 어긋나지 않게 하고, 실제로 가격이 내려가는 3시간 이내 할인 시술만 보여준다. 메인 임박 카드의 "전체보기"는 3시간 이내 카드가 있을 때만 타임세일로, 없으면 일반 예약하기(`/?view=list&date=all`)로 연결한다.
    - 남은 확인: 빈자리 상세의 시간 선택(`available-times`, B)은 영업시간까지 포함한다. 목록에 없던 시간을 고를 수 있게 둘지는 B 담당과 정한다.
 2. **경로·패키지**: API는 `/api/v1/explore/...`, 백엔드 코드는 `domain/explore`. 경로를 화면(메인·index) 이름이 아니라 기능(탐색)과 데이터(빈자리) 이름으로 지어, B의 빈자리 관리 API와 섞이지 않게 한다. 메인·검색·지도 화면이 모두 같은 API를 조건만 바꿔 호출한다. 프런트의 메인 화면 경로는 기존대로 `/`(`ROUTES.HOME`)이다.
 3. **지역 필터**: API는 `regionCode`(시군구 5자리)를 여러 개 받고, 화면의 지역 묶음은 프런트 상수(`constants/regions.js`)로 코드 목록에 대응시킨다. 지역 묶음을 바꿔도 서버 수정이 필요 없다.

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ROUTES } from '@/constants/routes';
+import { GRACE_CANCEL_MESSAGE } from '@/constants/cancelPolicy';
 import { useDesignStore } from '@/store/useDesignStore';
 import { useExploreStore } from '@/store/useExploreStore';
 import { regionNameOf } from '@/constants/regions';
@@ -72,7 +74,7 @@ export default function VacancySearch() {
   // 알림 링크의 region. 없으면 지역으로 좁히지 않는다
   const regionCode = params.get('region') || undefined;
   const dateParam = params.get('date');
-  // 타임세일은 오늘 시작하는 빈자리만 보고, 그 밖에는 고른 날짜(기본 오늘)를 본다
+  // 타임세일은 날짜 대신 지금부터 3시간 안을 보고, 그 밖에는 고른 날짜(기본 오늘)를 본다
   const date = (!saleOnly && validDate(dateParam, today, lastDay)) || today;
   // 전체 날짜(date=all)는 예약 가능한 기간 전체에서 빈자리가 있는 매장을 모아 본다
   const allDates = !saleOnly && dateParam === ALL_DATES;
@@ -132,14 +134,15 @@ export default function VacancySearch() {
   }, [search]);
 
   // 매장 목록·지도·펼친 매장의 빈자리가 같이 쓰는 조건
+  // 타임세일은 날짜를 보내지 않는다. 서버가 영업시간 기준으로 시작 3시간 이내(자정 넘어 새벽 포함)를 본다
   const filter = useMemo(
     () => ({
-      startDate: allDates ? today : date,
-      endDate: allDates ? lastDay : date,
+      startDate: saleOnly ? undefined : allDates ? today : date,
+      endDate: saleOnly ? undefined : allDates ? lastDay : date,
       categoryId: categoryId ?? undefined,
       regionCode,
       timeOfDay: TIME_OF_DAY[time],
-      priceTier: saleOnly ? 'IMMINENT' : undefined,
+      priceTier: saleOnly ? 'LAST_MINUTE' : undefined,
       treatmentType: modelOnly ? MODEL : undefined,
       keyword: keyword || undefined,
     }),
@@ -298,7 +301,10 @@ export default function VacancySearch() {
           />
         </div>
         {saleOnly && (
-          <p className={styles.description}>오늘 시작하는 임박·초임박 특가 빈자리만 보여드려요.</p>
+          <p className={styles.description}>
+            시작 3시간 안에 할인 중인 초임박 특가 빈자리만 보여드려요.{' '}
+            {GRACE_CANCEL_MESSAGE.LAST_MINUTE_HOLD}
+          </p>
         )}
         <div className={`b-row ${styles.filterLine}`}>
           <Filter label="시작 시간" options={times} value={time} onChange={setTime} segmented />
@@ -354,6 +360,14 @@ export default function VacancySearch() {
                 </div>
               )}
             </>
+          ) : saleOnly ? (
+            <EmptyState className="b-panel">
+              <h2>지금 세일 중인 자리가 없어요</h2>
+              <p>시작 3시간 전부터 할인하는 자리가 생기면 여기에 보여드려요.</p>
+              <Button as={Link} variant="primary" to={`${ROUTES.HOME}?view=list&date=all`}>
+                일반 예약하기
+              </Button>
+            </EmptyState>
           ) : (
             <EmptyState className="b-panel">
               <h2>
