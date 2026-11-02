@@ -28,8 +28,8 @@ const SHOP_SORTS = {
   '낮은 가격순': (a, b) => a.minSalePrice - b.minSalePrice,
 };
 const sorts = Object.keys(SHOP_SORTS);
-// 처음에 보여줄 매장 수. 더보기를 누를 때마다 이만큼 늘린다
-const PAGE_SIZE = 12;
+// 한 페이지에 보여줄 매장 수. 펼친 매장의 시간 버튼까지 있으면 길어지므로 10곳씩 나눈다
+const PAGE_SIZE = 10;
 // 예약은 오늘 포함 60일까지 가능하다
 const MAX_DAYS = 60;
 // 헤더 검색어는 글자마다 바뀌므로 입력이 멈춘 뒤 조회한다
@@ -108,7 +108,7 @@ export default function VacancySearch() {
   const [time, setTime] = useState(ALL);
   const [sort, setSort] = useState(sorts[0]);
   const [keyword, setKeyword] = useState(search);
-  const [paging, setPaging] = useState({ key: '', count: PAGE_SIZE });
+  const [paging, setPaging] = useState({ key: '', page: 0 });
   const categoryName =
     categories.find((item) => String(item.categoryId) === categoryId)?.name ?? ALL;
   // 주소에 region이 있을 때만 제목 앞에 구 이름을 붙인다. 11680 → 강남구
@@ -199,10 +199,21 @@ export default function VacancySearch() {
     );
     return [...withVacancy, ...noVacancyShops];
   }, [shops, sort, allDates, time, allShops, regionCode]);
-  // 조건이 바뀌면 처음 개수로 돌아간다. 펼친 매장은 뒤쪽에 있어도 보이게 한다
-  const pageCount = paging.key === filterKey ? paging.count : PAGE_SIZE;
-  const expandedIndex = sortedShops.findIndex((shop) => String(shop.shopId) === expandedId);
-  const visibleShops = sortedShops.slice(0, Math.max(pageCount, expandedIndex + 1));
+  // 조건이 바뀌면 첫 페이지로 돌아간다. 주소로 고른 매장이 있으면 그 매장이 있는 페이지를 연다
+  const pageOf = (shopId) => {
+    const index = sortedShops.findIndex((shop) => String(shop.shopId) === String(shopId));
+    return index < 0 ? 0 : Math.floor(index / PAGE_SIZE);
+  };
+  const totalPages = Math.ceil(sortedShops.length / PAGE_SIZE);
+  const page = Math.min(
+    paging.key === filterKey ? paging.page : pageOf(expandedId),
+    Math.max(totalPages - 1, 0),
+  );
+  const visibleShops = sortedShops.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const goToPage = (next) => {
+    setPaging({ key: filterKey, page: next });
+    document.getElementById('vacancy-results')?.scrollIntoView({ block: 'start' });
+  };
 
   const toggleShop = (shopId) =>
     updateOption('shop', String(shopId) === expandedId ? '' : String(shopId));
@@ -311,7 +322,7 @@ export default function VacancySearch() {
           <Filter label="정렬" options={sorts} value={sort} onChange={setSort} segmented />
         </div>
       </section>
-      <div className={`b-row ${styles.resultsHeading}`}>
+      <div id="vacancy-results" className={`b-row ${styles.resultsHeading}`}>
         <h2>
           {allDates && allShopsStatus !== 'failed' ? allDatesTitle : listTitle} <Badge>{sortedShops.length}곳</Badge>
         </h2>
@@ -349,15 +360,30 @@ export default function VacancySearch() {
                   </div>
                 ))}
               </div>
-              {visibleShops.length < sortedShops.length && (
-                <div className={styles.more}>
-                  <Button
-                    variant="soft"
-                    onClick={() => setPaging({ key: filterKey, count: pageCount + PAGE_SIZE })}
-                  >
-                    매장 더보기 ({sortedShops.length - visibleShops.length}곳 더)
+              {totalPages > 1 && (
+                <nav className={styles.pagination} aria-label="매장 목록 페이지">
+                  <Button size="small" disabled={page === 0} onClick={() => goToPage(page - 1)}>
+                    이전
                   </Button>
-                </div>
+                  {Array.from({ length: totalPages }, (_, index) => (
+                    <Button
+                      key={index}
+                      size="small"
+                      variant={index === page ? 'primary' : undefined}
+                      aria-current={index === page ? 'page' : undefined}
+                      onClick={() => goToPage(index)}
+                    >
+                      {index + 1}
+                    </Button>
+                  ))}
+                  <Button
+                    size="small"
+                    disabled={page === totalPages - 1}
+                    onClick={() => goToPage(page + 1)}
+                  >
+                    다음
+                  </Button>
+                </nav>
               )}
             </>
           ) : saleOnly ? (
@@ -401,7 +427,11 @@ export default function VacancySearch() {
             showTimes={!allDates}
             status={status}
             expandedShopId={expandedId}
-            onShowShop={(id) => updateOption('shop', id ? String(id) : '')}
+            onShowShop={(id) => {
+              // 지도에서 고른 매장이 다른 페이지에 있으면 그 페이지로 넘긴다
+              if (id) setPaging({ key: filterKey, page: pageOf(id) });
+              updateOption('shop', id ? String(id) : '');
+            }}
             model={modelOnly}
           />
         </aside>
