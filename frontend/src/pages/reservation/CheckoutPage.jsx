@@ -76,7 +76,10 @@ export default function CheckoutPage() {
   const reservationId = params.get('reservationId');
   const loadReservation = useReservationStore((s) => s.loadReservation);
   const clearDetail = useReservationStore((s) => s.clearDetail);
-  const detail = useReservationStore((s) => s.detail);
+  const storedDetail = useReservationStore((s) => s.detail);
+  // 내 예약·취소 화면에서 보던 다른 예약 상세가 남아 있을 수 있으므로 주소의 예약과 같을 때만 쓴다
+  const detail =
+    String(storedDetail?.summary?.reservationId) === reservationId ? storedDetail : null;
   const status = useReservationStore((s) => s.detailStatus);
   const loadError = useReservationStore((s) => s.detailError);
   const clockOffset = useReservationStore((s) => s.detailClockOffset);
@@ -191,7 +194,7 @@ export default function CheckoutPage() {
     );
   }
   // 만료 확인처럼 다시 불러오는 동안에는 기존 화면(팝업 포함)을 유지한다
-  if (status === 'idle' || (status === 'loading' && !detail)) {
+  if (!detail && status !== 'failed') {
     return (
       <EmptyState className="b-container" role="status">
         예약 정보를 불러오는 중입니다.
