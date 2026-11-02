@@ -292,7 +292,7 @@ export default function ReservationPage() {
           >
             {loading || mode === 'loading' ? '실시간 검증 중…' : '다음 (예약 가능 여부 확인)'}
           </Button>
-          <p className="b-help">매장 사정 취소 시 100% 모의 환불 및 보상 정책 적용</p>
+          <p className="b-help">매장 사정으로 취소되면 예약금 전액을 환불합니다.</p>
           {pendingHold && (
             <HoldReplaceDialog
               hold={pendingHold}
