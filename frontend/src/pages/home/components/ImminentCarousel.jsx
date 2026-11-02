@@ -52,6 +52,8 @@ export default function ImminentCarousel() {
 
   // 임박 빈자리가 없으면 스토어가 다음으로 빠른 빈자리를 대신 담아 준다
   const heading = current?.upcoming ? '다음으로 빠른 빈자리' : '곧 시작하는 임박 빈자리';
+  // 타임세일은 시작 3시간 이내만 보여주므로, 지금 목록에 3시간 이내 카드가 있을 때만 그쪽으로 보낸다
+  const hasLastMinute = vacancies.some((card) => !card.upcoming && card.priceTier === 'LAST_MINUTE');
 
   return (
     // 8시간 범위가 자정을 넘으면 내일 새벽 시각도 나오므로 "오늘"로 한정하지 않는다
@@ -60,7 +62,7 @@ export default function ImminentCarousel() {
         <h2>
           <span aria-hidden="true">ϟ</span> {heading}
         </h2>
-        <Link to={current?.upcoming ? `${ROUTES.HOME}?view=list&date=all` : `${ROUTES.HOME}?sale=1`}>
+        <Link to={hasLastMinute ? `${ROUTES.HOME}?sale=1` : `${ROUTES.HOME}?view=list&date=all`}>
           전체보기 ›
         </Link>
       </div>
