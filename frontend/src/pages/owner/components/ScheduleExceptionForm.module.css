@@ -43,7 +43,7 @@
 }
 .type.close[aria-checked='true'] {
   border: 2px solid var(--color-danger);
-  background: #fff1f2;
+  background: var(--color-primary-faint);
   padding: 17px;
 }
 .type.open[aria-checked='true'] {
@@ -69,7 +69,7 @@
   height: 30px;
   background: var(--color-primary-tint);
   border-radius: var(--radius-sm);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 15px;
 }
 .chips {
@@ -89,7 +89,7 @@
 .chips button[aria-pressed='true'] {
   border-color: var(--color-primary);
   background: var(--color-primary-faint);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .summary {
   margin: 0;
@@ -99,7 +99,7 @@
   font-weight: 700;
 }
 .summary.close {
-  background: #fff1f2;
+  background: var(--color-primary-faint);
   color: var(--color-danger);
 }
 .summary.open {

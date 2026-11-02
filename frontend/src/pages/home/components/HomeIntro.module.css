@@ -13,7 +13,7 @@
   letter-spacing: -0.7px;
 }
 .root h1 em {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-style: normal;
 }
 .root p {
@@ -46,7 +46,7 @@
   line-height: 1.2;
 }
 .stats > div:last-child dd {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 @media (max-width: 767px) {
   .root {

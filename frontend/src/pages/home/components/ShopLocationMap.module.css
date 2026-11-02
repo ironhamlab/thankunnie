@@ -3,8 +3,8 @@
   height: 100%;
   min-height: 420px;
   overflow: hidden;
-  background: #dbe7ff;
-  border: 1px solid #c4d7fc;
+  background: var(--color-map-bg);
+  border: 1px solid var(--color-map-line);
   border-radius: 24px;
 }
 .count {
@@ -15,7 +15,7 @@
   padding: 6px 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
-  background: #fffffff0;
+  background: color-mix(in srgb, var(--color-white) 94%, transparent);
   font-size: 12px;
   font-weight: 600;
 }
@@ -30,10 +30,10 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px;
-  background: #fffffff5;
+  background: color-mix(in srgb, var(--color-white) 96%, transparent);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 4px 6px #0001;
+  box-shadow: 0 4px 6px color-mix(in srgb, black 7%, transparent);
 }
 .panel > div {
   min-width: 0;
@@ -41,7 +41,7 @@
 .panel p {
   margin: 2px 0;
   font-size: 13px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .panel .noVacancy {
   color: var(--color-text-muted);
@@ -82,7 +82,7 @@
   background: var(--color-primary-soft);
   font-size: 11px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   text-decoration: none;
   white-space: nowrap;
   overflow: hidden;

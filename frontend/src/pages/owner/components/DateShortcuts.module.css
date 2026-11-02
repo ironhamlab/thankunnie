@@ -20,7 +20,7 @@
 .root button[aria-pressed='true'] {
   border-color: var(--color-primary);
   background: var(--color-primary-faint);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .root input {
   width: auto;

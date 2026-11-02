@@ -21,7 +21,7 @@
   flex-shrink: 0;
   object-fit: cover;
   border-radius: var(--radius-md);
-  background: #ffebf0;
+  background: var(--color-primary-tint);
 }
 .info {
   flex: 1;
@@ -46,7 +46,7 @@
   text-overflow: ellipsis;
 }
 .time {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 600;
 }
 .price {
@@ -60,7 +60,7 @@
   font-style: normal;
   font-size: 11px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .price b {
   font-size: 17px;
@@ -71,7 +71,7 @@
   gap: 12px;
   padding: 14px 16px 16px;
   border-top: 1px solid var(--color-border);
-  background: #fffafb;
+  background: var(--color-primary-faint);
 }
 .treatment {
   display: flex;
@@ -94,7 +94,7 @@
 .treatmentInfo em {
   font-style: normal;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .slots {
   display: flex;
@@ -104,7 +104,7 @@
 .slots a {
   min-width: 64px;
   padding: 7px 12px;
-  border: 1px solid #e2bdc3;
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   background: white;
   font-size: 13px;
@@ -122,7 +122,7 @@
 /* 임박·초임박 특가 시각은 눈에 띄게 한다 */
 .slots a.urgent {
   border-color: var(--color-primary);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .message {
   font-size: 13px;
@@ -132,7 +132,7 @@
   border: 0;
   background: none;
   padding: 0;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font: inherit;
   text-decoration: underline;
   cursor: pointer;
@@ -160,7 +160,7 @@
   text-decoration: none;
 }
 .shopLink:hover {
-  background: #fff7f9;
+  background: var(--color-primary-faint);
 }
 /* 매장 페이지로 가는 카드와 구분되게 시간 펼치기는 따로 둔다. 버튼 대신 간단한 ▾ 글자 토글로 둔다 */
 .toggle {
@@ -171,7 +171,7 @@
   padding: 6px 4px;
   border: 0;
   background: none;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -233,7 +233,7 @@
   background: var(--color-primary-faint);
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   text-decoration: none;
 }
 .modelLink b {

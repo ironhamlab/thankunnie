@@ -52,7 +52,7 @@
 }
 .closed {
   border-color: var(--color-danger);
-  background: #fff1f2;
+  background: var(--color-primary-faint);
   color: var(--color-danger);
 }
 .booked {

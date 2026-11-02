@@ -20,7 +20,7 @@
   color: var(--color-text);
 }
 .holdBarAction {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 700;
   white-space: nowrap;
 }

@@ -15,12 +15,12 @@
 .root:hover,
 .root:focus-visible {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px #ff408114;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 .photo {
   position: relative;
   aspect-ratio: 16 / 10;
-  background: #ffebf0;
+  background: var(--color-primary-tint);
 }
 .photo img {
   width: 100%;
@@ -60,7 +60,7 @@
   text-overflow: ellipsis;
 }
 .time {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .price {
   margin-top: 4px;

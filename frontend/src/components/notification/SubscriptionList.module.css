@@ -71,7 +71,7 @@
 .resultClose:hover,
 .resultClose:focus-visible {
   opacity: 1;
-  background: #007b6214;
+  background: color-mix(in srgb, var(--color-success-text) 8%, transparent);
 }
 @keyframes resultIn {
   from {
@@ -143,7 +143,7 @@
   gap: 8px;
 }
 .editButton {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border-color: var(--color-primary-soft);
   background: var(--color-white);
 }
