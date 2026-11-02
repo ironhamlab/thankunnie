@@ -50,8 +50,11 @@ export default function ShopRow({
     shownDates.includes(datePart(vacancy.startsAt)),
   );
   const nextDate = dates[SHOWN_DAYS];
-  // 받은 빈자리가 개수 제한에 걸려 잘렸을 수도 있으므로 매장 전체 빈자리 수와도 비교한다
-  const hasMore = multiDay && (nextDate || shop.vacancyCount > shownVacancies.length);
+  // 받은 빈자리가 개수 제한에 걸려 잘렸을 수도 있으므로 매장 전체 빈자리 수와도 비교한다.
+  // 하루치만 받았어도 잘렸을 수 있으므로 날짜 수와 상관없이 안내한다
+  const hasMore = Boolean(nextDate) || shop.vacancyCount > shownVacancies.length;
+  // 다음 날짜가 없으면 잘린 빈자리는 마지막으로 받은 날짜부터 이어진다
+  const moreDate = nextDate ?? dates.at(-1);
   const dayOf = (date) => vacancies.find((vacancy) => datePart(vacancy.startsAt) === date).day;
   const locateButton = onLocate && (
     <button
@@ -179,7 +182,7 @@ export default function ShopRow({
                   {nextDate ? `${dayOf(nextDate)}부터는` : '다른 시간은'}{' '}
                   <Link
                     to={shopPagePath(shop.shopId, {
-                      date: nextDate,
+                      date: moreDate,
                       model: model || shop.modelOnly,
                     })}
                   >
