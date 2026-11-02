@@ -28,6 +28,15 @@
   gap: 24px;
   grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr);
 }
+/* 사이드바에 매장 카드가 보이는 폭에서는 상단의 같은 이름을 숨기고 로그아웃만 오른쪽에 둔다 */
+@media (min-width: 901px) {
+  .header {
+    justify-content: flex-end;
+  }
+  .header strong {
+    display: none;
+  }
+}
 @media (max-width: 1200px) {
   .root {
     grid-template-columns: 210px minmax(0, 1fr);
@@ -49,11 +58,33 @@
 }
 @media (max-width: 540px) {
   .header {
-    padding: 16px;
-    flex-wrap: wrap;
+    min-height: 0;
+    padding: 8px 16px;
+  }
+  /* 매장 이름이 길어도 로그아웃이 밀려 내려가지 않게 이름만 말줄임한다 */
+  .header strong {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .header :global(.b-flex) {
+    flex-shrink: 0;
   }
   .main {
-    padding: 20px 16px;
+    width: 100%;
+    padding: 16px 16px 24px;
+  }
+  .main > :global(.b-stack) {
+    gap: 16px;
+  }
+  .main :global(.b-pad) {
+    padding: 16px;
+  }
+  .main :global(.b-panel-heading) {
+    padding-bottom: 12px;
+    margin-bottom: 12px !important;
   }
   .main :global(.b-panel):global(.b-row) {
     flex-wrap: wrap;

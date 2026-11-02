@@ -60,8 +60,14 @@
 }
 /* 폰에서는 요일·영업 여부를 윗줄, 시간을 아랫줄로 내려 옆으로 넘기지 않게 한다 */
 @media (max-width: 540px) {
+  .layout,
+  .side {
+    gap: 12px;
+  }
   .day {
     grid-template-columns: 32px minmax(0, 1fr);
+    gap: 8px 12px;
+    padding: 12px 0;
   }
   .toggle {
     justify-self: end;

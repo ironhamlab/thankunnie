@@ -9,6 +9,11 @@
   font-weight: 700;
   color: var(--color-primary-text);
 }
+.rule {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
 .legend {
   list-style: none;
   display: flex;
@@ -107,8 +112,16 @@
 @media (max-width: 540px) {
   .grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .slot {
+    font-size: 14px;
+  }
+  .period + .period {
+    margin-top: 12px;
   }
   .more {
     min-height: 44px;
+    padding: 0;
   }
 }

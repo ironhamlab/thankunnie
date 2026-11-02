@@ -7,6 +7,7 @@ import { timePart } from '@/utils/scheduleDate';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
+import styles from './DayReservationsPanel.module.css';
 
 // 시간을 차지하는 예약만 보인다. 취소 완료·점유 만료는 시간을 비우므로 뺀다
 const OCCUPYING_STATUSES = ['HOLD', 'CONFIRMED', 'CANCEL_PENDING'];
@@ -50,11 +51,11 @@ export default function DayReservationsPanel({ date }) {
         <p className="b-muted b-center">이 날은 예약이 없습니다.</p>
       )}
       {listStatus === 'succeeded' && reservations.length > 0 && (
-        <div className="b-stack">
+        <div className={`b-stack ${styles.list}`}>
           {reservations.map((item) => {
             const status = reservationStatusOf(item.status);
             return (
-              <div key={item.reservationId} className="b-row">
+              <div key={item.reservationId} className={`b-row ${styles.row}`}>
                 <span>
                   <strong>
                     {timePart(item.startsAt)} ~ {timePart(item.endsAt)}
