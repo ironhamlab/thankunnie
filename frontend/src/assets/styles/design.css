@@ -182,8 +182,8 @@
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   font-size: 11px;
-  color: var(--color-primary-text);
-  background: var(--color-primary-soft);
+  color: var(--color-text);
+  background: var(--color-accent);
   white-space: nowrap;
   font-weight: 600;
   vertical-align: middle;

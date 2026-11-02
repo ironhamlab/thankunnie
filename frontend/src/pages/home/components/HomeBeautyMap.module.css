@@ -117,8 +117,8 @@
 }
 .preview > div > span {
   margin-left: 6px;
-  color: var(--color-primary-text);
-  background: var(--color-primary-tint);
+  color: var(--color-text);
+  background: var(--color-accent);
   padding: 2px 4px;
   border-radius: 4px;
   font-size: 10px;
