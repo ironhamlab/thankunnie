@@ -32,6 +32,10 @@
   .side {
     order: 1;
   }
+  /* 그날 예약이 많아도 저장 전에 고객 미리보기를 바로 볼 수 있게 먼저 둔다 */
+  .side > :last-child {
+    order: -1;
+  }
 }
 @media (max-width: 540px) {
   .root > :global(.b-title-row) p {
@@ -41,6 +45,12 @@
     margin-bottom: 0;
   }
   .root > :global(.b-tabs) {
-    margin: 4px 0 8px;
+    margin: 0;
+  }
+  .columns {
+    gap: 12px;
+  }
+  .side {
+    gap: 12px;
   }
 }

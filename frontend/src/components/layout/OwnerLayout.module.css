@@ -49,11 +49,33 @@
 }
 @media (max-width: 540px) {
   .header {
-    padding: 16px;
-    flex-wrap: wrap;
+    min-height: 0;
+    padding: 8px 16px;
+  }
+  /* 매장 이름이 길어도 로그아웃이 밀려 내려가지 않게 이름만 말줄임한다 */
+  .header strong {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .header :global(.b-flex) {
+    flex-shrink: 0;
   }
   .main {
-    padding: 20px 16px;
+    width: 100%;
+    padding: 16px 16px 24px;
+  }
+  .main > :global(.b-stack) {
+    gap: 16px;
+  }
+  .main :global(.b-pad) {
+    padding: 16px;
+  }
+  .main :global(.b-panel-heading) {
+    padding-bottom: 12px;
+    margin-bottom: 12px !important;
   }
   .main :global(.b-panel):global(.b-row) {
     flex-wrap: wrap;
