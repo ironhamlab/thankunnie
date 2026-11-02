@@ -38,7 +38,14 @@ export default function FaqTabs() {
       {/* 탭을 바꾸면 펼쳐 둔 답을 접은 상태로 시작한다 */}
       <FaqList key={tab} groups={groups} />
       <p>찾는 내용이 없으면 카카오톡으로 문의해 주세요.</p>
-      <Button as="a" wide href={KAKAO_OPEN_CHAT_URL} target="_blank" rel="noreferrer">
+      <Button
+        as="a"
+        variant="primary"
+        wide
+        href={KAKAO_OPEN_CHAT_URL}
+        target="_blank"
+        rel="noreferrer"
+      >
         카카오톡 문의하기
       </Button>
     </div>
