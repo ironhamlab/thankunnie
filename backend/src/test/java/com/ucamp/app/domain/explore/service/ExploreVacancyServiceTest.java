@@ -249,9 +249,61 @@ class ExploreVacancyServiceTest {
         assertThat(exploreVacancyService.search(request().closingWithinHours(10).build()).content())
                 .extracting(ExploreVacancyResponse::vacancyId)
                 .containsExactly("1-202611062000", "2-202611062000");
-        // 지금은 모두 8시간보다 많이 남아 일반 구간이다
+        // 임박(IMMINENT) 조건은 OPEN 기준 그대로라, 열어 둔 20~22시는 모두 8시간보다 많이 남아 일반 구간이다
         assertThat(exploreVacancyService.search(request().priceTier(PriceTier.IMMINENT).build())
                 .totalElements()).isZero();
+    }
+
+    // 타임세일(초임박): 지금(10:00)부터 13:00 까지 영업시간 안 빈 시각. 매장 1(금 10~20시)은 클릭 마감 20분 뒤 10:30,
+    // 매장 2(금 11~21시)는 11:00 부터. 남성 커트(시술 3)는 초임박가가 판매가와 같아 빠진다
+    @Test
+    @DisplayName("타임세일은 사장님이 열지 않아도 영업시간 안 빈 시각을 시작 3시간 이내만 낸다")
+    void search_lastMinuteTier_usesBusinessHoursWithinThreeHours() {
+        List<ExploreVacancyResponse> content = saleSearch(request()).content();
+
+        assertThat(content).extracting(ExploreVacancyResponse::vacancyId)
+                .startsWith("1-202611061030", "2-202611061030")
+                .contains("4-202611061100", "1-202611061300")
+                .doesNotContain("1-202611061330");
+        assertThat(content).allSatisfy(item -> {
+            assertThat(item.startsAt()).isBeforeOrEqualTo(kst(2026, 11, 6, 13, 0));
+            assertThat(item.priceTier()).isEqualTo(PriceTier.LAST_MINUTE);
+        });
+    }
+
+    @Test
+    @DisplayName("타임세일은 예약 클릭 마감(시작 20분 전)이 지난 시각을 내지 않는다")
+    void search_lastMinuteTier_afterBookingDeadline_excluded() {
+        assertThat(saleSearch(request()).content()).extracting(ExploreVacancyResponse::vacancyId)
+                .doesNotContain("1-202611061000", "2-202611061000");
+    }
+
+    @Test
+    @DisplayName("타임세일은 초임박가가 일반 판매가보다 싼 시술만 낸다")
+    void search_lastMinuteTier_withoutDiscount_excluded() {
+        jdbcTemplate.update("UPDATE TREATMENT SET LAST_MINUTE_PRICE = PRICE WHERE TREATMENT_ID = 2");
+
+        assertThat(saleSearch(request()).content()).extracting(ExploreVacancyResponse::vacancyId)
+                .isNotEmpty()
+                .noneMatch(id -> id.startsWith("2-") || id.startsWith("3-"));
+    }
+
+    @Test
+    @DisplayName("타임세일 매장 요약은 열지 않은 매장도 담고, 초보 시술·매장 조건은 그대로 적용한다")
+    void searchShops_lastMinuteTier_includesShopsWithoutOpenAndAppliesFilters() {
+        jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건'"
+                + " WHERE TREATMENT_ID = 2");
+
+        ExploreShopMapResponse result = exploreVacancyService.searchShops(
+                request().priceTier(PriceTier.LAST_MINUTE).build().filter());
+
+        assertThat(result.shops()).extracting(ExploreShopResponse::shopId).containsExactly(1L, 2L);
+        assertThat(result.shops().get(0).modelVacancyCount()).isPositive();
+        assertThat(saleSearch(request().treatmentType(TreatmentType.MODEL)).content())
+                .isNotEmpty()
+                .allSatisfy(item -> assertThat(item.vacancyId()).startsWith("2-"));
+        assertThat(saleSearch(request().shopId(2L)).content())
+                .extracting(ExploreVacancyResponse::shopId).containsOnly(2L);
     }
 
     @Test
@@ -371,6 +423,10 @@ class ExploreVacancyServiceTest {
                                                      STARTS_AT, ENDS_AT, REASON, CREATED_AT, UPDATED_AT)
                 VALUES (900, 2, NULL, 'OPEN', ?, ?, '연장', ?, ?)
                 """, NOW.withHour(21), NOW.withHour(22), NOW, NOW);
+    }
+
+    private PageResponse<ExploreVacancyResponse> saleSearch(RequestBuilder builder) {
+        return exploreVacancyService.search(builder.priceTier(PriceTier.LAST_MINUTE).page(0, 50).build());
     }
 
     private void assertInvalid(ExploreVacancySearchRequest request) {

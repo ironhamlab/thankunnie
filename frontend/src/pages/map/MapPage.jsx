@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ROUTES } from '@/constants/routes';
 import { useExploreStore } from '@/store/useExploreStore';
 import { addDays, todayKst } from '@/utils/scheduleDate';
 import { validDate } from '@/utils/exploreVacancy';
@@ -28,7 +29,7 @@ export default function MapPage() {
   const selectedId = params.get('shop');
   const categoryId = params.get('category');
   const dateParam = params.get('date');
-  // 타임세일은 오늘 시작하는 빈자리만 보고, 그 밖에는 고른 날짜(기본 오늘)를 본다
+  // 타임세일은 날짜 대신 지금부터 3시간 안을 보고, 그 밖에는 고른 날짜(기본 오늘)를 본다
   const date = (!saleOnly && validDate(dateParam, today, lastDay)) || today;
   const shops = useExploreStore((s) => s.mapPageShops);
   const status = useExploreStore((s) => s.mapPageShopsStatus);
@@ -55,10 +56,11 @@ export default function MapPage() {
   // 지도 범위를 뺀 조건. 매장 목록·펼친 매장의 빈자리가 같이 쓴다
   const filter = useMemo(
     () => ({
-      startDate: date,
-      endDate: date,
+      // 타임세일은 날짜를 보내지 않는다. 서버가 영업시간 기준으로 시작 3시간 이내(자정 넘어 새벽 포함)를 본다
+      startDate: saleOnly ? undefined : date,
+      endDate: saleOnly ? undefined : date,
       categoryId: categoryId ?? undefined,
-      priceTier: saleOnly ? 'IMMINENT' : undefined,
+      priceTier: saleOnly ? 'LAST_MINUTE' : undefined,
     }),
     [date, categoryId, saleOnly],
   );
@@ -164,7 +166,7 @@ export default function MapPage() {
               aria-pressed={saleOnly}
               onClick={() => updateFilter({ sale: saleOnly ? '' : '1' })}
             >
-              ϟ 오늘 타임세일만
+              ϟ 타임세일만
             </button>
           </div>
         </div>
@@ -200,6 +202,13 @@ export default function MapPage() {
                 onClick={() => loadMapPageShops({ ...filter, ...(mapUnavailable ? {} : bounds) })}
               >
                 다시 시도
+              </Button>
+            </EmptyState>
+          ) : status === 'succeeded' && sortedShops.length === 0 && saleOnly ? (
+            <EmptyState>
+              <p>지금 세일 중인 자리가 없어요.</p>
+              <Button as={Link} variant="primary" to={`${ROUTES.HOME}?view=list&date=all`}>
+                일반 예약하기
               </Button>
             </EmptyState>
           ) : status === 'succeeded' && sortedShops.length === 0 ? (
