@@ -61,7 +61,8 @@
 | phoneVerificationId | 필수. 해당 phone으로 인증 완료한 verificationId. 인증 완료 후 10분 이내, 가입 성공 시 1회 소비 |
 | agreedTerms | 필수. 동의한 약관 코드 배열. 필수 약관(`AGE_14`·`SERVICE`·`PRIVACY`·`THIRD_PARTY`)은 모두 포함, 선택 약관은 동의한 것만. 중복은 무시. 코드 목록은 `GET /api/v1/terms` (`terms.md`) |
 
-오류: 형식 위반·`agreedTerms` 누락 `COMMON_400`, 필수 약관 누락 `TERMS_002`(400), 없는 약관 코드 `TERMS_001`(404), 아이디 중복 `AUTH_001`(409)
+오류: 형식 위반·`agreedTerms` 누락 `COMMON_400`, 필수 약관 누락 `TERMS_002`(400), 없는 약관 코드 `TERMS_001`(404), 아이디 중복 `AUTH_001`(409),
+휴대폰 인증 실패(미인증·만료·번호 불일치·재사용) `AUTH_004`(400), 휴대폰 번호 중복 `AUTH_010`(409)
 
 ## POST /api/v1/auth/login — 고객·관리자 로그인
 
@@ -110,7 +111,8 @@
 | openedOn | 필수, YYYY-MM-DD, 미래일 불가. 사업자등록증의 개업연월일 |
 | description, notice | 선택, 2000자 이하 |
 
-오류: 형식 위반·없는 카테고리 `COMMON_400`, 아이디 중복 `AUTH_001`(409)
+오류: 형식 위반·없는 카테고리 `COMMON_400`, 아이디 중복 `AUTH_001`(409),
+사업자 정보 불일치·휴업·폐업 `AUTH_007`(400), 국세청 조회 실패 `AUTH_008`(503), 사업자등록번호 중복 `AUTH_009`(409)
 
 ## POST /api/v1/auth/shops/login — 사장님(매장) 로그인
 
