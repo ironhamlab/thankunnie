@@ -28,6 +28,15 @@
   gap: 24px;
   grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr);
 }
+/* 사이드바에 매장 카드가 보이는 폭에서는 상단의 같은 이름을 숨기고 로그아웃만 오른쪽에 둔다 */
+@media (min-width: 901px) {
+  .header {
+    justify-content: flex-end;
+  }
+  .header strong {
+    display: none;
+  }
+}
 @media (max-width: 1200px) {
   .root {
     grid-template-columns: 210px minmax(0, 1fr);
