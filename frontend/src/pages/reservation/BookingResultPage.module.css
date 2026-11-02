@@ -9,7 +9,7 @@
   max-width: 760px;
   margin: 0 auto;
   padding: 34px;
-  background: radial-gradient(circle at 100% 0, var(--color-primary-faint), transparent 36%), white;
+  background: radial-gradient(circle at 100% 0, var(--color-primary-faint), transparent 36%), var(--color-white);
   display: flex;
   flex-direction: column;
   gap: 24px;

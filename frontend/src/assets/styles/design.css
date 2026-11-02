@@ -5,6 +5,9 @@
   font-family: var(--font-body);
   line-height: 1.5;
   font-size: 14px;
+  /* 한글이 단어 중간('완/료')에서 끊기지 않게 어절 단위로 줄을 바꾼다. 긴 영문·숫자는 넘치기 전에 끊는다 */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 .beauty-app *,
 .beauty-app *::before,
@@ -48,7 +51,7 @@
   text-decoration: none;
 }
 .beauty-app :focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+  outline: 3px solid var(--color-primary-text);
   outline-offset: 3px;
 }
 .beauty-app small {
@@ -182,8 +185,8 @@
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   font-size: 11px;
-  color: var(--color-primary-text);
-  background: var(--color-primary-soft);
+  color: var(--color-text);
+  background: var(--color-accent);
   white-space: nowrap;
   font-weight: 600;
   vertical-align: middle;
@@ -485,7 +488,7 @@
   margin-top: 0 !important;
 }
 .b-time-grid button.is-selected {
-  background: var(--color-primary);
+  background: var(--color-primary-text);
   color: white;
   border-color: var(--color-primary);
 }
