@@ -119,8 +119,8 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
                   [1, '네일'],
                   [2, '헤어'],
                   [3, '속눈썹'],
-                  [4, '왁싱'],
-                  [5, '바버'],
+                  [4, '피부 관리'],
+                  [5, '메이크업'],
                 ].map(([id, label]) => (
                   <option key={id} value={id}>
                     {label}
