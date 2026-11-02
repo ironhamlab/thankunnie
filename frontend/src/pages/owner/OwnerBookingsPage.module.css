@@ -13,7 +13,8 @@
   position: sticky;
   top: 20px;
 }
-@media (max-width: 1200px) {
+/* 이보다 좁으면 2단의 목록 칸이 표의 최소 폭보다 좁아져 옆으로 밀어야 하므로 한 단으로 둔다 */
+@media (max-width: 1480px) {
   .grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -36,7 +37,18 @@
   color: var(--color-text-secondary);
 }
 .grid table.table {
-  min-width: 680px;
+  min-width: 640px;
+}
+/* 짧은 값은 한 줄로 두고, 이름·시술의 긴 영문이 열을 밀어 표가 넓어지지 않게 한다 */
+.table td.id,
+.table td.payment,
+.table td.status,
+.table td.detail {
+  white-space: nowrap;
+}
+.table td.name,
+.table td.treatment {
+  overflow-wrap: anywhere;
 }
 /* 폰에서는 표를 예약 한 건씩 카드로 바꿔 옆으로 밀지 않고 읽게 한다 */
 @media (max-width: 640px) {

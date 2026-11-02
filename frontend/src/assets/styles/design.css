@@ -5,6 +5,9 @@
   font-family: var(--font-body);
   line-height: 1.5;
   font-size: 14px;
+  /* 한글이 단어 중간('완/료')에서 끊기지 않게 어절 단위로 줄을 바꾼다. 긴 영문·숫자는 넘치기 전에 끊는다 */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 .beauty-app *,
 .beauty-app *::before,
