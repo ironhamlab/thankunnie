@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="480" height="360" viewBox="0 0 480 360" fill="none">
-  <rect width="480" height="360" rx="24" fill="#FDF5F2"/>
-  <circle cx="240" cy="170" r="120" fill="#F9EAE7"/>
+  <rect width="480" height="360" rx="24" fill="#FFF6F0"/>
+  <circle cx="240" cy="170" r="120" fill="#FFEEE0"/>
   <ellipse cx="240" cy="292" rx="144" ry="12" fill="#F6DACF"/>
   <path d="M127 147h226v135a10 10 0 0 1-10 10H137a10 10 0 0 1-10-10V147Z" fill="#FFF" stroke="#8F6F66" stroke-width="4"/>
-  <path d="m121 141 23-51h192l23 51H121Z" fill="#F4DBD7" stroke="#8F6F66" stroke-width="4" stroke-linejoin="round"/>
-  <path d="M121 141h48v15a24 24 0 0 1-48 0v-15Zm96 0h48v15a24 24 0 0 1-48 0v-15Zm96 0h46v15a23 23 0 0 1-46 0v-15Z" fill="#D8665A"/>
-  <path d="M169 141h48v15a24 24 0 0 1-48 0v-15Zm96 0h48v15a24 24 0 0 1-48 0v-15Z" fill="#F4DBD7"/>
-  <rect x="148" y="196" width="91" height="65" rx="8" fill="#F9EAE7" stroke="#8F6F66" stroke-width="4"/>
+  <path d="m121 141 23-51h192l23 51H121Z" fill="#FFE2CC" stroke="#8F6F66" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M121 141h48v15a24 24 0 0 1-48 0v-15Zm96 0h48v15a24 24 0 0 1-48 0v-15Zm96 0h46v15a23 23 0 0 1-46 0v-15Z" fill="#FF7000"/>
+  <path d="M169 141h48v15a24 24 0 0 1-48 0v-15Zm96 0h48v15a24 24 0 0 1-48 0v-15Z" fill="#FFE2CC"/>
+  <rect x="148" y="196" width="91" height="65" rx="8" fill="#FFEEE0" stroke="#8F6F66" stroke-width="4"/>
   <path d="m161 246 54-36m-28 43 38-26" stroke="white" stroke-width="7" stroke-linecap="round"/>
-  <path d="M266 292v-89a7 7 0 0 1 7-7h47a7 7 0 0 1 7 7v89" fill="#F4DBD7" stroke="#8F6F66" stroke-width="4"/>
-  <circle cx="313" cy="245" r="4" fill="#D8665A"/>
-  <path d="m379 76 4 12 12 4-12 4-4 12-4-12-12-4 12-4 4-12Zm-278 9 3 9 9 3-9 3-3 9-3-9-9-3 9-3 3-9Z" fill="#D8665A"/>
+  <path d="M266 292v-89a7 7 0 0 1 7-7h47a7 7 0 0 1 7 7v89" fill="#FFE2CC" stroke="#8F6F66" stroke-width="4"/>
+  <circle cx="313" cy="245" r="4" fill="#FF7000"/>
+  <path d="m379 76 4 12 12 4-12 4-4 12-4-12-12-4 12-4 4-12Zm-278 9 3 9 9 3-9 3-3 9-3-9-9-3 9-3 3-9Z" fill="#FF7000"/>
 </svg>
