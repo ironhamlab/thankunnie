@@ -51,7 +51,7 @@ const round = (value) => Number(value.toFixed(COORD_DIGITS));
  * 범위 조회 결과로 지도 범위를 다시 맞추지 않는다(맞추면 다시 조회가 일어나 지도가 계속 움직인다).
  * "내 위치"를 누르면 브라우저 위치로 지도를 옮기고 점을 찍는다. 위치는 서버로 보내지 않고 지도 범위만 보낸다.
  *
- * @param shops          매장 요약(C-02) 목록
+ * @param shops          매장 요약(C-02) 목록. 빈자리가 없는 매장(최저가 없음)은 매장 이름 핀으로 찍는다
  * @param selectedId     선택한 매장 ID (문자열)
  * @param onSelect       핀을 누르면 매장 ID 를 받는다
  * @param onBoundsChange 지도 범위 { minLat, maxLat, minLng, maxLng } 를 받는다
@@ -116,13 +116,17 @@ export default function ExploreMap({
         maps.event.addListener(clusterer, 'clustered', (clusters) => {
           clusters.forEach((cluster) => {
             const overlays = cluster.getMarkers();
-            const minPrice = Math.min(...overlays.map((overlay) => pricesRef.current.get(overlay)));
+            // 빈자리가 없는 매장만 묶이면 최저가 없이 개수만 보여 준다
+            const prices = overlays
+              .map((overlay) => pricesRef.current.get(overlay))
+              .filter((price) => price != null);
+            const minPrice = prices.length ? money(Math.min(...prices)) : null;
             const content = cluster.getClusterMarker().getContent();
             if (content instanceof HTMLElement) {
-              content.innerHTML = `<span>${overlays.length}곳</span><span>${money(minPrice)}~</span>`;
+              content.innerHTML = `<span>${overlays.length}곳</span>${minPrice ? `<span>${minPrice}~</span>` : ''}`;
               content.setAttribute(
                 'aria-label',
-                `매장 ${overlays.length}곳, ${money(minPrice)}부터`,
+                `매장 ${overlays.length}곳${minPrice ? `, ${minPrice}부터` : ''}`,
               );
             }
           });
@@ -176,9 +180,15 @@ export default function ExploreMap({
     const overlays = shops.map((shop) => {
       const element = document.createElement('button');
       element.type = 'button';
-      element.className = styles.pin;
-      element.textContent = `${money(shop.minSalePrice)}~`;
-      element.setAttribute('aria-label', `${shop.shopName} ${money(shop.minSalePrice)}부터`);
+      const hasVacancy = shop.minSalePrice != null;
+      element.className = hasVacancy ? styles.pin : `${styles.pin} ${styles.pinNoVacancy}`;
+      element.textContent = hasVacancy ? `${money(shop.minSalePrice)}~` : shop.shopName;
+      element.setAttribute(
+        'aria-label',
+        hasVacancy
+          ? `${shop.shopName} ${money(shop.minSalePrice)}부터`
+          : `${shop.shopName} 빈자리 없음`,
+      );
       element.addEventListener('click', () => callbacksRef.current.onSelect?.(String(shop.shopId)));
       elements.set(String(shop.shopId), element);
       const overlay = new maps.CustomOverlay({

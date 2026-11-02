@@ -221,6 +221,24 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 
 응답 `data`: `ExploreVacancyResponse[]` (C-01 목록의 `content` 한 건과 같은 모양, 페이지 정보 없음)
 
+## 4-2. 전체 매장 목록
+
+| 항목 | 값 |
+| --- | --- |
+| Method | GET |
+| Path | `/api/v1/explore/shops/all` |
+| 인증 | 불필요 |
+| 응답 | `ApiResponse<List<ExploreShopListResponse>>` |
+
+노출 중(`SHOP.STATUS = ACTIVE`)인 매장을 빈자리 유무와 상관없이 매장 ID 순으로 돌려준다. 일반 예약하기 목록(`/?view=list&date=all`)에서 빈자리가 없는 매장까지 보여줄 때 쓴다.
+
+| 파라미터 | 값 | 기본 | 설명 |
+| --- | --- | --- | --- |
+| `categoryId` | 분야 ID | 전체 | 해당 분야 매장만 |
+| `keyword` | 50자 이하 | 없음 | 매장명·판매 중인 시술명 부분 일치. 대소문자 구분 없음. 50자를 넘으면 `COMMON_400` |
+
+응답 필드는 `shopId`, `shopName`, `categoryId`, `categoryName`, `regionCode`, `address`, `latitude`, `longitude`, `imageUrl`(없으면 null)이다. 페이지로 나누지 않는다.
+
 ## 5. C-03 빈자리 상세
 
 | 항목 | 값 |
@@ -310,7 +328,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
    | 화면 지역 묶음 | `regionCode` |
    | --- | --- |
    | 강남/서초 | `11680` 강남구, `11650` 서초구 |
-   | 홍대/연남 | `11440` 마포구 |
+   | 홍대/연남 | `11440` 마포구, `11410` 서대문구 |
    | 성수/건대 | `11200` 성동구, `11215` 광진구 |
    | 잠실/송파 | `11710` 송파구 |
    | 판교/분당 | `41135` 성남시 분당구 |

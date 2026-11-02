@@ -16,6 +16,8 @@ import ProfileIcon from '@/components/icons/ProfileIcon';
 import TimerIcon from '@/components/icons/TimerIcon';
 import CalendarIcon from '@/components/icons/CalendarIcon';
 import BoltIcon from '@/components/icons/BoltIcon';
+import StoreIcon from '@/components/icons/StoreIcon';
+import SproutIcon from '@/components/icons/SproutIcon';
 import styles from './Header.module.css';
 
 const INBOX_TABS = [
@@ -145,7 +147,12 @@ export default function Header() {
           </form>
 
           <nav aria-label="고객 메뉴">
+            <Link to={`${ROUTES.HOME}?view=list&date=all`} aria-current={current('search')}>
+              <StoreIcon size={16} />
+              일반 예약하기
+            </Link>
             <Link to={`${ROUTES.HOME}?view=list&type=MODEL`} aria-current={current('model')}>
+              <SproutIcon size={16} />
               초보 시술 모집
             </Link>
             <Link to={`${ROUTES.HOME}?sale=1`} aria-current={current('sale')}>
@@ -288,8 +295,13 @@ export default function Header() {
       </header>
 
       <nav className={styles.mobileNav} aria-label="모바일 고객 메뉴">
+        <Link to={`${ROUTES.HOME}?view=list&date=all`} aria-current={current('search')}>
+          <StoreIcon size={20} />
+          일반 예약하기
+        </Link>
         <Link to={`${ROUTES.HOME}?view=list&type=MODEL`} aria-current={current('model')}>
-          <span aria-hidden="true">✦</span>초보 시술 모집
+          <SproutIcon size={20} />
+          초보 시술 모집
         </Link>
         <Link to={`${ROUTES.HOME}?sale=1`} aria-current={current('sale')}>
           <BoltIcon size={20} />

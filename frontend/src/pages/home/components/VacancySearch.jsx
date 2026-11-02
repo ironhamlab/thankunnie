@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDesignStore } from '@/store/useDesignStore';
 import { useExploreStore } from '@/store/useExploreStore';
+import { regionNameOf } from '@/constants/regions';
 import { TIME_OF_DAY, dayLabel, validDate } from '@/utils/exploreVacancy';
 import { addDays, todayKst } from '@/utils/scheduleDate';
 import FireIcon from '@/components/icons/FireIcon';
@@ -16,6 +17,7 @@ import './VacancySearch.css';
 import styles from './VacancySearch.module.css';
 
 const ALL = '전체';
+const ALL_DATES = 'all';
 const times = [ALL, ...Object.keys(TIME_OF_DAY)];
 // 매장 정렬. 같은 값이면 매장 ID 순으로 둔다
 const SHOP_SORTS = {
@@ -57,7 +59,7 @@ function Filter({ label, options, value, onChange, segmented = false }) {
 /**
  * 빈자리 검색 화면 (/?view=list). 분야·날짜·시간대 조건에 맞는 매장을 한 줄씩 보여주고(C-02),
  * 매장을 펼치면 시술별 시작 시각(C-01)을 보여준다. 옆 지도에는 같은 매장 위치를 띄운다.
- * 분야·날짜·펼친 매장·타임세일·초보 시술 모집 여부는 주소에 남겨 새로고침이나 홈에서 들어와도 같은 화면을 보여준다.
+ * 분야·지역·날짜·펼친 매장·타임세일·초보 시술 모집 여부는 주소에 남겨 새로고침이나 홈에서 들어와도 같은 화면을 보여준다.
  */
 export default function VacancySearch() {
   const [params, setParams] = useSearchParams();
@@ -67,9 +69,13 @@ export default function VacancySearch() {
   const modelOnly = params.get('type') === MODEL;
   const expandedId = params.get('shop');
   const categoryId = params.get('category');
+  // 알림 링크의 region. 없으면 지역으로 좁히지 않는다
+  const regionCode = params.get('region') || undefined;
   const dateParam = params.get('date');
   // 타임세일은 오늘 시작하는 빈자리만 보고, 그 밖에는 고른 날짜(기본 오늘)를 본다
   const date = (!saleOnly && validDate(dateParam, today, lastDay)) || today;
+  // 전체 날짜(date=all)는 예약 가능한 기간 전체에서 빈자리가 있는 매장을 모아 본다
+  const allDates = !saleOnly && dateParam === ALL_DATES;
   const updateOption = (key, value) => {
     setParams(
       (previous) => {
@@ -87,6 +93,9 @@ export default function VacancySearch() {
   const shops = useExploreStore((s) => s.searchShops);
   const status = useExploreStore((s) => s.searchShopsStatus);
   const error = useExploreStore((s) => s.searchShopsError);
+  const allShops = useExploreStore((s) => s.allShops);
+  const allShopsStatus = useExploreStore((s) => s.allShopsStatus);
+  const loadAllShops = useExploreStore((s) => s.loadAllShops);
   const shopVacancies = useExploreStore((s) => s.shopVacancies);
   const categories = useExploreStore((s) => s.categories);
   const loadSearchShops = useExploreStore((s) => s.loadSearchShops);
@@ -100,6 +109,18 @@ export default function VacancySearch() {
   const [paging, setPaging] = useState({ key: '', count: PAGE_SIZE });
   const categoryName =
     categories.find((item) => String(item.categoryId) === categoryId)?.name ?? ALL;
+  // 주소에 region이 있을 때만 제목 앞에 구 이름을 붙인다. 11680 → 강남구
+  const regionName = regionCode ? regionNameOf(regionCode) : '';
+  let listTitle = '빈자리 있는 매장';
+  if (regionName && categoryName !== ALL) {
+    listTitle = `${regionName} ${categoryName} 빈자리 있는 매장`;
+  } else if (regionName) {
+    listTitle = `${regionName} 빈자리 있는 매장`;
+  } else if (categoryName !== ALL) {
+    listTitle = `${categoryName} 빈자리 있는 매장`;
+  }
+  const allDatesTitleParts = [regionName, categoryName === ALL ? '' : categoryName].filter(Boolean);
+  const allDatesTitle = `${allDatesTitleParts.join(' ') || '전체'} 매장`;
 
   useEffect(() => {
     loadCategories();
@@ -113,17 +134,22 @@ export default function VacancySearch() {
   // 매장 목록·지도·펼친 매장의 빈자리가 같이 쓰는 조건
   const filter = useMemo(
     () => ({
-      startDate: date,
-      endDate: date,
+      startDate: allDates ? today : date,
+      endDate: allDates ? lastDay : date,
       categoryId: categoryId ?? undefined,
+      regionCode,
       timeOfDay: TIME_OF_DAY[time],
       priceTier: saleOnly ? 'IMMINENT' : undefined,
       treatmentType: modelOnly ? MODEL : undefined,
       keyword: keyword || undefined,
     }),
-    [date, categoryId, time, saleOnly, modelOnly, keyword],
+    [allDates, today, lastDay, date, categoryId, regionCode, time, saleOnly, modelOnly, keyword],
   );
   const filterKey = JSON.stringify(filter);
+
+  useEffect(() => {
+    if (allDates) loadAllShops({ categoryId: categoryId ?? undefined, keyword: keyword || undefined });
+  }, [allDates, categoryId, keyword, loadAllShops]);
 
   useEffect(() => {
     loadSearchShops(filter);
@@ -132,20 +158,24 @@ export default function VacancySearch() {
   // 하루씩 보므로 빈 날짜를 자주 만난다. 같은 조건으로 다음 날부터 찾아 가장 가까운 날짜를 안내한다
   // 타임세일은 오늘만 보는 화면이라 다른 날짜를 안내하지 않는다
   const noVacancy = status === 'succeeded' && shops.length === 0;
+  // 전체 날짜 보기는 다른 날짜를 찾지 않으므로, 이전 검색에서 찾아 둔 날짜를 안내하지 않는다
+  const suggestNextDate = nextVacancyDate && !saleOnly && !allDates;
   useEffect(() => {
-    if (!noVacancy || saleOnly || date >= lastDay) return;
+    if (!noVacancy || saleOnly || allDates || date >= lastDay) return;
     const end = addDays(date, NEXT_SEARCH_DAYS);
     findNextVacancyDate({
       ...filter,
       startDate: addDays(date, 1),
       endDate: end > lastDay ? lastDay : end,
     });
-  }, [noVacancy, saleOnly, date, lastDay, filter, findNextVacancyDate]);
+  }, [noVacancy, saleOnly, allDates, date, lastDay, filter, findNextVacancyDate]);
 
   const detail = expandedId ? shopVacancies[expandedId] : undefined;
   useEffect(() => {
-    if (expandedId && !detail && status === 'succeeded') loadShopVacancies(expandedId, filter);
-  }, [expandedId, detail, status, filter, loadShopVacancies]);
+    if (!allDates && expandedId && !detail && status === 'succeeded') {
+      loadShopVacancies(expandedId, filter);
+    }
+  }, [allDates, expandedId, detail, status, filter, loadShopVacancies]);
 
   // 지도나 홈에서 고른 매장이 화면 밖이면 보이도록 옮긴다
   useEffect(() => {
@@ -154,10 +184,18 @@ export default function VacancySearch() {
     }
   }, [expandedId, status]);
 
-  const sortedShops = useMemo(
-    () => [...shops].sort((a, b) => SHOP_SORTS[sort](a, b) || a.shopId - b.shopId),
-    [shops, sort],
-  );
+  // 전체 날짜 보기는 빈자리가 있는 매장을 먼저 두고, 빈자리가 없는 매장을 뒤에 붙인다.
+  // 시작 시간을 고르면 그 시간 빈자리를 찾는 것이므로 빈자리가 없는 매장은 빼고 본다
+  const sortedShops = useMemo(() => {
+    const withVacancy = [...shops].sort((a, b) => SHOP_SORTS[sort](a, b) || a.shopId - b.shopId);
+    if (!allDates || time !== ALL) return withVacancy;
+    const vacancyIds = new Set(shops.map((shop) => shop.shopId));
+    const noVacancyShops = allShops.filter(
+      (shop) =>
+        !vacancyIds.has(shop.shopId) && (!regionCode || shop.regionCode === regionCode),
+    );
+    return [...withVacancy, ...noVacancyShops];
+  }, [shops, sort, allDates, time, allShops, regionCode]);
   // 조건이 바뀌면 처음 개수로 돌아간다. 펼친 매장은 뒤쪽에 있어도 보이게 한다
   const pageCount = paging.key === filterKey ? paging.count : PAGE_SIZE;
   const expandedIndex = sortedShops.findIndex((shop) => String(shop.shopId) === expandedId);
@@ -183,7 +221,12 @@ export default function VacancySearch() {
   const reset = () => {
     setTime(ALL);
     setSort(sorts[0]);
-    setParams(modelOnly ? { view: 'list', type: MODEL } : { view: 'list' }, { replace: true });
+    setParams(
+      modelOnly
+        ? { view: 'list', type: MODEL }
+        : { view: 'list', ...(allDates ? { date: ALL_DATES } : {}) },
+      { replace: true },
+    );
     resetSearch('');
   };
   return (
@@ -228,13 +271,24 @@ export default function VacancySearch() {
           ))}
         </div>
         <div className={styles.dateRow}>
-          <DateCalendar
-            value={date}
-            min={today}
-            max={lastDay}
-            disabled={saleOnly}
-            onChange={(value) => updateOption('date', value === today ? '' : value)}
-          />
+          {!saleOnly && !modelOnly && (
+            <Filter
+              label="날짜"
+              options={[ALL, '날짜 선택']}
+              value={allDates ? ALL : '날짜 선택'}
+              onChange={(value) => updateOption('date', value === ALL ? ALL_DATES : '')}
+              segmented
+            />
+          )}
+          {!allDates && (
+            <DateCalendar
+              value={date}
+              min={today}
+              max={lastDay}
+              disabled={saleOnly}
+              onChange={(value) => updateOption('date', value === today ? '' : value)}
+            />
+          )}
           <Filter
             label="예약 종류"
             options={[ALL, '타임세일']}
@@ -253,8 +307,7 @@ export default function VacancySearch() {
       </section>
       <div className={`b-row ${styles.resultsHeading}`}>
         <h2>
-          {categoryName === ALL ? '빈자리 있는 매장' : `${categoryName} 빈자리 있는 매장`}{' '}
-          <Badge>{shops.length}곳</Badge>
+          {allDates && allShopsStatus !== 'failed' ? allDatesTitle : listTitle} <Badge>{sortedShops.length}곳</Badge>
         </h2>
       </div>
       <div className={styles.layout}>
@@ -273,18 +326,19 @@ export default function VacancySearch() {
                 다시 시도
               </Button>
             </EmptyState>
-          ) : shops.length ? (
+          ) : sortedShops.length ? (
             <>
               <div className={styles.rows}>
                 {visibleShops.map((shop) => (
                   <div key={shop.shopId} id={`shop-row-${shop.shopId}`}>
                     <ShopRow
                       shop={shop}
-                      expanded={String(shop.shopId) === expandedId}
+                      expanded={!allDates && String(shop.shopId) === expandedId}
                       detail={String(shop.shopId) === expandedId ? detail : undefined}
                       onToggle={() => toggleShop(shop.shopId)}
                       onRetry={() => loadShopVacancies(String(shop.shopId), filter)}
                       model={modelOnly}
+                      showTimes={!allDates}
                     />
                   </div>
                 ))}
@@ -302,8 +356,11 @@ export default function VacancySearch() {
             </>
           ) : (
             <EmptyState className="b-panel">
-              <h2>{dayLabel(date, today)}에는 조건에 맞는 빈자리가 없어요</h2>
-              {nextVacancyDate && !saleOnly ? (
+              <h2>
+                {allDates ? '예약 가능한 기간' : dayLabel(date, today)}에는 조건에 맞는 빈자리가
+                없어요
+              </h2>
+              {suggestNextDate ? (
                 <>
                   <p>가장 가까운 빈자리는 {dayLabel(nextVacancyDate, today)}에 있어요.</p>
                   <Button
@@ -318,7 +375,7 @@ export default function VacancySearch() {
               ) : (
                 <p>다른 날짜나 분야를 선택해 보세요.</p>
               )}
-              <Button variant={nextVacancyDate && !saleOnly ? 'soft' : 'primary'} onClick={reset}>
+              <Button variant={suggestNextDate ? 'soft' : 'primary'} onClick={reset}>
                 필터 초기화
               </Button>
             </EmptyState>
@@ -326,7 +383,8 @@ export default function VacancySearch() {
         </div>
         <aside className={styles.mapPane}>
           <ShopLocationMap
-            shops={shops}
+            shops={allDates ? sortedShops : shops}
+            showTimes={!allDates}
             status={status}
             expandedShopId={expandedId}
             onShowShop={(id) => updateOption('shop', id ? String(id) : '')}
