@@ -70,11 +70,25 @@ export function validDate(value, min, max) {
   return isRealDate && value >= min && value <= max ? value : null;
 }
 
+// API가 반환한 상대 이미지 경로는 로컬에서도 백엔드 origin으로 요청한다.
+function apiImageUrl(imageUrl, fallback) {
+  if (!imageUrl) return fallback;
+  try {
+    const apiBase = new URL(
+      import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api',
+      window.location.origin,
+    );
+    return new URL(imageUrl, apiBase).href;
+  } catch {
+    return fallback;
+  }
+}
+
 /** 이미지가 없으면 기본 시술 그림을 쓴다 */
-export const vacancyImage = (imageUrl) => imageUrl || defaultTreatmentImage;
+export const vacancyImage = (imageUrl) => apiImageUrl(imageUrl, defaultTreatmentImage);
 
 /** 이미지가 없으면 기본 매장 그림을 쓴다 */
-export const shopImage = (imageUrl) => imageUrl || defaultShopImage;
+export const shopImage = (imageUrl) => apiImageUrl(imageUrl, defaultShopImage);
 
 /** '서울특별시 강남구 테헤란로 1' 에서 카드에 쓸 동네 '강남구 테헤란로' 만 꺼낸다 */
 export const areaName = (address) => address.split(' ').slice(1, 3).join(' ');
