@@ -3,6 +3,8 @@ package com.ucamp.app.domain.auth.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
@@ -10,6 +12,11 @@ import static org.mockito.Mockito.when;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
@@ -44,6 +51,34 @@ class AuthPhoneVerificationServiceTest {
             return SmsSendResult.success("test-message");
         });
         service = new AuthPhoneVerificationService(clock, smsClient);
+    }
+
+    @Test
+    @DisplayName("문자 발송이 느려도 다른 번호의 발송을 막지 않고, 발송 중인 같은 번호는 중복 발송하지 않는다")
+    void send_slowSms_doesNotBlockOtherPhones() throws Exception {
+        CountDownLatch smsStarted = new CountDownLatch(1);
+        CountDownLatch releaseSms = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            smsStarted.countDown();
+            assertThat(releaseSms.await(5, TimeUnit.SECONDS)).isTrue();
+            return SmsSendResult.success("slow-message");
+        }).when(smsClient).send(eq("01011112222"), anyString());
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            Future<AuthPhoneResponse> slow = executor.submit(() -> service.send("01011112222"));
+            assertThat(smsStarted.await(5, TimeUnit.SECONDS)).isTrue();
+
+            assertThat(service.send("01012345678").verified()).isFalse();
+            assertThatThrownBy(() -> service.send("01011112222"))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("errorCode").isEqualTo(ErrorCode.AUTH_PHONE_SEND_LIMITED);
+
+            releaseSms.countDown();
+            assertThat(slow.get(5, TimeUnit.SECONDS).verified()).isFalse();
+        } finally {
+            releaseSms.countDown();
+            executor.shutdownNow();
+        }
     }
 
     @Test

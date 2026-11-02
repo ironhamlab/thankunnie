@@ -37,6 +37,8 @@ public class AuthPhoneVerificationService {
     private final SecureRandom random = new SecureRandom();
     private final Map<String, Challenge> challenges = new HashMap<>();
     private final Map<String, SendLimit> sendLimits = new HashMap<>();
+    // 문자 발송 중인 번호와 발급 예정 인증 ID. 발송 중에는 잠금을 풀어 두므로 같은 번호의 중복 발송을 막는다
+    private final Map<String, String> sending = new HashMap<>();
     private Instant globalWindow;
     private int globalSends;
 
@@ -45,44 +47,65 @@ public class AuthPhoneVerificationService {
         this.smsClient = smsClient;
     }
 
-    /** 실패·응답 불명도 발송 시도로 계산해 반복 발송을 제한한다. */
-    public synchronized AuthPhoneResponse send(String rawPhone) {
+    /**
+     * 실패·응답 불명도 발송 시도로 계산해 반복 발송을 제한한다.
+     * 문자 발송(외부 호출)은 잠금 밖에서 해 느린 응답이 다른 번호의 인증·가입을 막지 않게 한다.
+     */
+    public AuthPhoneResponse send(String rawPhone) {
         String phone = digits(rawPhone);
-        Instant now = clock.instant();
-        challenges.values().removeIf(item -> !item.reserved && !now.isBefore(item.expiresAt));
-        sendLimits.values().removeIf(item -> !now.isBefore(item.window.plus(SEND_WINDOW)));
-        SendLimit limit = sendLimits.get(phone);
-        if (limit != null && (now.isBefore(limit.lastSent.plus(RESEND_DELAY)) || limit.count >= 10)) {
-            throw limited("인증번호 재발송은 60초 후 가능하며, 번호당 시간당 10회까지 요청할 수 있습니다.");
+        Instant now;
+        String id;
+        String code;
+        synchronized (this) {
+            now = clock.instant();
+            challenges.values().removeIf(item -> !item.reserved && !now.isBefore(item.expiresAt));
+            sendLimits.values().removeIf(item -> !now.isBefore(item.window.plus(SEND_WINDOW)));
+            SendLimit limit = sendLimits.get(phone);
+            if (sending.containsKey(phone) || (limit != null
+                    && (now.isBefore(limit.lastSent.plus(RESEND_DELAY)) || limit.count >= 10))) {
+                throw limited("인증번호 재발송은 60초 후 가능하며, 번호당 시간당 10회까지 요청할 수 있습니다.");
+            }
+            Challenge previous = challenges.get(phone);
+            if (previous != null && previous.reserved) {
+                throw invalid("가입 처리 중입니다. 잠시 후 다시 시도해 주세요.");
+            }
+            if (globalWindow == null || !now.isBefore(globalWindow.plus(SEND_WINDOW))) {
+                globalWindow = now;
+                globalSends = 0;
+            }
+            if (globalSends >= 100 || (limit == null && sendLimits.size() >= MAX_PHONES)) {
+                throw limited("인증번호 요청이 많습니다. 잠시 후 다시 시도해 주세요.");
+            }
+            if (limit == null) {
+                limit = new SendLimit(now);
+                sendLimits.put(phone, limit);
+            }
+            limit.lastSent = now;
+            limit.count++;
+            globalSends++;
+            challenges.remove(phone);
+            id = UUID.randomUUID().toString();
+            code = String.format(java.util.Locale.ROOT, "%06d", random.nextInt(1_000_000));
+            sending.put(phone, id);
         }
-        Challenge previous = challenges.get(phone);
-        if (previous != null && previous.reserved) {
-            throw invalid("가입 처리 중입니다. 잠시 후 다시 시도해 주세요.");
+        Challenge challenge = new Challenge(id, hash(id, code), now.plus(CODE_VALIDITY), now.plus(RESEND_DELAY));
+        boolean sent = false;
+        try {
+            sent = smsClient.send(phone, "[땡언니] 회원가입 인증번호 [" + code + "]를 입력해 주세요. (3분 이내)")
+                    .status() == SmsSendStatus.SUCCESS;
+        } finally {
+            // 실패·예외여도 발송 중 상태만 풀고, 위에서 늘린 시도 횟수는 유지한다
+            synchronized (this) {
+                sending.remove(phone, id);
+                if (sent) {
+                    challenges.put(phone, challenge);
+                }
+            }
         }
-        if (globalWindow == null || !now.isBefore(globalWindow.plus(SEND_WINDOW))) {
-            globalWindow = now;
-            globalSends = 0;
-        }
-        if (globalSends >= 100 || (limit == null && sendLimits.size() >= MAX_PHONES)) {
-            throw limited("인증번호 요청이 많습니다. 잠시 후 다시 시도해 주세요.");
-        }
-        if (limit == null) {
-            limit = new SendLimit(now);
-            sendLimits.put(phone, limit);
-        }
-        limit.lastSent = now;
-        limit.count++;
-        globalSends++;
-        challenges.remove(phone);
-        String id = UUID.randomUUID().toString();
-        String code = String.format(java.util.Locale.ROOT, "%06d", random.nextInt(1_000_000));
-        if (smsClient.send(phone, "[땡언니] 회원가입 인증번호 [" + code + "]를 입력해 주세요. (3분 이내)")
-                .status() != SmsSendStatus.SUCCESS) {
+        if (!sent) {
             throw new BusinessException(ErrorCode.AUTH_PHONE_SEND_FAILED,
                     "인증번호를 발송하지 못했습니다. 잠시 후 다시 요청해 주세요.");
         }
-        Challenge challenge = new Challenge(id, hash(id, code), now.plus(CODE_VALIDITY), now.plus(RESEND_DELAY));
-        challenges.put(phone, challenge);
         return response(challenge);
     }
 
