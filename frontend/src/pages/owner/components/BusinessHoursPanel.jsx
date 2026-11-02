@@ -4,7 +4,7 @@ import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
 import Alert from '@/components/common/Alert';
 import { DAY_LABELS } from '@/utils/scheduleSlots';
-import { TIME_OPTIONS, toClock, toMinutes, toTime } from '@/utils/vacancyPreview';
+import { TIME_OPTIONS, toMinutes, toTime } from '@/utils/vacancyPreview';
 import WeekHoursSummary from '@/pages/owner/components/WeekHoursSummary';
 import BusinessHoursTips from '@/pages/owner/components/BusinessHoursTips';
 import styles from './BusinessHoursPanel.module.css';
@@ -16,7 +16,6 @@ const DEFAULT_CLOSE = '20:00';
 const LAST_OPEN = '23:00';
 const OPEN_OPTIONS = TIME_OPTIONS.filter((time) => time <= LAST_OPEN);
 
-const clockLabel = (time) => `${toClock(time).period} ${toClock(time).label}`;
 // 30분 단위가 아닌 예전 값도 그대로 보이도록 목록에 끼워 넣는다
 const withCurrent = (options, current) =>
   !current || options.includes(current) ? options : [...options, current].sort();
@@ -143,7 +142,7 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
                       >
                         {withCurrent(OPEN_OPTIONS, day.openTime).map((time) => (
                           <option key={time} value={time}>
-                            {clockLabel(time)}
+                            {time}
                           </option>
                         ))}
                       </select>
@@ -157,7 +156,7 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
                       >
                         {withCurrent(closeOptions, day.closeTime).map((time) => (
                           <option key={time} value={time}>
-                            {clockLabel(time)}
+                            {time}
                           </option>
                         ))}
                       </select>
