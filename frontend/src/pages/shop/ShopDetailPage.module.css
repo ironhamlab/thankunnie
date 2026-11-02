@@ -370,6 +370,20 @@
   line-height: 1.4;
   text-decoration: none;
 }
+/* 다른 고객이 결제 중인 시각: 고를 수 있지만 바로 예약되지 않고 대기열에 선다 */
+.heldTag {
+  position: absolute;
+  top: -7px;
+  right: -4px;
+  padding: 1px 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-text-secondary);
+  color: var(--color-white);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
 .extendedNotice {
   margin: 0 0 12px;
   padding: 8px 12px;
