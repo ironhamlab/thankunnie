@@ -55,7 +55,7 @@ public class ExploreShopDetailService {
      * 노출 중인 매장 전체를 빈자리 유무와 상관없이 조회한다.
      *
      * @param categoryId 해당 분야 매장만. null 이면 전체
-     * @param keyword    매장명·판매 중인 시술명 검색어. 비어 있으면 조건 없음
+     * @param keyword    매장명·주소(지역)·판매 중인 시술명 검색어. 비어 있으면 조건 없음
      * @return 매장 ID 순 매장 목록
      */
     public List<ExploreShopListResponse> getShops(Long categoryId, String keyword) {
@@ -76,7 +76,7 @@ public class ExploreShopDetailService {
         return "%" + escaped + "%";
     }
 
-    // 사장님 영업시간 조회와 같이 월~일 7개를 돌려주고, 저장하지 않은 요일은 휴무로 본다
+    // 매장 영업시간 조회와 같이 월~일 7개를 돌려주고, 저장하지 않은 요일은 휴무로 본다
     private List<BusinessHourResponse> businessHours(Long shopId) {
         Map<BusinessDay, ShopBusinessHour> hours = shopBusinessHourRepository.findByShopId(shopId).stream()
                 .collect(Collectors.toMap(ShopBusinessHour::getDayOfWeek, Function.identity()));

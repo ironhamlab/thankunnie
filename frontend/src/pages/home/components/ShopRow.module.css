@@ -182,6 +182,14 @@
 .shopLink:hover {
   background: var(--color-primary-faint);
 }
+/* 옆 지도에 위치를 띄우는 카드는 버튼이라 기본 버튼 모양을 지운다 */
+.locateCard {
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
 /* 매장 페이지로 가는 카드와 구분되게 시간 펼치기는 따로 둔다. 버튼 대신 간단한 ▾ 글자 토글로 둔다 */
 .toggle {
   flex-shrink: 0;
@@ -219,26 +227,18 @@
   .info strong {
     font-size: 15px;
   }
+  /* 지도 옆 패널은 스크롤바만큼 더 좁아져 빈자리 수가 잘리므로, 주소·시간은 어절 단위로 줄을 바꾼다 */
+  .area,
+  .time {
+    white-space: normal;
+    word-break: keep-all;
+    /* 공백 없이 긴 주소 부분은 어절로 나눌 수 없으므로 그때만 글자 사이에서 꺾는다 */
+    overflow-wrap: anywhere;
+  }
   .price b {
     font-size: 15px;
   }
-  /* 지도에서 보기와 시간 보기가 함께 있으면 둘을 오른쪽에 나란히 둔다 */
-  .toggle:first-of-type {
-    margin-left: auto;
-  }
-}
-/* 지도에서 보기와 시간 보기를 함께 두면 매장명이 잘리므로, 조금 넓은 카드에서도 두 버튼을 아래 줄로 내린다 */
-@container (max-width: 600px) {
-  .twoActions {
-    flex-wrap: wrap;
-    gap: 0;
-    padding: 0 12px 6px 0;
-  }
-  .twoActions .shopLink {
-    flex-basis: 100%;
-    padding-bottom: 4px;
-  }
-  .twoActions .toggle:first-of-type {
+  .toggle {
     margin-left: auto;
   }
 }

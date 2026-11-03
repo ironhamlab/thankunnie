@@ -4,7 +4,7 @@ import Badge from '@/components/common/Badge';
 import styles from './CancelTargetSummary.module.css';
 
 /**
- * 취소 대상 예약 요약 (고객 취소·사장님 취소·취소 결과 공용). 예약 상세 응답의 summary 를 그대로 받는다.
+ * 취소 대상 예약 요약 (고객 취소·매장 취소·취소 결과 공용). 예약 상세 응답의 summary 를 그대로 받는다.
  */
 export default function CancelTargetSummary({ summary }) {
   const status = reservationStatusOf(summary.status);

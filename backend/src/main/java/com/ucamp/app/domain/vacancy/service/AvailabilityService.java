@@ -63,7 +63,7 @@ public class AvailabilityService {
     }
 
     /**
-     * 날짜에 시술을 시작할 수 있는 시각과, 그중 영업시간만으로는 안 되고 사장님이 연 시간 덕분에 되는 시각.
+     * 날짜에 시술을 시작할 수 있는 시각과, 그중 영업시간만으로는 안 되고 매장이 연 시간 덕분에 되는 시각.
      * 시술이 영업시간 밖으로 조금이라도 넘어가면 연장 영업 시각이다 (휴무일에 연 시간은 모두 해당).
      * 고객 상세 화면이 연장 영업임을 표시하는 데 쓴다.
      */
@@ -159,7 +159,7 @@ public class AvailabilityService {
 
     /**
      * 날짜에 영업시간·시간대 열기로 열려 있고 닫기로 막히지 않은 시간이 하루 중 조금이라도 있는지 판단한다
-     * (사장님 대시보드: 휴무와 만석 구분용). 예약과 현재 시각은 보지 않으며 30분 단위로 확인한다.
+     * (매장 대시보드: 휴무와 만석 구분용). 예약과 현재 시각은 보지 않으며 30분 단위로 확인한다.
      */
     public boolean hasOpenTime(Long shopId, LocalDate date) {
         LocalDateTime from = date.atStartOfDay();
@@ -219,7 +219,7 @@ public class AvailabilityService {
 
     /**
      * @param businessRanges 요일 영업시간만의 구간 (연장 영업 판단용)
-     * @param openRanges     영업시간과 사장님이 연 시간을 합친 구간
+     * @param openRanges     영업시간과 매장이 연 시간을 합친 구간
      * @param confirmedRanges 결제 대기 점유가 아닌 예약(CONFIRMED·CANCEL_PENDING) 구간
      * @param holdRanges      유효한 결제 대기 점유(HOLD) 구간
      */

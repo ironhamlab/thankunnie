@@ -11,7 +11,7 @@ public enum TestUser {
     // 같은 시간 동시 예약·점유 확인용으로 고객 2명을 둔다
     CUSTOMER_1(1L, UserRole.CUSTOMER, null),
     CUSTOMER_2(2L, UserRole.CUSTOMER, null),
-    // 다른 매장 권한 차단 확인용으로 사장님 2명을 둔다
+    // 다른 매장 권한 차단 확인용으로 매장 2명을 둔다
     OWNER_1(11L, UserRole.OWNER, 1L),
     OWNER_2(12L, UserRole.OWNER, 2L),
     ADMIN(21L, UserRole.ADMIN, null);

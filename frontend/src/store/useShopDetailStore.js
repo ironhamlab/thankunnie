@@ -44,7 +44,7 @@ export const useShopDetailStore = create((set, get) => ({
             key,
             status: 'succeeded',
             startTimes: response?.startTimes ?? [],
-            // 영업시간 밖 연장 영업(사장님이 연 시간) 덕분에 가능한 시각. 화면에 연장 표시만 한다
+            // 영업시간 밖 연장 영업(매장이 연 시간) 덕분에 가능한 시각. 화면에 연장 표시만 한다
             extendedStartTimes: response?.extendedStartTimes ?? [],
             // 다른 고객이 결제 중이라 지금은 못 잡지만 대기열에 설 수 있는 시각
             heldStartTimes: response?.heldStartTimes ?? [],

@@ -4,7 +4,7 @@ import BusinessHoursPanel from '@/pages/owner/components/BusinessHoursPanel';
 import Button from '@/components/common/Button';
 
 /**
- * 사장님 요일별 영업시간 관리 (B-F2). 특정 날짜의 시간대 열기·닫기는 빈자리 열기·닫기 화면에서 한다.
+ * 매장 요일별 영업시간 관리 (B-F2). 특정 날짜의 시간대 열기·닫기는 빈자리 열기·닫기 화면에서 한다.
  */
 export default function SchedulePage() {
   const loadSchedule = useScheduleStore((state) => state.loadSchedule);

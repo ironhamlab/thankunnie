@@ -28,9 +28,9 @@ import com.ucamp.app.domain.user.repository.AppUserRepository;
 import com.ucamp.app.domain.user.service.TermsAgreementService;
 
 /**
- * 고객·사장님 회원가입과 로그인. 성공하면 액세스 토큰을 발급한다.
+ * 고객·매장 회원가입과 로그인. 성공하면 액세스 토큰을 발급한다.
  *
- * <p>고객·관리자는 APP_USER, 사장님은 SHOP 에 계정이 있어 아이디 중복과 로그인을 각 테이블 기준으로 처리한다.
+ * <p>고객·관리자는 APP_USER, 매장은 SHOP 에 계정이 있어 아이디 중복과 로그인을 각 테이블 기준으로 처리한다.
  * 가입은 아이디 사전 확인 후 저장하고, 동시에 같은 아이디로 가입하면 UNIQUE 제약 위반을 중복 아이디로 바꾼다.
  */
 @Service
@@ -89,7 +89,7 @@ public class AuthService {
         return issue(saved.toAuthUser());
     }
 
-    /** 매장 정보와 함께 사장님 계정으로 가입하고 바로 로그인한다. */
+    /** 매장 정보와 함께 매장 계정으로 가입하고 바로 로그인한다. */
     @Transactional
     public AuthTokenResponse signupShop(AuthShopSignupRequest request) {
         if (shopAccountRepository.existsByLoginId(request.loginId())) {
@@ -133,7 +133,7 @@ public class AuthService {
     }
 
     /**
-     * 사장님(매장 계정) 로그인. SHOP.STATUS 는 매장 노출·판매 여부라 계정 잠금으로 쓰지 않는다.
+     * 매장 계정 로그인. SHOP.STATUS 는 매장 노출·판매 여부라 계정 잠금으로 쓰지 않는다.
      * INACTIVE 매장도 로그인해서 매장을 관리할 수 있어야 한다.
      */
     public AuthTokenResponse loginShop(AuthLoginRequest request) {

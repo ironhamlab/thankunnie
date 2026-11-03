@@ -357,7 +357,7 @@ class AuthIntegrationTest {
     }
 
     @Test
-    @DisplayName("사장님은 약관 동의 API 를 쓸 수 없다 (403)")
+    @DisplayName("매장은 약관 동의 API 를 쓸 수 없다 (403)")
     void agree_owner_returnsForbidden() throws Exception {
         JsonNode data = data(signupShop("owner10").andExpect(status().isCreated()));
 

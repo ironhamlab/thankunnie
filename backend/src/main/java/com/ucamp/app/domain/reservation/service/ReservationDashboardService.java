@@ -32,7 +32,7 @@ import com.ucamp.app.domain.vacancy.policy.PriceTier;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 /**
- * 사장님 메인 대시보드와 기간 통계. 매장은 로그인한 사장님의 매장으로 정해진다.
+ * 매장 메인 대시보드와 기간 통계. 매장은 로그인한 매장 계정으로 정해진다.
  * 대시보드 이번 달 요약과 통계 요약은 같은 계산(summarize)을 써서 숫자가 어긋나지 않게 한다.
  */
 @Service
@@ -179,7 +179,7 @@ public class ReservationDashboardService {
 
     /**
      * 취소로 비었던 시간과 그중 다시 채운 시간.
-     * 비었던 시간: 기간 안 취소 완료 예약의 시간 합집합. 사장님이 취소하며 닫은 시간은 다시 팔 수 없으므로 뺀다.
+     * 비었던 시간: 기간 안 취소 완료 예약의 시간 합집합. 매장이 취소하며 닫은 시간은 다시 팔 수 없으므로 뺀다.
      * 다시 채운 시간: 그 취소가 완료된 뒤 생성된 확정 예약과 겹치는 부분의 합집합.
      * 금액: 겹치는 부분이 있는 확정 예약의 적용가 합계 (한 예약은 한 번만 센다).
      */

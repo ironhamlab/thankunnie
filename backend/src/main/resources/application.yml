@@ -62,7 +62,7 @@ solapi:
   from-number: ${SOLAPI_FROM_NUMBER:}
 
 nts:
-  service-key: ${NTS_SERVICE_KEY}
+  service-key: ${NTS_SERVICE_KEY:}
 
 ---
 # local 프로필 H2 에만 초기 데이터(docs/erd/02_init_data_dml.sql)와 시연 데이터(03_demo_data_dml.sql)를 순서대로 넣는다.

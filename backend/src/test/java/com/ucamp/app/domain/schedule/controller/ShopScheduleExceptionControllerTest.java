@@ -49,7 +49,7 @@ class ShopScheduleExceptionControllerTest {
     private ShopScheduleExceptionService shopScheduleExceptionService;
 
     @Test
-    @DisplayName("사장님이 등록하면 201 과 +09:00 시각을 반환한다")
+    @DisplayName("매장이 등록하면 201 과 +09:00 시각을 반환한다")
     void createException_owner_returnsCreated() throws Exception {
         OffsetDateTime noon = OffsetDateTime.of(2026, 10, 25, 12, 0, 0, 0, ZoneOffset.ofHours(9));
         given(shopScheduleExceptionService.createException(any(AuthUser.class), any(ScheduleExceptionSaveRequest.class)))

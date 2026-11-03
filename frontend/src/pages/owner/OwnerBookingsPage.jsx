@@ -32,7 +32,7 @@ const cancelPath = (reservationId) =>
   generatePath(ROUTES.OWNER_RESERVATION_CANCEL, { reservationId });
 
 /**
- * 사장님 예약 현황 (B-F6). 본인 매장 예약을 날짜·상태로 거르고, 고른 예약의 예약자·결제·취소 상태를 본다.
+ * 매장 예약 현황 (B-F6). 본인 매장 예약을 날짜·상태로 거르고, 고른 예약의 예약자·결제·취소 상태를 본다.
  */
 export default function OwnerBookingsPage() {
   const loadReservations = useReservationStore((state) => state.loadReservations);

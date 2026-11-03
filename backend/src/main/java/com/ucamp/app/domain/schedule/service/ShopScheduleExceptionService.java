@@ -25,7 +25,7 @@ import com.ucamp.app.domain.schedule.repository.ShopScheduleExceptionRepository;
 import com.ucamp.app.domain.vacancy.policy.SalePolicy;
 
 /**
- * 시간대 열기·닫기(예외 일정) 관리 (B-02·B-03·B-04). 사장님 본인 매장만 다룬다.
+ * 시간대 열기·닫기(예외 일정) 관리 (B-02·B-03·B-04). 매장 본인 매장만 다룬다.
  * 같은 종류(열기끼리·닫기끼리)는 겹쳐 등록할 수 없다. 같은 시간이 여러 번 쌓이면 목록이 어지럽고 지우기도 번거롭다.
  * 열기와 닫기는 겹칠 수 있고(예: 연 시간 중 일부만 닫기), 가용 시간 계산에서 닫기가 열기보다 우선한다.
  * 변경으로 시간이 닫히게 될 때 그 시간을 잡고 있는 예약이 있으면 차단하며, 고객 예약과 동시에 들어와도

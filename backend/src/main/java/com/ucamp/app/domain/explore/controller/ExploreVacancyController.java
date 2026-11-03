@@ -48,7 +48,7 @@ public class ExploreVacancyController {
     }
 
     @Operation(summary = "빈자리 목록",
-            description = "사장님이 연 시간대 안에서 지금 예약할 수 있는 시술 × 시작 시각. 날짜를 생략하면 오늘부터 7일."
+            description = "매장이 연 시간대 안에서 지금 예약할 수 있는 시술 × 시작 시각. 날짜를 생략하면 오늘부터 7일."
                     + " 지도 범위(minLat·maxLat·minLng·maxLng)는 네 값을 함께 보낸다")
     @GetMapping("/vacancies")
     public ResponseEntity<ApiResponse<PageResponse<ExploreVacancyResponse>>> getVacancies(
@@ -77,7 +77,7 @@ public class ExploreVacancyController {
 
     @Operation(summary = "임박 빈자리",
             description = "메인 화면용. 지금부터 8시간 안에 시작하는 일반 시술 빈자리를 매장마다 가장 빠른 1건씩,"
-                    + " 빠른 시작순으로 최대 10개. 사장님이 시간대를 열지 않아도 영업시간 안 빈 시각이면 나온다")
+                    + " 빠른 시작순으로 최대 10개. 매장이 시간대를 열지 않아도 영업시간 안 빈 시각이면 나온다")
     @GetMapping("/vacancies/imminent")
     public ResponseEntity<ApiResponse<List<ExploreVacancyResponse>>> getImminentVacancies() {
         return ResponseEntity.ok(ApiResponse.success(exploreVacancyService.searchImminent()));

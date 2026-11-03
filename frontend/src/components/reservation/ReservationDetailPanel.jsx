@@ -13,7 +13,7 @@ import Panel from '@/components/common/Panel';
 import Notice from '@/components/common/Notice';
 
 /**
- * 예약 상세 (사장님 예약 현황·고객 내 예약 공용). 사장님은 예약자 연락처를, 고객은 매장을 본다.
+ * 예약 상세 (매장 예약 현황·고객 내 예약 공용). 매장은 예약자 연락처를, 고객은 매장을 본다.
  * 취소 버튼은 서버가 취소 가능(확정 + 시작 전)으로 알려준 예약에만 보이고, 취소 화면(E)으로 이동한다.
  *
  * @param hideHeading     창 제목이 이미 "예약 상세" 일 때 같은 제목을 또 보여주지 않는다

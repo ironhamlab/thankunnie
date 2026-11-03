@@ -9,7 +9,7 @@ import com.ucamp.app.domain.schedule.entity.ShopScheduleException;
 /**
  * 시간대 열기·닫기 일정.
  *
- * @param reservationId 사장님이 예약을 취소하며 닫은 경우의 예약 ID, 그 외 null
+ * @param reservationId 매장이 예약을 취소하며 닫은 경우의 예약 ID, 그 외 null
  */
 public record ScheduleExceptionResponse(
         Long exceptionId,

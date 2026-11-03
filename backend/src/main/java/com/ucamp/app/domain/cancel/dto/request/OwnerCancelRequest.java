@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import com.ucamp.app.domain.cancel.entity.CancelType;
 
 /**
- * 사장님 취소 요청 (CNL-15~19, REO-02).
+ * 매장 취소 요청 (CNL-15~19, REO-02).
  *
  * @param cancelType       SHOP_FAULT(매장 사유, 전액 환불) 또는 CUSTOMER_REQUEST(고객 요청 대리 취소)
  * @param refundAmount     CUSTOMER_REQUEST 일 때 필수. 견적의 policyRefundAmount 이상 paidAmount 이하. SHOP_FAULT 는 무시하고 전액 환불
