@@ -20,6 +20,7 @@
 - HS256 JWT, 유효기간 기본 24시간(`app.jwt.access-token-validity`). 리프레시 토큰은 없다.
 - 요청 헤더: `Authorization: Bearer {accessToken}`
 - 만료·변조·형식 오류 토큰은 비로그인으로 처리한다. 로그인이 필요한 API에서 `COMMON_401`.
+- 매장(OWNER) 토큰은 요청마다 `SHOP.STATUS`를 확인한다. 관리자가 승인을 취소해 `PENDING`·`REJECTED`가 되면 이미 발급한 토큰도 비로그인(`COMMON_401`)으로 처리한다. `INACTIVE`는 계속 쓸 수 있다.
 - 로그아웃은 클라이언트가 토큰을 지운다. 서버에 로그아웃 API는 없다.
 - 서명 키: `JWT_SECRET` 환경변수(32바이트 이상). prod는 미설정 시 기동하지 않는다. local·test는 `application.yml`의 더미 키를 쓴다.
 - local·test 프로필에서는 기존 테스트 사용자(`X-Test-User` 또는 `Authorization: Bearer OWNER_1` 등)도 그대로 동작한다. 테스트 사용자 값이 아니면 JWT로 검증한다.
@@ -76,6 +77,9 @@
 
 `SHOP`의 필수 컬럼을 한 번에 넣어야 해서 계정과 매장 정보를 함께 받는다. 매장 정보 검증은 매장 수정 API(`shops.md`)와 같다(단, 가입 때 `phone`은 휴대폰 번호만 받는다). 대표 이미지는 가입 후 이미지 API로 올린다. 매장 약관 동의는 `SHOP_TERMS_AGREEMENT`에 같은 트랜잭션으로 저장한다. `201 Created`.
 
+가입한 매장은 승인 대기(`PENDING`)로 저장되고 토큰을 발급하지 않는다. 관리자가 승인(`admin-shop-applications.md`)하면 `ACTIVE`가 되어 로그인할 수 있다.
+응답 data: `{ "shopId": 10, "status": "PENDING" }`
+
 ```json
 {
   "loginId": "nailshop",
@@ -123,9 +127,11 @@
 
 요청 형식은 고객 로그인과 같다. 응답의 `role`은 `OWNER`, `userId`·`shopId`는 매장 ID.
 
-`SHOP.STATUS`는 매장 노출·판매 여부라서 로그인 판단에 쓰지 않는다. INACTIVE 매장도 로그인해 매장을 관리할 수 있다.
+비밀번호가 맞은 뒤 `SHOP.STATUS`를 확인한다. 승인 대기(`PENDING`)·거절(`REJECTED`) 매장은 로그인할 수 없다.
+`INACTIVE`는 노출 중지일 뿐이라 로그인해 매장을 관리할 수 있다.
 
-오류: 아이디 없음·비밀번호 불일치 `AUTH_002`(401)
+오류: 아이디 없음·비밀번호 불일치 `AUTH_002`(401), 승인 대기 `AUTH_011`(403),
+거절 `AUTH_012`(403, 사유가 있으면 메시지 끝에 `사유: {거절 사유}`를 붙인다)
 
 ## GET /api/v1/auth/shop-categories — 매장 가입용 카테고리
 

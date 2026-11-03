@@ -23,6 +23,7 @@ import com.ucamp.app.domain.auth.dto.request.AuthLoginRequest;
 import com.ucamp.app.domain.auth.dto.request.AuthShopSignupRequest;
 import com.ucamp.app.domain.auth.dto.response.AuthMeResponse;
 import com.ucamp.app.domain.auth.dto.response.AuthShopCategoryResponse;
+import com.ucamp.app.domain.auth.dto.response.AuthShopSignupResponse;
 import com.ucamp.app.domain.auth.dto.response.AuthTokenResponse;
 import com.ucamp.app.domain.auth.service.AuthService;
 
@@ -56,15 +57,16 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(authService.loginCustomer(request)));
     }
 
-    @Operation(summary = "매장 회원가입", description = "계정과 매장 정보를 함께 저장하고 로그인된 토큰을 반환한다")
+    @Operation(summary = "매장 회원가입",
+            description = "계정과 매장 정보를 승인 대기(PENDING)로 저장한다. 관리자 승인 전이라 토큰을 반환하지 않는다")
     @PostMapping("/shops/signup")
-    public ResponseEntity<ApiResponse<AuthTokenResponse>> signupShop(
+    public ResponseEntity<ApiResponse<AuthShopSignupResponse>> signupShop(
             @Valid @RequestBody AuthShopSignupRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(authService.signupShop(request)));
     }
 
-    @Operation(summary = "매장 로그인", description = "아이디 또는 비밀번호가 틀리면 401")
+    @Operation(summary = "매장 로그인", description = "아이디 또는 비밀번호가 틀리면 401, 승인 대기·거절 매장은 403")
     @PostMapping("/shops/login")
     public ResponseEntity<ApiResponse<AuthTokenResponse>> loginShop(@Valid @RequestBody AuthLoginRequest request) {
         return ResponseEntity.ok(ApiResponse.success(authService.loginShop(request)));

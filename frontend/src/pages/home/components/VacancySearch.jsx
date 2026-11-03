@@ -12,6 +12,9 @@ import { useMyLocation } from '@/hooks/useMyLocation';
 import FireIcon from '@/components/icons/FireIcon';
 import InfoIcon from '@/components/icons/InfoIcon';
 import ShopRow from '@/pages/home/components/ShopRow';
+import RollingValue from '@/pages/home/components/RollingValue';
+import SlidingIndicator from '@/components/common/SlidingIndicator';
+import { useSlidingIndicator } from '@/hooks/useSlidingIndicator';
 import ShopLocationMap from '@/pages/home/components/ShopLocationMap';
 import DateCalendar from '@/pages/home/components/DateCalendar';
 import Badge from '@/components/common/Badge';
@@ -47,13 +50,18 @@ const SIDE_MAP_MIN_WIDTH = 901;
 const MODEL = 'MODEL';
 
 function Filter({ label, options, value, onChange, segmented = false }) {
+  const indicator = useSlidingIndicator(value);
   return (
     <div className={`${styles.filterGroup} ` + (segmented ? styles.segmented : '')}>
       <span className={styles.filterLabel}>{label}</span>
       <div className="b-options">
+        {segmented && (
+          <SlidingIndicator indicator={indicator} className={styles.segmentIndicator} />
+        )}
         {options.map((option) => (
           <button
             key={option}
+            ref={value === option ? indicator.selectedRef : null}
             aria-pressed={value === option}
             className={value === option ? 'is-selected' : ''}
             onClick={() => onChange(option)}
@@ -337,9 +345,12 @@ export default function VacancySearch() {
     );
     resetSearch('');
   };
+  const categoryIndicator = useSlidingIndicator(categoryName);
+  // 상단 메뉴 셋이 이 화면 하나를 함께 쓰므로, 메뉴를 옮기면 소개 영역을 다시 그려 효과를 낸다
+  const menu = modelOnly ? 'model' : saleOnly ? 'sale' : 'search';
   return (
     <div className={`b-container ${styles.home}`}>
-      <section className={`b-hero ${styles.hero}`}>
+      <section key={menu} className={`b-hero ${styles.hero} ${styles.heroEnter}`}>
         <div className={styles.heroText}>
           <div className={`b-eyebrow ${styles.eyebrow}`}>
             <span className={styles.liveDot} aria-hidden="true" />
@@ -366,11 +377,16 @@ export default function VacancySearch() {
           가격은 조회 시점 기준이며, 예약할 때 <strong>다시 확인</strong>해 드려요
         </span>
       </section>
-      <section className={`${styles.filters} b-panel`} aria-label="빈자리 검색 필터">
+      <section
+        className={`${styles.filters} b-panel ${styles.filtersEnter}`}
+        aria-label="빈자리 검색 필터"
+      >
         <div className={styles.categoryRow} role="group" aria-label="시술 분야">
+          <SlidingIndicator indicator={categoryIndicator} className={styles.categoryIndicator} />
           {[ALL, ...categories.map((item) => item.name)].map((name) => (
             <button
               key={name}
+              ref={categoryName === name ? categoryIndicator.selectedRef : null}
               type="button"
               aria-pressed={categoryName === name}
               onClick={() => chooseCategory(name)}
@@ -425,7 +441,9 @@ export default function VacancySearch() {
       <div id="vacancy-results" className={`b-row ${styles.resultsHeading}`}>
         <h2>
           {allDates && allShopsStatus !== 'failed' ? allDatesTitle : listTitle}{' '}
-          <Badge>{sortedShops.length}곳</Badge>
+          <Badge>
+            <RollingValue value={`${sortedShops.length}곳`} />
+          </Badge>
         </h2>
       </div>
       <div className={styles.layout}>
@@ -446,7 +464,9 @@ export default function VacancySearch() {
             </EmptyState>
           ) : sortedShops.length ? (
             <>
-              <div className={styles.rows}>
+              <div
+                className={`${styles.rows} ${styles.rowsEnter} ${saleOnly ? styles.saleRows : ''}`}
+              >
                 {visibleShops.map((shop) => (
                   <div key={shop.shopId} id={`shop-row-${shop.shopId}`}>
                     <ShopRow

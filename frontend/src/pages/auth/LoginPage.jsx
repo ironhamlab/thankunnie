@@ -10,10 +10,20 @@ import Dialog from '@/components/common/Dialog';
 import Notice from '@/components/common/Notice';
 import AuthCard from './components/AuthCard';
 import AuthField from './components/AuthField';
+import ShopApprovalDialog from './components/ShopApprovalDialog';
 import styles from './LoginPage.module.css';
 
 const EMPTY_FORM = { loginId: '', password: '' };
 const WITHDRAWN_ACCOUNT = 'AUTH_003';
+
+// 매장 승인 대기(AUTH_011)·거절(AUTH_012)은 오류 문구 대신 팝업으로 알린다. 거절 사유는 서버 문구에 있다
+const SHOP_APPROVAL_NOTICE = {
+  AUTH_011: () => ({
+    title: '가입 승인 대기 중',
+    lines: ['승인 대기중입니다.', '관리자 승인 후 매장 센터에 로그인할 수 있어요.'],
+  }),
+  AUTH_012: (message) => ({ title: '매장 가입 거절', lines: [message] }),
+};
 
 /**
  * 로그인 (A-F7). 고객·관리자는 회원 계정, 매장은 매장 계정 탭으로 로그인한다.
@@ -67,6 +77,8 @@ export default function LoginPage() {
     }
   };
 
+  const approvalNotice = error && SHOP_APPROVAL_NOTICE[error.code]?.(error.message);
+
   if (token) {
     return (
       <AuthCard title="로그인">
@@ -119,7 +131,7 @@ export default function LoginPage() {
           autoComplete="current-password"
           required
         />
-        {error && !isWithdrawn && (
+        {error && !isWithdrawn && !approvalNotice && (
           <Alert as="p" tone="error" role="alert">
             {error.message}
           </Alert>
@@ -157,6 +169,14 @@ export default function LoginPage() {
             </Button>
           </div>
         </Dialog>
+      )}
+
+      {approvalNotice && (
+        <ShopApprovalDialog
+          title={approvalNotice.title}
+          lines={approvalNotice.lines}
+          onClose={clearError}
+        />
       )}
     </AuthCard>
   );

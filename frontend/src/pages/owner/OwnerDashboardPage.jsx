@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { reservationStatusOf } from '@/constants/reservationStatus';
+import { ownerReservationStatusOf } from '@/constants/reservationStatus';
 import { useOwnerDashboardStore } from '@/store/useOwnerDashboardStore';
 import { useShopStore } from '@/store/useShopStore';
 import {
@@ -224,22 +224,26 @@ function TodayReservations({ reservations, status, onRetry }) {
   );
 }
 
+// 고객 번호가 있으면 상세까지 열고, 없으면 이름으로 찾는다
+const customerPath = (item) => {
+  const params = new URLSearchParams({ keyword: item.customerName });
+  if (item.customerId) params.set('customer', String(item.customerId));
+  return `${ROUTES.OWNER_CUSTOMERS}?${params}`;
+};
+
 function TodayReservationList({ reservations }) {
   return reservations.length ? (
     <ul className={styles.timeline}>
       {reservations.map((item) => {
-        const reservationStatus = reservationStatusOf(item.status);
+        const reservationStatus = ownerReservationStatusOf(item);
         return (
           <li key={item.reservationId}>
             <strong className={styles.time}>
               {timePart(item.startsAt)}~{timePart(item.endsAt)}
             </strong>
             <span>{item.treatmentName}</span>
-            {/* 고객 관리에서 같은 이름으로 찾아 방문 이력·메모를 본다 */}
-            <Link
-              className="b-muted"
-              to={`${ROUTES.OWNER_CUSTOMERS}?keyword=${encodeURIComponent(item.customerName)}`}
-            >
+            {/* 고객 관리에서 이 고객의 방문 이력·메모를 바로 연다 */}
+            <Link className="b-muted" to={customerPath(item)}>
               {item.customerName}
             </Link>
             <Badge className={reservationStatus.tone}>{reservationStatus.label}</Badge>

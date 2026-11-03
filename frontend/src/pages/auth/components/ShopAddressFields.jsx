@@ -2,9 +2,9 @@ import { useRef, useState } from 'react';
 import { canGeocode, geocodeAddress } from '@/utils/geocodeAddress';
 import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
-import Notice from '@/components/common/Notice';
 import AuthField from './AuthField';
 import styles from './ShopAddressFields.module.css';
+import messageStyles from './VerificationMessage.module.css';
 
 const EMPTY_LOCATION = { regionCode: '', latitude: '', longitude: '' };
 
@@ -85,12 +85,10 @@ export default function ShopAddressFields({ value, onChange, errors }) {
       </div>
 
       {checkStatus === 'succeeded' && value.regionCode && (
-        <Notice>
-          <small>
-            주소를 확인했어요 · 지역코드 {value.regionCode} · 좌표 {value.latitude},{' '}
-            {value.longitude}
-          </small>
-        </Notice>
+        <p role="status" className={messageStyles.message}>
+          주소를 확인했어요 · 지역코드 {value.regionCode} · 좌표 {value.latitude},{' '}
+          {value.longitude}
+        </p>
       )}
       {checkError && (
         <Alert as="p" tone="error" role="alert">

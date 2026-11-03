@@ -43,18 +43,8 @@
   transform: scale(0.96);
 }
 .indicator {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  z-index: -1;
   border-radius: var(--radius-pill);
   background: var(--color-primary);
-}
-.moving {
-  transition:
-    transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1),
-    width 0.35s ease;
 }
 @media (hover: hover) {
   .root button:not([aria-selected='true']):hover {
@@ -63,8 +53,7 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .root button,
-  .moving {
+  .root button {
     transition: none;
   }
   .root button:active,

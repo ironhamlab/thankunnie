@@ -178,7 +178,7 @@ class AuthSignupVerificationIntegrationTest {
         mvc.perform(post("/api/v1/auth/shops/signup").contentType(MediaType.APPLICATION_JSON)
                         .content(shopBody("phoneshop", phone, id, "1234567891", "테스트 대표")))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.role").value("OWNER"));
+                .andExpect(jsonPath("$.data.status").value("PENDING"));
         assertThat(jdbc.queryForObject("SELECT PHONE FROM SHOP WHERE LOGIN_ID = 'phoneshop'", String.class))
                 .isEqualTo(hyphenated(phone));
     }
@@ -206,7 +206,7 @@ class AuthSignupVerificationIntegrationTest {
         mvc.perform(post("/api/v1/auth/shops/signup").contentType(MediaType.APPLICATION_JSON)
                         .content(shopBody("nailshop", phone, sendAndVerify(phone, "shop"), "1234567891", "테스트 대표")))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.role").value("OWNER"));
+                .andExpect(jsonPath("$.data.status").value("PENDING"));
         assertThat(jdbc.queryForObject("SELECT BUSINESS_NUMBER FROM SHOP WHERE LOGIN_ID = 'nailshop'", String.class))
                 .isEqualTo("1234567891");
         verify(ntsBusinessClient, times(2)).validate("1234567891", "테스트 대표", LocalDate.of(2020, 1, 1));
