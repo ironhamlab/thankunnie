@@ -9,6 +9,7 @@ import ReservationDetailPanel from '@/components/reservation/ReservationDetailPa
 import ReservationPagination from '@/components/reservation/ReservationPagination';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import Dialog from '@/components/common/Dialog';
 import Panel from '@/components/common/Panel';
 import EmptyState from '@/components/common/EmptyState';
 import styles from './OwnerBookingsPage.module.css';
@@ -23,7 +24,9 @@ const STATUS_FILTERS = [
 ];
 const PAGE_SIZE = 10;
 // 목록과 상세가 한 단으로 쌓이는 폭 (OwnerBookingsPage.module.css 의 .grid 와 같게 둔다)
-const SINGLE_COLUMN_QUERY = '(max-width: 1200px)';
+const SINGLE_COLUMN_QUERY = '(max-width: 1480px)';
+// 표가 카드로 바뀌는 폭. 폰에서는 상세가 목록 아래로 멀어지므로 창으로 연다 (module.css 와 같게 둔다)
+const CARD_LAYOUT_QUERY = '(max-width: 640px)';
 
 const cancelPath = (reservationId) =>
   generatePath(ROUTES.OWNER_RESERVATION_CANCEL, { reservationId });
@@ -58,16 +61,52 @@ export default function OwnerBookingsPage() {
   const [page, setPage] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const linkedId = reservationIdFromSearch(searchParams);
+  // 목록에서 고른 예약. 알림 링크와 따로 두어, 현재 목록에 없으면 첫 예약으로 돌아간다
+  const [selectedId, setSelectedId] = useState(null);
+  // 이 화면에서 목록을 한 번 받은 뒤에는, 다음 목록을 받는 동안에도 표를 남겨 화면이 튀지 않게 한다
+  const [hasLoadedList, setHasLoadedList] = useState(false);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isCardLayout, setIsCardLayout] = useState(
+    () => window.matchMedia(CARD_LAYOUT_QUERY).matches,
+  );
+  const listRef = useRef(null);
   const detailRef = useRef(null);
+  // 알림으로 연 예약은 한 번만 포커스한다. 같은 번호로 목록만 다시 받으면 반복하지 않는다
+  const focusedIdRef = useRef(null);
 
   useEffect(() => {
-    const { statuses } = STATUS_FILTERS.find((filter) => filter.key === filterKey);
-    loadReservations('owner', { from, to, statuses, page, size: PAGE_SIZE });
+    const media = window.matchMedia(CARD_LAYOUT_QUERY);
+    const handleChange = (event) => {
+      setIsCardLayout(event.matches);
+      // 넓은 화면에는 창이 없으므로, 다시 좁혔을 때 저절로 열리지 않게 닫아 둔다
+      if (!event.matches) {
+        setIsDetailDialogOpen(false);
+      }
+    };
+    media.addEventListener('change', handleChange);
+    return () => media.removeEventListener('change', handleChange);
+  }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      const { statuses } = STATUS_FILTERS.find((filter) => filter.key === filterKey);
+      await loadReservations('owner', { from, to, statuses, page, size: PAGE_SIZE });
+      setHasLoadedList(true);
+    };
+    load();
   }, [loadReservations, from, to, filterKey, page]);
 
-  // 알림이 지정한 예약 번호가 있으면 그 상세를 연다. 목록에 없어도 그 번호를 조회한다.
-  // 번호가 없으면 지금 목록의 첫 예약을 보여준다.
-  const activeId = linkedId ?? reservations[0]?.reservationId;
+  // 목록에서 고른 예약은 그 번호가 지금 목록에 있을 때만 연다. 없으면 첫 예약으로 돌아간다.
+  // 아직 고르지 않았고 알림 링크가 있으면, 목록에 없어도 그 예약을 연다.
+  const selectedInList = reservations.some((item) => item.reservationId === selectedId);
+  let activeId = reservations[0]?.reservationId;
+  if (selectedId != null) {
+    if (selectedInList) {
+      activeId = selectedId;
+    }
+  } else if (linkedId != null) {
+    activeId = linkedId;
+  }
 
   // 새 목록이 오기 전에는 상세를 부르지 않는다. 이전 목록의 상세가 새 조건의 결과처럼 보이지 않게 한다
   useEffect(() => {
@@ -81,16 +120,17 @@ export default function OwnerBookingsPage() {
     }
   }, [loadReservation, clearDetail, activeId, listStatus]);
 
-  // 알림이나 상세 보기로 예약을 고르면 포커스를 상세로 옮긴다.
-  // 한 단 화면에서는 상세가 목록 아래에 있어 상세 위치로 스크롤도 한다.
-  // 같은 번호로 목록만 다시 불러올 때는 포커스·스크롤을 반복하지 않는다.
-  const focusedIdRef = useRef(null);
-
+  // 알림 링크로 들어오면 포커스를 상세로 옮긴다.
+  // 폰에서는 상세 창을 열고, 한 단 화면에서는 상세 위치로 스크롤한다.
   useEffect(() => {
     if (!linkedId || listStatus !== 'succeeded' || focusedIdRef.current === linkedId) {
       return;
     }
     focusedIdRef.current = linkedId;
+    if (window.matchMedia(CARD_LAYOUT_QUERY).matches) {
+      setIsDetailDialogOpen(true);
+      return;
+    }
     detailRef.current?.focus({ preventScroll: true });
     if (window.matchMedia(SINGLE_COLUMN_QUERY).matches) {
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -101,10 +141,38 @@ export default function OwnerBookingsPage() {
     }
   }, [linkedId, listStatus]);
 
+  // 목록에서 고르면 그 예약을 기억하고 주소에도 남긴다.
+  // 폰에서는 상세 창을 연다. 넓은 화면에서는 상세로 포커스를 옮긴다.
   const showDetail = (reservationId) => {
+    setSelectedId(reservationId);
+    focusedIdRef.current = reservationId;
     const next = new URLSearchParams(searchParams);
     next.set('reservationId', String(reservationId));
     setSearchParams(next);
+    if (isCardLayout) {
+      setIsDetailDialogOpen(true);
+      return;
+    }
+    detailRef.current?.focus({ preventScroll: true });
+    if (window.matchMedia(SINGLE_COLUMN_QUERY).matches) {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      detailRef.current?.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
+    }
+  };
+
+  // 폰은 목록이 화면보다 길어 페이지를 넘겨도 스크롤이 아래에 남으므로 목록 맨 위로 올린다
+  const changePage = (next) => {
+    // 받는 동안에는 이전 페이지 정보가 남아 있어, 더 넘기면 없는 페이지를 요청할 수 있다
+    if (listStatus === 'loading') {
+      return;
+    }
+    setPage(next);
+    if (isCardLayout) {
+      listRef.current?.scrollIntoView({ block: 'start' });
+    }
   };
 
   // 필터를 바꾸면 첫 페이지부터 다시 본다
@@ -179,34 +247,41 @@ export default function OwnerBookingsPage() {
       </Panel>
 
       <div className={styles.grid}>
-        <Panel as="section" className="b-table-panel">
+        <Panel as="section" className="b-table-panel" ref={listRef}>
           <div className="b-row b-pad">
             <h2>예약 목록</h2>
             <small>{pageInfo.totalElements}건</small>
           </div>
-          {listStatus === 'loading' && <p role="status">예약을 불러오는 중입니다.</p>}
+          {listStatus === 'loading' && !hasLoadedList && (
+            <p role="status">예약을 불러오는 중입니다.</p>
+          )}
           {listStatus === 'failed' && <p role="alert">{listError.message}</p>}
-          {listStatus === 'succeeded' && (
+          {listStatus !== 'failed' && hasLoadedList && (
             <>
               {/* 필터·페이지를 바꿔 목록을 새로 받을 때마다 다시 그려져 내용이 바뀐 것을 알린다 */}
-              <div className={`b-table-scroll ${motion.step}`}>
+              <div
+                key={reservations[0]?.reservationId ?? 'empty'}
+                className={`b-table-scroll ${styles.list} ${motion.step}`}
+              >
                 <table className={styles.table}>
                   <thead>
                     <tr>
-                      {['예약번호', '예약자', '시술', '예약 일시', '결제', '상태', '상세'].map(
-                        (header) => (
-                          <th key={header}>{header}</th>
-                        ),
-                      )}
+                      {['예약번호', '예약자', '시술', '예약 일시', '결제', '상태'].map((header) => (
+                        <th key={header}>{header}</th>
+                      ))}
+                      <th aria-label="상세" />
                     </tr>
                   </thead>
                   <tbody>
                     {reservations.map((item) => {
                       const status = reservationStatusOf(item.status);
                       return (
+                        // 행 어디를 눌러도 상세를 연다. 키보드와 화면 읽기 도구는 끝의 버튼을 쓰고, 그 클릭도 여기서 받는다
                         <tr
                           key={item.reservationId}
                           className={activeId === item.reservationId ? 'is-active' : ''}
+                          aria-current={activeId === item.reservationId ? 'true' : undefined}
+                          onClick={() => showDetail(item.reservationId)}
                         >
                           <td className={styles.id}>{item.reservationId}</td>
                           <td className={styles.name}>
@@ -222,14 +297,13 @@ export default function OwnerBookingsPage() {
                           <td className={styles.status}>
                             <Badge className={status.tone}>{status.label}</Badge>
                           </td>
-                          <td className={styles.detail}>
-                            <Button
-                              size="small"
+                          <td className={styles.chevron}>
+                            <button
                               type="button"
-                              onClick={() => showDetail(item.reservationId)}
+                              aria-label={`${item.customerName} 예약 상세 보기`}
                             >
-                              상세 보기
-                            </Button>
+                              ›
+                            </button>
                           </td>
                         </tr>
                       );
@@ -237,23 +311,38 @@ export default function OwnerBookingsPage() {
                   </tbody>
                 </table>
               </div>
-              {!reservations.length && <EmptyState as="p">조건에 맞는 예약이 없습니다.</EmptyState>}
-              <ReservationPagination page={page} pageInfo={pageInfo} onPageChange={setPage} />
+              {listStatus === 'succeeded' && !reservations.length && (
+                <EmptyState as="p">조건에 맞는 예약이 없습니다.</EmptyState>
+              )}
+              <div className={styles.pager}>
+                <ReservationPagination page={page} pageInfo={pageInfo} onPageChange={changePage} />
+              </div>
             </>
           )}
         </Panel>
-        <aside ref={detailRef} tabIndex={-1} aria-label="예약 상세" className="b-stack">
-          {/* 다른 예약을 고르면 상세가 새로 나타나 바뀐 것을 알린다 */}
-          {listStatus === 'succeeded' && (
-            <div
-              key={loadedDetailId ?? 'pending'}
-              className={loadedDetailId ? motion.enter : undefined}
-            >
-              <ReservationDetailPanel viewer="owner" cancelPath={cancelPath} />
-            </div>
-          )}
-        </aside>
+        {!isCardLayout && (
+          <aside ref={detailRef} tabIndex={-1} aria-label="예약 상세" className="b-stack">
+            {/* 다른 예약을 고르면 상세가 새로 나타나 바뀐 것을 알린다 */}
+            {listStatus !== 'failed' && hasLoadedList && (
+              <div
+                key={loadedDetailId ?? 'pending'}
+                className={loadedDetailId ? motion.enter : undefined}
+              >
+                <ReservationDetailPanel viewer="owner" cancelPath={cancelPath} keepWhileLoading />
+              </div>
+            )}
+          </aside>
+        )}
       </div>
+      {isCardLayout && isDetailDialogOpen && (
+        <Dialog
+          title="예약 상세"
+          className={styles.detailDialog}
+          onClose={() => setIsDetailDialogOpen(false)}
+        >
+          <ReservationDetailPanel viewer="owner" cancelPath={cancelPath} hideHeading />
+        </Dialog>
+      )}
     </div>
   );
 }

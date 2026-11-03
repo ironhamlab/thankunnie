@@ -1,0 +1,97 @@
+.cards.cards {
+  gap: 12px;
+}
+/* 페이지가 여러 개일 때만, 건수가 달라도 이전·다음 버튼이 움직이지 않도록 카드 10장 높이를 잡는다 */
+.cards.fullPage {
+  min-height: 841px;
+}
+/* 넓은 화면에서는 예약 한 건을 한 줄로 펼쳐, 건수가 적어도 화면 양쪽이 비지 않게 한다 */
+.card.card {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  grid-template-areas:
+    'status treatment time chevron'
+    'status shop time chevron';
+  align-items: center;
+  gap: 2px 20px;
+  width: 100%;
+  padding: 14px 24px;
+}
+.status {
+  grid-area: status;
+}
+.treatment {
+  grid-area: treatment;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.shop {
+  grid-area: shop;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.time {
+  grid-area: time;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.chevron {
+  grid-area: chevron;
+  color: var(--color-text-muted);
+  font-size: 20px;
+  line-height: 1;
+}
+/* 공용 페이지 이동을 이 화면에서만 오른쪽 아래에 둔다 */
+.pager > :global(.b-flex) {
+  justify-content: flex-end;
+}
+/* 창이 떠 있는 동안 뒤 목록이 함께 스크롤되지 않게 하고, 스크롤바 자리는 남겨 화면이 옆으로 밀리지 않게 한다 */
+html:has(.detailDialog[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+/* 지도까지 넣으면 창 안에서 스크롤하게 되는데, 막대가 창 모서리를 깨뜨려 숨긴다 */
+.detailDialog {
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.detailDialog::-webkit-scrollbar {
+  display: none;
+}
+/* 창 안에서는 창 자체가 카드라 상세 패널의 테두리와 여백을 빼고, 한눈에 보도록 간격을 줄인다 */
+.detailDialog.detailDialog section {
+  gap: 14px;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+.detailDialog :global(.b-panel-heading) {
+  padding-bottom: 12px;
+  margin-bottom: 0 !important;
+}
+.detailDialog :global(.b-notice) {
+  padding: 12px 14px;
+}
+.detailDialog :global(.b-details) > div {
+  padding: 9px 0;
+}
+/* 폰에서는 한 줄에 다 들어가지 않아 세 줄 카드로 바꾼다 */
+@media (max-width: 640px) {
+  .cards.fullPage {
+    min-height: 0;
+  }
+  .card.card {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'status status chevron'
+      'treatment treatment chevron'
+      'shop time chevron';
+    gap: 4px 8px;
+    padding: 14px 18px;
+  }
+  .time {
+    font-size: 12px;
+  }
+}

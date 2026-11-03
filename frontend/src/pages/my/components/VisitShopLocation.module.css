@@ -1,0 +1,47 @@
+.root {
+  margin-bottom: 14px;
+}
+/* KakaoMap 은 부모를 꽉 채우므로 높이를 여기서 정한다. 지도 안 마커가 창의 닫기 버튼 위로 올라오지 않게 쌓임 맥락을 만든다 */
+.map {
+  position: relative;
+  z-index: 0;
+  height: 180px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+/* 키가 없거나 SDK 를 못 불러오면 KakaoMap 이 아무것도 그리지 않으므로 빈 상자를 숨기고 주소만 남긴다 */
+.root .map:empty {
+  display: none;
+}
+/* 카카오맵 위에 띄우는 매장 이름 마커. 위치는 지도 오버레이가 정한다 */
+.marker {
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-xl);
+  padding: 6px 10px;
+  background: var(--color-primary);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--color-shadow) 13%, transparent);
+  cursor: default;
+}
+.address {
+  margin: 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 4px;
+  font-size: 13px;
+}
+.links a {
+  color: var(--color-primary-text);
+  font-weight: 700;
+}
