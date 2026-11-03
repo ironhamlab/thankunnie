@@ -151,7 +151,7 @@ export default function SignupPage() {
         {termsStatus === 'failed' && (
           <Alert as="p" tone="error" role="alert">
             {termsError.message}{' '}
-            <Button size="small" type="button" onClick={loadTerms}>
+            <Button size="small" type="button" onClick={() => loadTerms()}>
               다시 불러오기
             </Button>
           </Alert>

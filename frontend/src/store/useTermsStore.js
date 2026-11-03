@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { termsApi } from '@/api/termsApi';
-import { AGREEMENT_REQUIRED_ERRORS, TERMS_CODE } from '@/constants/terms';
+import { AGREEMENT_REQUIRED_ERRORS, TERMS_CODE, TERMS_TARGET } from '@/constants/terms';
 
 const toError = (error, fallback) => ({
   code: error?.code ?? 'UNKNOWN_ERROR',
@@ -16,15 +16,20 @@ export const useTermsStore = create((set, get) => ({
   status: 'idle',
   error: null,
 
-  loadTerms: async () => {
-    set({ status: 'loading', error: null });
+  /** 고객·매장 가입 화면이 같은 상태를 쓰므로, 다른 대상을 불러오면 이전 목록을 비우고 가장 마지막 요청만 반영한다 */
+  loadTerms: async (target = TERMS_TARGET.CUSTOMER) => {
+    const requestId = get().termsRequestId + 1;
+    set({ terms: [], status: 'loading', error: null, termsRequestId: requestId });
     try {
-      const terms = await termsApi.getTerms();
+      const terms = await termsApi.getTerms(target);
+      if (get().termsRequestId !== requestId) return;
       set({ terms: terms ?? [], status: 'succeeded' });
     } catch (error) {
+      if (get().termsRequestId !== requestId) return;
       set({ status: 'failed', error: toError(error, '약관을 불러오지 못했습니다.') });
     }
   },
+  termsRequestId: 0,
 
   // 열려 있는 동의 모달: { id, termsCode, smsRequestId, resolve, saving, error }
   pending: null,

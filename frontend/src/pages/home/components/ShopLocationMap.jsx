@@ -15,10 +15,10 @@ const MAP_BOUNDS_PADDING = { top: 60, right: 110, bottom: 150, left: 100 };
  * 목록에서 펼친 매장이 지도에서도 선택되고, 지도에서 고른 매장은 매장 페이지로 가거나 목록에서 펼쳐 시간을 볼 수 있다.
  * 전체 날짜 보기는 빈자리가 없는 매장도 함께 받아, 그 매장은 빈자리 없음 안내와 매장 보기만 보여준다.
  * 초보 시술 모집 목록(model)이거나 초보 시술 빈자리만 있는 매장(modelOnly)이면 초보 시술 모집 상세로 간다.
- * 목록의 '지도에서 보기'로 고른 매장(pinnedShopId)은 펼친 매장보다 먼저 보여주고, 그 상태에서 핀을 누르면 고른 매장을 바꾼다.
+ * 목록 카드나 지도 핀으로 고른 매장(pinnedShopId)은 펼친 매장보다 먼저 보여주고, 목록에서도 그 카드를 표시한다.
  *
- * @param pinnedShopId  목록의 '지도에서 보기'로 고른 매장 ID (문자열)
- * @param onPinShop     지도에서 보기 상태에서 다른 핀을 누르면 그 매장 ID 를 받는다
+ * @param pinnedShopId  목록 카드나 지도 핀으로 고른 매장 ID (문자열)
+ * @param onPinShop     펼친 매장이 없을 때 핀을 누르면 그 매장 ID 를 받는다
  * @param focusPosition 목록에서 매장을 고를 때마다 새로 들어오는 { lat, lng, zoom }. 그 매장으로 지도를 확대해 옮긴다
  * @param myLocation    목록과 같이 쓰는 useMyLocation() 결과. 넘기면 지도에 내 위치 버튼을 보인다
  */
@@ -45,9 +45,13 @@ export default function ShopLocationMap({
   const selected = chosen ?? shops[0];
   const pick = (shopId) => {
     setPickedId(shopId);
-    // 지도에서 보기로 고른 매장이 있으면 그것을 바꾸고, 다른 매장을 펼쳐 둔 상태라면 지도에서 고른 매장을 바로 펼친다
-    if (pinnedShopId) onPinShop(shopId);
-    else if (expandedShopId && shopId !== expandedShopId) onShowShop(shopId);
+    // 다른 매장을 펼쳐 둔 상태라면 지도에서 고른 매장을 바로 펼치고,
+    // 그 밖에는 목록에서 그 매장 카드가 표시되도록 지도에서 고른 매장으로 정한다
+    if (expandedShopId && !pinnedShopId) {
+      if (shopId !== expandedShopId) onShowShop(shopId);
+    } else {
+      onPinShop(shopId);
+    }
   };
   const handleUnavailable = useCallback(() => setMapUnavailable(true), []);
   const isExpanded = selected && String(selected.shopId) === expandedShopId;

@@ -74,7 +74,7 @@
 
 ## POST /api/v1/auth/shops/signup — 매장 회원가입
 
-`SHOP`의 필수 컬럼을 한 번에 넣어야 해서 계정과 매장 정보를 함께 받는다. 매장 정보 검증은 매장 수정 API(`shops.md`)와 같다. 대표 이미지는 가입 후 이미지 API로 올린다. `201 Created`.
+`SHOP`의 필수 컬럼을 한 번에 넣어야 해서 계정과 매장 정보를 함께 받는다. 매장 정보 검증은 매장 수정 API(`shops.md`)와 같다(단, 가입 때 `phone`은 휴대폰 번호만 받는다). 대표 이미지는 가입 후 이미지 API로 올린다. 매장 약관 동의는 `SHOP_TERMS_AGREEMENT`에 같은 트랜잭션으로 저장한다. `201 Created`.
 
 ```json
 {
@@ -87,12 +87,14 @@
   "addressDetail": "2층",
   "latitude": 37.4979000,
   "longitude": 127.0276000,
-  "phone": "02-111-1111",
+  "phone": "01012345678",
   "description": "젤네일·케어 전문",
   "notice": "예약 시간 10분 전 도착해 주세요",
   "businessNumber": "숫자 10자리 사업자등록번호",
   "representativeName": "사업자등록증에 기재된 대표자명",
-  "openedOn": "2020-01-01"
+  "openedOn": "2020-01-01",
+  "agreedTerms": ["SHOP_SERVICE", "SHOP_PRIVACY", "SHOP_BUSINESS_CHECK", "SHOP_SMS_NOTIFICATION"],
+  "phoneVerificationId": "휴대폰 인증 API에서 받은 verificationId"
 }
 ```
 
@@ -105,14 +107,17 @@
 | address | 필수, 300자 이하 |
 | addressDetail | 선택, 200자 이하 |
 | latitude / longitude | 필수, -90~90 / -180~180, 소수점 7자리 이하 |
-| phone | 필수, 20자 이하 (유선 번호 가능) |
+| phone | 필수, 휴대폰 번호(하이픈 유무 무관). `010-0000-0000` 형식으로 저장. 고객·다른 매장과 같은 번호여도 가입 가능 |
+| agreedTerms | 필수(배열). 매장 약관 코드(`GET /api/v1/terms?target=SHOP`). 필수 매장 약관은 모두 포함, 선택 약관(`SHOP_SMS_NOTIFICATION`)은 동의한 경우만 |
+| phoneVerificationId | 필수. `accountType: "shop"`으로 받은 인증 중 해당 phone으로 인증 완료한 ID. 가입 성공 시 1회 소비 |
 | businessNumber | 필수, 숫자 10자리·체크섬 검사. 국세청 검증 후 SHOP.BUSINESS_NUMBER에 저장. 동일 번호로 매장 하나만 등록 가능 |
 | representativeName | 필수, 100자 이하. 사업자등록증에 기재된 대표자명. 외국인 대표자는 등록된 영문명 |
 | openedOn | 필수, YYYY-MM-DD, 미래일 불가. 사업자등록증의 개업연월일 |
 | description, notice | 선택, 2000자 이하 |
 
-오류: 형식 위반·없는 카테고리 `COMMON_400`, 아이디 중복 `AUTH_001`(409),
-사업자 정보 불일치·휴업·폐업 `AUTH_007`(400), 국세청 조회 실패 `AUTH_008`(503), 사업자등록번호 중복 `AUTH_009`(409)
+오류: 형식 위반·없는 카테고리 `COMMON_400`, 아이디 중복 `AUTH_001`(409), 휴대폰 인증 실패 `AUTH_004`(400),
+사업자 정보 불일치·휴업·폐업 `AUTH_007`(400), 국세청 조회 실패 `AUTH_008`(503), 사업자등록번호 중복 `AUTH_009`(409),
+없는 약관·고객 약관 코드 `TERMS_001`(404), 필수 매장 약관 누락 `TERMS_002`(400)
 
 ## POST /api/v1/auth/shops/login — 매장 로그인
 
@@ -145,9 +150,9 @@
 
 ### POST /api/v1/auth/phone/send
 
-요청: `{ "phone": "01012345678" }`
+요청: `{ "phone": "01012345678", "accountType": "customer" }`
 
-고객 가입 전용이다. 이미 가입된 휴대폰 번호면 문자를 보내지 않고 `AUTH_010`(409)을 반환한다.
+`accountType`은 `customer`(생략 시 기본값) 또는 `shop`. 고객 가입이면 이미 가입된 휴대폰 번호에 문자를 보내지 않고 `AUTH_010`(409)을 반환한다. 매장 가입(`shop`)은 번호 중복을 검사하지 않는다.
 
 응답 data 예시:
 
@@ -173,11 +178,11 @@
 성공 시 발송 응답과 같은 형식이며 `verified: true`, `expiresAt`은 인증 완료부터 10분 후이다.
 오입력 5회 이후 새 인증번호가 필요하다. 재확인으로 유효기간을 연장하지 않는다.
 
-- 고객 가입에 `phone`과 일치하는 인증 ID를 보낸다. 매장 가입은 휴대폰 인증 없이 사업자 정보 확인만 한다.
+- 고객·매장 가입에 `phone`과 일치하는 인증 ID를 보낸다. 매장 가입은 휴대폰 인증과 사업자 정보 확인을 모두 한다.
 - 인증 ID 누락·번호 변경·만료·미인증·재사용은 서버에서 차단한다.
 - 가입 트랜잭션 커밋 때 인증을 소비하며, 롤백하면 유효시간 내 재시도가 가능하다.
 - 오류: `AUTH_004` 인증 실패, `AUTH_005` 발송 제한, `AUTH_006` 발송 실패, `AUTH_010` 고객 휴대폰 번호 중복. 상세 메시지는 서버 응답을 표시한다.
-- 고객은 휴대폰 번호당 한 계정만 가입할 수 있다. 발송과 최종 가입에서 검사하고 `APP_USER.PHONE` UNIQUE 제약으로도 막는다.
+- 고객은 휴대폰 번호당 한 계정만 가입할 수 있다. 발송과 최종 가입에서 검사하고 `APP_USER.PHONE` UNIQUE 제약으로도 막는다. 매장은 번호 중복을 허용한다(`SHOP.PHONE`에 UNIQUE 제약 없음).
 - 현재 인증 상태·발송 제한은 **단일 서버 메모리**에 보관한다. 재시작 시 재인증이 필요하며 다중 서버 배포 전 공유 저장소로 교체해야 한다.
 - 전화번호 소유 확인 기능이다. 대표자 본인 확인·사업자 조회는 이 API의 범위가 아니다.
 

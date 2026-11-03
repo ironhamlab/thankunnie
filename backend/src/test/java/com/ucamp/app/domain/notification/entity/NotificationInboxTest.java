@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.notification.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDateTime;
 
@@ -12,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -46,6 +48,7 @@ class NotificationInboxTest {
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getUserId()).isEqualTo(USER_ID);
+        assertThat(saved.getShopId()).isNull();
         assertThat(saved.getCategory()).isEqualTo(NotificationInboxCategory.RESERVATION);
         assertThat(saved.getReadAt()).isNull();
         assertThat(saved.getCreatedAt()).isNotNull();
@@ -65,6 +68,73 @@ class NotificationInboxTest {
 
         assertThat(saved.getCategory()).isEqualTo(NotificationInboxCategory.INTEREST);
         assertThat(saved.getLinkPath()).isNull();
+    }
+
+    @Test
+    @DisplayName("매장 알림은 매장만 지정하고 회원은 비운다")
+    void save_shopInbox_hasShopOnly() {
+        NotificationFixture.category(jdbcTemplate, 1L, "네일");
+        NotificationFixture.shop(jdbcTemplate, 1L, 1L, "11680", "ACTIVE");
+
+        NotificationInbox saved = testEntityManager.persistAndFlush(NotificationInbox.builder()
+                .shopId(1L)
+                .category(NotificationInboxCategory.RESERVATION)
+                .title("예약이 확정되었어요")
+                .body("김고객 11월 2일 10:00 예약이 확정되었습니다.")
+                .linkPath("/owner/bookings")
+                .build());
+
+        assertThat(saved.getUserId()).isNull();
+        assertThat(saved.getShopId()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("회원과 매장을 같이 지정하면 만들지 않는다")
+    void create_bothRecipients_rejected() {
+        assertThatThrownBy(() -> NotificationInbox.builder()
+                .userId(USER_ID)
+                .shopId(1L)
+                .category(NotificationInboxCategory.RESERVATION)
+                .title("제목")
+                .body("본문")
+                .build())
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("회원과 매장을 둘 다 비우면 만들지 않는다")
+    void create_noRecipient_rejected() {
+        assertThatThrownBy(() -> NotificationInbox.builder()
+                .category(NotificationInboxCategory.RESERVATION)
+                .title("제목")
+                .body("본문")
+                .build())
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("회원과 매장을 같이 넣는 SQL 은 체크 제약으로 거절된다")
+    void insert_bothRecipients_rejectedByCheck() {
+        NotificationFixture.category(jdbcTemplate, 1L, "네일");
+        NotificationFixture.shop(jdbcTemplate, 1L, 1L, "11680", "ACTIVE");
+
+        assertThatThrownBy(() -> jdbcTemplate.update("""
+                INSERT INTO NOTIFICATION_INBOX (
+                    INBOX_ID, USER_ID, SHOP_ID, CATEGORY, TITLE, BODY, CREATED_AT, UPDATED_AT)
+                VALUES (900, ?, 1, 'RESERVATION', '제목', '본문', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """, USER_ID))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    @DisplayName("회원과 매장을 둘 다 비우는 SQL 은 체크 제약으로 거절된다")
+    void insert_noRecipient_rejectedByCheck() {
+        assertThatThrownBy(() -> jdbcTemplate.update("""
+                INSERT INTO NOTIFICATION_INBOX (
+                    INBOX_ID, USER_ID, SHOP_ID, CATEGORY, TITLE, BODY, CREATED_AT, UPDATED_AT)
+                VALUES (901, NULL, NULL, 'RESERVATION', '제목', '본문', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test

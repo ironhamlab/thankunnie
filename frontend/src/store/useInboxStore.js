@@ -55,6 +55,18 @@ export const useInboxStore = create((set) => ({
     }
   },
 
+  markRead: async (inboxId) => {
+    const count = await notificationApi.markInboxRead(inboxId);
+    set((state) => ({
+      unreadCount: count ?? 0,
+      items: state.items.map((item) =>
+        item.inboxId === inboxId && item.readAt == null
+          ? { ...item, readAt: new Date().toISOString() }
+          : item,
+      ),
+    }));
+  },
+
   markAllRead: async () => {
     const count = await notificationApi.markAllInboxRead();
     set({ unreadCount: count ?? 0 });

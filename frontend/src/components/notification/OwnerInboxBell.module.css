@@ -1,0 +1,281 @@
+.root {
+  position: relative;
+}
+
+.button {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  border-radius: 50%;
+  color: var(--color-text);
+  transition: transform 160ms ease, background-color 160ms ease;
+}
+
+.button:hover {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.button:active {
+  transform: scale(0.92);
+}
+
+.button svg {
+  width: 21px;
+  height: 21px;
+  transform-origin: top center;
+  transition: transform 160ms ease;
+}
+
+.button[aria-expanded='true'] svg {
+  animation: bellRing 420ms ease;
+}
+
+.count {
+  position: absolute;
+  top: -1px;
+  right: -2px;
+  z-index: 1;
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-radius: var(--radius-xl);
+  font-size: 10px;
+  min-width: 17px;
+  line-height: 17px;
+  text-align: center;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 45%, transparent);
+  transform-origin: center;
+}
+
+.count.isIncreased {
+  animation: countAttend 0.55s cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+@keyframes countAttend {
+  0% {
+    transform: scale(0.55);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 50%, transparent);
+  }
+  45% {
+    transform: scale(1.35);
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+  70% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+}
+
+@keyframes bellRing {
+  0% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(14deg);
+  }
+  45% {
+    transform: rotate(-10deg);
+  }
+  70% {
+    transform: rotate(6deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.panel {
+  position: absolute;
+  z-index: 30;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  top: 44px;
+  right: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  box-shadow: var(--shadow-popover);
+  overflow: hidden;
+  transform-origin: top right;
+  animation: panelEnter 320ms ease;
+}
+
+.panel.isLeaving {
+  animation: panelLeave 280ms ease forwards;
+  pointer-events: none;
+}
+
+.panel button {
+  border: 0;
+  background: none;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  transition: color 160ms ease, background-color 160ms ease, opacity 160ms ease;
+}
+
+.panel button:disabled {
+  opacity: 0.45;
+}
+
+.title {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-surface);
+}
+
+.title strong {
+  font-size: 13px;
+  transition: opacity 200ms ease;
+}
+
+.title strong.isCleared {
+  animation: titlePulse 320ms ease;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabs button {
+  padding: 4px 9px;
+  border-radius: var(--radius-xl);
+}
+
+.tabs button[aria-pressed='true'] {
+  color: var(--color-white);
+  background: var(--color-primary);
+}
+
+.list {
+  max-height: min(60vh, 420px);
+  overflow: auto;
+  animation: listEnter 320ms ease;
+}
+
+.item {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.item .itemButton {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+.item strong {
+  display: block;
+  font-size: 13px;
+}
+
+.item strong em {
+  font-style: normal;
+  color: var(--color-primary);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.item.isClearing strong em {
+  opacity: 0;
+  transform: scale(0.4);
+}
+
+.item p {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-top: 5px;
+}
+
+.item small {
+  color: var(--color-text-muted);
+}
+
+@keyframes panelEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes panelLeave {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+@keyframes listEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes titlePulse {
+  0% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .button svg,
+  .panel button,
+  .title strong,
+  .item strong em {
+    transition: none;
+  }
+
+  .button:active {
+    transform: none;
+  }
+
+  .button[aria-expanded='true'] svg,
+  .count.isIncreased,
+  .panel,
+  .panel.isLeaving,
+  .list,
+  .title strong.isCleared {
+    animation: none;
+  }
+
+  .item.isClearing strong em {
+    opacity: 0;
+    transform: none;
+  }
+}

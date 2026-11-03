@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +20,7 @@ import com.ucamp.app.common.response.ApiResponse;
 import com.ucamp.app.domain.user.dto.response.TermsResponse;
 import com.ucamp.app.domain.user.dto.response.UserTermsAgreementResponse;
 import com.ucamp.app.domain.user.entity.TermsCode;
+import com.ucamp.app.domain.user.entity.TermsTarget;
 import com.ucamp.app.domain.user.service.TermsAgreementService;
 
 /**
@@ -36,10 +38,13 @@ public class TermsController {
         this.termsAgreementService = termsAgreementService;
     }
 
-    @Operation(summary = "약관 목록 조회", description = "코드별 최신 버전 약관과 필수 여부. 로그인 없이 조회한다")
+    @Operation(summary = "약관 목록 조회",
+            description = "코드별 최신 버전 약관과 필수 여부. 로그인 없이 조회한다. "
+                    + "target=SHOP 이면 매장 가입 약관, 없거나 CUSTOMER 면 고객 가입 약관")
     @GetMapping("/terms")
-    public ResponseEntity<ApiResponse<List<TermsResponse>>> getTerms() {
-        return ResponseEntity.ok(ApiResponse.success(termsAgreementService.getTerms()));
+    public ResponseEntity<ApiResponse<List<TermsResponse>>> getTerms(
+            @RequestParam(defaultValue = "CUSTOMER") TermsTarget target) {
+        return ResponseEntity.ok(ApiResponse.success(termsAgreementService.getTerms(target)));
     }
 
     @Operation(summary = "내 약관 동의 조회", description = "최신 버전 기준으로 동의한 약관 목록. 고객만 조회한다")
