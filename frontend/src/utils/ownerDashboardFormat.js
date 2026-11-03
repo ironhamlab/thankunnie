@@ -71,12 +71,9 @@ export const describeChange = (
   if (current === null || current === undefined || previous === null || previous === undefined) {
     return null;
   }
-  const diff = isRate
-    ? current - previous
-    : previous === 0
-      ? null
-      : ((current - previous) / previous) * 100;
-  if (diff === null) return null;
+  // 비율 지표는 %p 차이, 나머지는 증감률. 직전 값이 0 이면 증감률을 낼 수 없다
+  if (!isRate && previous === 0) return null;
+  const diff = isRate ? current - previous : ((current - previous) / previous) * 100;
   const rounded = Math.round(diff * 10) / 10;
   if (rounded === 0) return { text: '변화 없음', tone: 'flat' };
   const arrow = rounded > 0 ? '▲' : '▼';

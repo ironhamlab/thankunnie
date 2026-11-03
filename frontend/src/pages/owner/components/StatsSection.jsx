@@ -86,6 +86,15 @@ const describeRow = (row) =>
  * 매장 매출·예약 분석. 기간을 골라 이용 추정·예정 금액, 취소·재판매, 재방문, 요일·시간대·시술별 흐름을 본다.
  * 기본 기간은 이번 달이다. 금액은 예약 시점 가격 기준이다.
  */
+// 직접 고른 기간의 오류 문구. 문제없으면 빈 문자열
+function validatePeriod(period) {
+  if (period.all) return '';
+  if (period.from > period.to) return '끝 날짜는 시작 날짜와 같거나 이후여야 합니다.';
+  if (daysBetween(period.from, period.to) > MAX_DAYS)
+    return `조회 기간은 최대 ${MAX_DAYS}일입니다.`;
+  return '';
+}
+
 export default function StatsSection() {
   const stats = useOwnerStatsStore((state) => state.stats);
   const statsKey = useOwnerStatsStore((state) => state.statsKey);
@@ -94,13 +103,7 @@ export default function StatsSection() {
   const [period, setPeriod] = useState(() => monthRange(todayKst()));
   const [metricKey, setMetricKey] = useState(METRICS[0].key);
 
-  const periodError = period.all
-    ? ''
-    : period.from > period.to
-      ? '끝 날짜는 시작 날짜와 같거나 이후여야 합니다.'
-      : daysBetween(period.from, period.to) > MAX_DAYS
-        ? `조회 기간은 최대 ${MAX_DAYS}일입니다.`
-        : '';
+  const periodError = validatePeriod(period);
 
   useEffect(() => {
     if (!periodError) {

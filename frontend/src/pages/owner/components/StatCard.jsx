@@ -44,8 +44,8 @@ export default function StatCard({
           {changeLabel && ` ${changeLabel}`}
         </small>
       )}
-      {notes.map((note, index) => (
-        <small key={index} className={styles.note}>
+      {notes.map((note) => (
+        <small key={note} className={styles.note}>
           {note}
         </small>
       ))}

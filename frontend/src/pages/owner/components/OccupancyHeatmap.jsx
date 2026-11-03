@@ -3,6 +3,8 @@ import styles from './OccupancyHeatmap.module.css';
 
 // 진하기 단계. 0 은 비어 있음
 const LEVELS = 4;
+// 범례 칸: 1(한가함) ~ LEVELS(바쁨)
+const LEGEND_LEVELS = Array.from({ length: LEVELS }, (_, index) => index + 1);
 
 /**
  * 요일 × 시간대 예약 점유 히트맵. 예약 시간을 정시 칸으로 나눠 더한 값이라 긴 시술도 지나가는 시간대마다 바쁘게 보인다.
@@ -67,8 +69,8 @@ export default function OccupancyHeatmap({ cells }) {
       </div>
       <div className={styles.legend} aria-hidden="true">
         <span>한가함</span>
-        {Array.from({ length: LEVELS }, (_, index) => (
-          <i key={index} className={styles[`level${index + 1}`]} />
+        {LEGEND_LEVELS.map((level) => (
+          <i key={level} className={styles[`level${level}`]} />
         ))}
         <span>바쁨</span>
       </div>

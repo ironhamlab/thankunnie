@@ -170,19 +170,21 @@
   border-radius: var(--radius-sm);
   padding: 6px 10px;
 }
-/* 배지 색: 기본 노란 배지 대신 신규(초록)처럼 옅은 바탕에 진한 글자. 재방문 분홍, 방문 예정 주황, 취소 빨강 */
-.pinkBadge.pinkBadge {
-  color: #b0245e;
-  background: #fff0f6;
-  border: 1px solid #f7c3d9;
+/* 상태 배지. 기본 배지 대신 신규(성공 배지)처럼 옅은 바탕에 진한 글자로 맞춘다 */
+/* 재방문: 취소(빨강)와 구분되게 오류색에 정보색을 섞은 분홍 */
+.returningBadge.returningBadge {
+  --badge-color: color-mix(in srgb, var(--color-danger) 70%, var(--color-info));
+  color: var(--badge-color);
+  background: color-mix(in srgb, var(--badge-color) 7%, var(--color-white));
+  border: 1px solid color-mix(in srgb, var(--badge-color) 30%, var(--color-white));
 }
-.warmBadge.warmBadge {
-  color: #b84f00;
+.upcomingBadge.upcomingBadge {
+  color: var(--color-warning);
   background: var(--color-primary-faint);
   border: 1px solid var(--color-primary-line);
 }
-.redBadge.redBadge {
+.cancelledBadge.cancelledBadge {
   color: var(--color-danger-text);
   background: var(--color-danger-bg);
-  border: 1px solid #f5c2cf;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 30%, var(--color-white));
 }

@@ -29,8 +29,8 @@ const SORTS = [
 const SEGMENT_LABEL = { NEW: '신규', RETURNING: '재방문' };
 const HISTORY_STATUS = {
   COMPLETED: { label: '이용 완료', tone: 'success' },
-  UPCOMING: { label: '방문 예정', className: 'warmBadge' },
-  CANCELLED: { label: '취소', className: 'redBadge' },
+  UPCOMING: { label: '방문 예정', className: 'upcomingBadge' },
+  CANCELLED: { label: '취소', className: 'cancelledBadge' },
 };
 const CANCEL_TYPE_LABEL = {
   CUSTOMER: '고객 취소',
@@ -224,13 +224,7 @@ function CustomerTable({ customers, total, selectedId, hasFilter, onSelect }) {
                   이용 <strong>{customer.visitCount}회</strong>
                 </span>
                 <span>{formatMoney(customer.totalAmount)}</span>
-                <small>
-                  {customer.lastVisitAt
-                    ? `최근 ${datePart(customer.lastVisitAt)}`
-                    : customer.nextReservationAt
-                      ? `첫 방문 ${datePart(customer.nextReservationAt)} 예정`
-                      : '이용 전'}
-                </small>
+                <small>{describeVisit(customer)}</small>
               </span>
             </button>
           </li>
@@ -240,11 +234,18 @@ function CustomerTable({ customers, total, selectedId, hasFilter, onSelect }) {
   );
 }
 
+// 최근 이용일, 이용 전이면 첫 방문 예정일
+function describeVisit(customer) {
+  if (customer.lastVisitAt) return `최근 ${datePart(customer.lastVisitAt)}`;
+  if (customer.nextReservationAt) return `첫 방문 ${datePart(customer.nextReservationAt)} 예정`;
+  return '이용 전';
+}
+
 function SegmentBadge({ segment }) {
   return (
     <Badge
       tone={segment === 'NEW' ? 'success' : undefined}
-      className={segment === 'NEW' ? '' : styles.pinkBadge}
+      className={segment === 'NEW' ? '' : styles.returningBadge}
     >
       {SEGMENT_LABEL[segment] ?? segment}
     </Badge>

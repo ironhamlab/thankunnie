@@ -73,7 +73,6 @@ export default function OwnerDashboardPage() {
             id={`owner-view-${item.key}`}
             aria-selected={view === item.key}
             aria-controls={`owner-panel-${item.key}`}
-            className={view === item.key ? 'is-selected' : ''}
             onClick={() => selectView(item.key)}
           >
             {item.label}

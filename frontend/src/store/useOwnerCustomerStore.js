@@ -27,6 +27,8 @@ export const useOwnerCustomerStore = create((set, get) => ({
   memoError: null,
   // 저장 요청이 진행 중인 고객 ID. 다른 고객을 보다 돌아와도 같은 고객의 저장이 겹치지 않게 한다
   memoSavingUserIds: [],
+  // 상세를 불러오는 동안 끝난 저장. 그 상세 응답은 저장 전 메모일 수 있어 이 값으로 덮는다
+  savedMemoDuringLoad: null,
 
   loadCustomers: async (query) => {
     const requestId = get().listRequestId + 1;
@@ -64,11 +66,20 @@ export const useOwnerCustomerStore = create((set, get) => ({
       detailError: null,
       memoStatus: get().memoSavingUserIds.includes(userId) ? 'saving' : 'idle',
       memoError: null,
+      savedMemoDuringLoad: null,
     });
     try {
       const detail = await ownerCustomerApi.getCustomer(userId);
       if (get().detailRequestId === requestId) {
-        set({ detail, detailStatus: 'succeeded' });
+        const savedDuringLoad = get().savedMemoDuringLoad;
+        set({
+          detail:
+            savedDuringLoad?.requestId === requestId
+              ? { ...detail, memo: savedDuringLoad.memo }
+              : detail,
+          detailStatus: 'succeeded',
+          savedMemoDuringLoad: null,
+        });
       }
     } catch (error) {
       if (get().detailRequestId === requestId) {
@@ -82,6 +93,7 @@ export const useOwnerCustomerStore = create((set, get) => ({
 
   clearCustomer: () => {
     set((state) => ({
+      savedMemoDuringLoad: null,
       detailRequestId: state.detailRequestId + 1,
       detail: null,
       detailUserId: null,
@@ -115,6 +127,11 @@ export const useOwnerCustomerStore = create((set, get) => ({
         set((state) => ({
           memoStatus: 'succeeded',
           detail: state.detail ? { ...state.detail, memo: saved ?? null } : state.detail,
+          // 상세가 아직 오는 중이면 그 응답에 이 메모를 덮어쓴다
+          savedMemoDuringLoad:
+            state.detailStatus === 'loading'
+              ? { requestId: state.detailRequestId, memo: saved ?? null }
+              : state.savedMemoDuringLoad,
         }));
       }
       return true;
