@@ -81,7 +81,7 @@
 | `NOTIFICATION_005` | 400 | 알림에 고를 수 있는 시술이 아닙니다. | 업장 구독의 시술이 없거나, 그 매장의 판매 중인 일반 시술이 아님 |
 | `NOTIFICATION_006` | 404 | 받은 알림을 찾을 수 없습니다. | 없는 받은 알림, 다른 사람·다른 매장의 받은 알림을 읽음 처리 |
 
-받은 알림 조회·모두 읽음·스트림은 별도 코드가 없다. 비로그인은 `COMMON_401`, 고객이 아니면 `COMMON_403`, `category` 가 `RESERVATION`·`INTEREST` 가 아니면 `COMMON_400` 이다. 명세는 `docs/api/notification-inbox.md`.
+받은 알림 조회·모두 읽음·스트림은 별도 코드가 없다. 비로그인은 `COMMON_401`, 고객도 사장님도 아니면 `COMMON_403`, `category` 가 `RESERVATION`·`INTEREST` 가 아니면 `COMMON_400` 이다. 한 건 읽음은 없거나 남의 알림이면 `NOTIFICATION_006` 이다. 명세는 `docs/api/notification-inbox.md`.
 
 ## VACANCY
 

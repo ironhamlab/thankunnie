@@ -185,6 +185,17 @@ export default function Header() {
     closePanel();
   };
 
+  // 일반 클릭은 읽음이 끝난 뒤 이동한다. Ctrl/Cmd 등으로 새 탭을 여는 클릭은 그대로 둔다.
+  const handleLinkClick = async (event, item) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+      void handleItemClick(item);
+      return;
+    }
+    event.preventDefault();
+    await handleItemClick(item);
+    navigate(item.linkPath);
+  };
+
   const handleMarkAllRead = async () => {
     if (!isCustomer || unreadCount === 0 || isClearing) {
       return;
@@ -361,12 +372,7 @@ export default function Header() {
                             key={item.inboxId}
                           >
                             {item.linkPath ? (
-                              <Link
-                                to={item.linkPath}
-                                onClick={() => {
-                                  handleItemClick(item);
-                                }}
-                              >
+                              <Link to={item.linkPath} onClick={(event) => handleLinkClick(event, item)}>
                                 <InboxItemBody item={item} />
                               </Link>
                             ) : (

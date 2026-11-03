@@ -83,10 +83,14 @@ export default function OwnerBookingsPage() {
 
   // 알림이나 상세 보기로 예약을 고르면 포커스를 상세로 옮긴다.
   // 한 단 화면에서는 상세가 목록 아래에 있어 상세 위치로 스크롤도 한다.
+  // 같은 번호로 목록만 다시 불러올 때는 포커스·스크롤을 반복하지 않는다.
+  const focusedIdRef = useRef(null);
+
   useEffect(() => {
-    if (!linkedId || listStatus !== 'succeeded') {
+    if (!linkedId || listStatus !== 'succeeded' || focusedIdRef.current === linkedId) {
       return;
     }
+    focusedIdRef.current = linkedId;
     detailRef.current?.focus({ preventScroll: true });
     if (window.matchMedia(SINGLE_COLUMN_QUERY).matches) {
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

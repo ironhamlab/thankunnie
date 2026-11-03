@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import NotificationIcon from '@/components/icons/NotificationIcon';
 import { USER_ROLE } from '@/constants/userRole';
 import { useCurrentRole } from '@/hooks/useCurrentRole';
@@ -28,6 +28,7 @@ const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)')
  * 사장님이 로그인했고 탭이 보일 때 알림 스트림에 연결한다.
  */
 export default function OwnerInboxBell() {
+  const navigate = useNavigate();
   const token = useAuthStore((state) => state.token);
   const role = useCurrentRole();
   const hasSession = Boolean(token) || Boolean(getDevTestUser());
@@ -138,6 +139,17 @@ export default function OwnerInboxBell() {
     closePanel();
   };
 
+  // 일반 클릭은 읽음이 끝난 뒤 이동한다. Ctrl/Cmd 등으로 새 탭을 여는 클릭은 그대로 둔다.
+  const handleLinkClick = async (event, item) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+      void handleItemClick(item);
+      return;
+    }
+    event.preventDefault();
+    await handleItemClick(item);
+    navigate(item.linkPath);
+  };
+
   const handleMarkAllRead = async () => {
     if (!isOwner || unreadCount === 0 || isClearing) {
       return;
@@ -234,12 +246,7 @@ export default function OwnerInboxBell() {
                 key={item.inboxId}
               >
                 {item.linkPath ? (
-                  <Link
-                    to={item.linkPath}
-                    onClick={() => {
-                      handleItemClick(item);
-                    }}
-                  >
+                  <Link to={item.linkPath} onClick={(event) => handleLinkClick(event, item)}>
                     <InboxItemBody item={item} />
                   </Link>
                 ) : (
