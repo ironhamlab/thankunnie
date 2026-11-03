@@ -1,12 +1,13 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
+import AdminLayout from '@/components/layout/AdminLayout';
 import OwnerLayout from '@/components/layout/OwnerLayout';
 import Spinner from '@/components/common/Spinner';
 import PrivateRoute from '@/routes/PrivateRoute';
 import RoleRoute from '@/routes/RoleRoute';
 import { ROUTES } from '@/constants/routes';
-import { CUSTOMER_AREA_ROLES, OWNER_AREA_ROLES } from '@/constants/userRole';
+import { ADMIN_AREA_ROLES, CUSTOMER_AREA_ROLES, OWNER_AREA_ROLES } from '@/constants/userRole';
 
 const HomePage = lazy(() => import('@/pages/home/HomePage'));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
@@ -29,6 +30,7 @@ const MenusPage = lazy(() => import('@/pages/owner/MenusPage'));
 const SchedulePage = lazy(() => import('@/pages/owner/SchedulePage'));
 const VacancyManagePage = lazy(() => import('@/pages/owner/VacancyManagePage'));
 const OwnerBookingsPage = lazy(() => import('@/pages/owner/OwnerBookingsPage'));
+const AdminShopApplicationsPage = lazy(() => import('@/pages/admin/AdminShopApplicationsPage'));
 
 const LEGACY_EXPLORE_PATHS = ['/explore', '/explore-classic'];
 
@@ -101,6 +103,15 @@ export default function AppRouter() {
                 path={ROUTES.OWNER_RESERVATION_CANCEL_RESULT}
                 element={<CancelResultPage viewer="owner" />}
               />
+              <Route path={ROUTES.NOT_FOUND} element={<NotFoundPage />} />
+            </Route>
+          </Route>
+        </Route>
+        {/* 관리자 화면은 관리자로 로그인한 뒤에 들어간다 */}
+        <Route element={<PrivateRoute />}>
+          <Route element={<RoleRoute allow={ADMIN_AREA_ROLES} areaName="관리자 화면" />}>
+            <Route path={ROUTES.ADMIN} element={<AdminLayout />}>
+              <Route index element={<AdminShopApplicationsPage />} />
               <Route path={ROUTES.NOT_FOUND} element={<NotFoundPage />} />
             </Route>
           </Route>
