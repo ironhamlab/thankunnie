@@ -75,6 +75,11 @@ class AuthSignupVerificationIntegrationTest {
                 VALUES (9101, 'SERVICE', 1, '서비스 약관', 'Y', TIMESTAMP '2026-10-01 09:00:00',
                         TIMESTAMP '2026-10-01 09:00:00')
                 """);
+        jdbc.update("""
+                INSERT INTO TERMS (TERMS_ID, CODE, VERSION, TITLE, IS_REQUIRED, CREATED_AT, UPDATED_AT)
+                VALUES (9111, 'SHOP_SERVICE', 1, '매장 서비스 약관', 'Y', TIMESTAMP '2026-10-01 09:00:00',
+                        TIMESTAMP '2026-10-01 09:00:00')
+                """);
         when(smsClient.send(anyString(), anyString())).thenAnswer(invocation -> {
             var matcher = Pattern.compile("\\[([0-9]{6})\\]").matcher(invocation.<String>getArgument(1));
             assertThat(matcher.find()).isTrue();
@@ -161,29 +166,54 @@ class AuthSignupVerificationIntegrationTest {
     }
 
     @Test
-    @DisplayName("휴대폰 인증 없이 사업자 확인만으로 유선 연락처 매장을 가입한다")
-    void signupShop_businessVerifiedWithLandline_succeeds() throws Exception {
+    @DisplayName("매장은 고객이 쓰는 휴대폰 번호로도 인증번호를 받고 가입한다")
+    void signupShop_phoneUsedByCustomer_succeeds() throws Exception {
+        jdbc.update("""
+                INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
+                VALUES (9201, 'samephone', 'hash', '김언니', ?, TIMESTAMP '2026-10-01 09:00:00',
+                        TIMESTAMP '2026-10-01 09:00:00')
+                """, hyphenated(phone));
+
+        String id = sendAndVerify(phone, "shop");
+        mvc.perform(post("/api/v1/auth/shops/signup").contentType(MediaType.APPLICATION_JSON)
+                        .content(shopBody("phoneshop", phone, id, "1234567891", "테스트 대표")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.role").value("OWNER"));
+        assertThat(jdbc.queryForObject("SELECT PHONE FROM SHOP WHERE LOGIN_ID = 'phoneshop'", String.class))
+                .isEqualTo(hyphenated(phone));
+    }
+
+    @Test
+    @DisplayName("휴대폰 인증 없이 매장 가입하면 차단한다")
+    void signupShop_unverifiedPhone_rejected() throws Exception {
+        String id = send(phone, "shop");
+        mvc.perform(post("/api/v1/auth/shops/signup").contentType(MediaType.APPLICATION_JSON)
+                        .content(shopBody("unverifiedshop", phone, id, "1234567891", "테스트 대표")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("AUTH_004"));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM SHOP WHERE LOGIN_ID = 'unverifiedshop'", Integer.class))
+                .isZero();
+    }
+
+    @Test
+    @DisplayName("휴대폰·사업자 확인 후 매장을 가입하고 같은 사업자번호는 다시 가입할 수 없다")
+    void signupShop_businessVerified_succeeds() throws Exception {
         mvc.perform(post("/api/v1/auth/business/verify").contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"businessNumber":"1234567891","representativeName":"테스트 대표","openedOn":"2020-01-01"}
                                 """))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.verified").value(true));
-        String body = """
-                {"loginId":"nailshop","password":"CHANGE_ME-1234","categoryId":9001,
-                 "name":"언니네 네일","regionCode":"11680","address":"서울 강남구 테헤란로 1",
-                 "latitude":37.4979,"longitude":127.0276,"phone":"02-111-1111",
-                 "businessNumber":"1234567891","representativeName":"테스트 대표","openedOn":"2020-01-01"}
-                """;
-        mvc.perform(post("/api/v1/auth/shops/signup").contentType(MediaType.APPLICATION_JSON).content(body))
+        mvc.perform(post("/api/v1/auth/shops/signup").contentType(MediaType.APPLICATION_JSON)
+                        .content(shopBody("nailshop", phone, sendAndVerify(phone, "shop"), "1234567891", "테스트 대표")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.role").value("OWNER"));
-        assertThat(jdbc.queryForObject("SELECT PHONE FROM SHOP WHERE LOGIN_ID = 'nailshop'", String.class))
-                .isEqualTo("02-111-1111");
         assertThat(jdbc.queryForObject("SELECT BUSINESS_NUMBER FROM SHOP WHERE LOGIN_ID = 'nailshop'", String.class))
                 .isEqualTo("1234567891");
         verify(ntsBusinessClient, times(2)).validate("1234567891", "테스트 대표", LocalDate.of(2020, 1, 1));
+        String otherPhone = "0109876" + PHONE_SEQUENCE.incrementAndGet();
         mvc.perform(post("/api/v1/auth/shops/signup").contentType(MediaType.APPLICATION_JSON)
-                        .content(body.replace("nailshop", "secondshop")))
+                        .content(shopBody("secondshop", otherPhone, sendAndVerify(otherPhone, "shop"),
+                                "1234567891", "테스트 대표")))
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.error.code").value("AUTH_009"));
         // 서비스 사전 검사와 별개로 DB에서도 동일 번호의 저장을 차단한다.
         assertThatThrownBy(() -> jdbc.update("""
@@ -207,12 +237,7 @@ class AuthSignupVerificationIntegrationTest {
         doThrow(new BusinessException(ErrorCode.AUTH_BUSINESS_INVALID))
                 .when(ntsBusinessClient).validate("1234567891", "다른 대표", LocalDate.of(2020, 1, 1));
         mvc.perform(post("/api/v1/auth/shops/signup").contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"loginId":"changedshop","password":"CHANGE_ME-1234","categoryId":9001,
-                                 "name":"언니네 네일","regionCode":"11680","address":"서울 강남구 테헤란로 1",
-                                 "latitude":37.4979,"longitude":127.0276,"phone":"02-111-1111",
-                                 "businessNumber":"1234567891","representativeName":"다른 대표","openedOn":"2020-01-01"}
-                                """))
+                        .content(shopBody("changedshop", phone, sendAndVerify(phone, "shop"), "1234567891", "다른 대표")))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("AUTH_007"));
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM SHOP WHERE LOGIN_ID = 'changedshop'", Integer.class)).isZero();
     }
@@ -222,8 +247,12 @@ class AuthSignupVerificationIntegrationTest {
     }
 
     private String send(String targetPhone) throws Exception {
+        return send(targetPhone, "customer");
+    }
+
+    private String send(String targetPhone, String accountType) throws Exception {
         String response = mvc.perform(post("/api/v1/auth/phone/send").contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(Map.of("phone", targetPhone))))
+                        .content(mapper.writeValueAsString(Map.of("phone", targetPhone, "accountType", accountType))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.verified").value(false))
                 .andExpect(jsonPath("$.data.code").doesNotExist())
@@ -236,7 +265,11 @@ class AuthSignupVerificationIntegrationTest {
     }
 
     private String sendAndVerify(String targetPhone) throws Exception {
-        String id = send(targetPhone);
+        return sendAndVerify(targetPhone, "customer");
+    }
+
+    private String sendAndVerify(String targetPhone, String accountType) throws Exception {
+        String id = send(targetPhone, accountType);
         mvc.perform(post("/api/v1/auth/phone/verify").contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(Map.of("verificationId", id, "code", sentCode.get()))))
                 .andExpect(status().isOk())
@@ -248,5 +281,22 @@ class AuthSignupVerificationIntegrationTest {
         return mapper.writeValueAsString(Map.of("loginId", loginId, "password", "CHANGE_ME-1234",
                 "name", "김언니", "phone", customerPhone, "agreedTerms", List.of("SERVICE"),
                 "phoneVerificationId", verificationId));
+    }
+
+    private String shopBody(String loginId, String shopPhone, String verificationId, String businessNumber,
+            String representativeName) throws Exception {
+        return mapper.writeValueAsString(Map.ofEntries(Map.entry("loginId", loginId),
+                Map.entry("password", "CHANGE_ME-1234"), Map.entry("categoryId", 9001),
+                Map.entry("name", "언니네 네일"), Map.entry("regionCode", "11680"),
+                Map.entry("address", "서울 강남구 테헤란로 1"), Map.entry("latitude", 37.4979),
+                Map.entry("longitude", 127.0276), Map.entry("phone", shopPhone),
+                Map.entry("businessNumber", businessNumber), Map.entry("representativeName", representativeName),
+                Map.entry("openedOn", "2020-01-01"), Map.entry("agreedTerms", List.of("SHOP_SERVICE")),
+                Map.entry("phoneVerificationId", verificationId)));
+    }
+
+    // 010 + 4자리 + 4자리 숫자를 DB 저장 형식(010-0000-0000)으로 바꾼다
+    private static String hyphenated(String digits) {
+        return digits.substring(0, 3) + "-" + digits.substring(3, 7) + "-" + digits.substring(7);
     }
 }
