@@ -45,7 +45,7 @@ class AvailableTimeControllerTest {
         OffsetDateTime ten = OffsetDateTime.of(2026, 11, 2, 10, 0, 0, 0, ZoneOffset.ofHours(9));
         OffsetDateTime twenty = OffsetDateTime.of(2026, 11, 2, 20, 0, 0, 0, ZoneOffset.ofHours(9));
         given(availableTimeQueryService.getAvailableTimes(1L, DATE, 60))
-                .willReturn(new AvailableTimesResponse(1L, DATE, 60, List.of(ten, twenty), List.of(twenty)));
+                .willReturn(new AvailableTimesResponse(1L, DATE, 60, List.of(ten, twenty), List.of(twenty), List.of()));
 
         mockMvc.perform(get(URL).param("shopId", "1").param("date", "2026-11-02").param("durationMinutes", "60"))
                 .andExpect(status().isOk())
@@ -58,7 +58,7 @@ class AvailableTimeControllerTest {
     @DisplayName("소요 시간을 생략하면 30분으로 조회한다")
     void getAvailableTimes_noDuration_usesThirtyMinutes() throws Exception {
         given(availableTimeQueryService.getAvailableTimes(eq(1L), eq(DATE), eq(30)))
-                .willReturn(new AvailableTimesResponse(1L, DATE, 30, List.of(), List.of()));
+                .willReturn(new AvailableTimesResponse(1L, DATE, 30, List.of(), List.of(), List.of()));
 
         mockMvc.perform(get(URL).param("shopId", "1").param("date", "2026-11-02"))
                 .andExpect(status().isOk())
