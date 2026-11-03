@@ -80,10 +80,11 @@
 
 ## 알림 문자 발송
 
-`NotificationDispatchService` 는 매장 구독 단건 문자와 카테고리·지역 묶음 문자를 보내기 전에 `TermsAgreementService.hasWithdrawn(userId, SMS_NOTIFICATION)` 을 본다. 철회한 회원이면 단건은 `SKIPPED` 로 끝내고, 묶음은 쌓인 목록을 비운 뒤 보내지 않는다.
+`NotificationDispatchService` 는 매장 구독 단건 문자와 카테고리·지역 묶음 문자를 보내기 전에 `TermsAgreementService.hasAgreed(userId, SMS_NOTIFICATION)` 을 본다. 동의하지 않은 회원이면 단건은 `SKIPPED` 로 끝내고, 묶음은 쌓인 목록을 비운 뒤 보내지 않는다.
 
-- `hasWithdrawn` 은 철회한 동의가 있고 살아 있는 동의가 없을 때만 true 다. 약관 도입 전에 등록한 구독처럼 동의 기록이 아예 없는 회원에게는 지금처럼 보낸다.
-- 예약 확정·취소 문자는 거래 안내라 철회와 관계없이 보낸다.
+- 마이페이지 체크박스(내 약관 동의 조회)와 같은 기준이라, 체크가 꺼져 있으면 문자도 나가지 않는다.
+- 철회한 회원, 동의 기록이 없는 회원(구독 등록 시 동의 검사 도입 전에 만든 구독), 약관 개정 후 이전 버전에만 동의한 회원 모두 다시 동의하기 전까지 받지 않는다.
+- 예약 확정·취소 문자는 거래 안내라 동의와 관계없이 보낸다.
 
 ## 다른 도메인에서 동의 검사 (UNNIE-147)
 

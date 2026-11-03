@@ -117,6 +117,9 @@ class NotificationDispatchServiceTest {
             NotificationFixture.user(jdbcTemplate, USER_ID);
             NotificationFixture.user(jdbcTemplate, OTHER_USER_ID);
         });
+        NotificationFixture.smsTerms(jdbcTemplate);
+        NotificationFixture.smsAgreement(jdbcTemplate, USER_ID);
+        NotificationFixture.smsAgreement(jdbcTemplate, OTHER_USER_ID);
         given(solapiSmsClient.send(anyString(), anyString())).willReturn(SmsSendResult.success("G4V_TEST"));
     }
 
@@ -965,6 +968,39 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
+    @DisplayName("알림 문자 수신 동의 기록이 없는 회원에게는 보내지 않고 SKIPPED 로 남긴다")
+    void sendClaimedJob_noSmsAgreement_marksSkipped() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        notificationSubscriptionRepository.save(store(USER_ID));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+        jdbcTemplate.update("DELETE FROM USER_TERMS_AGREEMENT WHERE USER_ID = ?", USER_ID);
+
+        notificationDispatchService.sendClaimedJob(job);
+
+        NotificationDispatch saved = notificationDispatchRepository.findById(job.getId()).orElseThrow();
+        assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.SKIPPED);
+        verify(solapiSmsClient, never()).send(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("문자 수신 약관을 개정하면 이전 버전에만 동의한 회원에게는 보내지 않는다")
+    void sendClaimedJob_agreedOldVersionOnly_marksSkipped() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        notificationSubscriptionRepository.save(store(USER_ID));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+        jdbcTemplate.update("""
+                INSERT INTO TERMS (TERMS_ID, CODE, VERSION, TITLE, IS_REQUIRED, CREATED_AT, UPDATED_AT)
+                VALUES (9106, 'SMS_NOTIFICATION', 2, '알림 문자 수신', 'N', ?, ?)
+                """, NOW, NOW);
+
+        notificationDispatchService.sendClaimedJob(job);
+
+        NotificationDispatch saved = notificationDispatchRepository.findById(job.getId()).orElseThrow();
+        assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.SKIPPED);
+        verify(solapiSmsClient, never()).send(anyString(), anyString());
+    }
+
+    @Test
     @DisplayName("알림 문자 수신을 철회한 회원에게는 묶음 문자를 보내지 않고 목록만 비운다")
     void flushCategoryRegionSummaries_smsWithdrawn_clearsWithoutSending() {
         NotificationSubscription subscription = notificationSubscriptionRepository.save(
@@ -1107,15 +1143,7 @@ class NotificationDispatchServiceTest {
 
     // 문자 수신에 동의했다가 철회한 회원으로 만든다
     private void withdrawSmsAgreement(long userId) {
-        jdbcTemplate.update("""
-                INSERT INTO TERMS (TERMS_ID, CODE, VERSION, TITLE, IS_REQUIRED, CREATED_AT, UPDATED_AT)
-                VALUES (9105, 'SMS_NOTIFICATION', 1, '문자 수신', 'N', ?, ?)
-                """, NOW, NOW);
-        jdbcTemplate.update("""
-                INSERT INTO USER_TERMS_AGREEMENT
-                    (AGREEMENT_ID, USER_ID, TERMS_ID, AGREED_AT, WITHDRAWN_AT, CREATED_AT, UPDATED_AT)
-                VALUES (9201, ?, 9105, ?, ?, ?, ?)
-                """, userId, NOW.minusDays(1), NOW, NOW, NOW);
+        jdbcTemplate.update("UPDATE USER_TERMS_AGREEMENT SET WITHDRAWN_AT = ? WHERE USER_ID = ?", NOW, userId);
     }
 
     private NotificationDispatch claimedReopenedJob(LocalDateTime startsAt) {

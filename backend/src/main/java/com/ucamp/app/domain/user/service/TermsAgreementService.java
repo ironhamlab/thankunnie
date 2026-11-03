@@ -34,7 +34,7 @@ import com.ucamp.app.domain.user.repository.UserTermsAgreementRepository;
  * <p>동의는 항상 코드별 <b>최신 버전</b> 약관을 기준으로 한다. 약관을 개정해 새 버전 행을 넣으면
  * 이전 버전에만 동의한 회원은 미동의로 판단되어 다시 동의를 받게 된다.
  * 다른 도메인은 {@link #requireAgreed(Long, TermsCode)} 로 선택 동의(문자 수신·초보 시술 촬영) 여부를 검사한다.
- * 선택 약관은 철회할 수 있고, 알림 문자 발송은 {@link #hasWithdrawn(Long, TermsCode)} 로 철회한 회원을 건너뛴다.
+ * 선택 약관은 철회할 수 있고, 알림 문자 발송은 {@link #hasAgreed(Long, TermsCode)} 로 동의한 회원에게만 보낸다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -153,15 +153,6 @@ public class TermsAgreementService {
         Terms terms = latestTerms().get(code);
         return terms != null
                 && agreementRepository.existsByUserIdAndTermsIdAndWithdrawnAtIsNull(userId, terms.getTermsId());
-    }
-
-    /**
-     * 회원이 해당 약관 동의를 철회한 상태인지. 철회한 동의가 있고 살아 있는 동의가 없을 때 true.
-     * 약관 도입 전에 등록한 구독처럼 동의 기록이 아예 없는 회원은 false 라, 알림 문자 발송을 막지 않는다.
-     */
-    public boolean hasWithdrawn(Long userId, TermsCode code) {
-        List<UserTermsAgreement> agreements = agreementsOf(userId, code);
-        return !agreements.isEmpty() && agreements.stream().noneMatch(UserTermsAgreement::isActive);
     }
 
     /**

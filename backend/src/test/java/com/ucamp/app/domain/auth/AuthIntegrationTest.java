@@ -367,24 +367,14 @@ class AuthIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[?(@.code == 'SMS_NOTIFICATION')]").isEmpty());
         assertThat(termsAgreementService.hasAgreed(userId, TermsCode.SMS_NOTIFICATION)).isFalse();
-        assertThat(termsAgreementService.hasWithdrawn(userId, TermsCode.SMS_NOTIFICATION)).isTrue();
 
         mvc.perform(put("/api/v1/users/me/terms-agreements/SMS_NOTIFICATION")
                         .header(HttpHeaders.AUTHORIZATION, bearer(data)))
                 .andExpect(status().isOk());
         assertThat(termsAgreementService.hasAgreed(userId, TermsCode.SMS_NOTIFICATION)).isTrue();
-        assertThat(termsAgreementService.hasWithdrawn(userId, TermsCode.SMS_NOTIFICATION)).isFalse();
         assertThat(jdbc.queryForObject(
                 "SELECT COUNT(*) FROM USER_TERMS_AGREEMENT WHERE USER_ID = ? AND TERMS_ID = 9105",
                 Integer.class, userId)).isEqualTo(1);
-    }
-
-    @Test
-    @DisplayName("동의 기록이 없는 회원은 철회 상태로 보지 않는다")
-    void hasWithdrawn_withoutAgreement_returnsFalse() throws Exception {
-        long userId = data(signupCustomer("unnie16").andExpect(status().isCreated())).get("userId").asLong();
-
-        assertThat(termsAgreementService.hasWithdrawn(userId, TermsCode.SMS_NOTIFICATION)).isFalse();
     }
 
     @Test
