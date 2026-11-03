@@ -10,3 +10,4 @@ export const USER_ROLE = {
 // 화면 영역별 접근 가능한 역할. 관리자 화면이 생기기 전까지 관리자는 고객 영역을 쓴다
 export const CUSTOMER_AREA_ROLES = [USER_ROLE.CUSTOMER, USER_ROLE.ADMIN];
 export const OWNER_AREA_ROLES = [USER_ROLE.OWNER];
+export const ADMIN_AREA_ROLES = [USER_ROLE.ADMIN];

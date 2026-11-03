@@ -33,6 +33,8 @@ export const ROUTES = {
   OWNER_RESERVATION_CANCEL: '/owner/bookings/:reservationId/cancel',
   // 매장 취소 결과 (E 담당)
   OWNER_RESERVATION_CANCEL_RESULT: '/owner/bookings/:reservationId/cancel/result',
+  // 관리자: 매장 가입 신청 승인·거절
+  ADMIN: '/admin',
   // 이전 시연 주소(/design/...) 호환용. 접속 시 /design 을 뺀 주소로 이동한다.
   LEGACY_DESIGN: '/design/*',
   NOT_FOUND: '*',

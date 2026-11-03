@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.policy.BookingPolicy;
+import com.ucamp.app.domain.auth.entity.ShopAccountStatus;
+import com.ucamp.app.domain.auth.repository.ShopAccountRepository;
 import com.ucamp.app.domain.reservation.entity.Reservation;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
@@ -40,14 +42,16 @@ public class AvailabilityService {
     private final ShopBusinessHourRepository shopBusinessHourRepository;
     private final ShopScheduleExceptionRepository shopScheduleExceptionRepository;
     private final ReservationRepository reservationRepository;
+    private final ShopAccountRepository shopAccountRepository;
     private final Clock clock;
 
     public AvailabilityService(ShopBusinessHourRepository shopBusinessHourRepository,
             ShopScheduleExceptionRepository shopScheduleExceptionRepository,
-            ReservationRepository reservationRepository, Clock clock) {
+            ReservationRepository reservationRepository, ShopAccountRepository shopAccountRepository, Clock clock) {
         this.shopBusinessHourRepository = shopBusinessHourRepository;
         this.shopScheduleExceptionRepository = shopScheduleExceptionRepository;
         this.reservationRepository = reservationRepository;
+        this.shopAccountRepository = shopAccountRepository;
         this.clock = clock;
     }
 
@@ -106,6 +110,10 @@ public class AvailabilityService {
         requirePositive(durationMinutes);
         LocalDateTime now = LocalDateTime.now(clock);
         SalePolicy.validateBookable(startsAt, now);
+        // 화면을 열어 둔 사이 승인이 취소된 매장에 예약이 들어가지 않게 한다. 잠금 뒤에 읽어 승인 취소와 순서가 맞는다
+        if (!shopAccountRepository.existsByShopIdAndStatus(shopId, ShopAccountStatus.ACTIVE)) {
+            throw new BusinessException(ErrorCode.VACANCY_NOT_OPEN_TIME);
+        }
         TimeRange range = new TimeRange(startsAt, startsAt.plusMinutes(durationMinutes));
         Schedule schedule = loadSchedule(shopId, range.start(), range.end(), now);
         if (schedule.reservedRanges().stream().anyMatch(range::overlaps)) {

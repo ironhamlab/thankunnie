@@ -20,6 +20,8 @@ import AuthCard from './components/AuthCard';
 import AuthField from './components/AuthField';
 import TermsAgreementFields from './components/TermsAgreementFields';
 import styles from './SignupPage.module.css';
+import useSignupVerification from '@/hooks/useSignupVerification';
+import SignupVerificationFields from './components/SignupVerificationFields';
 
 const EMPTY_FORM = { loginId: '', password: '', passwordConfirm: '', name: '', phone: '' };
 
@@ -36,6 +38,7 @@ export default function SignupPage() {
   const signup = useAuthStore((state) => state.signup);
   const clearError = useAuthStore((state) => state.clearError);
   const [form, setForm] = useState(EMPTY_FORM);
+  const verification = useSignupVerification(ACCOUNT_TYPE.CUSTOMER, form.loginId, form.phone);
   const [fieldErrors, setFieldErrors] = useState({});
   const allTerms = useTermsStore((state) => state.terms);
   const termsStatus = useTermsStore((state) => state.status);
@@ -60,6 +63,8 @@ export default function SignupPage() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+    if (name === 'loginId') verification.resetLoginId();
+    if (name === 'phone') verification.resetPhone();
     setForm((prev) => ({ ...prev, [name]: value }));
     setFieldErrors((prev) => ({ ...prev, [name]: '' }));
   };
@@ -67,11 +72,15 @@ export default function SignupPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     const errors = collectErrors({
-      loginId: validateLoginId(form.loginId),
+      loginId:
+        validateLoginId(form.loginId) ||
+        (!verification.isLoginIdChecked ? '아이디 중복 확인을 해 주세요.' : ''),
       password: validatePassword(form.password),
       passwordConfirm: validatePasswordConfirm(form.password, form.passwordConfirm),
       name: validateRequired(form.name, '이름'),
-      phone: validateMobilePhone(form.phone),
+      phone:
+        validateMobilePhone(form.phone) ||
+        (!verification.isPhoneVerified ? '휴대폰 인증을 완료해 주세요.' : ''),
       terms: terms.some((item) => item.required && !agreedTerms.includes(item.code))
         ? '필수 약관에 모두 동의해 주세요.'
         : '',
@@ -87,6 +96,7 @@ export default function SignupPage() {
         name: form.name.trim(),
         phone: form.phone,
         agreedTerms,
+        phoneVerificationId: verification.phoneVerificationId,
       });
       navigate(ROUTES.HOME, { replace: true });
     } catch {
@@ -103,7 +113,12 @@ export default function SignupPage() {
       description="가입하면 바로 빈자리 예약과 알림 구독을 이용할 수 있어요."
     >
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
-        <AccountFields value={form} onChange={handleChange} errors={fieldErrors} />
+        <AccountFields
+          value={form}
+          onChange={handleChange}
+          errors={fieldErrors}
+          verification={verification}
+        />
         <AuthField
           label="이름"
           name="name"
@@ -121,9 +136,10 @@ export default function SignupPage() {
           onChange={handleChange}
           autoComplete="tel"
           placeholder="010-1234-5678"
-          hint="빈자리·예약 확정·취소 문자를 받을 번호예요. 번호가 없으면 문자는 가지 않습니다."
-          error={fieldErrors.phone}
+          hint="본인 휴대폰으로 인증해 주세요. 예약·빈자리 알림 수신 번호로 사용됩니다."
+          error={verification.isPhoneVerified ? '' : fieldErrors.phone}
         />
+        <SignupVerificationFields verification={verification} mode="phone" />
         {isTermsReady && (
           <TermsAgreementFields
             terms={terms}
