@@ -5,7 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * 사장님 매출·예약 분석. 시술일 기준이며 확정·취소 완료 예약만 센다.
+ * 매장 매출·예약 분석. 시술일 기준이며 확정·취소 완료 예약만 센다.
  *
  * @param granularity      추이 단위. 기간이 62일 이하면 DAY, 넘으면 MONTH
  * @param serviceStartDate 서비스 이용 시작 날짜 (매장 가입일과 첫 예약일 중 이른 날). "전체" 조회의 시작 날짜

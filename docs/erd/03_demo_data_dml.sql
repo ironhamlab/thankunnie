@@ -17,11 +17,11 @@
 -- 기존 통합·시연용 매장 11곳 (UNNIE-144). 파일 아래에 UNNIE-164 신규 매장 50곳을 추가한다.
 -- - 카테고리마다 2곳, 매장당 시술 2개에 결제 시연 매장 1곳(111, 시술 1개). ID 는 매장 101~111, 영업시간 110~216, 시술 201~221,
 --   열기·닫기 401~, 고객 103~105, 약관 동의 101~, 예약·결제·취소 101~ 로 기존 고정값·시퀀스(1000~)와 겹치지 않게 둔다.
--- - 사장님 계정은 owner101~owner111, 고객 계정은 customer3~customer5 이고 비밀번호는 다른 테스트 계정과 같다.
+-- - 매장 계정은 owner101~owner111, 고객 계정은 customer3~customer5 이고 비밀번호는 다른 테스트 계정과 같다.
 -- - 111 신촌 백원네일은 실제 결제(PG) 시연용이다. 판매가 100원이라 예약금도 100원이고, 날마다 13:00~18:00 을 연다.
 -- - 나머지 열린 시간대는 2026-10-31(토)~11-20(금) 매일(주말 포함) 하루 5곳씩 번갈아 둔다.
 --   낮 14:00~17:00 은 당일 취소로 빈 자리(휴무일이면 휴무일 특별 영업), 저녁 마감 후 2시간은 연장 영업이다.
--- - 임박·초임박 장면은 고정 날짜로 맞출 수 없으므로 시연 때 사장님 화면에서 직접 연다.
+-- - 임박·초임박 장면은 고정 날짜로 맞출 수 없으므로 시연 때 매장 화면에서 직접 연다.
 -- =====================================================================
 
 -- 고객: customer3~5 (여러 고객의 예약이 섞여 보이게)
@@ -714,7 +714,7 @@ INSERT INTO SHOP_SCHEDULE_EXCEPTION (EXCEPTION_ID, SHOP_ID, RESERVATION_ID, EXCE
 VALUES (505, 109, NULL, 'OPEN', TIMESTAMP '2026-11-20 20:00:00', TIMESTAMP '2026-11-20 22:00:00', '연장 영업',
         TIMESTAMP '2026-10-30 09:00:00', TIMESTAMP '2026-10-30 09:00:00');
 
--- 점심 닫기 (사장님 화면의 닫음 표시 확인용)
+-- 점심 닫기 (매장 화면의 닫음 표시 확인용)
 INSERT INTO SHOP_SCHEDULE_EXCEPTION (EXCEPTION_ID, SHOP_ID, RESERVATION_ID, EXCEPTION_TYPE, STARTS_AT, ENDS_AT, REASON,
                                      CREATED_AT, UPDATED_AT)
 VALUES (506, 101, NULL, 'CLOSE', TIMESTAMP '2026-11-04 12:00:00', TIMESTAMP '2026-11-04 13:00:00', '점심시간',
@@ -951,7 +951,7 @@ VALUES (102, 113, 105, 'CUSTOMER', 20000, 20000, NULL, 'REQUESTED',
         TIMESTAMP '2026-10-30 10:50:00', NULL, TIMESTAMP '2026-10-30 10:50:00', TIMESTAMP '2026-10-30 10:50:00');
 
 -- ---------------------------------------------------------------------
--- 사장님 대시보드 시연 (UNNIE-154): 매장 101 홍대 핑크네일 (owner101)
+-- 매장 대시보드 시연 (UNNIE-154): 매장 101 홍대 핑크네일 (owner101)
 -- - 오늘 운영 현황·매출·예약 통계가 비어 보이지 않도록 매장 101 한 곳에 2026-10-01 ~ 11-20 예약을 몰아 둔다.
 --   10월(지난달)·11월(이번 달)에 확정 예약, 고객·대리·매장 사유 취소, 취소된 시간의 재판매, 초임박(시작 3시간 이내) 판매가 섞여 있다.
 -- - 발표일 2026-11-06 은 10:00·12:00·17:30·19:00 예약이 있고 그 사이 시간은 비어 있다.
@@ -959,7 +959,7 @@ VALUES (102, 113, 105, 'CUSTOMER', 20000, 20000, NULL, 'REQUESTED',
 -- - ID: 고객 106~110, 예약·결제·취소 501~, 매장 사유 취소로 닫은 시간 601~ (위 열기·닫기 401~529 와 겹치지 않게).
 -- - 예약은 대시보드 전용 고객 106~110 만 쓴다. 매장 101·고객 106~110 데이터는 03_demo_data_cleanup.sql 로 함께 지워진다.
 -- - 금액 규칙: 예약금 = min(적용가, 20,000), 시작 3시간 이내 점유는 초임박가, 환불은 이틀 전 100%·하루 전 50%·당일 0%,
---   매장 사유 취소는 전액, 대리 취소는 사장님이 정한 금액. 0원 환불 취소는 결제를 취소하지 않으므로 결제는 PAID 로 남는다.
+--   매장 사유 취소는 전액, 대리 취소는 매장이 정한 금액. 0원 환불 취소는 결제를 취소하지 않으므로 결제는 PAID 로 남는다.
 -- ---------------------------------------------------------------------
 -- 대시보드 전용 시연 고객 customer6~10 (비밀번호는 다른 테스트 계정과 같음). 다른 시연 계정의 '내 예약'에 섞이지 않게 따로 둔다
 INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, STATUS, ROLE, CREATED_AT, UPDATED_AT)
@@ -4636,7 +4636,7 @@ VALUES (5, 101, 113, '파스텔 계열 좋아함. 사진 촬영 동의', TIMESTA
 -- ID는 SEQ_SHOP / SEQ_TREATMENT / SEQ_SHOP_BUSINESS_HOUR / SEQ_SHOP_SCHEDULE_EXCEPTION.NEXTVAL로 발급한다.
 -- 앱과 같은 시퀀스를 소비하므로 고정 PK나 시퀀스 재시작 없이 이후 앱 생성과 충돌하지 않는다.
 -- 신규 로그인 ID는 demo164_s01~demo164_s50이다. PASSWORD_HASH는 명백한 더미 CHANGE_ME이며 로그인할 수 없다.
--- 실제 자격 증명은 작성하지 않는다. 사장님 로그인·결제 시연은 기존 초기/시연 계정을 사용한다.
+-- 실제 자격 증명은 작성하지 않는다. 매장 로그인·결제 시연은 기존 초기/시연 계정을 사용한다.
 -- 주소·좌표는 OpenStreetMap 원본의 공개 주소 지점으로 대조했다. 실제 입점·업체 정보가 아니다.
 -- OSM 기여자, ODbL 1.0: https://www.openstreetmap.org/copyright
 -- 원본 지점은 2026-11-02 Overpass API로 조회했고 매장별 OSM 원본 ID를 각 INSERT 위 주석에 남겼다.
@@ -9975,6 +9975,19 @@ WHERE TREATMENT_ID = 218 AND SHOP_ID = 109 AND IMAGE_URL IS NULL;
 UPDATE TREATMENT SET IMAGE_URL = '/api/v1/shops/111/treatments/221/images/6be71120-ede4-48f2-b797-8196d0c437a7.jpg'
 WHERE TREATMENT_ID = 221 AND SHOP_ID = 111 AND IMAGE_URL IS NULL;
 -- END UNNIE-169 EXISTING DEMO IMAGE LINKS
+
+-- BEGIN UNNIE-186 DEMO SHOP APPLICATIONS
+-- 관리자 가입 승인 화면 시연용 승인 대기 매장. PASSWORD_HASH 와 BUSINESS_NUMBER 가 더미라 로그인할 수 없고, 탐색에도 노출되지 않는다.
+INSERT INTO SHOP (SHOP_ID, CATEGORY_ID, LOGIN_ID, PASSWORD_HASH, NAME, REGION_CODE, ADDRESS, LATITUDE, LONGITUDE, PHONE, BUSINESS_NUMBER, DESCRIPTION, STATUS, CREATED_AT, UPDATED_AT)
+SELECT SEQ_SHOP.NEXTVAL, 1, 'demo186_p1', 'CHANGE_ME', '연남 달빛네일', '11440', '서울특별시 마포구 동교로 200', 37.5610000, 126.9250000, '02-555-1861', '0000001861', '젤네일과 손 케어 전문 1인 샵이에요.', 'PENDING', TIMESTAMP '2026-11-01 10:00:00', TIMESTAMP '2026-11-01 10:00:00'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM SHOP WHERE LOGIN_ID = 'demo186_p1');
+INSERT INTO SHOP (SHOP_ID, CATEGORY_ID, LOGIN_ID, PASSWORD_HASH, NAME, REGION_CODE, ADDRESS, LATITUDE, LONGITUDE, PHONE, BUSINESS_NUMBER, DESCRIPTION, STATUS, CREATED_AT, UPDATED_AT)
+SELECT SEQ_SHOP.NEXTVAL, 1, 'demo186_p2', 'CHANGE_ME', '스시 땡잡은 오마카세', '11680', '서울특별시 강남구 선릉로 300', 37.5040000, 127.0490000, '02-555-1862', '0000001862', '런치 오마카세 코스를 판매합니다.', 'PENDING', TIMESTAMP '2026-11-02 11:30:00', TIMESTAMP '2026-11-02 11:30:00'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM SHOP WHERE LOGIN_ID = 'demo186_p2');
+INSERT INTO SHOP (SHOP_ID, CATEGORY_ID, LOGIN_ID, PASSWORD_HASH, NAME, REGION_CODE, ADDRESS, LATITUDE, LONGITUDE, PHONE, BUSINESS_NUMBER, DESCRIPTION, STATUS, CREATED_AT, UPDATED_AT)
+SELECT SEQ_SHOP.NEXTVAL, 4, 'demo186_p3', 'CHANGE_ME', '서촌 결피부', '11110', '서울특별시 종로구 자하문로 40', 37.5800000, 126.9700000, '02-555-1863', '0000001863', '진정 관리와 수분 관리를 합니다.', 'PENDING', TIMESTAMP '2026-11-03 09:00:00', TIMESTAMP '2026-11-03 09:00:00'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM SHOP WHERE LOGIN_ID = 'demo186_p3');
+-- END UNNIE-186 DEMO SHOP APPLICATIONS
 
 -- BEGIN UNNIE-170 DEMO CUSTOMER RESERVATIONS
 -- 2026-11-02~2026-11-20 시연 매장 영업시간을 시연 고객 확정 예약으로 채워 빈자리를 일부만 남긴다.

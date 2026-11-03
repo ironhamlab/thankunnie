@@ -41,6 +41,7 @@ public interface ExploreShopDetailRepository extends Repository<Treatment, Long>
             where (:categoryId is null or s.categoryId = :categoryId)
               and (:keyword is null
                    or upper(s.name) like :keyword escape '!'
+                   or upper(s.address) like :keyword escape '!'
                    or exists (select t.treatmentId from Treatment t
                               where t.shop.shopId = s.shopId
                                 and t.status = """
@@ -83,7 +84,7 @@ public interface ExploreShopDetailRepository extends Repository<Treatment, Long>
      * 노출 중인 매장을 빈자리 유무와 상관없이 매장 ID 순으로 조회한다.
      *
      * @param categoryId 해당 분야 매장만. null 이면 전체
-     * @param keyword    매장명·판매 중인 시술명 LIKE 패턴(대문자, ! 로 이스케이프). null 이면 조건 없음
+     * @param keyword    매장명·주소·판매 중인 시술명 LIKE 패턴(대문자, ! 로 이스케이프). null 이면 조건 없음
      * @return 노출 중인 매장 목록
      */
     @Query(FIND_SHOPS)

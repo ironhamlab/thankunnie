@@ -277,7 +277,7 @@ class ReservationQueueServiceTest {
     }
 
     @Test
-    @DisplayName("사장님은 줄에 서거나 나가거나 차례를 확인받을 수 없다")
+    @DisplayName("매장 계정은 줄에 서거나 나가거나 차례를 확인받을 수 없다")
     void owner_forbidden() {
         AuthUser owner = new AuthUser(9L, UserRole.OWNER, SHOP_ID);
         queueService.joinOrRefresh(FIRST, queueRequest());

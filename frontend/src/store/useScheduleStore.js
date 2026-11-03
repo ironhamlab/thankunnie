@@ -35,7 +35,7 @@ export const useScheduleStore = create((set, get) => ({
       // 매장 ID·역할은 인증 공통 API에서 받아 사용한다.
       const user = await scheduleApi.getCurrentUser();
       if (user?.role !== 'OWNER' || !user.shopId) {
-        throw { code: 'COMMON_403', message: '사장님 계정으로 로그인해 주세요.' };
+        throw { code: 'COMMON_403', message: '매장 계정으로 로그인해 주세요.' };
       }
       const { from, to } = exceptionRange();
       const [businessHours, exceptions] = await Promise.all([

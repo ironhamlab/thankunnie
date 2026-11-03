@@ -9,7 +9,7 @@ import styles from './RoleRoute.module.css';
 
 const ROLE_LABEL = {
   [USER_ROLE.CUSTOMER]: '고객',
-  [USER_ROLE.OWNER]: '사장님',
+  [USER_ROLE.OWNER]: '매장',
   [USER_ROLE.ADMIN]: '관리자',
 };
 
@@ -21,7 +21,7 @@ const ROLE_LABEL = {
  *
  * @param {string[]} allow 허용 역할 (constants/userRole)
  * @param {string} areaName 확인 창 문구에 쓸 영역 이름 (예: '고객 화면')
- * @param {string[]} [redirectPaths] 확인 창 없이 역할별 첫 화면으로 바로 보낼 주소 (예: 사장님이 홈에 온 경우)
+ * @param {string[]} [redirectPaths] 확인 창 없이 역할별 첫 화면으로 바로 보낼 주소 (예: 매장이 홈에 온 경우)
  */
 export default function RoleRoute({ allow, areaName, redirectPaths = [] }) {
   const navigate = useNavigate();
@@ -51,7 +51,7 @@ export default function RoleRoute({ allow, areaName, redirectPaths = [] }) {
         </p>
         <div className={styles.actions}>
           <Button type="button" variant="soft" onClick={handleBack}>
-            {role === USER_ROLE.OWNER ? '사장님 센터로 돌아가기' : '홈으로 돌아가기'}
+            {role === USER_ROLE.OWNER ? '매장 센터로 돌아가기' : '홈으로 돌아가기'}
           </Button>
           <Button type="button" variant="primary" onClick={handleLogout}>
             로그아웃

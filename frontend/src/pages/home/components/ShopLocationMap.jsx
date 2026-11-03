@@ -20,6 +20,7 @@ const MAP_BOUNDS_PADDING = { top: 60, right: 110, bottom: 150, left: 100 };
  * @param pinnedShopId  목록의 '지도에서 보기'로 고른 매장 ID (문자열)
  * @param onPinShop     지도에서 보기 상태에서 다른 핀을 누르면 그 매장 ID 를 받는다
  * @param focusPosition 목록에서 매장을 고를 때마다 새로 들어오는 { lat, lng, zoom }. 그 매장으로 지도를 확대해 옮긴다
+ * @param myLocation    목록과 같이 쓰는 useMyLocation() 결과. 넘기면 지도에 내 위치 버튼을 보인다
  */
 export default function ShopLocationMap({
   shops,
@@ -31,15 +32,17 @@ export default function ShopLocationMap({
   pinnedShopId,
   onPinShop,
   focusPosition,
+  myLocation,
 }) {
   const [pickedId, setPickedId] = useState(null);
   const [mapUnavailable, setMapUnavailable] = useState(false);
   // 지도에서 보기로 고른 매장, 목록에서 펼친 매장, 지도에서 누른 매장 순으로 보여준다
-  const selected =
+  const chosen =
     shops.find((shop) => String(shop.shopId) === pinnedShopId) ??
     shops.find((shop) => String(shop.shopId) === expandedShopId) ??
-    shops.find((shop) => String(shop.shopId) === pickedId) ??
-    shops[0];
+    shops.find((shop) => String(shop.shopId) === pickedId);
+  // 아무것도 고르지 않았으면 첫 매장을 아래 패널에 보여주되, 지도를 그 매장으로 옮기지는 않는다
+  const selected = chosen ?? shops[0];
   const pick = (shopId) => {
     setPickedId(shopId);
     // 지도에서 보기로 고른 매장이 있으면 그것을 바꾸고, 다른 매장을 펼쳐 둔 상태라면 지도에서 고른 매장을 바로 펼친다
@@ -57,11 +60,13 @@ export default function ShopLocationMap({
         <ExploreMap
           shops={shops}
           selectedId={selected ? String(selected.shopId) : null}
+          autoSelected={!chosen}
           onSelect={pick}
           onUnavailable={handleUnavailable}
           fitToShops
           boundsPadding={MAP_BOUNDS_PADDING}
           focusPosition={focusPosition}
+          myLocation={myLocation}
         />
       )}
       <span className={styles.count}>매장 {shops.length}곳</span>
@@ -96,15 +101,12 @@ export default function ShopLocationMap({
               <Button
                 as={Link}
                 variant="primary"
-                to={shopPagePath(
-                  selected.shopId,
-                  hasVacancy
-                    ? {
-                        date: datePart(selected.earliestStartsAt),
-                        model: model || selected.modelOnly,
-                      }
-                    : {},
-                )}
+                to={shopPagePath(selected.shopId, {
+                  view: 'info',
+                  // 상세정보에서 예약하기로 넘어가면 첫 영업일이 아니라 빈자리가 있는 날짜를 고른 채로 보여준다
+                  date: hasVacancy ? datePart(selected.earliestStartsAt) : undefined,
+                  model: hasVacancy && (model || selected.modelOnly),
+                })}
               >
                 매장 보기
               </Button>

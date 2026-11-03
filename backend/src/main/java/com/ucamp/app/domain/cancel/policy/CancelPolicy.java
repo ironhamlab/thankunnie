@@ -20,7 +20,7 @@ public final class CancelPolicy {
 
     /**
      * 요청자가 이 예약을 취소할 수 있는 사람인지 검사한다.
-     * 고객은 본인 예약, 사장님은 본인 매장 예약만 취소할 수 있다. 관리자는 취소하지 않는다.
+     * 고객은 본인 예약, 매장은 본인 매장 예약만 취소할 수 있다. 관리자는 취소하지 않는다.
      * 남의 예약은 존재 여부를 드러내지 않도록 찾을 수 없음(404)으로 응답한다.
      *
      * @param reservationUserId 예약한 고객 ID
@@ -39,7 +39,7 @@ public final class CancelPolicy {
     }
 
     /**
-     * 요청자 역할로 고를 수 있는 취소 유형인지 검사한다. 고객은 CUSTOMER, 사장님은 SHOP_FAULT·CUSTOMER_REQUEST.
+     * 요청자 역할로 고를 수 있는 취소 유형인지 검사한다. 고객은 CUSTOMER, 매장은 SHOP_FAULT·CUSTOMER_REQUEST.
      */
     public static void validateCancelType(AuthUser requester, CancelType cancelType) {
         boolean allowed = requester.hasRole(UserRole.CUSTOMER)

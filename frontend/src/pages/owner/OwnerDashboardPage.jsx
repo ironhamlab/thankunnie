@@ -20,7 +20,7 @@ import styles from './OwnerDashboardPage.module.css';
 const MAX_RANGES_ON_CARD = 3;
 
 /**
- * 사장님 메인 (사장님 센터 첫 화면). 매장 요약, 오늘 운영 현황, 오늘 예약, 매출·예약 통계.
+ * 매장 메인 (매장 센터 첫 화면). 매장 요약, 오늘 운영 현황, 오늘 예약, 매출·예약 통계.
  */
 export default function OwnerDashboardPage() {
   const shop = useShopStore((state) => state.shop);
@@ -32,7 +32,7 @@ export default function OwnerDashboardPage() {
   const loadToday = useOwnerDashboardStore((state) => state.loadToday);
   const loadTodayReservations = useOwnerDashboardStore((state) => state.loadTodayReservations);
 
-  // 매장 정보는 사장님 센터 레이아웃(OwnerLayout)이 불러온다
+  // 매장 정보는 매장 센터 레이아웃(OwnerLayout)이 불러온다
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
@@ -115,7 +115,7 @@ function TodayAvailableCard({ today }) {
   );
 }
 
-// 영역별 불러오기 실패 안내. 서버 메시지 대신 사장님이 이해할 문구와 다시 시도를 보여 준다
+// 영역별 불러오기 실패 안내. 서버 메시지 대신 매장이 이해할 문구와 다시 시도를 보여 준다
 function LoadError({ message, onRetry }) {
   return (
     <Alert tone="error" role="alert" className={styles.error}>

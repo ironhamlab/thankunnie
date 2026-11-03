@@ -38,7 +38,7 @@ class AuthInitDataLoginTest {
     }
 
     @Test
-    @DisplayName("사장님 테스트 계정으로 로그인하면 같은 매장 ID 를 받는다")
+    @DisplayName("매장 테스트 계정으로 로그인하면 같은 매장 ID 를 받는다")
     void loginShop_initDataAccounts() {
         AuthTokenResponse owner = authService.loginShop(new AuthLoginRequest("owner1", TEST_PASSWORD));
 

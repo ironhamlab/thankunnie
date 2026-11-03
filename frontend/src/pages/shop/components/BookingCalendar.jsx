@@ -23,7 +23,7 @@ const monthCells = (month) => {
 
 /**
  * 예약 날짜 달력. firstDate~lastDate 밖의 날짜는 고를 수 없다.
- * 휴무 요일도 사장님이 따로 연 시간이 있을 수 있어 고를 수는 있게 두고 표시만 한다.
+ * 휴무 요일도 매장이 따로 연 시간이 있을 수 있어 고를 수는 있게 두고 표시만 한다.
  */
 export default function BookingCalendar({ firstDate, lastDate, selectedDate, isClosed, onSelect }) {
   const [month, setMonth] = useState(() => monthOf(selectedDate ?? firstDate));

@@ -85,7 +85,7 @@ class StubAuthFilterTest {
     }
 
     @Test
-    @DisplayName("다른 매장의 사장님은 403 을 반환한다")
+    @DisplayName("다른 매장 계정은 403 을 반환한다")
     void requireShopOwner_otherOwner_returnsForbidden() throws Exception {
         mockMvc.perform(get("/test/auth/shops/1").header(StubAuthFilter.HEADER_NAME, "OWNER_2"))
                 .andExpect(status().isForbidden())
@@ -93,7 +93,7 @@ class StubAuthFilterTest {
     }
 
     @Test
-    @DisplayName("본인 매장의 사장님은 200 을 반환한다")
+    @DisplayName("본인 매장 계정은 200 을 반환한다")
     void requireShopOwner_ownOwner_returnsOk() throws Exception {
         mockMvc.perform(get("/test/auth/shops/1").header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
                 .andExpect(status().isOk());

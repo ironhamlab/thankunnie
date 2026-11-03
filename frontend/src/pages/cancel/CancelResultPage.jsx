@@ -59,7 +59,7 @@ function resolvePhase(detail, lastResult) {
 }
 
 /**
- * 취소 결과 (E-F3, 고객·사장님 공용). 완료·처리 중·확인 필요·실패를 구분해 안내한다.
+ * 취소 결과 (E-F3, 고객·매장 공용). 완료·처리 중·확인 필요·실패를 구분해 안내한다.
  * 결과는 주소의 예약 ID 로 서버 상태를 다시 조회하므로 새로고침해도 복원된다.
  */
 export default function CancelResultPage({ viewer }) {

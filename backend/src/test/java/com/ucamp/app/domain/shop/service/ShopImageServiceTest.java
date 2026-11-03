@@ -49,7 +49,7 @@ class ShopImageServiceTest {
     }
 
     @Test
-    @DisplayName("다른 매장 사장님·고객·관리자의 업로드와 삭제는 파일·DB 접근 전에 거부한다")
+    @DisplayName("다른 매장 계정·고객·관리자의 업로드와 삭제는 파일·DB 접근 전에 거부한다")
     void mutate_nonOwner_throwsForbidden() {
         for (AuthUser user : new AuthUser[] {new AuthUser(12L, UserRole.OWNER, 2L),
                 new AuthUser(1L, UserRole.CUSTOMER, null), new AuthUser(21L, UserRole.ADMIN, null)}) {

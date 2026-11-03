@@ -107,6 +107,12 @@
   font-size: 13px;
   margin: 10px 0 22px;
 }
+/* 가까운순을 고를 때 위치 확인 중·실패 안내 */
+.locateMessage {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin: 8px 0 0;
+}
 /* 시술 분야는 가장 먼저 고르는 조건이라 크게 보여준다 */
 .categoryRow {
   display: flex;

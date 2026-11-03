@@ -28,8 +28,17 @@ public final class NotificationFixture {
     public static void user(JdbcTemplate jdbc, long userId) {
         jdbc.update("""
                 INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
-                VALUES (?, ?, 'hash', '회원', '010-1111-1111', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                """, userId, "user" + userId);
+                VALUES (?, ?, 'hash', '회원', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """, userId, "user" + userId, phoneOf(userId));
+    }
+
+    /**
+     * APP_USER.PHONE 은 UNIQUE 라 회원마다 다른 번호를 쓴다. 1번은 010-1111-1111, 2번은 010-2222-2222 이며
+     * 1111 과 10000 이 서로소라 회원 ID 가 1만 이내로 다르면 번호도 다르다.
+     */
+    public static String phoneOf(long userId) {
+        String part = String.format(java.util.Locale.ROOT, "%04d", userId * 1111 % 10000);
+        return "010-" + part + "-" + part;
     }
 
     public static void treatment(JdbcTemplate jdbc, long treatmentId, long shopId, String treatmentType) {

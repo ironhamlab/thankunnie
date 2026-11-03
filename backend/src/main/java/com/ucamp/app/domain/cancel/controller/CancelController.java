@@ -38,7 +38,7 @@ public class CancelController {
     }
 
     @Operation(summary = "취소 환불 견적 조회",
-            description = "고객은 본인 예약, 사장님은 본인 매장 예약. 사장님 대리 취소 환불액 범위는 policyRefundAmount ~ paidAmount")
+            description = "고객은 본인 예약, 매장은 본인 매장 예약. 매장 대리 취소 환불액 범위는 policyRefundAmount ~ paidAmount")
     @GetMapping("/{reservationId}/cancel-quote")
     public ApiResponse<CancelQuoteResponse> getCancelQuote(@LoginUser AuthUser user,
             @PathVariable Long reservationId) {
@@ -55,7 +55,7 @@ public class CancelController {
         return ApiResponse.success(cancelService.cancelByCustomer(user, reservationId, request));
     }
 
-    @Operation(summary = "사장님 취소",
+    @Operation(summary = "매장 취소",
             description = "SHOP_FAULT 는 납부액 전액 환불, CUSTOMER_REQUEST 는 refundAmount(견적의 policyRefundAmount ~ paidAmount) 환불. "
                     + "closeAfterCancel=true 면 취소한 시간을 닫는다. 결제 취소 결과 처리는 고객 직접 취소와 같다")
     @PostMapping("/{reservationId}/owner-cancel")

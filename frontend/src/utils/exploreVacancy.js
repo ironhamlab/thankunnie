@@ -39,16 +39,17 @@ export function dayLabel(date, today = todayKst()) {
 /**
  * 매장 상세(A, /shops/:shopId) 주소. 홈 마감 임박·매장 카드, 검색 목록, 지도가 모두 이 함수로 매장 상세에 간다.
  * 시술·시작 시각까지 고른 곳(마감 임박 카드, 시간 버튼)은 그 날짜·시간이 골라진 채로 열리도록 값을 붙인다.
- * 매장 상세는 아직 주소의 선택 값을 읽지 않아 지금은 매장 상세 첫 화면이 열린다.
+ * 예약 대신 매장 소개를 먼저 보여줄 곳(지도의 매장 보기)은 view 에 'info' 를 넣는다.
  *
  * 매장 상세는 일반 시술만 보여주므로, 초보 시술로 가는 곳은 model 을 붙여 초보 시술 모집 상세(/shops/:shopId/models)로 보낸다.
  *
  * @param shopId    매장 ID
- * @param selection { date, treatmentId, startsAt, model } 중 아는 값
+ * @param selection { date, treatmentId, startsAt, model, view } 중 아는 값
  */
-export function shopPagePath(shopId, { date, treatmentId, startsAt, model } = {}) {
+export function shopPagePath(shopId, { date, treatmentId, startsAt, model, view } = {}) {
   const path = generatePath(model ? ROUTES.MODEL_RECRUIT_DETAIL : ROUTES.SHOP_DETAIL, { shopId });
   const query = new URLSearchParams();
+  if (view) query.set('view', view);
   if (date) query.set('date', date);
   if (treatmentId && startsAt) {
     query.set('treatmentId', treatmentId);

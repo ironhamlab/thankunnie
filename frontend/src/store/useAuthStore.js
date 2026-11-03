@@ -81,7 +81,7 @@ export const useAuthStore = create((set) => {
     status: storedSession ? 'succeeded' : 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
     error: null,
 
-    /** accountType: ACCOUNT_TYPE.CUSTOMER(고객·관리자) 또는 ACCOUNT_TYPE.SHOP(사장님) */
+    /** accountType: ACCOUNT_TYPE.CUSTOMER(고객·관리자) 또는 ACCOUNT_TYPE.SHOP(매장) */
     login: (accountType, credentials) =>
       request(
         () =>

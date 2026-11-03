@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.entity.BaseTimeEntity;
 
-/** 회원(고객·관리자) 계정. 사장님 계정은 매장(SHOP) 행에 있다. */
+/** 회원(고객·관리자) 계정. 매장 계정은 매장(SHOP) 행에 있다. */
 @Entity
 @Table(name = "APP_USER")
 @Getter

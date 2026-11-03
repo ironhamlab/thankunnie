@@ -199,7 +199,7 @@ class ReservationDashboardServiceTest {
                 confirmed(2L, 1L, at(12, 13, 30), 60, 30000, createdAt),
                 // 다음 날 같은 시각 예약은 겹치지 않는다
                 confirmed(9L, 1L, at(13, 13, 0), 60, 30000, createdAt),
-                // 사장님이 취소하며 닫은 시간: 비었던 시간에서 빠지고, 겹치는 예약도 재판매가 아니다
+                // 매장이 취소하며 닫은 시간: 비었던 시간에서 빠지고, 겹치는 예약도 재판매가 아니다
                 cancelled(3L, at(14, 13, 0), 60, CancelType.SHOP_FAULT, 0, true, completedAt),
                 confirmed(4L, 1L, at(14, 13, 0), 60, 30000, createdAt),
                 // 취소 완료(2/10 12:00) 전에 생성된 예약은 다시 판 것이 아니다
@@ -402,7 +402,7 @@ class ReservationDashboardServiceTest {
     }
 
     @Test
-    @DisplayName("사장님이 아니면 FORBIDDEN 이고 조회하지 않는다")
+    @DisplayName("매장이 아니면 FORBIDDEN 이고 조회하지 않는다")
     void customer_throwsForbidden() {
         AuthUser customer = new AuthUser(1L, UserRole.CUSTOMER, null);
 
