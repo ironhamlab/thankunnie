@@ -20,7 +20,6 @@ import DateCalendar from '@/pages/home/components/DateCalendar';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
-import './VacancySearch.css';
 import styles from './VacancySearch.module.css';
 
 const ALL = '전체';

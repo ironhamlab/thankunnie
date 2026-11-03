@@ -87,7 +87,7 @@ function apiImageUrl(imageUrl, fallback) {
 }
 
 /** 이미지가 없으면 기본 시술 그림을 쓴다 */
-export const vacancyImage = (imageUrl) => apiImageUrl(imageUrl, defaultTreatmentImage);
+const vacancyImage = (imageUrl) => apiImageUrl(imageUrl, defaultTreatmentImage);
 
 /** 이미지가 없으면 기본 매장 그림을 쓴다 */
 export const shopImage = (imageUrl) => apiImageUrl(imageUrl, defaultShopImage);

@@ -8,9 +8,9 @@ import HoldReplaceDialog from '@/components/reservation/HoldReplaceDialog';
 import QueueWaitingDialog from '@/components/reservation/QueueWaitingDialog';
 import { useVacancyDetailStore } from '@/store/useVacancyDetailStore';
 import useReserve from '@/hooks/useReserve';
+import { formatMoney } from '@/utils/reservationFormat';
 import styles from '../ShopDetailPage.module.css';
 
-const money = (value) => `${value.toLocaleString('ko-KR')}원`;
 // 가격 구간은 서버(PriceTier)가 정한다. 일반 구간은 따로 표시하지 않는다
 const TIER_LABELS = { IMMINENT: '임박', LAST_MINUTE: '초임박 특가' };
 
@@ -90,7 +90,7 @@ export default function BookingSummary({ treatment, date, time }) {
             </div>
             <div>
               <dt>정상 가격</dt>
-              <dd>{money(detail.regularPrice)}</dd>
+              <dd>{formatMoney(detail.regularPrice)}</dd>
             </div>
             {detail.salePrice < detail.regularPrice && (
               <div>
@@ -101,21 +101,21 @@ export default function BookingSummary({ treatment, date, time }) {
                   )}
                 </dt>
                 <dd>
-                  -{money(detail.regularPrice - detail.salePrice)} ({detail.discountRate}%)
+                  -{formatMoney(detail.regularPrice - detail.salePrice)} ({detail.discountRate}%)
                 </dd>
               </div>
             )}
             <div>
               <dt>최종 예약 금액</dt>
-              <dd className="b-final-price">{money(detail.salePrice)}</dd>
+              <dd className="b-final-price">{formatMoney(detail.salePrice)}</dd>
             </div>
             <div>
               <dt>예약금</dt>
-              <dd>{money(detail.depositAmount)}</dd>
+              <dd>{formatMoney(detail.depositAmount)}</dd>
             </div>
             <div>
               <dt>매장 방문 현장 잔금</dt>
-              <dd>{money(detail.balanceAmount)}</dd>
+              <dd>{formatMoney(detail.balanceAmount)}</dd>
             </div>
           </dl>
           <Notice>가격과 예약 가능 여부는 조회 시점 기준이며 예약 시 다시 확인합니다.</Notice>
