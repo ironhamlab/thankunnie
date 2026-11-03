@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { generatePath, useLocation, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { PAYMENT_STATUS, reservationStatusOf } from '@/constants/reservationStatus';
+import { PAYMENT_STATUS, ownerReservationStatusOf } from '@/constants/reservationStatus';
 import { useReservationStore } from '@/store/useReservationStore';
 import { formatReservationTime } from '@/utils/reservationFormat';
 import { todayKst } from '@/utils/scheduleDate';
@@ -266,7 +266,7 @@ export default function OwnerBookingsPage() {
                   </thead>
                   <tbody>
                     {reservations.map((item) => {
-                      const status = reservationStatusOf(item.status);
+                      const status = ownerReservationStatusOf(item);
                       return (
                         // 행 어디를 눌러도 상세를 연다. 키보드와 화면 읽기 도구는 끝의 버튼을 쓰고, 그 클릭도 여기서 받는다
                         <tr
