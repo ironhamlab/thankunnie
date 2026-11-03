@@ -45,6 +45,7 @@ public enum ErrorCode {
     SUBSCRIPTION_INVALID_TARGET(HttpStatus.BAD_REQUEST, "NOTIFICATION_002", "구독 유형에 맞지 않는 구독 대상입니다."),
     SUBSCRIPTION_INVALID_TIME(HttpStatus.BAD_REQUEST, "NOTIFICATION_003", "알림 희망 시간이 올바르지 않습니다."),
     SUBSCRIPTION_DUPLICATE(HttpStatus.CONFLICT, "NOTIFICATION_004", "같은 대상과 희망 시간의 구독이 이미 있습니다."),
+    SUBSCRIPTION_INVALID_TREATMENT(HttpStatus.BAD_REQUEST, "NOTIFICATION_005", "알림에 고를 수 있는 시술이 아닙니다."),
 
     // VACANCY
     VACANCY_BOOKING_CLOSED(HttpStatus.CONFLICT, "VACANCY_001", "예약 접수가 마감된 시간입니다."),

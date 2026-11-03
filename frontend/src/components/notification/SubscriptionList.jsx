@@ -3,7 +3,7 @@ import { generatePath, Link } from 'react-router-dom';
 import { regionNameOf } from '@/constants/regions';
 import { ROUTES } from '@/constants/routes';
 import { useNotificationStore } from '@/store/useNotificationStore';
-import { isPendingFavorite, shopLabel } from '@/utils/notificationRules';
+import { isPendingFavorite, shopLabel, treatmentNameOf } from '@/utils/notificationRules';
 import { datePart, timePart } from '@/utils/scheduleDate';
 import Alert from '@/components/common/Alert';
 import Badge from '@/components/common/Badge';
@@ -37,6 +37,7 @@ export default function SubscriptionList({ embedded = false }) {
   const listError = useNotificationStore((state) => state.listError);
   const categories = useNotificationStore((state) => state.categories);
   const shopNames = useNotificationStore((state) => state.shopNames);
+  const shopTreatments = useNotificationStore((state) => state.shopTreatments);
   const saving = useNotificationStore((state) => state.saving);
   const loadSubscriptions = useNotificationStore((state) => state.loadSubscriptions);
   const loadCategories = useNotificationStore((state) => state.loadCategories);
@@ -212,6 +213,11 @@ export default function SubscriptionList({ embedded = false }) {
                 )}
                 <Badge tone="success">알림 받는 중</Badge>
               </div>
+              {isStore && (
+                <p className={styles.treatment}>
+                  {treatmentNameOf(shopTreatments[String(Number(item.shopId))], item.treatmentId)}
+                </p>
+              )}
               <p className={styles.period}>
                 <ClockIcon size={16} />
                 희망 시간 {formatHope(item.startTime, item.endTime)}
@@ -244,7 +250,7 @@ export default function SubscriptionList({ embedded = false }) {
       {items.length > 0 && (
         <p className={styles.note}>
           <InfoIcon size={16} />
-          업장 알림은 희망 시간만, 시술·지역 알림은 시술·지역과 희망 시간만 수정됩니다. 해제한 알림과
+          업장 알림은 시술과 희망 시간만, 시술·지역 알림은 시술·지역과 희망 시간만 수정됩니다. 해제한 알림과
           희망 종료가 지난 알림은 문자를 받지 않습니다.
         </p>
       )}

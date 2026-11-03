@@ -27,10 +27,12 @@ import com.ucamp.app.domain.notification.entity.NotificationSubscription;
 import com.ucamp.app.domain.notification.entity.SubscriptionType;
 import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepository;
 import com.ucamp.app.domain.notification.repository.ShopCategoryRegionRepository;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({SubscriptionMatchService.class, ShopCategoryRegionRepository.class,
+@Import({SubscriptionMatchService.class, StoreSubscriptionTreatmentService.class,
+        ShopCategoryRegionRepository.class, AvailabilityService.class,
         SubscriptionMatchServiceTest.FixedClock.class})
 @ActiveProfiles("test")
 class SubscriptionMatchServiceTest {
@@ -54,6 +56,9 @@ class SubscriptionMatchServiceTest {
         NotificationFixture.shop(jdbcTemplate, 2L, 10L, "SEOUL_MAPO", "ACTIVE");
         NotificationFixture.user(jdbcTemplate, 1L);
         NotificationFixture.user(jdbcTemplate, 2L);
+        // 2026-10-22 는 목요일. 15:00 시작 60분 시술이 영업시간 안에 들어가게 연다.
+        NotificationFixture.treatment(jdbcTemplate, 100L, 1L, "NORMAL");
+        NotificationFixture.businessHour(jdbcTemplate, 50L, 1L, "THU", "10:00", "20:00");
     }
 
     @Test
@@ -81,6 +86,38 @@ class SubscriptionMatchServiceTest {
 
         assertThat(result).extracting(NotificationSubscription::getId)
                 .containsExactlyInAnyOrder(target.getId(), endsAtSlot.getId());
+    }
+
+    @Test
+    @DisplayName("고른 시술이 없거나 판매 중이 아니면 업장 구독은 빠진다")
+    void findStoreMatches_missingOrInactiveTreatment_isExcluded() {
+        repository.save(store(1L, 1L, 999L, NOW, NOW.plusHours(5)));
+        jdbcTemplate.update("UPDATE TREATMENT SET STATUS = 'INACTIVE' WHERE TREATMENT_ID = 100");
+        repository.save(store(2L, 1L, 100L, NOW, NOW.plusHours(5)));
+
+        assertThat(subscriptionMatchService.findStoreMatches(1L, SLOT_START)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("고른 시술을 그 시각에 예약할 수 없으면 업장 구독은 빠진다")
+    void findStoreMatches_treatmentNotBookable_isExcluded() {
+        jdbcTemplate.update("UPDATE TREATMENT SET DURATION_MINUTES = 600 WHERE TREATMENT_ID = 100");
+        repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
+
+        assertThat(subscriptionMatchService.findStoreMatches(1L, SLOT_START)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("같은 회원의 시술 알림이 여러 개 그 시각에 되면 구독은 모두 남고 회원은 한 번만 보낸다")
+    void findStoreMatches_severalBookableTreatments_keepsSubscriptionsAndOneUser() {
+        NotificationFixture.treatment(jdbcTemplate, 101L, 1L, "NORMAL");
+        NotificationSubscription smaller = repository.save(store(1L, 1L, 100L, NOW, NOW.plusHours(5)));
+        NotificationSubscription larger = repository.save(store(1L, 1L, 101L, NOW, NOW.plusHours(5)));
+
+        assertThat(subscriptionMatchService.findStoreMatches(1L, SLOT_START))
+                .extracting(NotificationSubscription::getId)
+                .containsExactlyInAnyOrder(smaller.getId(), larger.getId());
+        assertThat(subscriptionMatchService.findRecipientUserIds(1L, SLOT_START)).containsExactly(1L);
     }
 
     @Test
@@ -292,9 +329,15 @@ class SubscriptionMatchServiceTest {
 
     private static NotificationSubscription store(Long userId, Long shopId,
             LocalDateTime startTime, LocalDateTime endTime) {
+        return store(userId, shopId, 100L, startTime, endTime);
+    }
+
+    private static NotificationSubscription store(Long userId, Long shopId, Long treatmentId,
+            LocalDateTime startTime, LocalDateTime endTime) {
         return NotificationSubscription.builder()
                 .userId(userId)
                 .subscriptionType(SubscriptionType.STORE)
+                .treatmentId(treatmentId)
                 .shopId(shopId)
                 .startTime(startTime)
                 .endTime(endTime)

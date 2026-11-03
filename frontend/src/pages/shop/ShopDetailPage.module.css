@@ -512,6 +512,14 @@
   border-color: var(--color-primary);
   color: var(--color-white);
 }
+@media (max-width: 540px) {
+  .alertDialogForm {
+    width: min(440px, calc(100vw - 40px));
+    max-height: min(520px, 70dvh);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+}
 /* 고른 시각 이후 소요 시간 동안 이어지는 칸. 시작으로 고를 수 없는 칸이어도 같은 색으로 보인다 */
 .slots button.inRange,
 .slots button.inRange:disabled {

@@ -65,5 +65,20 @@
   .row {
     align-items: flex-start;
     flex-wrap: wrap;
+    gap: 10px;
+  }
+  .actions {
+    width: 100%;
+  }
+  .actions > :last-child {
+    flex: 1;
+    min-height: 44px;
+  }
+  .favorite {
+    width: 44px;
+    height: 44px;
+  }
+  .info h2 {
+    overflow-wrap: anywhere;
   }
 }
