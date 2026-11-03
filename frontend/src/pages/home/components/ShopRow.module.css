@@ -61,8 +61,7 @@
   .located {
     animation: none;
   }
-  .root,
-  .thumb {
+  .root {
     transition: none;
   }
   .root:hover,
@@ -189,6 +188,16 @@
 .slots a.urgent {
   border-color: var(--color-primary);
   color: var(--color-primary-text);
+}
+/* 기본 전환을 정한 규칙보다 뒤에 두어야 움직임 줄이기 설정이 이긴다 */
+@media (prefers-reduced-motion: reduce) {
+  .thumb,
+  .slots a {
+    transition: none;
+  }
+  .slots a:active {
+    transform: none;
+  }
 }
 /* 여러 날짜를 보여줄 때는 날짜를 왼쪽에 두고 그날 시각을 옆에 늘어놓는다 */
 .dayRow {
