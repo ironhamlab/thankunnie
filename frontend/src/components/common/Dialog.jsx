@@ -35,27 +35,28 @@ export default function Dialog({
       }}
     >
       <div className={`beauty-app b-pad ${plainClose ? styles.body : ''}`}>
+        {/* 단계 애니메이션(transform) 안에 두면 그동안 위치 기준이 바뀌어 ✕ 가 튀므로 바깥에 둔다 */}
+        {plainClose && !hideClose && (
+          <button type="button" className={styles.close} aria-label="닫기" onClick={onClose}>
+            <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M5 5l14 14M19 5L5 19"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        )}
         <div key={stepKey} className={stepKey == null ? undefined : styles.step}>
           <div className={`b-row b-panel-heading ${plainClose && !hideClose ? styles.heading : ''}`}>
             <h2 id={titleId}>{title}</h2>
-            {!hideClose &&
-              (plainClose ? (
-                <button type="button" className={styles.close} aria-label="닫기" onClick={onClose}>
-                  <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden="true">
-                    <path
-                      d="M5 5l14 14M19 5L5 19"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.8"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </button>
-              ) : (
-                <Button size="small" aria-label="닫기" onClick={onClose}>
-                  ✕
-                </Button>
-              ))}
+            {!hideClose && !plainClose && (
+              <Button size="small" aria-label="닫기" onClick={onClose}>
+                ✕
+              </Button>
+            )}
           </div>
           {children}
         </div>

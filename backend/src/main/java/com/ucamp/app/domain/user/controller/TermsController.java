@@ -3,6 +3,7 @@ package com.ucamp.app.domain.user.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -23,7 +24,7 @@ import com.ucamp.app.domain.user.entity.TermsTarget;
 import com.ucamp.app.domain.user.service.TermsAgreementService;
 
 /**
- * 약관 API. 약관 목록은 로그인 없이 조회하고, 동의 조회·동의는 고객만 할 수 있다.
+ * 약관 API. 약관 목록은 로그인 없이 조회하고, 동의 조회·동의·철회는 고객만 할 수 있다.
  * 회원가입 때의 동의는 회원가입 API 가 함께 저장한다.
  */
 @Tag(name = "Terms", description = "약관·동의")
@@ -61,5 +62,16 @@ public class TermsController {
             @LoginUser AuthUser loginUser,
             @PathVariable TermsCode termsCode) {
         return ResponseEntity.ok(ApiResponse.success(termsAgreementService.agree(loginUser, termsCode)));
+    }
+
+    @Operation(summary = "약관 동의 철회",
+            description = "선택 약관 동의를 철회한다. 동의한 적이 없거나 이미 철회했어도 성공한다. "
+                    + "마이페이지의 알림 문자 수신 철회에서 호출한다. 필수 약관은 철회할 수 없다")
+    @DeleteMapping("/users/me/terms-agreements/{termsCode}")
+    public ResponseEntity<Void> withdraw(
+            @LoginUser AuthUser loginUser,
+            @PathVariable TermsCode termsCode) {
+        termsAgreementService.withdraw(loginUser, termsCode);
+        return ResponseEntity.noContent().build();
     }
 }

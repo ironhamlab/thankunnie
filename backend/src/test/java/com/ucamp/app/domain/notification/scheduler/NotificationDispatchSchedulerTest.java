@@ -21,6 +21,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.ucamp.app.common.lock.UserLock;
 import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.notification.NotificationFixture;
 import com.ucamp.app.domain.notification.client.FakeSolapiSmsClientConfig;
@@ -43,6 +44,7 @@ import com.ucamp.app.domain.notification.service.NotificationInboxConnections;
 import com.ucamp.app.domain.notification.service.NotificationInboxService;
 import com.ucamp.app.domain.notification.service.StoreSubscriptionTreatmentService;
 import com.ucamp.app.domain.notification.service.SubscriptionMatchService;
+import com.ucamp.app.domain.user.service.TermsAgreementService;
 import com.ucamp.app.domain.vacancy.repository.ShopStatusQueryRepository;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
@@ -53,7 +55,8 @@ import com.ucamp.app.domain.vacancy.service.AvailabilityService;
         SubscriptionMatchService.class, StoreSubscriptionTreatmentService.class,
         ShopCategoryRegionRepository.class, VacancySlotRepository.class, RecipientContactRepository.class,
         AvailabilityService.class, ShopStatusQueryRepository.class, FakeSolapiSmsClientConfig.class,
-        CategoryRegionPendingQueue.class, NotificationDispatchSchedulerTest.FixedClock.class})
+        CategoryRegionPendingQueue.class, TermsAgreementService.class, UserLock.class,
+        NotificationDispatchSchedulerTest.FixedClock.class})
 @ActiveProfiles("test")
 class NotificationDispatchSchedulerTest {
 
@@ -91,6 +94,8 @@ class NotificationDispatchSchedulerTest {
         NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
         NotificationFixture.businessHour(jdbcTemplate, 1L, SHOP_ID, "THU", "10:00", "20:00");
         NotificationFixture.user(jdbcTemplate, USER_ID);
+        NotificationFixture.smsTerms(jdbcTemplate);
+        NotificationFixture.smsAgreement(jdbcTemplate, USER_ID);
     }
 
     @Test
@@ -159,6 +164,7 @@ class NotificationDispatchSchedulerTest {
     @DisplayName("선점 스케줄은 대기 작업을 한 번에 모두 집고 문자를 보낸다")
     void claimAndRecheck_twoPendingJobs_sendsBoth() {
         NotificationFixture.user(jdbcTemplate, 2L);
+        NotificationFixture.smsAgreement(jdbcTemplate, 2L);
         NotificationFixture.exception(jdbcTemplate, 1L, SHOP_ID, null, "OPEN", SLOT_START, SLOT_START.plusHours(1));
         notificationSubscriptionRepository.save(store(USER_ID));
         notificationSubscriptionRepository.save(store(2L));
@@ -178,6 +184,7 @@ class NotificationDispatchSchedulerTest {
     @DisplayName("이미 처리 중인 쪽지는 다시 집지 않고 대기 중인 쪽지만 보내 SENT 로 남긴다")
     void claimAndRecheck_processingJob_leavesItAndSendsPending() {
         NotificationFixture.user(jdbcTemplate, 2L);
+        NotificationFixture.smsAgreement(jdbcTemplate, 2L);
         NotificationFixture.exception(jdbcTemplate, 1L, SHOP_ID, null, "OPEN", SLOT_START, SLOT_START.plusHours(1));
         NotificationSubscription minji = notificationSubscriptionRepository.save(store(USER_ID));
         NotificationSubscription sua = notificationSubscriptionRepository.save(store(2L));
@@ -208,6 +215,7 @@ class NotificationDispatchSchedulerTest {
     @DisplayName("한 명이 재검사에 걸려도 다른 대기 작업은 계속 보내 SENT 로 남긴다")
     void claimAndRecheck_oneInactive_sendsTheOther() {
         NotificationFixture.user(jdbcTemplate, 2L);
+        NotificationFixture.smsAgreement(jdbcTemplate, 2L);
         NotificationFixture.exception(jdbcTemplate, 1L, SHOP_ID, null, "OPEN", SLOT_START, SLOT_START.plusHours(1));
         NotificationSubscription inactive = notificationSubscriptionRepository.save(store(USER_ID));
         notificationSubscriptionRepository.save(store(2L));
