@@ -75,6 +75,20 @@ export const useAuthStore = create((set) => {
     }
   };
 
+  // 매장 가입은 관리자 승인 전이라 토큰이 없다. 세션은 그대로 두고 신청 결과 { shopId, status } 를 돌려준다
+  const signupShop = async (payload) => {
+    set({ status: 'loading', error: null });
+    try {
+      const result = await authApi.signupShop(payload);
+      set({ status: 'idle' });
+      return result;
+    } catch (error) {
+      const authError = toError(error, '가입하지 못했습니다.');
+      set({ status: 'failed', error: authError });
+      throw authError;
+    }
+  };
+
   return {
     data: storedSession?.user ?? null, // 로그인 사용자 정보 { userId, role, shopId }
     token: storedSession?.token ?? null,
@@ -91,13 +105,11 @@ export const useAuthStore = create((set) => {
         '로그인하지 못했습니다.',
       ),
 
-    /** 가입 후 바로 로그인 상태가 된다. */
-    signup: (accountType, payload) =>
-      request(
-        () =>
-          accountType === ACCOUNT_TYPE.SHOP ? authApi.signupShop(payload) : authApi.signup(payload),
-        '가입하지 못했습니다.',
-      ),
+    /** 고객은 가입 후 바로 로그인 상태가 된다. */
+    signup: (accountType, payload) => {
+      if (accountType === ACCOUNT_TYPE.SHOP) return signupShop(payload);
+      return request(() => authApi.signup(payload), '가입하지 못했습니다.');
+    },
 
     setSession: ({ token, user }) => set({ token, data: user, status: 'succeeded', error: null }),
 
