@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { reservationStatusOf } from '@/constants/reservationStatus';
+import { ownerReservationStatusOf } from '@/constants/reservationStatus';
 import { useReservationStore } from '@/store/useReservationStore';
 import { timePart } from '@/utils/scheduleDate';
 import Badge from '@/components/common/Badge';
@@ -53,7 +53,7 @@ export default function DayReservationsPanel({ date }) {
       {listStatus === 'succeeded' && reservations.length > 0 && (
         <div className={`b-stack ${styles.list}`}>
           {reservations.map((item) => {
-            const status = reservationStatusOf(item.status);
+            const status = ownerReservationStatusOf(item);
             return (
               <div key={item.reservationId} className={`b-row ${styles.row}`}>
                 <span>

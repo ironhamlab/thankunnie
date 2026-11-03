@@ -31,6 +31,8 @@ const HISTORY_STATUS = {
   COMPLETED: { label: '이용 완료', tone: 'success' },
   UPCOMING: { label: '방문 예정', className: 'upcomingBadge' },
   CANCELLED: { label: '취소', className: 'cancelledBadge' },
+  // 공통 배지 색(design.css). 예약 관리의 노쇼 배지와 같다
+  NO_SHOW: { label: '노쇼', badgeClass: 'b-dark' },
 };
 const CANCEL_TYPE_LABEL = {
   CUSTOMER: '고객 취소',
@@ -217,6 +219,7 @@ function CustomerTable({ customers, total, selectedId, hasFilter, onSelect }) {
                 <strong>{customer.name}</strong>
                 <SegmentBadge segment={customer.segment} />
                 {customer.hasMemo && <Badge tone="neutral">메모</Badge>}
+                <NoShowBadge count={customer.noShowCount} />
                 <small>{customer.phone}</small>
               </span>
               <span className={styles.numbers}>
@@ -239,6 +242,11 @@ function describeVisit(customer) {
   if (customer.lastVisitAt) return `최근 ${datePart(customer.lastVisitAt)}`;
   if (customer.nextReservationAt) return `첫 방문 ${datePart(customer.nextReservationAt)} 예정`;
   return '이용 전';
+}
+
+// 노쇼가 있었던 고객만 횟수를 보여준다
+function NoShowBadge({ count }) {
+  return count > 0 ? <Badge className="b-dark">노쇼 {count}회</Badge> : null;
 }
 
 function SegmentBadge({ segment }) {
@@ -283,6 +291,7 @@ function CustomerDetail({ onClose }) {
               <div className={styles.detailName}>
                 <h2>{detail.customer.name}</h2>
                 <SegmentBadge segment={detail.customer.segment} />
+                <NoShowBadge count={detail.customer.noShowCount} />
               </div>
               <p className="b-muted">
                 {detail.customer.phone}
@@ -436,7 +445,9 @@ function History({ reservations }) {
                   <strong>{formatReservationTime(item.startsAt, item.endsAt)}</strong>
                   <Badge
                     tone={status.tone}
-                    className={status.className ? styles[status.className] : ''}
+                    className={
+                      status.className ? styles[status.className] : (status.badgeClass ?? '')
+                    }
                   >
                     {item.status === 'CANCELLED' && item.cancelType
                       ? (CANCEL_TYPE_LABEL[item.cancelType] ?? status.label)

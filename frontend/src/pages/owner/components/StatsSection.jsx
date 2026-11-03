@@ -252,6 +252,7 @@ export default function StatsSection() {
               notes={[
                 `고객 취소 ${summary.customerCancelCount}건 · 매장 사유 ${summary.shopFaultCancelCount}건`,
                 `환불되지 않은 예약금 ${formatMoney(summary.nonRefundedDepositAmount)}`,
+                `노쇼 ${summary.noShowCount ?? 0}건 · 노쇼율 ${formatRate(summary.noShowRate)}`,
               ]}
             />
             <StatCard
