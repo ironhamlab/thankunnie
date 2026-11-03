@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +24,8 @@ import com.ucamp.app.domain.auth.dto.response.ShopApplicationResponse;
 import com.ucamp.app.domain.auth.entity.ShopAccount;
 import com.ucamp.app.domain.auth.entity.ShopAccountStatus;
 import com.ucamp.app.domain.auth.repository.ShopAccountRepository;
+import com.ucamp.app.domain.notification.event.ShopApplicationApprovedEvent;
+import com.ucamp.app.domain.notification.event.ShopApplicationRejectedEvent;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.shop.entity.ShopCategory;
 import com.ucamp.app.domain.shop.repository.ShopCategoryRepository;
@@ -31,6 +34,7 @@ import com.ucamp.app.domain.vacancy.policy.SalePolicy;
 /**
  * 관리자의 매장 가입 신청 조회와 승인·거절, 잘못 처리한 신청 되돌리기.
  * 상태를 바꾸는 작업은 매장 행을 잠가 고객 예약 점유(ShopLock)와 줄을 세운다.
+ * 승인·거절이 성공하면 결과 문자를 위한 이벤트를 발행한다. 문자는 이 메서드에서 바로 보내지 않는다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -45,14 +49,16 @@ public class AdminShopApplicationService {
     private final ShopCategoryRepository shopCategoryRepository;
     private final ReservationRepository reservationRepository;
     private final Clock clock;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AdminShopApplicationService(ShopAccountRepository shopAccountRepository,
             ShopCategoryRepository shopCategoryRepository, ReservationRepository reservationRepository,
-            Clock clock) {
+            Clock clock, ApplicationEventPublisher eventPublisher) {
         this.shopAccountRepository = shopAccountRepository;
         this.shopCategoryRepository = shopCategoryRepository;
         this.reservationRepository = reservationRepository;
         this.clock = clock;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -87,6 +93,8 @@ public class AdminShopApplicationService {
         ShopAccount shop = findForUpdate(loginUser, shopId, ShopAccountStatus.PENDING,
                 ErrorCode.ADMIN_SHOP_APPLICATION_NOT_PENDING);
         shop.approve();
+        // 문자 발송은 커밋 뒤 리스너가 한다. 여기서 보내면 발송 실패 때 승인도 되돌아간다
+        eventPublisher.publishEvent(new ShopApplicationApprovedEvent(shopId));
         return toResponse(shop);
     }
 
@@ -100,7 +108,10 @@ public class AdminShopApplicationService {
     public ShopApplicationResponse reject(AuthUser loginUser, Long shopId, String reason) {
         ShopAccount shop = findForUpdate(loginUser, shopId, ShopAccountStatus.PENDING,
                 ErrorCode.ADMIN_SHOP_APPLICATION_NOT_PENDING);
-        shop.reject(reason.trim());
+        String trimmedReason = reason.trim();
+        shop.reject(trimmedReason);
+        // 문자 발송은 커밋 뒤 리스너가 한다. 거절 사유는 그때 문구에 넣는다
+        eventPublisher.publishEvent(new ShopApplicationRejectedEvent(shopId, trimmedReason));
         return toResponse(shop);
     }
 
