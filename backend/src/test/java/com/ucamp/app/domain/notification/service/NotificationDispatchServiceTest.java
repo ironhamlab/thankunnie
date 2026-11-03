@@ -57,7 +57,7 @@ import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({NotificationDispatchService.class, NotificationInboxService.class, NotificationInboxConnections.class,
-        SubscriptionMatchService.class,
+        SubscriptionMatchService.class, StoreSubscriptionTreatmentService.class,
         ShopCategoryRegionRepository.class, VacancySlotRepository.class, RecipientContactRepository.class,
         AvailabilityService.class, ShopStatusQueryRepository.class, CategoryRegionPendingQueue.class,
         NotificationDispatchServiceTest.FixedClock.class})
@@ -103,6 +103,8 @@ class NotificationDispatchServiceTest {
         categoryRegionPendingQueue.clear();
         NotificationFixture.category(jdbcTemplate, 10L, "NAIL");
         NotificationFixture.shop(jdbcTemplate, SHOP_ID, 10L, "SEOUL_GANGNAM", "ACTIVE");
+        NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
+        NotificationFixture.businessHour(jdbcTemplate, 1L, SHOP_ID, "THU", "10:00", "20:00");
         // 알림함 저장은 별도 트랜잭션이라, 회원은 그 전에 커밋되어 있어야 한다.
         TransactionTemplate template = new TransactionTemplate(transactionManager);
         template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -617,7 +619,6 @@ class NotificationDispatchServiceTest {
                 categoryRegion(USER_ID, NOW.plusHours(6)));
         openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
         openSlot(2L, SLOT_START.plusHours(1), SLOT_START.plusHours(2));
-        NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
         NotificationFixture.reservation(jdbcTemplate, 500L, USER_ID, 100L, "CONFIRMED",
                 SLOT_START, SLOT_START.plusHours(1), NOW.plusMinutes(5));
         NotificationEvent reserved = notificationEventRepository.saveAndFlush(event(1L));
@@ -742,6 +743,7 @@ class NotificationDispatchServiceTest {
         notificationSubscriptionRepository.save(NotificationSubscription.builder()
                 .userId(USER_ID)
                 .subscriptionType(SubscriptionType.STORE)
+                .treatmentId(100L)
                 .shopId(SHOP_ID)
                 .startTime(NOW.minusHours(5))
                 .endTime(NOW.minusHours(1))
@@ -755,10 +757,23 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
+    @DisplayName("고른 시술이 그 시각에 예약되지 않으면 끝으로 두고 보내지 않는다")
+    void recheckClaimedJob_treatmentNotBookable_skips() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        jdbcTemplate.update("UPDATE TREATMENT SET STATUS = 'INACTIVE' WHERE TREATMENT_ID = 100");
+        notificationSubscriptionRepository.save(store(USER_ID));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+
+        boolean canSend = notificationDispatchService.recheckClaimedJob(job);
+
+        assertThat(canSend).isFalse();
+        assertThat(job.getStatus()).isEqualTo(NotificationDispatchStatus.SKIPPED);
+    }
+
+    @Test
     @DisplayName("빈자리를 다른 예약이 잡았으면 끝으로 두고 보내지 않는다")
     void recheckClaimedJob_slotOccupied_skips() {
         openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
-        NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
         NotificationFixture.reservation(jdbcTemplate, 500L, USER_ID, 100L, "CONFIRMED",
                 SLOT_START, SLOT_START.plusHours(1), NOW.plusMinutes(5));
         notificationSubscriptionRepository.save(store(USER_ID));
@@ -786,7 +801,6 @@ class NotificationDispatchServiceTest {
     void recheckClaimedJob_reopenedStillSellable_keepsProcessing() {
         LocalDateTime startsAt = NOW.plusHours(3);
         openSlot(1L, NOW.plusHours(2), NOW.plusHours(6));
-        NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
         NotificationFixture.reservation(jdbcTemplate, 500L, USER_ID, 100L, "CANCELLED",
                 startsAt, startsAt.plusHours(1), startsAt.minusHours(1));
         notificationSubscriptionRepository.save(storeUntil(USER_ID, NOW.plusHours(5)));
@@ -802,8 +816,6 @@ class NotificationDispatchServiceTest {
     @DisplayName("OPEN 행이 없어도 영업시간 안이면 재공개 작업은 그대로 둔다")
     void recheckClaimedJob_reopenedBusinessHoursOnly_keepsProcessing() {
         LocalDateTime startsAt = NOW.plusHours(3);
-        NotificationFixture.businessHour(jdbcTemplate, 1L, SHOP_ID, "THU", "10:00", "20:00");
-        NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
         NotificationFixture.reservation(jdbcTemplate, 500L, USER_ID, 100L, "CANCELLED",
                 startsAt, startsAt.plusHours(1), startsAt.minusHours(1));
         notificationSubscriptionRepository.save(storeUntil(USER_ID, NOW.plusHours(5)));
@@ -820,7 +832,6 @@ class NotificationDispatchServiceTest {
     void recheckClaimedJob_reopenedClosed_skips() {
         LocalDateTime startsAt = NOW.plusHours(3);
         openSlot(1L, NOW.plusHours(2), NOW.plusHours(6));
-        NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
         NotificationFixture.reservation(jdbcTemplate, 500L, USER_ID, 100L, "CANCELLED",
                 startsAt, startsAt.plusHours(1), startsAt.minusHours(1));
         NotificationFixture.exception(jdbcTemplate, 2L, SHOP_ID, 500L, "CLOSE", startsAt, startsAt.plusHours(1));
@@ -838,7 +849,6 @@ class NotificationDispatchServiceTest {
     void recheckClaimedJob_reopenedInactiveShop_skips() {
         LocalDateTime startsAt = NOW.plusHours(3);
         openSlot(1L, NOW.plusHours(2), NOW.plusHours(6));
-        NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
         NotificationFixture.reservation(jdbcTemplate, 500L, USER_ID, 100L, "CANCELLED",
                 startsAt, startsAt.plusHours(1), startsAt.minusHours(1));
         notificationSubscriptionRepository.save(storeUntil(USER_ID, NOW.plusHours(5)));
@@ -870,8 +880,53 @@ class NotificationDispatchServiceTest {
         assertThat(inbox.getCategory()).isEqualTo(NotificationInboxCategory.INTEREST);
         assertThat(inbox.getTitle()).isEqualTo("임박 알림");
         assertThat(inbox.getBody()).isEqualTo("임박! 매장1-2026년 10월 22일 15:00 땡잡을 기회가 생겼어요!");
-        assertThat(inbox.getLinkPath()).isEqualTo("/shops/1");
+        assertThat(inbox.getLinkPath()).isEqualTo("/shops/1?treatmentId=100&startsAt=2026-10-22T15:00:00");
         assertThat(inbox.getReadAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("그 시각에 예약되는 시술이 여러 개면 링크에는 ID가 가장 작은 시술을 넣는다")
+    void sendClaimedJob_severalBookableTreatments_usesSmallestTreatmentId() {
+        NotificationFixture.treatment(jdbcTemplate, 101L, SHOP_ID, "NORMAL");
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        notificationSubscriptionRepository.save(store(USER_ID, 101L));
+        notificationSubscriptionRepository.save(store(USER_ID, 100L));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+
+        notificationDispatchService.sendClaimedJob(job);
+
+        NotificationInbox inbox = notificationInboxRepository.findAll().get(0);
+        assertThat(inbox.getLinkPath()).isEqualTo("/shops/1?treatmentId=100&startsAt=2026-10-22T15:00:00");
+    }
+
+    @Test
+    @DisplayName("ID가 더 작은 시술을 그 시각에 예약할 수 없으면 예약되는 시술을 링크에 넣는다")
+    void sendClaimedJob_smallerTreatmentNotBookable_usesBookableTreatment() {
+        NotificationFixture.treatment(jdbcTemplate, 101L, SHOP_ID, "NORMAL");
+        jdbcTemplate.update("UPDATE TREATMENT SET DURATION_MINUTES = 600 WHERE TREATMENT_ID = 100");
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        notificationSubscriptionRepository.save(store(USER_ID, 100L));
+        notificationSubscriptionRepository.save(store(USER_ID, 101L));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+
+        notificationDispatchService.sendClaimedJob(job);
+
+        NotificationInbox inbox = notificationInboxRepository.findAll().get(0);
+        assertThat(inbox.getLinkPath()).isEqualTo("/shops/1?treatmentId=101&startsAt=2026-10-22T15:00:00");
+    }
+
+    @Test
+    @DisplayName("그 회원에게 맞는 시술을 못 찾으면 매장 주소만 남긴다")
+    void sendClaimedJob_treatmentNotBookable_keepsShopPath() {
+        openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
+        notificationSubscriptionRepository.save(store(USER_ID));
+        NotificationDispatch job = claimedJob(1L, USER_ID);
+        jdbcTemplate.update("UPDATE TREATMENT SET STATUS = 'INACTIVE' WHERE TREATMENT_ID = 100");
+
+        notificationDispatchService.sendClaimedJob(job);
+
+        NotificationInbox inbox = notificationInboxRepository.findAll().get(0);
+        assertThat(inbox.getLinkPath()).isEqualTo("/shops/1");
     }
 
     @Test
@@ -992,8 +1047,6 @@ class NotificationDispatchServiceTest {
     }
 
     private void prepareReopenedSlot(LocalDateTime startsAt) {
-        NotificationFixture.businessHour(jdbcTemplate, 1L, SHOP_ID, "THU", "10:00", "20:00");
-        NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
         NotificationFixture.reservation(jdbcTemplate, 500L, OTHER_USER_ID, 100L, "CANCELLED",
                 startsAt, startsAt.plusHours(1), startsAt.minusHours(1));
     }
@@ -1037,6 +1090,7 @@ class NotificationDispatchServiceTest {
         return NotificationSubscription.builder()
                 .userId(userId)
                 .subscriptionType(SubscriptionType.STORE)
+                .treatmentId(100L)
                 .shopId(SHOP_ID)
                 .startTime(NOW)
                 .endTime(endTime)
@@ -1068,9 +1122,14 @@ class NotificationDispatchServiceTest {
     }
 
     private static NotificationSubscription store(long userId) {
+        return store(userId, 100L);
+    }
+
+    private static NotificationSubscription store(long userId, long treatmentId) {
         return NotificationSubscription.builder()
                 .userId(userId)
                 .subscriptionType(SubscriptionType.STORE)
+                .treatmentId(treatmentId)
                 .shopId(SHOP_ID)
                 .startTime(NOW)
                 .endTime(NOW.plusHours(5))

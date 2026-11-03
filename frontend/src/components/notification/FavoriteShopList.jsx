@@ -4,7 +4,7 @@ import { ROUTES } from '@/constants/routes';
 import { TERMS_CODE } from '@/constants/terms';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { useTermsStore } from '@/store/useTermsStore';
-import { isPendingFavorite, shopLabel } from '@/utils/notificationRules';
+import { isPendingFavorite, selectableTreatments, shopLabel, treatmentNameOf } from '@/utils/notificationRules';
 import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
@@ -23,6 +23,7 @@ export default function FavoriteShopList({ onBusyChange }) {
   const listStatus = useNotificationStore((state) => state.listStatus);
   const listError = useNotificationStore((state) => state.listError);
   const shopNames = useNotificationStore((state) => state.shopNames);
+  const shopTreatments = useNotificationStore((state) => state.shopTreatments);
   const saving = useNotificationStore((state) => state.saving);
   const loadSubscriptions = useNotificationStore((state) => state.loadSubscriptions);
   const loadShopNames = useNotificationStore((state) => state.loadShopNames);
@@ -31,6 +32,7 @@ export default function FavoriteShopList({ onBusyChange }) {
   const ensureAgreement = useTermsStore((state) => state.ensureAgreement);
   const shops = subscriptions.filter((item) => isPendingFavorite(item));
   const [openId, setOpenId] = useState(null);
+  const [treatmentId, setTreatmentId] = useState('');
   const [agreeing, setAgreeing] = useState(false);
   const [result, setResult] = useState(null);
 
@@ -50,9 +52,9 @@ export default function FavoriteShopList({ onBusyChange }) {
 
   useEffect(() => () => onBusyChange?.(false), [onBusyChange]);
 
-  const handleNotify = async (shopId) => {
+  const handleNotify = async (shop) => {
     setResult(null);
-    if (openId === shopId) {
+    if (openId === shop.subscriptionId) {
       setOpenId(null);
       return;
     }
@@ -62,16 +64,30 @@ export default function FavoriteShopList({ onBusyChange }) {
     try {
       // 서버의 최신 문자 수신 동의를 확인하고, 없으면 동의 모달에서 PUT 으로 저장한다
       const agreed = await ensureAgreement(TERMS_CODE.SMS_NOTIFICATION);
-      if (agreed) setOpenId(shopId);
+      if (agreed) {
+        const shopKey = String(Number(shop.shopId));
+        // 목록 조회가 실패하면 키가 없다. 카드를 열 때 한 번 더 받는다
+        if (!(shopKey in useNotificationStore.getState().shopTreatments)) {
+          await loadShopNames([shop.shopId]);
+        }
+        const treatments = useNotificationStore.getState().shopTreatments[shopKey];
+        const savedId = shop.treatmentId != null ? String(shop.treatmentId) : '';
+        const stillThere = selectableTreatments(treatments).some(
+          (item) => String(item.treatmentId) === savedId,
+        );
+        setTreatmentId(stillThere ? savedId : '');
+        setOpenId(shop.subscriptionId);
+      }
     } finally {
       setAgreeing(false);
       onBusyChange?.(false);
     }
   };
 
-  const handleSubmit = async (shop, { startTime, endTime }) => {
+  const handleSubmit = async (shop, { treatmentId: chosenTreatmentId, startTime, endTime }) => {
     const { ok, error } = await updateSubscription(shop.subscriptionId, {
       shopId: shop.shopId,
+      treatmentId: chosenTreatmentId,
       categoryId: null,
       regionCode: null,
       startTime,
@@ -121,7 +137,7 @@ export default function FavoriteShopList({ onBusyChange }) {
       )}
       {listStatus !== 'failed' &&
         shops.map((shop) => {
-          const open = openId === shop.shopId;
+          const open = openId === shop.subscriptionId;
           return (
             <Panel
               as="article"
@@ -136,6 +152,9 @@ export default function FavoriteShopList({ onBusyChange }) {
                 >
                   <div className={styles.info}>
                     <h2>{shopLabel(shop.shopId, shopNames[String(Number(shop.shopId))])}</h2>
+                    {shop.treatmentId != null && (
+                      <p>{treatmentNameOf(shopTreatments[String(Number(shop.shopId))], shop.treatmentId)}</p>
+                    )}
                   </div>
                 </Link>
                 <div className={styles.actions}>
@@ -154,7 +173,7 @@ export default function FavoriteShopList({ onBusyChange }) {
                     size="small"
                     aria-expanded={open}
                     disabled={saving || agreeing}
-                    onClick={() => handleNotify(shop.shopId)}
+                    onClick={() => handleNotify(shop)}
                   >
                     {open ? '접기' : '알림 받기'}
                   </Button>
@@ -163,6 +182,13 @@ export default function FavoriteShopList({ onBusyChange }) {
               {open && (
                 <StoreHopeForm
                   className={styles.expand}
+                  treatments={
+                    String(Number(shop.shopId)) in shopTreatments
+                      ? shopTreatments[String(Number(shop.shopId))]
+                      : null
+                  }
+                  treatmentId={treatmentId}
+                  onTreatmentChange={(event) => setTreatmentId(event.target.value)}
                   saving={saving}
                   onSubmit={(period) => handleSubmit(shop, period)}
                 />

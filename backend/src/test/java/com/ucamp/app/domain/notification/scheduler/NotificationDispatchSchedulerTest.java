@@ -41,6 +41,7 @@ import com.ucamp.app.domain.notification.service.CategoryRegionPendingQueue;
 import com.ucamp.app.domain.notification.service.NotificationDispatchService;
 import com.ucamp.app.domain.notification.service.NotificationInboxConnections;
 import com.ucamp.app.domain.notification.service.NotificationInboxService;
+import com.ucamp.app.domain.notification.service.StoreSubscriptionTreatmentService;
 import com.ucamp.app.domain.notification.service.SubscriptionMatchService;
 import com.ucamp.app.domain.vacancy.repository.ShopStatusQueryRepository;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
@@ -49,7 +50,7 @@ import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({NotificationDispatchScheduler.class, NotificationDispatchService.class, NotificationInboxService.class,
         NotificationInboxConnections.class,
-        SubscriptionMatchService.class,
+        SubscriptionMatchService.class, StoreSubscriptionTreatmentService.class,
         ShopCategoryRegionRepository.class, VacancySlotRepository.class, RecipientContactRepository.class,
         AvailabilityService.class, ShopStatusQueryRepository.class, FakeSolapiSmsClientConfig.class,
         CategoryRegionPendingQueue.class, NotificationDispatchSchedulerTest.FixedClock.class})
@@ -87,6 +88,8 @@ class NotificationDispatchSchedulerTest {
         categoryRegionPendingQueue.clear();
         NotificationFixture.category(jdbcTemplate, 10L, "NAIL");
         NotificationFixture.shop(jdbcTemplate, SHOP_ID, 10L, "SEOUL_GANGNAM", "ACTIVE");
+        NotificationFixture.treatment(jdbcTemplate, 100L, SHOP_ID, "NORMAL");
+        NotificationFixture.businessHour(jdbcTemplate, 1L, SHOP_ID, "THU", "10:00", "20:00");
         NotificationFixture.user(jdbcTemplate, USER_ID);
     }
 
@@ -284,6 +287,7 @@ class NotificationDispatchSchedulerTest {
         return NotificationSubscription.builder()
                 .userId(userId)
                 .subscriptionType(SubscriptionType.STORE)
+                .treatmentId(100L)
                 .shopId(SHOP_ID)
                 .startTime(NOW)
                 .endTime(NOW.plusHours(5))

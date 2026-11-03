@@ -24,7 +24,7 @@ const emptyForm = () => ({
 });
 
 /**
- * 카테고리·지역 알림 구독 등록. 시술·지역·희망 시작·종료를 골라 등록한다.
+ * 카테고리·지역 알림 구독 등록. 카테고리·지역·희망 시작·종료를 골라 등록한다.
  * 문자 수신 동의가 없으면 저장 전에 동의 모달을 띄운다. 동의하지 않으면 등록하지 않는다.
  * 업장 구독은 매장이 정해진 화면에서 하고, 이 폼에서는 보내지 않는다.
  * 희망 날짜는 오늘부터 30일 안만, 시각은 기본 time 입력(30분 단위)으로 고른다.
@@ -47,7 +47,7 @@ export default function SubscriptionCreateForm({ onBusyChange }) {
 
   useEffect(() => {
     loadCategories();
-    // 같은 시술·지역·시간이 이미 있는지 보려면 구독 목록이 스토어에 있어야 한다
+    // 같은 카테고리·지역·시간이 이미 있는지 보려면 구독 목록이 스토어에 있어야 한다
     loadSubscriptions();
   }, [loadCategories, loadSubscriptions]);
 
@@ -105,15 +105,15 @@ export default function SubscriptionCreateForm({ onBusyChange }) {
     <Panel as="form" padded className={styles.form} onSubmit={handleSubmit} noValidate>
       <h1>알림 조건 추가</h1>
       <p className={styles.lead}>
-        시술·지역과 희망 시간이 맞는 매장에 빈자리가 나면, 가입한 휴대폰 번호로 문자가 갑니다.
+        카테고리·지역과 희망 시간이 맞는 매장에 빈자리가 나면, 가입한 휴대폰 번호로 문자가 갑니다.
       </p>
 
       <div className={styles.grid}>
         <label>
-          원하는 시술
+          카테고리
           <select required value={form.categoryId} onChange={change('categoryId')}>
             <option value="" disabled>
-              시술 선택
+              카테고리 선택
             </option>
             {categoryOptions.map((category) => (
               <option key={category.categoryId} value={category.categoryId}>
@@ -224,7 +224,14 @@ export default function SubscriptionCreateForm({ onBusyChange }) {
         </div>
       </div>
 
-      <p className={styles.hint}>날짜는 오늘부터 {HOPE_DAYS}일 안, 시각은 30분 단위로 고를 수 있어요.</p>
+      <div className={styles.rule}>
+        <p className={styles.lead}>희망 시간 안에 시작하는 빈자리만 알려 드립니다.</p>
+        <p className={styles.hint}>
+          카테고리·지역 알림은 문자를 만든 뒤 60분 동안 다음 빈자리를 모아 한 통으로 보냅니다. 이
+          간격은 바꿀 수 없습니다.
+        </p>
+        <p className={styles.hint}>날짜는 오늘부터 {HOPE_DAYS}일 안, 시각은 30분 단위로 고를 수 있어요.</p>
+      </div>
 
       {result && (
         <Alert as="p" tone={result.tone} role={result.tone === 'error' ? 'alert' : 'status'}>
@@ -238,8 +245,7 @@ export default function SubscriptionCreateForm({ onBusyChange }) {
 
       <Notice className={styles.note}>
         <InfoIcon size={16} />
-        이 매장만 받으려면 매장 화면에서 등록해요. 시술·지역 문자는 60분 동안 모아 한 통으로 가며, 이
-        간격은 바꿀 수 없습니다.
+        이 매장만 받으려면 매장 화면에서 등록해요.
       </Notice>
     </Panel>
   );

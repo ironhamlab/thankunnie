@@ -86,13 +86,14 @@ class NotificationControllerTest {
                         .header(StubAuthFilter.HEADER_NAME, "CUSTOMER_1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"subscriptionType":"STORE","shopId":1,
+                                {"subscriptionType":"STORE","shopId":1,"treatmentId":100,
                                  "startTime":"2026-10-23T14:00:00+09:00","endTime":"2026-10-23T18:00:00+09:00"}
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.subscriptionId").value(1))
                 .andExpect(jsonPath("$.data.subscriptionType").value("STORE"))
+                .andExpect(jsonPath("$.data.treatmentId").value(100))
                 .andExpect(jsonPath("$.data.startTime").value("2026-10-23T14:00:00+09:00"))
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"));
     }
@@ -275,7 +276,7 @@ class NotificationControllerTest {
     }
 
     private static NotificationSubscriptionResponse storeResponse() {
-        return new NotificationSubscriptionResponse(1L, SubscriptionType.STORE, 1L, null, null,
+        return new NotificationSubscriptionResponse(1L, SubscriptionType.STORE, 1L, 100L, null, null,
                 START, END, SubscriptionStatus.ACTIVE);
     }
 }

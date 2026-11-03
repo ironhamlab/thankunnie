@@ -13,10 +13,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import com.ucamp.app.domain.notification.entity.SubscriptionType;
 
 /**
- * 알림 구독 등록 요청. 업장 구독은 매장 ID만, 카테고리 구독은 카테고리 ID와 지역코드만 보낸다.
+ * 알림 구독 등록 요청. 업장 찜은 매장 ID만, 업장 알림은 매장 ID와 시술 ID를 보낸다. 카테고리 구독은 카테고리 ID와 지역코드만 보낸다.
  *
  * @param subscriptionType 구독 유형
  * @param shopId           매장 ID. 카테고리 구독이면 null
+ * @param treatmentId      시술 ID. 업장 구독이면 고객이 고른 시술, 카테고리 구독이면 null
  * @param categoryId       카테고리 ID. 업장 구독이면 null
  * @param regionCode       지역코드. 업장 구독이면 null
  * @param startTime        알림 희망 시작 시각
@@ -28,6 +29,7 @@ import com.ucamp.app.domain.notification.entity.SubscriptionType;
                 {
                   "subscriptionType": "STORE",
                   "shopId": 1,
+                  "treatmentId": 10,
                   "categoryId": null,
                   "regionCode": null,
                   "startTime": "2026-10-28T10:00:00+09:00",
@@ -39,6 +41,8 @@ public record NotificationSubscriptionCreateRequest(
         @NotNull SubscriptionType subscriptionType,
         @Schema(description = "매장 ID. STORE 일 때만", example = "1", nullable = true)
         Long shopId,
+        @Schema(description = "시술 ID. 업장 알림일 때만. 그 매장의 판매 중인 일반 시술. 시간 없는 찜은 비운다", example = "10", nullable = true)
+        Long treatmentId,
         @Schema(description = "카테고리 ID. CATEGORY_REGION 일 때만", nullable = true)
         Long categoryId,
         @Schema(description = "지역코드. CATEGORY_REGION 일 때만", nullable = true)

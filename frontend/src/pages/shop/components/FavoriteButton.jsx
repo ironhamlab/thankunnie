@@ -4,6 +4,7 @@ import { ROUTES } from '@/constants/routes';
 import { TERMS_CODE } from '@/constants/terms';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import { useShopDetailStore } from '@/store/useShopDetailStore';
 import { useTermsStore } from '@/store/useTermsStore';
 import { getDevTestUser } from '@/utils/devTestUser';
 import {
@@ -39,6 +40,11 @@ export default function FavoriteButton({ shopId, shopName }) {
   const [notice, setNotice] = useState(null);
   const [formError, setFormError] = useState(null);
   const [step, setStep] = useState(null);
+  const [treatmentId, setTreatmentId] = useState('');
+  const shop = useShopDetailStore((state) => state.shop);
+  const shopStatus = useShopDetailStore((state) => state.status);
+  const onThisShop = shop && String(shop.shopId) === String(shopId);
+  const shopTreatments = onThisShop ? (shop.treatments ?? []) : shopStatus === 'failed' ? [] : null;
   // 문자 수신 동의 확인(동의 모달)이 끝날 때까지 찜 버튼·예 선택을 다시 실행하지 못하게 막는다.
   // 겹치면 새 동의 요청이 이전 요청을 '닫음'으로 끝내 사용자가 거절하지 않았는데 찜만 저장될 수 있다
   const [agreeing, setAgreeing] = useState(false);
@@ -56,6 +62,7 @@ export default function FavoriteButton({ shopId, shopName }) {
   const closeDialog = () => {
     setStep(null);
     setFormError(null);
+    setTreatmentId('');
   };
 
   const handleClick = async () => {
@@ -86,7 +93,7 @@ export default function FavoriteButton({ shopId, shopName }) {
   };
 
   const handleDecline = async () => {
-    const result = await addSubscription(buildStoreRequest(shopId, null));
+    const result = await addSubscription(buildStoreRequest(shopId, null, null));
     if (!result.ok) {
       setError(result.error.message);
     }
@@ -111,9 +118,11 @@ export default function FavoriteButton({ shopId, shopName }) {
     }
   };
 
-  const handleCreate = async ({ startTime, endTime }) => {
+  const handleCreate = async ({ treatmentId: chosenTreatmentId, startTime, endTime }) => {
     setFormError(null);
-    const result = await addSubscription(buildStoreRequest(shopId, { startTime, endTime }));
+    const result = await addSubscription(
+      buildStoreRequest(shopId, chosenTreatmentId, { startTime, endTime }),
+    );
     if (!result.ok) {
       setFormError(result.error.message);
       return;
@@ -164,10 +173,10 @@ export default function FavoriteButton({ shopId, shopName }) {
             <>
               <p className={styles.alertShop}>{shopName}</p>
               <div className={styles.confirmActions}>
-                <Button type="button" onClick={handleDecline}>
+                <Button type="button" disabled={saving} onClick={handleDecline}>
                   아니요
                 </Button>
-                <Button type="button" className={styles.confirmYes} onClick={handleAccept}>
+                <Button type="button" className={styles.confirmYes} disabled={saving} onClick={handleAccept}>
                   예
                 </Button>
               </div>
@@ -192,7 +201,13 @@ export default function FavoriteButton({ shopId, shopName }) {
                   {formError}
                 </p>
               )}
-              <StoreHopeForm onSubmit={handleCreate} saving={saving} />
+              <StoreHopeForm
+                treatments={shopTreatments}
+                treatmentId={treatmentId}
+                onTreatmentChange={(event) => setTreatmentId(event.target.value)}
+                onSubmit={handleCreate}
+                saving={saving}
+              />
             </>
           )}
         </Dialog>

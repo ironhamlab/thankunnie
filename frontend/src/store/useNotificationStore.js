@@ -39,8 +39,10 @@ export const useNotificationStore = create((set, get) => ({
   listRequestId: 0,
   categories: [],
   categoryStatus: 'idle',
-  // 업장 구독 카드용 매장명. 키는 매장 ID 문자열, 조회 실패면 null
+  // 업장 구독 카드용 매장명. 키는 매장 ID 문자열. 성공한 조회만 넣는다
   shopNames: {},
+  // 그 매장 상세에 들어 있는 시술. 키는 매장 ID 문자열. 조회 전·실패면 키가 없다
+  shopTreatments: {},
   loadingShopIds: {},
   saving: false,
 
@@ -79,7 +81,7 @@ export const useNotificationStore = create((set, get) => ({
     }
   },
 
-  // 아직 이름을 모르는 매장만 매장 상세 API로 조회한다. 없으면 null 로 두고 다시 부르지 않는다
+  // 아직 이름을 모르는 매장만 매장 상세 API로 조회한다. 실패하면 캐시하지 않아 다시 열 때 재시도한다
   loadShopNames: async (shopIds) => {
     const ids = [...new Set(shopIds.map((id) => Number(id)).filter((id) => id > 0))];
     for (const shopId of ids) {
@@ -90,11 +92,12 @@ export const useNotificationStore = create((set, get) => ({
         const shop = await shopDetailApi.getShop(shopId);
         set((state) => ({
           shopNames: { ...state.shopNames, [key]: shop?.shopName ?? null },
+          shopTreatments: { ...state.shopTreatments, [key]: shop?.treatments ?? [] },
           loadingShopIds: { ...state.loadingShopIds, [key]: false },
         }));
       } catch {
+        // 실패를 성공처럼 남기면 시술 목록이 비어 저장할 수 없다. 로딩만 끈다
         set((state) => ({
-          shopNames: { ...state.shopNames, [key]: null },
           loadingShopIds: { ...state.loadingShopIds, [key]: false },
         }));
       }

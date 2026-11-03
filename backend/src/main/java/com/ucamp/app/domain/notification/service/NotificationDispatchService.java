@@ -343,6 +343,7 @@ public class NotificationDispatchService {
 
     /**
      * 선점한 작업만 다시 본다. 구독이 아직 활성이고, 희망 종료가 지나지 않았고, 빈자리가 아직 팔리면 true.
+     * 업장 구독은 고객이 고른 시술을 그 시각에 예약할 수 있는지도 다시 본다.
      * 하나라도 아니면 그 작업을 끝으로 두고 false를 돌려준다. 문자는 보내지 않는다.
      *
      * @param job 선점한 발송 대기 작업
@@ -361,6 +362,7 @@ public class NotificationDispatchService {
             return false;
         }
         // 활성 구독이고, 희망 종료가 지나지 않았고, 이 빈자리와 아직 맞는 회원인지 다시 본다.
+        // 업장 구독은 고른 시술을 그 시각에 예약할 수 있을 때만 맞는다.
         if (!subscriptionStillMatches(event, job.getUserId())) {
             finishWithoutSending(job);
             return false;
@@ -451,7 +453,18 @@ public class NotificationDispatchService {
                 NotificationInboxCategory.INTEREST,
                 interestTitle(event.getEventType()),
                 messageBody,
-                NotificationInboxService.shopPath(event.getShopId()));
+                storeNotificationLink(event, latest.getUserId()));
+    }
+
+    // 업장 알림 링크. 그 회원에게 맞는 시술이 있으면 시술과 시작 시각을 붙인다.
+    // 없으면 매장 주소만 둔다. 카테고리·지역 묶음 알림은 이 메서드를 쓰지 않는다.
+    private String storeNotificationLink(NotificationEvent event, Long userId) {
+        Long treatmentId = subscriptionMatchService.findLinkTreatmentId(
+                event.getShopId(), event.getSlotStartsAt(), userId);
+        if (treatmentId == null) {
+            return NotificationInboxService.shopPath(event.getShopId());
+        }
+        return NotificationInboxService.shopBookingPath(event.getShopId(), treatmentId, event.getSlotStartsAt());
     }
 
     // 같은 이벤트·회원에 성공(SENT) 또는 결과 불명(UNKNOWN)이 있으면 true. 이 둘은 재발송하지 않는다.
@@ -554,7 +567,8 @@ public class NotificationDispatchService {
         return failReason.substring(0, FAIL_REASON_MAX_LENGTH);
     }
 
-    // 업장 구독과 카테고리 구독 중 하나라도 아직 맞으면 포함한다. 해제한 구독과 희망 종료가 지난 구독은 빠진다.
+    // 업장 구독과 카테고리 구독 중 하나라도 아직 맞으면 포함한다.
+    // 업장 구독은 고른 시술을 그 시각에 예약할 수 있어야 맞는다. 해제한 구독과 희망 종료가 지난 구독은 빠진다.
     private boolean subscriptionStillMatches(NotificationEvent event, Long userId) {
         List<Long> userIds = subscriptionMatchService.findRecipientUserIds(
                 event.getShopId(), event.getSlotStartsAt());
