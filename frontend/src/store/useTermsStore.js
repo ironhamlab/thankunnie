@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { termsApi } from '@/api/termsApi';
-import { AGREEMENT_REQUIRED_ERRORS } from '@/constants/terms';
+import { AGREEMENT_REQUIRED_ERRORS, TERMS_CODE } from '@/constants/terms';
 
 const toError = (error, fallback) => ({
   code: error?.code ?? 'UNKNOWN_ERROR',
@@ -47,6 +47,10 @@ export const useTermsStore = create((set, get) => ({
     const isCurrent = () => get().pending?.id === pending.id;
     try {
       await termsApi.agree(pending.termsCode);
+      // 구독 등록 중에 동의해도 마이페이지 문자 수신 체크박스가 켜지게 한다
+      if (pending.termsCode === TERMS_CODE.SMS_NOTIFICATION) {
+        set({ smsAgreement: { ...get().smsAgreement, agreed: true } });
+      }
       if (!isCurrent()) return;
       set({ pending: null });
       pending.resolve(true);
@@ -75,6 +79,45 @@ export const useTermsStore = create((set, get) => ({
     }
     return get().requestAgreement(termsCode);
   },
+
+  // 마이페이지 알림 문자 수신 설정. agreed 는 서버에서 확인한 값이다
+  smsAgreement: { status: 'idle', agreed: false, saving: false, error: null },
+
+  loadSmsAgreement: async () => {
+    set({ smsAgreement: { ...get().smsAgreement, status: 'loading', error: null } });
+    try {
+      const agreements = await termsApi.getMyAgreements();
+      const agreed = (agreements ?? []).some((item) => item.code === TERMS_CODE.SMS_NOTIFICATION);
+      set({ smsAgreement: { status: 'succeeded', agreed, saving: false, error: null } });
+    } catch (error) {
+      set({
+        smsAgreement: {
+          ...get().smsAgreement,
+          status: 'failed',
+          error: toError(error, '문자 수신 설정을 불러오지 못했습니다.'),
+        },
+      });
+    }
+  },
+
+  /** 알림 문자 수신 동의를 철회한다. 성공하면 { ok: true } */
+  withdrawSmsAgreement: async () => {
+    if (get().smsAgreement.saving) return { ok: false };
+    set({ smsAgreement: { ...get().smsAgreement, saving: true, error: null } });
+    try {
+      await termsApi.withdraw(TERMS_CODE.SMS_NOTIFICATION);
+      set({ smsAgreement: { ...get().smsAgreement, agreed: false, saving: false } });
+      return { ok: true };
+    } catch (error) {
+      const failure = toError(error, '문자 수신을 철회하지 못했습니다.');
+      set({ smsAgreement: { ...get().smsAgreement, saving: false, error: failure } });
+      return { ok: false, error: failure };
+    }
+  },
+
+  // 로그아웃 뒤 다른 계정에 이전 설정이 보이지 않도록 화면을 벗어나면 지운다
+  resetSmsAgreement: () =>
+    set({ smsAgreement: { status: 'idle', agreed: false, saving: false, error: null } }),
 
   // 저장 중에는 닫지 않는다 (모달도 닫기를 막지만, 다른 경로로 불려도 저장 결과와 어긋나지 않게 한다)
   cancelAgreement: () => {
