@@ -70,13 +70,15 @@ export default function MyReservationsPage() {
 
   useEffect(() => {
     let isLatest = true;
-    const { filters } = TABS.find((item) => item.key === tabKey);
-    loadReservations('my', { ...filters(), page, size: PAGE_SIZE }).then(() => {
+    const load = async () => {
+      const { filters } = TABS.find((item) => item.key === tabKey);
+      await loadReservations('my', { ...filters(), page, size: PAGE_SIZE });
       if (isLatest) {
         setHasLoadedList(true);
         setListTabKey(tabKey);
       }
-    });
+    };
+    load();
     return () => {
       isLatest = false;
     };
