@@ -8,6 +8,8 @@ import styles from './KakaoMap.module.css';
 const DEFAULT_CENTER = { lat: 37.4979, lng: 127.0276 };
 const DEFAULT_LEVEL = 5;
 const DEFAULT_BOUNDS_PADDING = { top: 40, right: 40, bottom: 40, left: 40 };
+const ZOOM_DELAY_MS = 350;
+const ZOOM_DURATION_MS = 450;
 
 /**
  * 카카오맵 위에 가격 등 라벨 마커를 띄우는 지도.
@@ -19,6 +21,7 @@ const DEFAULT_BOUNDS_PADDING = { top: 40, right: 40, bottom: 40, left: 40 };
  * @param markerClassName 마커 버튼 클래스. 선택된 마커에는 is-selected가 추가된다
  * @param boundsPadding   마커 범위를 맞출 때 띄울 여백(px). 지도 위에 패널이 겹치는 쪽을 넓게 준다
  * @param level           마커가 1개일 때 확대 정도(작을수록 가깝게). 생략하면 기본 확대를 유지한다
+ * @param startLevel      주면 이 단계에서 시작해 level 까지 부드럽게 확대한다. 움직임 줄이기 설정이면 바로 level 로 간다
  * @param fallback        지도를 쓸 수 없을 때 보여줄 요소
  */
 export default function KakaoMap({
@@ -28,6 +31,7 @@ export default function KakaoMap({
   markerClassName,
   boundsPadding = DEFAULT_BOUNDS_PADDING,
   level,
+  startLevel,
   fallback = null,
 }) {
   const containerRef = useRef(null);
@@ -120,11 +124,22 @@ export default function KakaoMap({
   useEffect(() => {
     const map = mapRef.current;
     if (status !== 'ready' || !map || !level || markers.length !== 1) {
-      return;
+      return undefined;
+    }
+    const center = new window.kakao.maps.LatLng(markers[0].lat, markers[0].lng);
+    if (startLevel && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      map.setLevel(startLevel);
+      map.setCenter(center);
+      // 지도가 그려진 것을 본 뒤에 확대가 시작되도록 잠시 기다린다
+      const timer = setTimeout(() => {
+        map.setLevel(level, { animate: { duration: ZOOM_DURATION_MS } });
+      }, ZOOM_DELAY_MS);
+      return () => clearTimeout(timer);
     }
     map.setLevel(level);
-    map.setCenter(new window.kakao.maps.LatLng(markers[0].lat, markers[0].lng));
-  }, [status, markers, level]);
+    map.setCenter(center);
+    return undefined;
+  }, [status, markers, level, startLevel]);
 
   useEffect(() => {
     if (status !== 'ready') {
