@@ -32,6 +32,7 @@ import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.TestUser;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
+import com.ucamp.app.common.lock.UserLock;
 import com.ucamp.app.domain.notification.dto.request.NotificationSubscriptionCreateRequest;
 import com.ucamp.app.domain.notification.dto.request.NotificationSubscriptionUpdateRequest;
 import com.ucamp.app.domain.notification.dto.response.NotificationSubscriptionResponse;
@@ -43,7 +44,9 @@ import com.ucamp.app.domain.treatment.entity.Treatment;
 import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
 import com.ucamp.app.domain.treatment.entity.TreatmentType;
 import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
+import com.ucamp.app.domain.user.entity.AppUserStatus;
 import com.ucamp.app.domain.user.entity.TermsCode;
+import com.ucamp.app.domain.user.repository.AppUserRepository;
 import com.ucamp.app.domain.user.service.TermsAgreementService;
 
 @ExtendWith(MockitoExtension.class)
@@ -71,13 +74,23 @@ class NotificationServiceTest {
     @Mock
     private TermsAgreementService termsAgreementService;
 
+    @Mock
+    private AppUserRepository appUserRepository;
+
+    @Mock
+    private UserLock userLock;
+
     private NotificationService notificationService;
 
     @BeforeEach
     void setUp() {
         notificationService = new NotificationService(
                 repository, treatmentRepository, storeSubscriptionDispatchService,
-                categoryRegionSubscriptionDispatchService, CLOCK, termsAgreementService);
+                categoryRegionSubscriptionDispatchService, CLOCK, termsAgreementService,
+                appUserRepository, userLock);
+        // 기본은 탈퇴하지 않은 고객. 잠금 전에 검사에서 끝나는 테스트도 있어 lenient 로 둔다
+        lenient().when(appUserRepository.existsByUserIdAndStatus(CUSTOMER.userId(), AppUserStatus.ACTIVE))
+                .thenReturn(true);
         Treatment treatment = mock(Treatment.class);
         lenient().when(treatment.getStatus()).thenReturn(TreatmentStatus.ACTIVE);
         lenient().when(treatment.getTreatmentType()).thenReturn(TreatmentType.NORMAL);
@@ -544,6 +557,31 @@ class NotificationServiceTest {
                 new NotificationSubscriptionUpdateRequest(1L, 100L, null, null, end, start)),
                 ErrorCode.SUBSCRIPTION_INVALID_TIME);
         verify(termsAgreementService, never()).requireAgreed(any(), any());
+    }
+
+    @Test
+    @DisplayName("토큰 검사 뒤 탈퇴가 먼저 끝났으면 회원 잠금 뒤 확인에서 막혀 구독을 저장하지 않는다")
+    void subscribe_withdrawnAfterTokenCheck_throwsUnauthorized() {
+        given(appUserRepository.existsByUserIdAndStatus(CUSTOMER.userId(), AppUserStatus.ACTIVE)).willReturn(false);
+
+        assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
+                createRequest(SubscriptionType.STORE, 1L, 100L, null, null, start, end)),
+                ErrorCode.UNAUTHORIZED);
+        verify(userLock).lock(CUSTOMER.userId());
+        verify(repository, never()).save(any());
+        verify(storeSubscriptionDispatchService, never()).enqueue(any());
+    }
+
+    @Test
+    @DisplayName("토큰 검사 뒤 탈퇴가 먼저 끝났으면 구독을 읽기 전에 막혀 해제된 구독을 되살리지 않는다")
+    void updateSubscription_withdrawnAfterTokenCheck_throwsUnauthorized() {
+        given(appUserRepository.existsByUserIdAndStatus(CUSTOMER.userId(), AppUserStatus.ACTIVE)).willReturn(false);
+
+        assertErrorCode(() -> notificationService.updateSubscription(CUSTOMER, 10L,
+                new NotificationSubscriptionUpdateRequest(1L, 100L, null, null, start, end)),
+                ErrorCode.UNAUTHORIZED);
+        verify(userLock).lock(CUSTOMER.userId());
+        verify(repository, never()).findByIdAndUserId(any(), any());
     }
 
     // 동의 기록이 없는 고객. 검사까지 가지 않는 테스트도 있어 lenient 로 둔다

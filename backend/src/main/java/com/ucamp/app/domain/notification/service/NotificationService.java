@@ -13,6 +13,7 @@ import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.UserRole;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
+import com.ucamp.app.common.lock.UserLock;
 import com.ucamp.app.domain.notification.dto.request.NotificationSubscriptionCreateRequest;
 import com.ucamp.app.domain.notification.dto.request.NotificationSubscriptionUpdateRequest;
 import com.ucamp.app.domain.notification.dto.response.NotificationSubscriptionResponse;
@@ -24,7 +25,9 @@ import com.ucamp.app.domain.treatment.entity.Treatment;
 import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
 import com.ucamp.app.domain.treatment.entity.TreatmentType;
 import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
+import com.ucamp.app.domain.user.entity.AppUserStatus;
 import com.ucamp.app.domain.user.entity.TermsCode;
+import com.ucamp.app.domain.user.repository.AppUserRepository;
 import com.ucamp.app.domain.user.service.TermsAgreementService;
 
 /**
@@ -42,6 +45,8 @@ public class NotificationService {
     private final CategoryRegionSubscriptionDispatchService categoryRegionSubscriptionDispatchService;
     private final Clock clock;
     private final TermsAgreementService termsAgreementService;
+    private final AppUserRepository appUserRepository;
+    private final UserLock userLock;
 
     /**
      * 업장 구독 또는 카테고리·지역 구독을 등록한다.
@@ -58,6 +63,7 @@ public class NotificationService {
             NotificationSubscriptionCreateRequest request) {
         loginUser.requireRole(UserRole.CUSTOMER);
         validateNotExpired(request.localEndTime());
+        lockActiveCustomer(loginUser);
         // 대상·시간 형식을 먼저 검사한 뒤 동의·중복을 본다 (잘못된 요청이 동의 필요·409 로 나가면 안 됨)
         NotificationSubscription subscription = NotificationSubscription.builder()
                 .userId(loginUser.userId())
@@ -111,6 +117,8 @@ public class NotificationService {
     public NotificationSubscriptionResponse updateSubscription(AuthUser loginUser, Long subscriptionId,
             NotificationSubscriptionUpdateRequest request) {
         loginUser.requireRole(UserRole.CUSTOMER);
+        // 잠금 뒤에 구독을 읽어야, 탈퇴가 해제한 구독을 ACTIVE 로 읽어 덮어쓰지 않는다
+        lockActiveCustomer(loginUser);
         NotificationSubscription subscription = getActiveSubscription(loginUser, subscriptionId);
         boolean wasNotifying = hasHopeTime(subscription);
         validateNotExpired(request.localEndTime());
@@ -191,6 +199,15 @@ public class NotificationService {
 
     private void requireSmsAgreement(AuthUser loginUser) {
         termsAgreementService.requireAgreed(loginUser.userId(), TermsCode.SMS_NOTIFICATION);
+    }
+
+    // 탈퇴와 같은 회원 잠금으로 줄 세운다. 토큰 검사 뒤 탈퇴가 먼저 끝났으면, 탈퇴가 해제한 뒤에
+    // ACTIVE 구독이 새로 저장되거나 되살아나지 않도록 비로그인으로 막는다
+    private void lockActiveCustomer(AuthUser loginUser) {
+        userLock.lock(loginUser.userId());
+        if (!appUserRepository.existsByUserIdAndStatus(loginUser.userId(), AppUserStatus.ACTIVE)) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
     }
 
     // 다른 고객의 구독과 이미 해제한 구독은 둘 다 없는 것으로 처리한다.
