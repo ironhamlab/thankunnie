@@ -168,6 +168,7 @@
 | 필드 | 설명 |
 |---|---|
 | `summary` | 목록과 같은 요약. `balance`는 현장 결제 잔금(적용 판매가 − 예약금) |
+| `customerPhone` | 예약자 휴대폰 번호. 탈퇴 회원(`APP_USER.STATUS = INACTIVE`)이면 null. 이름(`summary.customerName`)은 "탈퇴회원"으로 내려간다 |
 | `summary.cancellable` | 취소 버튼 표시 여부. 확정 상태이고 시작 전이면 true. 실제 취소 가능 판단은 취소 API가 한다 |
 | `payment` | 최근 예약금 결제. `status`(READY, PAID, FAILED, UNKNOWN, REFUND_PENDING, PART_REFUNDED, REFUNDED), `amount`, `refundedAmount`, `approvedAt`, `refundedAt`. 결제 전이면 null |
 | `cancel` | 취소. `cancelType`(CUSTOMER, SHOP_FAULT, CUSTOMER_REQUEST), `status`, `policyRefundAmount`, `refundAmount`, `requestedAt`, `completedAt`. 취소 전이면 null |
