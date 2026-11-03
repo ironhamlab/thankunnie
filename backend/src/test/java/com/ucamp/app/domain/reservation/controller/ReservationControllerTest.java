@@ -10,7 +10,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.OffsetDateTime;
+import java.util.function.Supplier;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +51,13 @@ class ReservationControllerTest {
 
     @MockitoBean
     private ReservationQueueService reservationQueueService;
+
+    @BeforeEach
+    void setUp() {
+        // 대기열이 차례를 허락하면 넘겨받은 예약 생성 작업을 그대로 실행한다
+        given(reservationQueueService.createInTurn(any(), any(), any()))
+                .willAnswer(invocation -> invocation.<Supplier<?>>getArgument(2).get());
+    }
 
     @Test
     @DisplayName("고객이 예약하면 201 과 점유 예약 정보를 반환한다")
@@ -113,7 +122,7 @@ class ReservationControllerTest {
     @DisplayName("대기열에서 차례가 아니면 409 와 RESERVATION_007 을 반환하고 예약을 만들지 않는다")
     void createReservation_notYourTurn_returnsConflict() throws Exception {
         willThrow(new BusinessException(ErrorCode.RESERVATION_QUEUE_NOT_YOUR_TURN))
-                .given(reservationQueueService).requireTurn(any(), any());
+                .given(reservationQueueService).createInTurn(any(), any(), any());
 
         mockMvc.perform(post(URL)
                         .header(StubAuthFilter.HEADER_NAME, "CUSTOMER_1")

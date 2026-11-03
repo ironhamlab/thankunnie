@@ -17,6 +17,8 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -108,18 +110,52 @@ class ReservationQueueServiceTest {
 
     @Test
     @DisplayName("맨 앞 사람만 예약할 수 있고 뒤에 선 사람은 RESERVATION_QUEUE_NOT_YOUR_TURN 을 받는다")
-    void requireTurn_onlyFront() {
+    void createInTurn_onlyFront() {
         queueService.joinOrRefresh(FIRST, queueRequest());
         queueService.joinOrRefresh(SECOND, queueRequest());
 
-        assertThatCode(() -> queueService.requireTurn(FIRST, createRequest())).doesNotThrowAnyException();
         assertNotYourTurn(SECOND);
+        assertThat(queueService.createInTurn(FIRST, createRequest(), () -> 100L)).isEqualTo(100L);
+    }
+
+    @Test
+    @DisplayName("뒤에 선 사람은 예약 작업을 실행하지 않는다")
+    void createInTurn_notYourTurn_skipsCreate() {
+        queueService.joinOrRefresh(FIRST, queueRequest());
+        queueService.joinOrRefresh(SECOND, queueRequest());
+        AtomicBoolean created = new AtomicBoolean();
+
+        assertThatThrownBy(() -> queueService.createInTurn(SECOND, createRequest(), () -> created.getAndSet(true)))
+                .isInstanceOf(BusinessException.class);
+        assertThat(created).isFalse();
     }
 
     @Test
     @DisplayName("아무도 기다리지 않는 빈자리는 줄에 서지 않아도 예약할 수 있다")
-    void requireTurn_noQueue_allows() {
-        assertThatCode(() -> queueService.requireTurn(SECOND, createRequest())).doesNotThrowAnyException();
+    void createInTurn_noQueue_allows() {
+        assertThatCode(() -> createInTurn(SECOND)).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("예약을 만드는 사이 차례 시간이 지나도 다음 사람에게 차례가 넘어가지 않는다")
+    void createInTurn_turnExpiresDuringCreate_keepsTurn() throws Exception {
+        queueService.joinOrRefresh(FIRST, queueRequest());
+        queueService.joinOrRefresh(SECOND, queueRequest());
+        AtomicReference<ReservationQueueResponse> secondDuringCreate = new AtomicReference<>();
+        Thread second = new Thread(() -> secondDuringCreate.set(queueService.joinOrRefresh(SECOND, queueRequest())));
+
+        queueService.createInTurn(FIRST, createRequest(), () -> {
+            // 차례(15초)가 지난 뒤 뒷사람이 순서를 물어도, 예약이 끝날 때까지 기다렸다가 결제 중을 본다
+            clock.advance(Duration.ofSeconds(20));
+            second.start();
+            awaitBlocked(second);
+            activeReservations.add(hold(FIRST, 100L, NOW.plusMinutes(5)));
+            return null;
+        });
+        second.join(5_000);
+
+        assertThat(secondDuringCreate.get().status()).isEqualTo(ReservationQueueStatus.WAITING);
+        assertThat(secondDuringCreate.get().paying()).isTrue();
     }
 
     @Test
@@ -127,9 +163,8 @@ class ReservationQueueServiceTest {
     void hold_othersWaitWhilePaying() {
         queueService.joinOrRefresh(FIRST, queueRequest());
         queueService.joinOrRefresh(SECOND, queueRequest());
-        queueService.requireTurn(FIRST, createRequest());
-        activeReservations.add(hold(FIRST, 100L, NOW.plusMinutes(5)));
-        queueService.completeTurn(FIRST, createRequest());
+        queueService.createInTurn(FIRST, createRequest(),
+                () -> activeReservations.add(hold(FIRST, 100L, NOW.plusMinutes(5))));
 
         ReservationQueueResponse second = queueService.joinOrRefresh(SECOND, queueRequest());
         ReservationQueueResponse first = queueService.joinOrRefresh(FIRST, queueRequest());
@@ -146,8 +181,8 @@ class ReservationQueueServiceTest {
     void holdReleased_nextTurn() {
         queueService.joinOrRefresh(FIRST, queueRequest());
         queueService.joinOrRefresh(SECOND, queueRequest());
-        activeReservations.add(hold(FIRST, 100L, NOW.plusMinutes(5)));
-        queueService.completeTurn(FIRST, createRequest());
+        queueService.createInTurn(FIRST, createRequest(),
+                () -> activeReservations.add(hold(FIRST, 100L, NOW.plusMinutes(5))));
         queueService.joinOrRefresh(SECOND, queueRequest());
 
         // 5분 점유가 만료되면 겹치는 예약에서 빠진다 (SalePolicy.isOccupying)
@@ -158,7 +193,7 @@ class ReservationQueueServiceTest {
 
         assertThat(queueService.joinOrRefresh(SECOND, queueRequest()).status())
                 .isEqualTo(ReservationQueueStatus.MY_TURN);
-        assertThatCode(() -> queueService.requireTurn(SECOND, createRequest())).doesNotThrowAnyException();
+        assertThatCode(() -> createInTurn(SECOND)).doesNotThrowAnyException();
     }
 
     @Test
@@ -250,7 +285,22 @@ class ReservationQueueServiceTest {
         assertForbidden(() -> queueService.joinOrRefresh(owner, queueRequest()));
         assertForbidden(() -> queueService.leave(owner, queueRequest()));
         // 기다리는 사람이 있어도 차례(409)보다 역할(403)을 먼저 알린다
-        assertForbidden(() -> queueService.requireTurn(owner, createRequest()));
+        assertForbidden(() -> createInTurn(owner));
+    }
+
+    private Object createInTurn(AuthUser user) {
+        return queueService.createInTurn(user, createRequest(), () -> null);
+    }
+
+    /** 다른 스레드가 줄의 잠금을 기다리기 시작할 때까지 기다린다 */
+    private static void awaitBlocked(Thread thread) {
+        long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
+        while (thread.getState() != Thread.State.BLOCKED) {
+            if (System.nanoTime() > deadline) {
+                throw new AssertionError("줄의 잠금을 기다리지 않았습니다: " + thread.getState());
+            }
+            Thread.onSpinWait();
+        }
     }
 
     private static void assertForbidden(Runnable action) {
@@ -261,7 +311,7 @@ class ReservationQueueServiceTest {
     }
 
     private void assertNotYourTurn(AuthUser user) {
-        assertThatThrownBy(() -> queueService.requireTurn(user, createRequest()))
+        assertThatThrownBy(() -> createInTurn(user))
                 .isInstanceOf(BusinessException.class)
                 .extracting(e -> ((BusinessException) e).getErrorCode())
                 .isEqualTo(ErrorCode.RESERVATION_QUEUE_NOT_YOUR_TURN);

@@ -5,8 +5,10 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ucamp.app.common.auth.AuthUser;
@@ -105,24 +107,40 @@ public class ReservationQueueService {
     }
 
     /**
-     * 예약 생성 전에 부른다. 이 빈자리에 기다리는 사람이 있으면 맨 앞 사람만 예약할 수 있다.
+     * 차례를 확인하고 예약(점유)을 만든 뒤 줄에서 뺀다. 기다리는 사람이 있으면 맨 앞 사람만 예약할 수 있다.
+     * 확인한 뒤 예약을 만드는 사이에 차례가 끝나 다음 사람에게 넘어가지 않도록, 줄이 있으면 세 단계를 그 줄의 잠금 안에서 한다.
+     * 그동안 같은 빈자리의 순서 조회는 잠시 기다린다. 예약 생성이 자기 트랜잭션을 잠금 안에서 끝내도록
+     * 이 메서드는 트랜잭션 없이 실행한다.
      *
+     * @param create 예약을 만드는 작업
+     * @return 만든 예약
      * @throws BusinessException 고객이 아니면 FORBIDDEN (예약 생성과 같은 응답이 되도록 차례보다 먼저 본다),
      *                           앞에 기다리는 사람이 있으면 RESERVATION_QUEUE_NOT_YOUR_TURN
      */
-    public void requireTurn(AuthUser loginUser, ReservationCreateRequest request) {
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public <T> T createInTurn(AuthUser loginUser, ReservationCreateRequest request, Supplier<T> create) {
         loginUser.requireRole(UserRole.CUSTOMER);
-        ReservationQueue queue = queues.get(toKey(request.treatmentId(), request.startsAt()));
-        if (queue != null && !queue.isTurnOf(loginUser.userId(), LocalDateTime.now(clock))) {
-            throw new BusinessException(ErrorCode.RESERVATION_QUEUE_NOT_YOUR_TURN);
+        SlotKey key = toKey(request.treatmentId(), request.startsAt());
+        ReservationQueue queue = queues.get(key);
+        if (queue == null) {
+            // 아무도 기다리지 않으면 줄 없이 예약한다. 같은 시간 두 명 점유는 예약 생성의 잠금이 막는다
+            T created = create.get();
+            completeTurn(loginUser, key);
+            return created;
+        }
+        synchronized (queue) {
+            if (!queue.isTurnOf(loginUser.userId(), LocalDateTime.now(clock))) {
+                throw new BusinessException(ErrorCode.RESERVATION_QUEUE_NOT_YOUR_TURN);
+            }
+            T created = create.get();
+            completeTurn(loginUser, key);
+            return created;
         }
     }
 
-    /**
-     * 예약(점유)을 만든 뒤 부른다. 점유한 사람은 줄에서 빼고, 기다리는 사람들이 바로 결제 중으로 보게 한다.
-     */
-    public void completeTurn(AuthUser loginUser, ReservationCreateRequest request) {
-        ReservationQueue queue = queues.get(toKey(request.treatmentId(), request.startsAt()));
+    /** 점유한 사람은 줄에서 빼고, 기다리는 사람들이 바로 결제 중으로 보게 한다 */
+    private void completeTurn(AuthUser loginUser, SlotKey key) {
+        ReservationQueue queue = queues.get(key);
         if (queue != null) {
             queue.remove(loginUser.userId(), LocalDateTime.now(clock));
         }
