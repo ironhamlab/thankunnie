@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ACCOUNT_TYPE } from '@/constants/accountType';
 import { ROUTES } from '@/constants/routes';
+import { SHOP_SIGNUP_TERMS, SHOP_TERMS_CONTENT } from '@/constants/terms';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
   collectErrors,
@@ -17,6 +18,7 @@ import AccountFields from './components/AccountFields';
 import AuthCard from './components/AuthCard';
 import AuthField from './components/AuthField';
 import ShopAddressFields from './components/ShopAddressFields';
+import TermsAgreementFields from './components/TermsAgreementFields';
 import styles from './ShopSignupPage.module.css';
 import useSignupVerification from '@/hooks/useSignupVerification';
 import BusinessVerificationFields from './components/BusinessVerificationFields';
@@ -72,6 +74,7 @@ export default function ShopSignupPage() {
   // 매장은 사업자등록번호로 가입자를 확인하므로 아이디 중복 확인만 사용한다
   const verification = useSignupVerification(ACCOUNT_TYPE.SHOP, form.loginId, '');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [agreedTerms, setAgreedTerms] = useState([]);
 
   useEffect(() => {
     loadShopCategories();
@@ -93,6 +96,11 @@ export default function ShopSignupPage() {
       ...prev,
       ...Object.fromEntries(clearKeys.map((key) => [key, ''])),
     }));
+  };
+
+  const handleTermsChange = (codes) => {
+    setAgreedTerms(codes);
+    setFieldErrors((prev) => ({ ...prev, terms: '' }));
   };
 
   const handleChange = (event) => {
@@ -117,6 +125,9 @@ export default function ShopSignupPage() {
       address: validateRequired(form.address, '매장 주소') || validateLocation(form),
       latitude: validateCoordinate(form.latitude, { label: '위도', min: -90, max: 90 }),
       longitude: validateCoordinate(form.longitude, { label: '경도', min: -180, max: 180 }),
+      terms: SHOP_SIGNUP_TERMS.some((item) => item.required && !agreedTerms.includes(item.code))
+        ? '필수 약관에 모두 동의해 주세요.'
+        : '',
     });
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) {
@@ -240,6 +251,14 @@ export default function ShopSignupPage() {
             placeholder="예: 예약 시간 10분 전 도착해 주세요"
           />
         </section>
+
+        <TermsAgreementFields
+          terms={SHOP_SIGNUP_TERMS}
+          agreed={agreedTerms}
+          onChange={handleTermsChange}
+          error={fieldErrors.terms}
+          contents={SHOP_TERMS_CONTENT}
+        />
 
         {error && (
           <Alert as="p" tone="error" role="alert">

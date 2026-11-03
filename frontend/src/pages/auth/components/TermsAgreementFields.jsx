@@ -9,8 +9,15 @@ import styles from './TermsAgreementFields.module.css';
  * @param {string[]} agreed 동의한 약관 코드
  * @param {(codes: string[]) => void} onChange 동의 목록이 바뀌면 호출
  * @param {string} [error] 필수 약관 누락 등 오류 문구
+ * @param {object} [contents] 약관 코드 → 본문. 매장 가입은 SHOP_TERMS_CONTENT 를 넘긴다
  */
-export default function TermsAgreementFields({ terms, agreed, onChange, error }) {
+export default function TermsAgreementFields({
+  terms,
+  agreed,
+  onChange,
+  error,
+  contents = TERMS_CONTENT,
+}) {
   const [openCode, setOpenCode] = useState(null);
   const errorId = useId();
   const allAgreed = terms.length > 0 && terms.every((item) => agreed.includes(item.code));
@@ -32,11 +39,13 @@ export default function TermsAgreementFields({ terms, agreed, onChange, error })
       <legend>약관 동의</legend>
       <label className={styles.all}>
         <input type="checkbox" checked={allAgreed} onChange={handleAllChange} />
-        <span>전체 동의 (선택 항목 포함)</span>
+        <span>
+          {terms.some((item) => !item.required) ? '전체 동의 (선택 항목 포함)' : '전체 동의'}
+        </span>
       </label>
       <ul className={styles.list}>
         {terms.map((item) => {
-          const content = TERMS_CONTENT[item.code];
+          const content = contents[item.code];
           const isOpen = openCode === item.code;
           const bodyId = `terms-body-${item.code}`;
           return (
