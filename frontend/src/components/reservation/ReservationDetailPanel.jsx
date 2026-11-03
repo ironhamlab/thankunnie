@@ -51,6 +51,8 @@ export default function ReservationDetailPanel({
 
   const { summary, payment, cancel } = detail;
   const status = displayStatus ?? reservationStatusOf(summary.status);
+  // 다음 상세를 받는 동안 보이는 것은 이전 예약이므로, 그 예약을 취소하러 가지 않게 막는다
+  const isStale = detailStatus === 'loading';
 
   return (
     <Panel as="section" padded className="b-stack">
@@ -155,7 +157,14 @@ export default function ReservationDetailPanel({
       )}
 
       {summary.cancellable && (
-        <Button as={Link} variant="danger" wide to={cancelPath(summary.reservationId)}>
+        <Button
+          as={Link}
+          variant="danger"
+          wide
+          to={cancelPath(summary.reservationId)}
+          aria-disabled={isStale}
+          onClick={isStale ? (event) => event.preventDefault() : undefined}
+        >
           취소하기
         </Button>
       )}

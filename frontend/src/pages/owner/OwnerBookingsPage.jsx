@@ -62,16 +62,24 @@ export default function OwnerBookingsPage() {
 
   useEffect(() => {
     const media = window.matchMedia(CARD_LAYOUT_QUERY);
-    const handleChange = (event) => setIsCardLayout(event.matches);
+    const handleChange = (event) => {
+      setIsCardLayout(event.matches);
+      // 넓은 화면에는 창이 없으므로, 다시 좁혔을 때 저절로 열리지 않게 닫아 둔다
+      if (!event.matches) {
+        setIsDetailDialogOpen(false);
+      }
+    };
     media.addEventListener('change', handleChange);
     return () => media.removeEventListener('change', handleChange);
   }, []);
 
   useEffect(() => {
-    const { statuses } = STATUS_FILTERS.find((filter) => filter.key === filterKey);
-    loadReservations('owner', { from, to, statuses, page, size: PAGE_SIZE }).then(() =>
-      setHasLoadedList(true),
-    );
+    const load = async () => {
+      const { statuses } = STATUS_FILTERS.find((filter) => filter.key === filterKey);
+      await loadReservations('owner', { from, to, statuses, page, size: PAGE_SIZE });
+      setHasLoadedList(true);
+    };
+    load();
   }, [loadReservations, from, to, filterKey, page]);
 
   // 고른 예약이 현재 목록에 없으면 첫 예약을 보여준다
@@ -111,16 +119,13 @@ export default function OwnerBookingsPage() {
 
   // 폰은 목록이 화면보다 길어 페이지를 넘겨도 스크롤이 아래에 남으므로 목록 맨 위로 올린다
   const changePage = (next) => {
+    // 받는 동안에는 이전 페이지 정보가 남아 있어, 더 넘기면 없는 페이지를 요청할 수 있다
+    if (listStatus === 'loading') {
+      return;
+    }
     setPage(next);
     if (isCardLayout) {
       listRef.current?.scrollIntoView({ block: 'start' });
-    }
-  };
-
-  const handleRowKeyDown = (event, reservationId) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      showDetail(reservationId);
     }
   };
 
@@ -218,21 +223,19 @@ export default function OwnerBookingsPage() {
                       {['예약번호', '예약자', '시술', '예약 일시', '결제', '상태'].map((header) => (
                         <th key={header}>{header}</th>
                       ))}
-                      <th aria-hidden="true" />
+                      <th aria-label="상세" />
                     </tr>
                   </thead>
                   <tbody>
                     {reservations.map((item) => {
                       const status = reservationStatusOf(item.status);
                       return (
-                        // 행 전체가 상세를 여는 버튼이다. 키보드로도 옮겨 와 Enter·Space 로 열 수 있다
+                        // 행 어디를 눌러도 상세를 연다. 키보드와 화면 읽기 도구는 끝의 버튼을 쓰고, 그 클릭도 여기서 받는다
                         <tr
                           key={item.reservationId}
                           className={activeId === item.reservationId ? 'is-active' : ''}
                           aria-current={activeId === item.reservationId ? 'true' : undefined}
-                          tabIndex={0}
                           onClick={() => showDetail(item.reservationId)}
-                          onKeyDown={(event) => handleRowKeyDown(event, item.reservationId)}
                         >
                           <td className={styles.id}>{item.reservationId}</td>
                           <td className={styles.name}>
@@ -248,8 +251,13 @@ export default function OwnerBookingsPage() {
                           <td className={styles.status}>
                             <Badge className={status.tone}>{status.label}</Badge>
                           </td>
-                          <td className={styles.chevron} aria-hidden="true">
-                            ›
+                          <td className={styles.chevron}>
+                            <button
+                              type="button"
+                              aria-label={`${item.customerName} 예약 상세 보기`}
+                            >
+                              ›
+                            </button>
                           </td>
                         </tr>
                       );
