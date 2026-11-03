@@ -12,6 +12,8 @@ const AUTO_PLAY_MS = 3500;
 const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 // 이 거리(px) 이상 옆으로 밀면 넘긴다. 세로 스크롤하다 살짝 흔들린 것은 넘기지 않는다
 const SWIPE_MIN_PX = 40;
+// 화면에 이 비율 이상 보일 때만 저절로 넘긴다. 휴대폰에서 아래 지도를 보는 동안 지도가 바뀌지 않게 한다
+const VISIBLE_RATIO = 0.5;
 
 /**
  * 홈 임박 빈자리 캐러셀. 지금부터 8시간 안에 시작하는 일반 시술 빈자리를 매장마다 1건씩, 빠른 시작순으로
@@ -19,16 +21,42 @@ const SWIPE_MIN_PX = 40;
  * 저절로 넘기되, 마우스를 올리거나 키보드로 안의 버튼에 초점이 있으면 누르려던 카드가 바뀌지 않게 멈춘다.
  * 휴대폰에서는 옆으로 밀어 넘기고, 손을 대고 있는 동안만 멈춘다. 끝에서 넘기면 처음으로 돌아간다.
  * 기기에서 동작 줄이기를 켰으면 자동으로 넘기지 않는다.
+ * 장이 바뀔 때마다(저절로 넘길 때도) onShowShop 으로 알려 지도가 지금 카드의 매장을 따라오게 한다.
+ * 옆 지도를 보는 중(paused)이면 지도가 옮겨 가지 않게 자동 넘김을 멈춘다.
+ * 캐러셀이 화면에서 거의 벗어나면(휴대폰에서 아래 지도로 내려 보는 중) 지도가 바뀌지 않게 자동 넘김을 멈춘다.
+ *
+ * @param onShowShop    지금 보여주는 임박 빈자리 카드와 { manual } 을 받는다. 직접 넘겼으면 manual 이 true 다
+ * @param paused        true 면 자동으로 넘기지 않는다
+ * @param advanceSignal 바뀔 때마다 기다리지 않고 바로 다음 장으로 넘긴다 (지도를 그만 만졌을 때)
+ * @param showRequest   { shopId } 가 새로 들어올 때마다 그 매장 카드로 넘긴다 (지도에서 핀을 눌렀을 때)
  */
-export default function ImminentCarousel() {
+export default function ImminentCarousel({
+  onShowShop,
+  paused = false,
+  advanceSignal = 0,
+  showRequest = null,
+}) {
   const vacancies = useExploreStore((s) => s.imminentVacancies);
   const status = useExploreStore((s) => s.imminentStatus);
   const loadImminentVacancies = useExploreStore((s) => s.loadImminentVacancies);
   const [index, setIndex] = useState(0);
+  // 넘긴 방향. 다음 장은 오른쪽에서, 이전 장은 왼쪽에서 들어오게 한다
+  const [direction, setDirection] = useState(1);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [touching, setTouching] = useState(false);
   const touchStartX = useRef(null);
+  const rootRef = useRef(null);
+  const [inView, setInView] = useState(true);
+  // advanceSignal 이 바뀌면 다음 자동 넘김을 기다리지 않고 바로 한다
+  const [seenSignal, setSeenSignal] = useState(advanceSignal);
+  const [advanceNow, setAdvanceNow] = useState(false);
+  const [seenRequest, setSeenRequest] = useState(showRequest);
+  // 자동 넘김 타이머가 부모가 다시 그려질 때마다 새로 시작하지 않게 최신 콜백만 기억해 둔다
+  const onShowShopRef = useRef(onShowShop);
+  useEffect(() => {
+    onShowShopRef.current = onShowShop;
+  });
 
   useEffect(() => {
     loadImminentVacancies();
@@ -37,27 +65,73 @@ export default function ImminentCarousel() {
   const count = vacancies.length;
   // 목록이 다시 와서 개수가 줄어도 범위를 넘지 않게 한다
   const current = count ? vacancies[Math.min(index, count - 1)] : null;
-  const move = (step) => setIndex((value) => (Math.min(value, count - 1) + step + count) % count);
-  const autoPlay = count > 1 && !hovered && !focused && !touching && !prefersReducedMotion();
+  const currentIndex = current ? vacancies.indexOf(current) : 0;
+  const goTo = (next, step) => {
+    setDirection(step);
+    setIndex(next);
+    setAdvanceNow(false);
+    onShowShop?.(vacancies[next], { manual: true });
+  };
+  const move = (step) => goTo((currentIndex + step + count) % count, step);
+  const autoPlay =
+    count > 1 && inView && !paused && !hovered && !focused && !touching && !prefersReducedMotion();
+  // 그 순간 자동으로 넘길 수 없으면(아직 지도에 마우스가 있는 등) 평소처럼 기다렸다 넘긴다
+  if (advanceSignal !== seenSignal) {
+    setSeenSignal(advanceSignal);
+    setAdvanceNow(autoPlay);
+  }
+  // 지도에서 누른 매장의 카드로 넘긴다. 지도는 이미 그 매장을 골랐으므로 다시 알리지 않는다
+  if (showRequest !== seenRequest) {
+    setSeenRequest(showRequest);
+    const target = vacancies.findIndex(
+      (card) => String(card.shopId) === String(showRequest?.shopId),
+    );
+    if (target >= 0 && target !== currentIndex) {
+      setDirection(target < currentIndex ? -1 : 1);
+      setIndex(target);
+      setAdvanceNow(false);
+    }
+  }
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || !window.IntersectionObserver) return undefined;
+    // isIntersecting 은 조금만 걸쳐도 true 라서 보이는 비율로 본다. 위에 고정된 헤더에 가린 부분은 빼고 센다
+    const headerHeight = document.querySelector('header')?.offsetHeight ?? 0;
+    const observer = new IntersectionObserver(
+      ([entry]) => setInView(entry.intersectionRatio >= VISIBLE_RATIO),
+      { threshold: VISIBLE_RATIO, rootMargin: `-${headerHeight}px 0px 0px 0px` },
+    );
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
 
   // 장이 바뀔 때마다 다시 센다. 손으로 넘긴 직후에 바로 다음 장으로 넘어가지 않게 한다
   useEffect(() => {
     if (!autoPlay) return undefined;
     const timer = window.setTimeout(
-      () => setIndex((value) => (Math.min(value, count - 1) + 1) % count),
-      AUTO_PLAY_MS,
+      () => {
+        const next = (Math.min(index, count - 1) + 1) % count;
+        setDirection(1);
+        setIndex(next);
+        setAdvanceNow(false);
+        onShowShopRef.current?.(vacancies[next]);
+      },
+      advanceNow ? 0 : AUTO_PLAY_MS,
     );
     return () => window.clearTimeout(timer);
-  }, [autoPlay, count, index]);
+  }, [autoPlay, advanceNow, count, index, vacancies]);
 
   // 임박 빈자리가 없으면 스토어가 다음으로 빠른 빈자리를 대신 담아 준다
-  const heading = current?.upcoming ? '다음으로 빠른 빈자리' : '곧 시작하는 임박 빈자리';
+  const heading = current?.upcoming ? '다음으로 빠른 빈자리' : '임박 빈자리';
   // 타임세일은 시작 3시간 이내만 보여주므로, 지금 목록에 3시간 이내 카드가 있을 때만 그쪽으로 보낸다
-  const hasLastMinute = vacancies.some((card) => !card.upcoming && card.priceTier === 'LAST_MINUTE');
+  const hasLastMinute = vacancies.some(
+    (card) => !card.upcoming && card.priceTier === 'LAST_MINUTE',
+  );
 
   return (
     // 8시간 범위가 자정을 넘으면 내일 새벽 시각도 나오므로 "오늘"로 한정하지 않는다
-    <section id="home-imminent" className={styles.root} aria-label={heading}>
+    <section id="home-imminent" className={styles.root} aria-label={heading} ref={rootRef}>
       <div className={styles.heading}>
         <h2>
           <span aria-hidden="true">ϟ</span> {heading}
@@ -91,7 +165,11 @@ export default function ImminentCarousel() {
           onTouchCancel={() => setTouching(false)}
         >
           {/* 저절로 넘어가는 동안 화면 낭독기가 매번 읽지 않도록 멈췄을 때만 알린다 */}
-          <article className={styles.card} aria-live={autoPlay ? 'off' : 'polite'} key={current.id}>
+          <article
+            className={`${styles.card} ${direction < 0 ? styles.fromPrev : ''}`}
+            aria-live={autoPlay ? 'off' : 'polite'}
+            key={current.id}
+          >
             <div className={styles.photo}>
               <img src={current.image} alt={`${current.shop} ${current.category} 시술`} />
               <span
@@ -143,12 +221,12 @@ export default function ImminentCarousel() {
                     key={item.id}
                     aria-label={`${dot + 1}번째 빈자리`}
                     aria-pressed={item.id === current.id}
-                    onClick={() => setIndex(dot)}
+                    onClick={() => goTo(dot, dot < currentIndex ? -1 : 1)}
                   />
                 ))}
               </div>
               <span>
-                <b>{vacancies.indexOf(current) + 1}</b> / {count}
+                <b>{currentIndex + 1}</b> / {count}
               </span>
               <button type="button" aria-label="이전 빈자리" onClick={() => move(-1)}>
                 ‹
@@ -166,7 +244,7 @@ export default function ImminentCarousel() {
               ? '임박 빈자리를 찾는 중이에요'
               : status === 'failed'
                 ? '빈자리를 불러오지 못했어요'
-                : '곧 시작하는 임박 빈자리가 아직 없어요'}
+                : '임박 빈자리가 아직 없어요'}
           </strong>
           {status === 'succeeded' && (
             <p>

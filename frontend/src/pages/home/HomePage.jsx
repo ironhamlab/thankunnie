@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useExploreStore } from '@/store/useExploreStore';
@@ -14,6 +14,8 @@ import styles from './HomePage.module.css';
 
 // 홈 분야 탭에는 가장 빨리 시작하는 매장을 4개씩 3줄까지만 보여주고 나머지는 전체보기(검색 화면)로 넘긴다
 const HOME_SHOP_COUNT = 12;
+// 지도를 이만큼(ms) 만지지 않으면 멈췄던 캐러셀을 다시 넘긴다
+const MAP_IDLE_MS = 3000;
 
 // 검색 화면은 하루씩 보므로, 홈에서 보던 매장의 가장 빠른 빈자리 날짜로 넘겨야 같은 빈자리가 이어서 보인다
 function categoryListPath(categoryId, shop) {
@@ -30,6 +32,33 @@ export default function HomePage() {
   const loadCategories = useExploreStore((s) => s.loadCategories);
   const loadHomeShops = useExploreStore((s) => s.loadHomeShops);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  // 캐러셀에 지금 보이는 임박 빈자리. 지도가 그 매장으로 옮겨 간다
+  const [imminentFocus, setImminentFocus] = useState(null);
+  // 지도에서 누른 핀의 매장. 새 객체로 넣어 같은 핀을 다시 눌러도 캐러셀이 그 카드로 간다
+  const [carouselRequest, setCarouselRequest] = useState(null);
+  // 지도에 마우스를 올렸거나 지도를 직접 만졌으면 캐러셀이 넘어가 지도를 옮기지 않게 멈춘다.
+  // 만진 뒤 MAP_IDLE_MS 동안 더 만지지 않으면 바로 다음 장으로 넘기고, 캐러셀을 직접 넘겨도 다시 넘긴다
+  const [mapHovered, setMapHovered] = useState(false);
+  const [mapExplored, setMapExplored] = useState(false);
+  const [advanceSignal, setAdvanceSignal] = useState(0);
+  const exploreTimerRef = useRef(null);
+  useEffect(() => () => window.clearTimeout(exploreTimerRef.current), []);
+  // 끄는 동안 계속 불리므로, 이미 멈춘 상태면 다시 그리지 않고 타이머만 새로 건다
+  const exploreMap = () => {
+    setMapExplored(true);
+    window.clearTimeout(exploreTimerRef.current);
+    exploreTimerRef.current = window.setTimeout(() => {
+      setMapExplored(false);
+      setAdvanceSignal((value) => value + 1);
+    }, MAP_IDLE_MS);
+  };
+  const showImminent = (card, { manual = false } = {}) => {
+    setImminentFocus(card);
+    if (manual) {
+      window.clearTimeout(exploreTimerRef.current);
+      setMapExplored(false);
+    }
+  };
   const searchMode = params.has('view') || params.has('sale') || params.has('search');
   // 고르기 전에는 첫 번째 분야를 보여준다
   const category =
@@ -50,8 +79,18 @@ export default function HomePage() {
     <div className="b-container home-redesign">
       <HomeIntro />
       <section className={styles.discover} aria-label="오늘 임박 빈자리와 주변 빈자리 지도">
-        <ImminentCarousel />
-        <HomeBeautyMap />
+        <ImminentCarousel
+          onShowShop={showImminent}
+          paused={mapHovered || mapExplored}
+          advanceSignal={advanceSignal}
+          showRequest={carouselRequest}
+        />
+        <HomeBeautyMap
+          focusCard={imminentFocus}
+          onHover={setMapHovered}
+          onExplore={exploreMap}
+          onPickShop={(shopId) => setCarouselRequest({ shopId })}
+        />
       </section>
       <section id="home-deals" className="home-deals">
         <div className={styles.sectionHeading}>
@@ -99,8 +138,7 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-      <p className={styles.demoNote}>
-      </p>
+      <p className={styles.demoNote}></p>
     </div>
   );
 }
