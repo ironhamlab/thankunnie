@@ -3,6 +3,7 @@ package com.ucamp.app.domain.reservation.entity;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -12,11 +13,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import com.ucamp.app.common.converter.BooleanToYnConverter;
 import com.ucamp.app.common.entity.BaseTimeEntity;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
@@ -76,6 +81,15 @@ public class Reservation extends BaseTimeEntity {
     @Column(name = "CUSTOMER_REQUEST", length = CUSTOMER_REQUEST_MAX_LENGTH)
     private String customerRequest;
 
+    /**
+     * 노쇼 여부. 매장이 종료 시각 이후 확정 예약에만 표시·해제한다(ReservationRepository.changeNoShow).
+     * 상태는 CONFIRMED 그대로 두고, 이용 횟수·이용 추정 금액·피크 집계에서만 뺀다.
+     */
+    @Convert(converter = BooleanToYnConverter.class)
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "NO_SHOW", nullable = false, length = 1)
+    private boolean noShow;
+
     @Builder
     private Reservation(Long userId, Long treatmentId, LocalDateTime startsAt, LocalDateTime endsAt,
             Integer appliedPrice, Integer deposit, LocalDateTime holdExpiresAt) {
@@ -87,6 +101,7 @@ public class Reservation extends BaseTimeEntity {
         this.appliedPrice = appliedPrice;
         this.deposit = deposit;
         this.holdExpiresAt = holdExpiresAt;
+        this.noShow = false;
     }
 
     /**

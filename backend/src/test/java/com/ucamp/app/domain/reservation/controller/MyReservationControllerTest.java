@@ -61,7 +61,7 @@ class MyReservationControllerTest {
         OffsetDateTime startsAt = OffsetDateTime.of(2026, 11, 2, 14, 0, 0, 0, ZoneOffset.ofHours(9));
         ReservationSummaryResponse item = new ReservationSummaryResponse(1L, ReservationStatus.CONFIRMED,
                 startsAt, startsAt.plusHours(1), 1L, "언니네 네일", 1L, "젤네일", "고객일",
-                30000, 20000, 10000, "PAID", null, true);
+                30000, 20000, 10000, "PAID", null, true, 1L, false);
         given(reservationQueryService.getMyReservations(any(AuthUser.class), eq(LocalDate.of(2026, 11, 1)),
                 isNull(), isNull(), anyInt(), anyInt()))
                 .willReturn(PageResponse.of(List.of(item), 0, 20, 1));

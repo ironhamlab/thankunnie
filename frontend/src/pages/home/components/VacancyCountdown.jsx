@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import RollingValue from './RollingValue';
 
 const pad = (value) => String(value).padStart(2, '0');
 
@@ -36,7 +37,9 @@ export default function VacancyCountdown({ closesAt, closesTime, className, onEx
       {!expired ? (
         <>
           <small>마감까지</small>
-          <b>{formatRemaining(remaining)}</b>
+          <b>
+            <RollingValue value={formatRemaining(remaining)} />
+          </b>
         </>
       ) : (
         <b>예약 마감</b>

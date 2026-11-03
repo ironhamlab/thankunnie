@@ -27,6 +27,8 @@ import java.time.LocalDate;
  * @param newCustomerCount         그중 신규 고객: 기간 끝 시점까지 이 매장 누적 이용이 1회
  * @param returningCustomerCount   그중 재방문 고객: 기간 끝 시점까지 이 매장 누적 이용이 2회 이상
  * @param revisitRate              재방문율(%). 재방문 고객 ÷ 이용 고객, 소수 첫째 자리. 이용 고객이 없으면 null
+ * @param noShowCount              노쇼: 매장이 노쇼로 표시한 확정 예약 (이용 추정·피크·시술 비중에서 빠진다)
+ * @param noShowRate               노쇼율(%). 노쇼 ÷ (이용 추정 + 노쇼), 소수 첫째 자리. 대상이 없으면 null
  */
 public record ReservationPeriodSummary(
         LocalDate from,
@@ -49,5 +51,7 @@ public record ReservationPeriodSummary(
         int customerCount,
         int newCustomerCount,
         int returningCustomerCount,
-        Double revisitRate) {
+        Double revisitRate,
+        int noShowCount,
+        Double noShowRate) {
 }

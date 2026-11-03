@@ -21,6 +21,8 @@ public record ShopCustomerDetailResponse(
         COMPLETED,
         /** 아직 끝나지 않은 확정 예약 */
         UPCOMING,
+        /** 매장이 노쇼로 표시한 확정 예약 */
+        NO_SHOW,
         /** 취소 완료 */
         CANCELLED
     }

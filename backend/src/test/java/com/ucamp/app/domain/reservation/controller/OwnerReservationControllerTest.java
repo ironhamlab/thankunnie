@@ -29,6 +29,7 @@ import com.ucamp.app.common.response.PageResponse;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.domain.reservation.dto.response.ReservationSummaryResponse;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
+import com.ucamp.app.domain.reservation.service.ReservationNoShowService;
 import com.ucamp.app.domain.reservation.service.ReservationQueryService;
 
 @WebMvcTest(controllers = OwnerReservationController.class)
@@ -44,13 +45,17 @@ class OwnerReservationControllerTest {
     @MockitoBean
     private ReservationQueryService reservationQueryService;
 
+    // 노쇼 API 는 OwnerReservationNoShowControllerTest 에서 검증한다
+    @MockitoBean
+    private ReservationNoShowService reservationNoShowService;
+
     @Test
     @DisplayName("목록은 날짜·상태 필터를 받아 페이지로 반환한다")
     void getReservations_owner_returnsPage() throws Exception {
         OffsetDateTime startsAt = OffsetDateTime.of(2026, 11, 2, 14, 0, 0, 0, ZoneOffset.ofHours(9));
         ReservationSummaryResponse item = new ReservationSummaryResponse(1L, ReservationStatus.CONFIRMED,
                 startsAt, startsAt.plusHours(1), 1L, "언니네 네일", 1L, "젤네일", "고객일",
-                30000, 20000, 10000, "PAID", null, true);
+                30000, 20000, 10000, "PAID", null, true, 1L, false);
         given(reservationQueryService.getOwnerReservations(any(AuthUser.class), eq(LocalDate.of(2026, 11, 2)),
                 eq(LocalDate.of(2026, 11, 3)), eq(List.of(ReservationStatus.CONFIRMED, ReservationStatus.CANCELLED)),
                 anyInt(), anyInt()))

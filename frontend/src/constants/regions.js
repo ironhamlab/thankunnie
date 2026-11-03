@@ -14,6 +14,7 @@ export const REGION_GROUPS = [
       { code: '11410', name: '서대문구' },
     ],
   },
+  { label: '마곡/강서', regions: [{ code: '11500', name: '강서구' }] },
   {
     label: '성수/건대',
     regions: [
