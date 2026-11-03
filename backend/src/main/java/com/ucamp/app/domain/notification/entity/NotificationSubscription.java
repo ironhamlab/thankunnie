@@ -57,6 +57,11 @@ public class NotificationSubscription extends BaseTimeEntity {
     @Column(name = "SHOP_ID")
     private Long shopId;
 
+    /** 업장 구독(STORE)일 때만 넣는다. 고객이 고른 시술이다. */
+    @JdbcTypeCode(SqlTypes.NUMERIC)
+    @Column(name = "TREATMENT_ID")
+    private Long treatmentId;
+
     /** 카테고리 구독(CATEGORY_REGION)일 때만 넣는다. */
     @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "CATEGORY_ID")
@@ -79,13 +84,15 @@ public class NotificationSubscription extends BaseTimeEntity {
     private SubscriptionStatus status;
 
     @Builder
-    private NotificationSubscription(Long userId, SubscriptionType subscriptionType, Long shopId,
+    private NotificationSubscription(Long userId, SubscriptionType subscriptionType, Long shopId, Long treatmentId,
             Long categoryId, String regionCode, LocalDateTime startTime, LocalDateTime endTime) {
-        validateTarget(subscriptionType, shopId, categoryId, regionCode);
+        validateTarget(subscriptionType, shopId, treatmentId, categoryId, regionCode);
         validateTime(subscriptionType, startTime, endTime);
+        requireTreatmentWhenNotifying(subscriptionType, treatmentId, startTime, endTime);
         this.userId = userId;
         this.subscriptionType = subscriptionType;
         this.shopId = shopId;
+        this.treatmentId = treatmentId;
         this.categoryId = categoryId;
         this.regionCode = regionCode;
         this.startTime = startTime;
@@ -96,17 +103,20 @@ public class NotificationSubscription extends BaseTimeEntity {
     /**
      * 구독 대상과 희망 시간을 변경한다. 구독 유형은 바꿀 수 없으며, 기존 유형에 맞는 대상만 허용한다.
      *
-     * @param shopId     매장 ID. 카테고리 구독이면 null
-     * @param categoryId 카테고리 ID. 업장 구독이면 null
-     * @param regionCode 지역코드. 업장 구독이면 null
-     * @param startTime  알림 희망 시작 시각
-     * @param endTime    알림 희망 종료 시각
+     * @param shopId      매장 ID. 카테고리 구독이면 null
+     * @param treatmentId 시술 ID. 업장 구독이면 고객이 고른 시술, 카테고리 구독이면 null
+     * @param categoryId  카테고리 ID. 업장 구독이면 null
+     * @param regionCode  지역코드. 업장 구독이면 null
+     * @param startTime   알림 희망 시작 시각
+     * @param endTime     알림 희망 종료 시각
      */
-    public void changeCondition(Long shopId, Long categoryId, String regionCode,
+    public void changeCondition(Long shopId, Long treatmentId, Long categoryId, String regionCode,
             LocalDateTime startTime, LocalDateTime endTime) {
-        validateTarget(subscriptionType, shopId, categoryId, regionCode);
+        validateTarget(subscriptionType, shopId, treatmentId, categoryId, regionCode);
         validateTime(subscriptionType, startTime, endTime);
+        requireTreatmentWhenNotifying(subscriptionType, treatmentId, startTime, endTime);
         this.shopId = shopId;
+        this.treatmentId = treatmentId;
         this.categoryId = categoryId;
         this.regionCode = regionCode;
         this.startTime = startTime;
@@ -129,9 +139,10 @@ public class NotificationSubscription extends BaseTimeEntity {
 
     /**
      * 구독 유형과 대상이 맞는지 확인한다.
-     * 업장 구독은 매장 ID만, 카테고리 구독은 카테고리 ID와 지역코드만 허용한다.
+     * 업장 구독은 매장 ID만 필수다. 시술은 알림을 켤 때 따로 확인한다.
+     * 카테고리 구독은 카테고리 ID와 지역코드만 허용한다.
      */
-    private static void validateTarget(SubscriptionType subscriptionType, Long shopId,
+    private static void validateTarget(SubscriptionType subscriptionType, Long shopId, Long treatmentId,
             Long categoryId, String regionCode) {
         switch (subscriptionType) {
             case STORE -> {
@@ -140,7 +151,8 @@ public class NotificationSubscription extends BaseTimeEntity {
                 }
             }
             case CATEGORY_REGION -> {
-                if (shopId != null || categoryId == null || regionCode == null || regionCode.isBlank()) {
+                if (shopId != null || treatmentId != null || categoryId == null || regionCode == null
+                        || regionCode.isBlank()) {
                     throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TARGET);
                 }
             }
@@ -161,6 +173,17 @@ public class NotificationSubscription extends BaseTimeEntity {
         }
         if (startTime == null || endTime == null || !startTime.isBefore(endTime)) {
             throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TIME);
+        }
+    }
+
+    // 희망 시간을 넣는 업장 알림은 시술이 있어야 한다. 시간 없는 찜은 시술을 비워 둘 수 있다.
+    private static void requireTreatmentWhenNotifying(SubscriptionType subscriptionType, Long treatmentId,
+            LocalDateTime startTime, LocalDateTime endTime) {
+        if (subscriptionType != SubscriptionType.STORE) {
+            return;
+        }
+        if (startTime != null && endTime != null && treatmentId == null) {
+            throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TARGET);
         }
     }
 }

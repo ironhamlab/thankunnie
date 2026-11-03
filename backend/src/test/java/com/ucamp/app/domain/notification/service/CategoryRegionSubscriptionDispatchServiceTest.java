@@ -114,6 +114,7 @@ class CategoryRegionSubscriptionDispatchServiceTest {
         categoryRegionSubscriptionDispatchService.enqueue(NotificationSubscription.builder()
                 .userId(USER_ID)
                 .subscriptionType(SubscriptionType.STORE)
+                .treatmentId(100L)
                 .shopId(1L)
                 .startTime(HOPE_START)
                 .endTime(HOPE_END)

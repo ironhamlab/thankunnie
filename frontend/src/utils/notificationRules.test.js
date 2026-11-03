@@ -8,15 +8,19 @@ import {
   hopeTimeError,
   isPendingFavorite,
   isShopSubscribed,
+  selectableTreatments,
   shopLabel,
   storeSubscriptionsOf,
   toUpdateBody,
+  treatmentLabel,
+  treatmentNameOf,
 } from './notificationRules.js';
 
-const store = (id, shopId, startTime, endTime) => ({
+const store = (id, shopId, startTime, endTime, treatmentId = 100) => ({
   subscriptionId: id,
   subscriptionType: 'STORE',
   shopId,
+  treatmentId,
   categoryId: null,
   regionCode: null,
   startTime,
@@ -69,7 +73,7 @@ test('희망 시간이 둘 다 없으면 업장 찜이고 시간 오류가 없�
   assert.equal(isPendingFavorite(favorite), true);
   assert.equal(hopeTimeError(null, null), null);
   assert.equal(
-    findDuplicateSubscription([favorite], buildStoreRequest(10, null))?.subscriptionId,
+    findDuplicateSubscription([favorite], buildStoreRequest(10, 100, null))?.subscriptionId,
     1,
   );
 });
@@ -88,20 +92,23 @@ test('희망 종료가 아직 남았으면 시간 오류가 없다', () => {
   assert.equal(hopeTimeError(start, end), null);
 });
 
-test('같은 매장·같은 희망 시간이면 004이고 시간이 다르면 허용한다', () => {
+test('같은 매장·같은 시술·같은 희망 시간이면 004이고 시술이나 시간이 다르면 허용한다', () => {
   const subscriptions = [
-    store(1, 10, '2026-11-01T10:00:00+09:00', '2026-11-02T18:00:00+09:00'),
+    store(1, 10, '2026-11-01T10:00:00+09:00', '2026-11-02T18:00:00+09:00', 100),
   ];
   const same = {
     subscriptionType: 'STORE',
     shopId: '10',
+    treatmentId: '100',
     startTime: '2026-11-01T10:00:00+09:00',
     endTime: '2026-11-02T18:00:00+09:00',
   };
   const otherTime = { ...same, endTime: '2026-11-03T18:00:00+09:00' };
+  const otherTreatment = { ...same, treatmentId: 101 };
 
   assert.equal(findDuplicateSubscription(subscriptions, same)?.subscriptionId, 1);
   assert.equal(findDuplicateSubscription(subscriptions, otherTime), undefined);
+  assert.equal(findDuplicateSubscription(subscriptions, otherTreatment), undefined);
   assert.equal(findDuplicateSubscription(subscriptions, same, 1), undefined);
 });
 
@@ -126,6 +133,7 @@ test('업장 구독 수정은 매장 ID를 유지하고 유형은 보내지 않�
   const current = store(1, 10, '2026-11-01T10:00:00+09:00', '2026-11-02T18:00:00+09:00');
   const body = toUpdateBody(current, {
     shopId: 99,
+    treatmentId: 200,
     categoryId: 3,
     regionCode: '11680',
     startTime: '2026-11-05T10:00:00+09:00',
@@ -134,6 +142,7 @@ test('업장 구독 수정은 매장 ID를 유지하고 유형은 보내지 않�
 
   assert.deepEqual(body, {
     shopId: 10,
+    treatmentId: 200,
     categoryId: null,
     regionCode: null,
     startTime: '2026-11-05T10:00:00+09:00',
@@ -143,21 +152,48 @@ test('업장 구독 수정은 매장 ID를 유지하고 유형은 보내지 않�
   assert.equal(duplicateCandidate(current, body).subscriptionType, 'STORE');
 });
 
-test('업장 등록은 시술·지역 없이 고른 희망 시간을 보낸다', () => {
+test('시간 없는 업장 찜은 시술 없이 매장만 보낸다', () => {
+  assert.equal(buildStoreRequest(3, null, null).treatmentId, null);
+});
+
+test('같은 매장의 시술 없는 찜은 중복이고 시술이 있으면 다른 알림이다', () => {
+  const favorite = store(1, 10, null, null, null);
+  const sameFavorite = buildStoreRequest(10, null, null);
+  const withTreatment = buildStoreRequest(10, 100, null);
+  assert.equal(findDuplicateSubscription([favorite], sameFavorite)?.subscriptionId, 1);
+  assert.equal(findDuplicateSubscription([favorite], withTreatment), undefined);
+});
+
+test('업장 등록은 고른 시술과 희망 시간을 보내고 지역은 보내지 않는다', () => {
   assert.deepEqual(
-    buildStoreRequest('3', {
+    buildStoreRequest('3', '100', {
       startTime: '2026-11-01T14:00:00+09:00',
       endTime: '2026-11-03T20:00:00+09:00',
     }),
     {
       subscriptionType: 'STORE',
       shopId: 3,
+      treatmentId: 100,
       categoryId: null,
       regionCode: null,
       startTime: '2026-11-01T14:00:00+09:00',
       endTime: '2026-11-03T20:00:00+09:00',
     },
   );
+});
+
+test('알림에 고를 수 있는 시술은 판매 중인 일반 시술만이다', () => {
+  const treatments = [
+    { treatmentId: 1, name: '젤네일', treatmentType: 'NORMAL', status: 'ACTIVE' },
+    { treatmentId: 2, name: '모델', treatmentType: 'MODEL', status: 'ACTIVE' },
+    { treatmentId: 3, name: '중지', treatmentType: 'NORMAL', status: 'INACTIVE' },
+  ];
+  assert.deepEqual(
+    selectableTreatments(treatments).map((item) => item.treatmentId),
+    [1],
+  );
+  assert.equal(treatmentNameOf(treatments, 1), '젤네일');
+  assert.equal(treatmentLabel(9, '  '), '시술 9');
 });
 
 test('카테고리·지역 등록은 업장 ID 없이 +09:00 시각을 보낸다', () => {

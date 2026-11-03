@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Dialog from '@/components/common/Dialog';
+import LegalDocument from '@/components/common/LegalDocument';
 import { KAKAO_OPEN_CHAT_URL } from '@/constants/customerSupport';
+import { PRIVACY_POLICY, TERMS_OF_SERVICE } from '@/constants/legalDocuments';
 import { ROUTES } from '@/constants/routes';
 import Button from '@/components/common/Button';
 import FaqTabs from './FaqTabs';
@@ -9,13 +11,15 @@ import styles from './Footer.module.css';
 
 const FAQ = '자주 묻는 질문';
 const CUSTOMER_CENTER = '고객센터';
-const FOOTER_NOTICES = [FAQ, CUSTOMER_CENTER, '이용약관', '개인정보처리방침', '입점 문의'];
+const LEGAL_DOCUMENTS = [TERMS_OF_SERVICE, PRIVACY_POLICY];
+const FOOTER_NOTICES = [FAQ, CUSTOMER_CENTER, ...LEGAL_DOCUMENTS.map((doc) => doc.title)];
 
 /**
  * 고객 화면 공통 푸터
  */
 export default function Footer() {
   const [notice, setNotice] = useState('');
+  const legalDocument = LEGAL_DOCUMENTS.find((doc) => doc.title === notice);
 
   return (
     <>
@@ -26,7 +30,7 @@ export default function Footer() {
               땡잡은 언니
             </Link>
             <p>
-              © 2025 땡잡은 언니. 본 서비스는 테스트 결제 환경으로, 결제한 금액은 이후 자동으로
+              © 2026 땡잡은 언니. 본 서비스는 테스트 결제 환경으로, 결제한 금액은 이후 자동으로
               취소됩니다.
             </p>
           </div>
@@ -36,7 +40,6 @@ export default function Footer() {
                 {label}
               </button>
             ))}
-            <Link to={ROUTES.OWNER}>매장 센터</Link>
           </div>
         </div>
       </footer>
@@ -60,15 +63,9 @@ export default function Footer() {
           </Button>
         </Dialog>
       )}
-      {notice && notice !== FAQ && notice !== CUSTOMER_CENTER && (
-        <Dialog title={notice} onClose={() => setNotice('')}>
-          <p>
-            현재는 Figma 디자인 시연 화면입니다. 실제 서비스의 {notice} 내용은 운영 정책 확정 후
-            연결됩니다.
-          </p>
-          <Button variant="primary" onClick={() => setNotice('')}>
-            닫기
-          </Button>
+      {legalDocument && (
+        <Dialog title={legalDocument.title} onClose={() => setNotice('')}>
+          <LegalDocument content={legalDocument} />
         </Dialog>
       )}
     </>

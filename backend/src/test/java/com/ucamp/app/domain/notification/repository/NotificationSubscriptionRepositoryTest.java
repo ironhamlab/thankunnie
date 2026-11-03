@@ -127,6 +127,7 @@ class NotificationSubscriptionRepositoryTest {
         return NotificationSubscription.builder()
                 .userId(userId)
                 .subscriptionType(SubscriptionType.STORE)
+                .treatmentId(100L)
                 .shopId(shopId)
                 .startTime(startTime)
                 .endTime(endTime)

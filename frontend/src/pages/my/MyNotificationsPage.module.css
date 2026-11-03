@@ -13,12 +13,18 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  min-height: 44px;
   border: 0;
   border-radius: 6px;
   background: white;
   color: var(--color-text-secondary);
-  padding: 12px 5px;
-  font-size: 12px;
+  padding: 10px 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+.short {
+  display: none;
 }
 .tab[aria-selected='true'] {
   background: var(--color-primary);
@@ -60,10 +66,18 @@
   }
 }
 @media (max-width: 540px) {
-  .tab {
-    padding: 12px 4px;
-    line-height: 1.3;
-    word-break: keep-all;
+  .root {
+    margin-top: 16px;
+  }
+  .tabs {
+    gap: 4px;
+    margin: 16px 0;
+  }
+  .full {
+    display: none;
+  }
+  .short {
+    display: inline;
   }
 }
 @media (prefers-reduced-motion: reduce) {

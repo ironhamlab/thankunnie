@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { regionNameOf } from '@/constants/regions';
 import { useNotificationStore } from '@/store/useNotificationStore';
-import { shopLabel } from '@/utils/notificationRules';
+import { shopLabel, treatmentNameOf } from '@/utils/notificationRules';
 import { datePart, timePart } from '@/utils/scheduleDate';
-import SmsNotice from '@/components/notification/SmsNotice';
 import SubscriptionCreateForm from '@/components/notification/SubscriptionCreateForm';
 import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
@@ -25,6 +24,7 @@ export default function SubscriptionSettings() {
   const listError = useNotificationStore((state) => state.listError);
   const categories = useNotificationStore((state) => state.categories);
   const shopNames = useNotificationStore((state) => state.shopNames);
+  const shopTreatments = useNotificationStore((state) => state.shopTreatments);
   const saving = useNotificationStore((state) => state.saving);
   const loadShopNames = useNotificationStore((state) => state.loadShopNames);
   const removeSubscription = useNotificationStore((state) => state.removeSubscription);
@@ -47,7 +47,10 @@ export default function SubscriptionSettings() {
 
   const titleOf = (item) =>
     item.subscriptionType === 'STORE'
-      ? `매장 알림 · ${shopLabel(item.shopId, shopNames[String(Number(item.shopId))])}`
+      ? `매장 알림 · ${shopLabel(item.shopId, shopNames[String(Number(item.shopId))])} · ${treatmentNameOf(
+          shopTreatments[String(Number(item.shopId))],
+          item.treatmentId,
+        )}`
       : `${categoryNameOf(item.categoryId)} · ${regionNameOf(item.regionCode)}`;
 
   const handleRemove = async (subscriptionId) => {
@@ -61,7 +64,6 @@ export default function SubscriptionSettings() {
 
   return (
     <div className="b-stack">
-      <SmsNotice />
       <SubscriptionCreateForm />
 
       {result && (
