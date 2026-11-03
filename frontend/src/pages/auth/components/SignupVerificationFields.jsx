@@ -1,5 +1,6 @@
 import Button from '@/components/common/Button';
 import AuthField from './AuthField';
+import styles from './VerificationMessage.module.css';
 
 export default function SignupVerificationFields({ verification, mode }) {
   if (mode === 'loginId') {
@@ -13,7 +14,9 @@ export default function SignupVerificationFields({ verification, mode }) {
         >
           {verification.idBusy ? '확인 중…' : '아이디 중복 확인'}
         </Button>
-        <p role="status">{verification.idMessage}</p>
+        <p role="status" className={styles.message}>
+          {verification.idMessage}
+        </p>
       </div>
     );
   }
@@ -55,7 +58,7 @@ export default function SignupVerificationFields({ verification, mode }) {
           </Button>
         </>
       )}
-      <p role="status">
+      <p role="status" className={styles.message}>
         {verification.challenge && verification.remaining === 0
           ? '인증이 만료되었습니다. 새 인증번호를 요청해 주세요.'
           : verification.phoneMessage}
