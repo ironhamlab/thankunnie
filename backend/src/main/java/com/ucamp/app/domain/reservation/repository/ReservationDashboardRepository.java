@@ -38,7 +38,8 @@ public interface ReservationDashboardRepository extends Repository<Reservation, 
                    CASE WHEN EXISTS (
                        SELECT 1 FROM SHOP_SCHEDULE_EXCEPTION e
                        WHERE e.RESERVATION_ID = r.RESERVATION_ID AND e.EXCEPTION_TYPE = 'CLOSE')
-                        THEN 1 ELSE 0 END AS "closedAfterCancel"
+                        THEN 1 ELSE 0 END AS "closedAfterCancel",
+                   CASE WHEN r.NO_SHOW = 'Y' THEN 1 ELSE 0 END AS "noShow"
             FROM RESERVATION r
             JOIN TREATMENT t ON t.TREATMENT_ID = r.TREATMENT_ID
             LEFT JOIN RESERVATION_CANCEL c ON c.RESERVATION_ID = r.RESERVATION_ID
@@ -72,12 +73,13 @@ public interface ReservationDashboardRepository extends Repository<Reservation, 
                         row.getCancelType() == null ? null : CancelType.valueOf(row.getCancelType()),
                         row.getCancelCompletedAt(),
                         toInt(row.getRetainedDeposit()),
-                        toInt(row.getClosedAfterCancel()) == 1))
+                        toInt(row.getClosedAfterCancel()) == 1,
+                        toInt(row.getNoShow()) == 1))
                 .toList();
     }
 
     /**
-     * 종료 시각이 endsUntil 이하인 확정 예약(이용 추정)의 고객과 종료 시각. 신규·재방문을 전체 이력 기준으로 나눌 때 쓴다.
+     * 종료 시각이 endsUntil 이하이고 노쇼가 아닌 확정 예약(이용 추정)의 고객과 종료 시각. 신규·재방문을 전체 이력 기준으로 나눌 때 쓴다.
      */
     @Query(value = """
             SELECT r.USER_ID AS "userId", r.ENDS_AT AS "endsAt"
@@ -85,6 +87,7 @@ public interface ReservationDashboardRepository extends Repository<Reservation, 
             JOIN TREATMENT t ON t.TREATMENT_ID = r.TREATMENT_ID
             WHERE t.SHOP_ID = :shopId
               AND r.STATUS = 'CONFIRMED'
+              AND r.NO_SHOW = 'N'
               AND r.ENDS_AT <= :endsUntil
             """, nativeQuery = true)
     List<Visit> findVisits(@Param("shopId") Long shopId, @Param("endsUntil") LocalDateTime endsUntil);
@@ -153,6 +156,8 @@ public interface ReservationDashboardRepository extends Repository<Reservation, 
         Long getRetainedDeposit();
 
         Long getClosedAfterCancel();
+
+        Long getNoShow();
     }
 
     /** 이용 추정 예약 한 건 */

@@ -12,7 +12,7 @@ import com.ucamp.app.domain.shop.entity.ShopCustomerMemo;
 
 /**
  * 매장 고객 집계 조회. 예약·시술·회원은 각 담당 도메인 소유라 엔티티 연관 없이 네이티브 쿼리로 읽는다.
- * 이용 추정 = 확정 예약 중 종료 시각이 :now 이하. 횟수·금액은 저장하지 않고 조회할 때마다 예약에서 계산한다.
+ * 이용 추정 = 확정 예약 중 종료 시각이 :now 이하이고 노쇼가 아닌 예약. 횟수·금액은 저장하지 않고 조회할 때마다 예약에서 계산한다.
  * 별칭은 대소문자를 지키도록 큰따옴표로 쓴다.
  */
 public interface ShopCustomerRepository extends Repository<ShopCustomerMemo, Long> {
@@ -23,13 +23,14 @@ public interface ShopCustomerRepository extends Repository<ShopCustomerMemo, Lon
                    u.NAME AS "name",
                    u.PHONE AS "phone",
                    SUM(CASE WHEN r.STATUS = 'CONFIRMED' THEN 1 ELSE 0 END) AS "confirmedCount",
-                   SUM(CASE WHEN r.STATUS = 'CONFIRMED' AND r.ENDS_AT <= :now THEN 1 ELSE 0 END) AS "visitCount",
-                   SUM(CASE WHEN r.STATUS = 'CONFIRMED' AND r.ENDS_AT <= :now THEN r.APPLIED_PRICE ELSE 0 END)
+                   SUM(CASE WHEN r.STATUS = 'CONFIRMED' AND r.NO_SHOW = 'N' AND r.ENDS_AT <= :now THEN 1 ELSE 0 END) AS "visitCount",
+                   SUM(CASE WHEN r.STATUS = 'CONFIRMED' AND r.NO_SHOW = 'N' AND r.ENDS_AT <= :now THEN r.APPLIED_PRICE ELSE 0 END)
                        AS "totalAmount",
-                   MIN(CASE WHEN r.STATUS = 'CONFIRMED' AND r.ENDS_AT <= :now THEN r.STARTS_AT END) AS "firstVisitAt",
-                   MAX(CASE WHEN r.STATUS = 'CONFIRMED' AND r.ENDS_AT <= :now THEN r.STARTS_AT END) AS "lastVisitAt",
+                   MIN(CASE WHEN r.STATUS = 'CONFIRMED' AND r.NO_SHOW = 'N' AND r.ENDS_AT <= :now THEN r.STARTS_AT END) AS "firstVisitAt",
+                   MAX(CASE WHEN r.STATUS = 'CONFIRMED' AND r.NO_SHOW = 'N' AND r.ENDS_AT <= :now THEN r.STARTS_AT END) AS "lastVisitAt",
                    MIN(CASE WHEN r.STATUS = 'CONFIRMED' AND r.ENDS_AT > :now THEN r.STARTS_AT END)
                        AS "nextReservationAt",
+                   SUM(CASE WHEN r.STATUS = 'CONFIRMED' AND r.NO_SHOW = 'Y' THEN 1 ELSE 0 END) AS "noShowCount",
                    MAX(CASE WHEN m.MEMO_ID IS NULL THEN 0 ELSE 1 END) AS "hasMemo"
             FROM RESERVATION r
             JOIN TREATMENT t ON t.TREATMENT_ID = r.TREATMENT_ID
@@ -60,7 +61,8 @@ public interface ShopCustomerRepository extends Repository<ShopCustomerMemo, Lon
             SELECT g."userId" AS "userId", g."name" AS "name", g."phone" AS "phone",
                    g."visitCount" AS "visitCount", g."totalAmount" AS "totalAmount",
                    g."firstVisitAt" AS "firstVisitAt", g."lastVisitAt" AS "lastVisitAt",
-                   g."nextReservationAt" AS "nextReservationAt", g."hasMemo" AS "hasMemo"
+                   g."nextReservationAt" AS "nextReservationAt", g."noShowCount" AS "noShowCount",
+                   g."hasMemo" AS "hasMemo"
             """ + LIST_FROM + """
             ORDER BY CASE WHEN :sort = 'VISITS' THEN g."visitCount" END DESC NULLS LAST,
                      CASE WHEN :sort = 'AMOUNT' THEN g."totalAmount" END DESC NULLS LAST,
@@ -101,7 +103,8 @@ public interface ShopCustomerRepository extends Repository<ShopCustomerMemo, Lon
                    r.APPLIED_PRICE AS "appliedPrice",
                    r.STATUS AS "status",
                    c.CANCEL_TYPE AS "cancelType",
-                   r.CUSTOMER_REQUEST AS "customerRequest"
+                   r.CUSTOMER_REQUEST AS "customerRequest",
+                   CASE WHEN r.NO_SHOW = 'Y' THEN 1 ELSE 0 END AS "noShow"
             FROM RESERVATION r
             JOIN TREATMENT t ON t.TREATMENT_ID = r.TREATMENT_ID
             LEFT JOIN RESERVATION_CANCEL c ON c.RESERVATION_ID = r.RESERVATION_ID
@@ -147,6 +150,8 @@ public interface ShopCustomerRepository extends Repository<ShopCustomerMemo, Lon
 
         LocalDateTime getNextReservationAt();
 
+        Long getNoShowCount();
+
         Long getHasMemo();
     }
 
@@ -167,5 +172,7 @@ public interface ShopCustomerRepository extends Repository<ShopCustomerMemo, Lon
         String getCancelType();
 
         String getCustomerRequest();
+
+        Long getNoShow();
     }
 }
