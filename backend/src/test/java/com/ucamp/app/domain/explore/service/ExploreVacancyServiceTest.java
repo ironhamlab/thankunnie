@@ -222,6 +222,14 @@ class ExploreVacancyServiceTest {
     }
 
     @Test
+    @DisplayName("검색어로 매장 주소(지역)도 찾는다")
+    void search_keyword_matchesShopAddress() {
+        assertThat(exploreVacancyService.search(request().keyword("테헤란로").build()).totalElements())
+                .isEqualTo(7);
+        assertThat(exploreVacancyService.search(request().keyword("서초구").build()).totalElements()).isZero();
+    }
+
+    @Test
     @DisplayName("검색어의 % 는 와일드카드가 아닌 글자로 찾는다")
     void search_keywordWithPercent_matchesLiterally() {
         assertThat(exploreVacancyService.search(request().keyword("%").build()).totalElements()).isZero();

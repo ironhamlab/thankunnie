@@ -136,6 +136,15 @@ class ExploreShopDetailServiceTest {
     }
 
     @Test
+    @DisplayName("전체 매장 목록을 주소(지역)로도 검색한다")
+    void getShops_keyword_matchesAddress() {
+        assertThat(exploreShopDetailService.getShops(null, "테헤란로"))
+                .extracting(ExploreShopListResponse::shopId).containsExactly(1L);
+        assertThat(exploreShopDetailService.getShops(null, "서초구"))
+                .extracting(ExploreShopListResponse::shopId).containsExactly(2L);
+    }
+
+    @Test
     @DisplayName("전체 매장 검색어의 %, _ 는 글자 그대로 찾고, 50자를 넘으면 잘못된 요청이다")
     void getShops_keyword_escapedAndLimited() {
         assertThat(exploreShopDetailService.getShops(null, "%")).isEmpty();

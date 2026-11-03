@@ -30,7 +30,7 @@ public class ExploreShopController {
 
     @Operation(summary = "전체 매장 목록",
             description = "로그인 없이 노출 중인 매장을 빈자리 유무와 상관없이 매장 ID 순으로 조회한다."
-                    + " 분야(categoryId)와 매장명·시술명 검색어(keyword, 50자 이하)로 거를 수 있다")
+                    + " 분야(categoryId)와 매장명·주소(지역)·시술명 검색어(keyword, 50자 이하)로 거를 수 있다")
     @GetMapping("/shops/all")
     public ResponseEntity<ApiResponse<List<ExploreShopListResponse>>> getAllShops(
             @RequestParam(required = false) Long categoryId,

@@ -15,7 +15,7 @@ import com.ucamp.app.domain.treatment.entity.TreatmentType;
  * @param categoryId  시술 카테고리. null 이면 전체
  * @param shopId      매장. null 이면 전체
  * @param treatmentType 시술 유형. null 이면 전체
- * @param keyword     매장명·시술명 부분 일치. null 이면 전체
+ * @param keyword     매장명·주소(지역)·시술명 부분 일치. null 이면 전체
  * @param bounds      지도 화면 범위. null 이면 전체
  */
 public record ExploreVacancyCondition(
