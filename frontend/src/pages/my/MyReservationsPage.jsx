@@ -1,17 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { generatePath, Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { PAYMENT_STATUS, reservationStatusOf } from '@/constants/reservationStatus';
+import {
+  PAST_RESERVATION_STATUS,
+  PAYMENT_STATUS,
+  reservationStatusOf,
+} from '@/constants/reservationStatus';
 import { useReservationStore } from '@/store/useReservationStore';
-import { formatMoney, formatReservationTime } from '@/utils/reservationFormat';
+import { useShopDetailStore } from '@/store/useShopDetailStore';
+import { formatReservationTime } from '@/utils/reservationFormat';
 import { addDays, todayKst } from '@/utils/scheduleDate';
 import ReservationDetailPanel from '@/components/reservation/ReservationDetailPanel';
 import ReservationPagination from '@/components/reservation/ReservationPagination';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
+import Dialog from '@/components/common/Dialog';
 import Panel from '@/components/common/Panel';
-import Notice from '@/components/common/Notice';
 import EmptyState from '@/components/common/EmptyState';
+import VisitShopLocation from './components/VisitShopLocation';
+import styles from './MyReservationsPage.module.css';
 
 // 탭별 조회 조건. 날짜는 시술 시작일 기준이다
 const TABS = [
@@ -24,6 +31,8 @@ const TABS = [
     key: 'past',
     label: '지난 이용',
     filters: () => ({ to: addDays(todayKst(), -1), statuses: ['CONFIRMED'] }),
+    // 확정 상태로 시작일이 지난 예약만 오므로 이용을 마친 것으로 보여준다
+    displayStatus: PAST_RESERVATION_STATUS,
   },
   {
     key: 'cancelled',
@@ -32,50 +41,81 @@ const TABS = [
   },
 ];
 const PAGE_SIZE = 10;
+// 카드가 세로로 쌓이는 폭 (MyReservationsPage.module.css 와 같게 둔다)
+const CARD_LAYOUT_QUERY = '(max-width: 640px)';
 
 const cancelPath = (reservationId) => generatePath(ROUTES.MY_RESERVATION_CANCEL, { reservationId });
 
 /**
- * 고객 내 예약 (B-F5). 여러 매장 예약을 이용 예정·지난 이용·취소 탭으로 나눠 보고, 고른 예약의 결제·취소 상태를 본다.
+ * 고객 내 예약 (B-F5). 여러 매장 예약을 이용 예정·지난 이용·취소 탭으로 나눠 보고, 고른 예약의 결제·취소 상태를 창에서 본다.
  */
 export default function MyReservationsPage() {
   const loadReservations = useReservationStore((state) => state.loadReservations);
   const loadReservation = useReservationStore((state) => state.loadReservation);
-  const clearDetail = useReservationStore((state) => state.clearDetail);
   const reservations = useReservationStore((state) => state.reservations);
   const pageInfo = useReservationStore((state) => state.pageInfo);
   const listStatus = useReservationStore((state) => state.listStatus);
   const listError = useReservationStore((state) => state.listError);
+  const loadShop = useShopDetailStore((state) => state.loadShop);
+  const clearShop = useShopDetailStore((state) => state.clearShop);
   const [tabKey, setTabKey] = useState('upcoming');
+  // 지금 보이는 목록이 어느 탭 것인지. 다음 목록을 받는 동안 이전 카드를 새 탭 기준으로 표시하지 않게 한다
+  const [listTabKey, setListTabKey] = useState('upcoming');
   const [page, setPage] = useState(0);
-  const [selectedId, setSelectedId] = useState(null);
+  // 이 화면에서 목록을 한 번 받은 뒤에는, 다음 목록을 받는 동안에도 목록을 남겨 화면이 튀지 않게 한다
+  const [hasLoadedList, setHasLoadedList] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const listRef = useRef(null);
+  const { displayStatus } = TABS.find((item) => item.key === listTabKey);
 
   useEffect(() => {
-    const tab = TABS.find((item) => item.key === tabKey);
-    loadReservations('my', { ...tab.filters(), page, size: PAGE_SIZE });
+    let isLatest = true;
+    const load = async () => {
+      const { filters } = TABS.find((item) => item.key === tabKey);
+      await loadReservations('my', { ...filters(), page, size: PAGE_SIZE });
+      if (isLatest) {
+        setHasLoadedList(true);
+        setListTabKey(tabKey);
+      }
+    };
+    load();
+    return () => {
+      isLatest = false;
+    };
   }, [loadReservations, tabKey, page]);
 
-  // 고른 예약이 현재 목록에 없으면 첫 예약을 보여준다
-  const activeId = reservations.some((item) => item.reservationId === selectedId)
-    ? selectedId
-    : reservations[0]?.reservationId;
-
-  // 새 목록이 오기 전에는 상세를 부르지 않는다. 이전 탭의 상세가 새 탭의 결과처럼 보이지 않게 한다
-  useEffect(() => {
-    if (listStatus !== 'succeeded') {
-      return;
-    }
-    if (activeId) {
-      loadReservation('my', activeId);
-    } else {
-      clearDetail();
-    }
-  }, [loadReservation, clearDetail, activeId, listStatus]);
+  // 창을 연 채 취소 화면 등으로 떠나도 공용 스토어에 매장 정보를 남기지 않는다
+  useEffect(() => clearShop, [clearShop]);
 
   const handleTabChange = (key) => {
     setTabKey(key);
     setPage(0);
   };
+
+  const showDetail = (item) => {
+    loadReservation('my', item.reservationId);
+    loadShop(item.shopId);
+    setIsDetailOpen(true);
+  };
+
+  const closeDetail = () => {
+    setIsDetailOpen(false);
+    clearShop();
+  };
+
+  // 폰은 목록이 화면보다 길어 페이지를 넘겨도 스크롤이 아래에 남으므로 목록 맨 위로 올린다
+  const changePage = (next) => {
+    // 받는 동안에는 이전 페이지 정보가 남아 있어, 더 넘기면 없는 페이지를 요청할 수 있다
+    if (listStatus === 'loading') {
+      return;
+    }
+    setPage(next);
+    if (window.matchMedia(CARD_LAYOUT_QUERY).matches) {
+      listRef.current?.scrollIntoView({ block: 'start' });
+    }
+  };
+
+  const isEmpty = listStatus === 'succeeded' && !reservations.length;
 
   return (
     <div className="b-container b-page">
@@ -85,22 +125,22 @@ export default function MyReservationsPage() {
         </h1>
       </div>
       <div className="b-options b-tabs" role="group" aria-label="예약 구분">
-        {TABS.map((tab) => (
+        {TABS.map((item) => (
           <button
-            key={tab.key}
+            key={item.key}
             type="button"
-            aria-pressed={tabKey === tab.key}
-            className={tabKey === tab.key ? 'is-selected' : ''}
-            onClick={() => handleTabChange(tab.key)}
+            aria-pressed={tabKey === item.key}
+            className={tabKey === item.key ? 'is-selected' : ''}
+            onClick={() => handleTabChange(item.key)}
           >
-            {tab.label}
+            {item.label}
           </button>
         ))}
       </div>
 
-      {listStatus === 'loading' && <p role="status">예약을 불러오는 중입니다.</p>}
+      {listStatus === 'loading' && !hasLoadedList && <p role="status">예약을 불러오는 중입니다.</p>}
       {listStatus === 'failed' && <p role="alert">{listError.message}</p>}
-      {listStatus === 'succeeded' && !reservations.length && (
+      {isEmpty && (
         <EmptyState className="b-panel">
           <h2>예약 내역이 없어요</h2>
           <p>실시간 빈자리를 찾아보세요.</p>
@@ -109,40 +149,54 @@ export default function MyReservationsPage() {
           </Button>
         </EmptyState>
       )}
-      {listStatus === 'succeeded' && reservations.length > 0 && (
-        <div className="b-bookings-grid">
-          <div className="b-stack">
+      {listStatus !== 'failed' && hasLoadedList && !isEmpty && (
+        <div className="b-stack" ref={listRef}>
+          <div
+            className={`b-stack ${styles.cards} ${pageInfo.totalPages > 1 ? styles.fullPage : ''}`}
+          >
             {reservations.map((item) => {
-              const status = reservationStatusOf(item.status);
+              const status = displayStatus ?? reservationStatusOf(item.status);
               return (
                 <Panel
                   as="button"
-                  className={`b-booking-card ${activeId === item.reservationId ? 'is-active' : ''}`}
+                  className={`b-booking-card ${styles.card}`}
                   key={item.reservationId}
                   type="button"
-                  onClick={() => setSelectedId(item.reservationId)}
+                  onClick={() => showDetail(item)}
                 >
-                  <div className="b-flex">
+                  <span className={`b-flex ${styles.status}`}>
                     <Badge className={status.tone}>{status.label}</Badge>
                     {item.paymentStatus && (
                       <small className="b-muted">{PAYMENT_STATUS[item.paymentStatus]}</small>
                     )}
-                  </div>
-                  <small>{item.shopName}</small>
-                  <h3>{item.treatmentName}</h3>
-                  <p>{formatReservationTime(item.startsAt, item.endsAt)}</p>
-                  <Notice className="b-row">
-                    <span>예약금 {formatMoney(item.deposit)}</span>
-                    <span>현장 잔금 {formatMoney(item.balance)}</span>
-                  </Notice>
-                  <span className="b-pink">예약 상세 보기 →</span>
+                  </span>
+                  <strong className={styles.treatment}>{item.treatmentName}</strong>
+                  <span className={styles.shop}>{item.shopName}</span>
+                  <span className={styles.time}>
+                    {formatReservationTime(item.startsAt, item.endsAt)}
+                  </span>
+                  <span className={styles.chevron} aria-hidden="true">
+                    ›
+                  </span>
                 </Panel>
               );
             })}
-            <ReservationPagination page={page} pageInfo={pageInfo} onPageChange={setPage} />
           </div>
-          <ReservationDetailPanel viewer="customer" cancelPath={cancelPath} />
+          <div className={styles.pager}>
+            <ReservationPagination page={page} pageInfo={pageInfo} onPageChange={changePage} />
+          </div>
         </div>
+      )}
+      {isDetailOpen && (
+        <Dialog title="예약 상세" className={styles.detailDialog} onClose={closeDetail}>
+          <VisitShopLocation />
+          <ReservationDetailPanel
+            viewer="customer"
+            cancelPath={cancelPath}
+            displayStatus={displayStatus}
+            hideHeading
+          />
+        </Dialog>
       )}
     </div>
   );
