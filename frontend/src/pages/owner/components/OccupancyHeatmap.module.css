@@ -1,0 +1,58 @@
+.peak {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.peak strong {
+  color: var(--color-text);
+}
+.scroll {
+  overflow-x: auto;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 40px repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  min-width: 360px;
+}
+.head {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+.hour {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  align-self: center;
+}
+.cell {
+  height: 22px;
+  border-radius: 4px;
+}
+.level0 {
+  background: var(--color-surface);
+}
+.level1 {
+  background: color-mix(in srgb, var(--color-primary) 18%, white);
+}
+.level2 {
+  background: color-mix(in srgb, var(--color-primary) 40%, white);
+}
+.level3 {
+  background: color-mix(in srgb, var(--color-primary) 65%, white);
+}
+.level4 {
+  background: var(--color-primary);
+}
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.legend i {
+  display: inline-block;
+  width: 20px;
+  height: 12px;
+  border-radius: 3px;
+}

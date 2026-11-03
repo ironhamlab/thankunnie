@@ -1,0 +1,39 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.list li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+.day {
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+.track {
+  height: 14px;
+  background: var(--color-surface);
+  border-radius: 0 4px 4px 0;
+}
+.bar {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  background: var(--color-primary-light);
+  border-radius: 0 4px 4px 0;
+}
+.peak {
+  background: var(--color-primary);
+}
+.value {
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
