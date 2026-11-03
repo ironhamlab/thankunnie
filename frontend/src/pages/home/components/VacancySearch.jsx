@@ -118,9 +118,8 @@ export default function VacancySearch() {
   // 옆 지도의 내 위치 버튼과 같이 써서, 지도에서 위치를 확인해도 목록에 거리가 보이게 한다
   const myLocation = useMyLocation();
   const { position: myPosition, locating, message: locateMessage, locate } = myLocation;
-  // 가까운순을 골랐어도 위치를 아직 못 받았으면 기본 정렬로 보여준다. 위치를 못 얻으면 선택도 기본 정렬로 돌린다
+  // 가까운순을 골랐어도 위치를 받기 전에는 기본 정렬 순서로 둔다
   const appliedSort = sort === NEAREST && !myPosition ? sorts[0] : sort;
-  const shownSort = sort === NEAREST && !myPosition && !locating ? sorts[0] : sort;
   const [keyword, setKeyword] = useState(search);
   const [paging, setPaging] = useState({ key: '', page: 0 });
   // 목록에서 매장을 고를 때마다 새 값을 넣어, 같은 매장을 다시 눌러도 지도를 다시 확대한다
@@ -249,11 +248,19 @@ export default function VacancySearch() {
     document.getElementById('vacancy-results')?.scrollIntoView({ block: 'start' });
   };
   // 펼친 매장이 있어도 그 매장 페이지로 가지 않고 첫 페이지를 보이게 새 키와 0페이지를 같이 둔다.
-  // 가까운순은 고를 때마다 위치를 다시 묻는다(1분 안에 얻은 위치는 다시 쓴다)
+  // 가까운순은 고를 때마다 위치를 다시 묻는다(1분 안에 얻은 위치는 다시 쓴다).
+  // 처음 묻다 실패하면 정렬도 기본으로 돌린다. 그러지 않으면 나중에 지도에서 위치를 얻을 때 저절로 가까운순이 된다.
+  // 전에 얻은 위치가 있으면 그 위치로 계속 가까운순을 보여준다
   const chooseSort = (sortName) => {
     setSort(sortName);
     setPaging({ key: pagingKeyOf(sortName), page: 0 });
-    if (sortName === NEAREST) locate();
+    if (sortName !== NEAREST) return;
+    const hadPosition = Boolean(myPosition);
+    locate().then((found) => {
+      if (!found && !hadPosition) {
+        setSort((current) => (current === NEAREST ? sorts[0] : current));
+      }
+    });
   };
 
   const focusMap = (shop) => {
@@ -384,7 +391,7 @@ export default function VacancySearch() {
         )}
         <div className={`b-row ${styles.filterLine}`}>
           <Filter label="시작 시간" options={times} value={time} onChange={setTime} segmented />
-          <Filter label="정렬" options={sorts} value={shownSort} onChange={chooseSort} segmented />
+          <Filter label="정렬" options={sorts} value={sort} onChange={chooseSort} segmented />
         </div>
         {(locating || locateMessage) && (
           <p className={styles.locateMessage} role="status">

@@ -37,11 +37,12 @@ export default function ShopLocationMap({
   const [pickedId, setPickedId] = useState(null);
   const [mapUnavailable, setMapUnavailable] = useState(false);
   // 지도에서 보기로 고른 매장, 목록에서 펼친 매장, 지도에서 누른 매장 순으로 보여준다
-  const selected =
+  const chosen =
     shops.find((shop) => String(shop.shopId) === pinnedShopId) ??
     shops.find((shop) => String(shop.shopId) === expandedShopId) ??
-    shops.find((shop) => String(shop.shopId) === pickedId) ??
-    shops[0];
+    shops.find((shop) => String(shop.shopId) === pickedId);
+  // 아무것도 고르지 않았으면 첫 매장을 아래 패널에 보여주되, 지도를 그 매장으로 옮기지는 않는다
+  const selected = chosen ?? shops[0];
   const pick = (shopId) => {
     setPickedId(shopId);
     // 지도에서 보기로 고른 매장이 있으면 그것을 바꾸고, 다른 매장을 펼쳐 둔 상태라면 지도에서 고른 매장을 바로 펼친다
@@ -59,6 +60,7 @@ export default function ShopLocationMap({
         <ExploreMap
           shops={shops}
           selectedId={selected ? String(selected.shopId) : null}
+          autoSelected={!chosen}
           onSelect={pick}
           onUnavailable={handleUnavailable}
           fitToShops

@@ -224,6 +224,8 @@
   .time {
     white-space: normal;
     word-break: keep-all;
+    /* 공백 없이 긴 주소 부분은 어절로 나눌 수 없으므로 그때만 글자 사이에서 꺾는다 */
+    overflow-wrap: anywhere;
   }
   .price b {
     font-size: 15px;

@@ -12,8 +12,9 @@ const PERMISSION_DENIED = 1;
  *
  * position 은 locate() 가 성공할 때마다 새 객체로 바뀌므로, 같은 자리에서 다시 눌러도 이펙트가 다시 돈다.
  * message 는 위치를 못 얻은 이유이며 잠시 뒤 저절로 지워진다.
+ * locate() 는 얻은 위치를, 못 얻으면 null 을 돌려주는 Promise 다. 실패에 따라 화면 선택을 되돌릴 때 쓴다.
  *
- * @returns {{ position: { lat: number, lng: number } | null, locating: boolean, message: string, locate: () => void }}
+ * @returns {{ position: { lat: number, lng: number } | null, locating: boolean, message: string, locate: () => Promise<{ lat: number, lng: number } | null> }}
  */
 export function useMyLocation() {
   const [position, setPosition] = useState(null);
@@ -26,29 +27,34 @@ export function useMyLocation() {
     return () => window.clearTimeout(timer);
   }, [message]);
 
-  const locate = () => {
-    if (!navigator.geolocation) {
-      setMessage('이 브라우저에서는 위치를 확인할 수 없어요');
-      return;
-    }
-    setLocating(true);
-    setMessage('');
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setLocating(false);
-        setPosition({ lat: coords.latitude, lng: coords.longitude });
-      },
-      (error) => {
-        setLocating(false);
-        setMessage(
-          error.code === PERMISSION_DENIED
-            ? '위치 권한이 꺼져 있어요. 브라우저 설정에서 허용해 주세요'
-            : '위치를 가져오지 못했어요. 잠시 후 다시 시도해 주세요',
-        );
-      },
-      LOCATE_OPTIONS,
-    );
-  };
+  const locate = () =>
+    new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        setMessage('이 브라우저에서는 위치를 확인할 수 없어요');
+        resolve(null);
+        return;
+      }
+      setLocating(true);
+      setMessage('');
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          const found = { lat: coords.latitude, lng: coords.longitude };
+          setLocating(false);
+          setPosition(found);
+          resolve(found);
+        },
+        (error) => {
+          setLocating(false);
+          setMessage(
+            error.code === PERMISSION_DENIED
+              ? '위치 권한이 꺼져 있어요. 브라우저 설정에서 허용해 주세요'
+              : '위치를 가져오지 못했어요. 잠시 후 다시 시도해 주세요',
+          );
+          resolve(null);
+        },
+        LOCATE_OPTIONS,
+      );
+    });
 
   return { position, locating, message, locate };
 }
