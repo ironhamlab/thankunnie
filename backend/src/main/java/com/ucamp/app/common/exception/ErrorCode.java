@@ -53,6 +53,8 @@ public enum ErrorCode {
     RESERVATION_DEPOSIT_MISMATCH(HttpStatus.BAD_REQUEST, "RESERVATION_005", "결제 금액이 예약금과 다릅니다."),
     RESERVATION_HOLD_EXISTS(HttpStatus.CONFLICT, "RESERVATION_006", "결제 대기 중인 예약이 있습니다."),
     RESERVATION_QUEUE_NOT_YOUR_TURN(HttpStatus.CONFLICT, "RESERVATION_007", "아직 예약 순서가 아닙니다."),
+    RESERVATION_NOT_CONFIRMED(HttpStatus.CONFLICT, "RESERVATION_008", "확정된 예약만 노쇼로 표시할 수 있습니다."),
+    RESERVATION_NOT_ENDED(HttpStatus.CONFLICT, "RESERVATION_009", "시술이 끝난 뒤에 노쇼로 표시할 수 있습니다."),
 
     // NOTIFICATION
     SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION_001", "구독을 찾을 수 없습니다."),

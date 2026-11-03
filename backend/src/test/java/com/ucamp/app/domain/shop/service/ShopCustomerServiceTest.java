@@ -121,7 +121,8 @@ class ShopCustomerServiceTest {
         given(shopCustomerRepository.findHistory(1L, 106L)).willReturn(List.of(
                 history(3L, NOW.plusDays(1), "CONFIRMED", null),
                 history(2L, NOW.minusDays(1), "CANCELLED", "CUSTOMER"),
-                history(1L, NOW.minusHours(2), "CONFIRMED", null)));
+                history(1L, NOW.minusHours(2), "CONFIRMED", null),
+                history(0L, NOW.minusDays(7), "NO_SHOW", null)));
 
         ShopCustomerDetailResponse detail = shopCustomerService.getCustomer(OWNER, 106L);
 
@@ -131,7 +132,8 @@ class ShopCustomerServiceTest {
         assertThat(detail.reservations()).extracting(ShopCustomerDetailResponse.History::status).containsExactly(
                 ShopCustomerDetailResponse.HistoryStatus.UPCOMING,
                 ShopCustomerDetailResponse.HistoryStatus.CANCELLED,
-                ShopCustomerDetailResponse.HistoryStatus.COMPLETED);
+                ShopCustomerDetailResponse.HistoryStatus.COMPLETED,
+                ShopCustomerDetailResponse.HistoryStatus.NO_SHOW);
     }
 
     @Test
@@ -231,6 +233,11 @@ class ShopCustomerServiceTest {
             }
 
             @Override
+            public Long getNoShowCount() {
+                return 0L;
+            }
+
+            @Override
             public Long getHasMemo() {
                 return visitCount > 1 ? 1L : 0L;
             }
@@ -267,7 +274,7 @@ class ShopCustomerServiceTest {
 
             @Override
             public String getStatus() {
-                return status;
+                return "NO_SHOW".equals(status) ? "CONFIRMED" : status;
             }
 
             @Override
@@ -278,6 +285,11 @@ class ShopCustomerServiceTest {
             @Override
             public String getCustomerRequest() {
                 return null;
+            }
+
+            @Override
+            public Long getNoShow() {
+                return "NO_SHOW".equals(status) ? 1L : 0L;
             }
         };
     }
