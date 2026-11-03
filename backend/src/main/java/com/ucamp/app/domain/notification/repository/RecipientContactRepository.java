@@ -39,6 +39,15 @@ public class RecipientContactRepository {
             WHERE r.RESERVATION_ID = :reservationId
             """;
 
+    private static final String FIND_OWNER_RESERVATION_NOTICE = """
+            SELECT s.SHOP_ID, u.NAME AS CUSTOMER_NAME, t.NAME AS TREATMENT_NAME, r.STARTS_AT
+            FROM RESERVATION r
+            JOIN APP_USER u ON u.USER_ID = r.USER_ID
+            JOIN TREATMENT t ON t.TREATMENT_ID = r.TREATMENT_ID
+            JOIN SHOP s ON s.SHOP_ID = t.SHOP_ID
+            WHERE r.RESERVATION_ID = :reservationId
+            """;
+
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     /**
@@ -117,6 +126,30 @@ public class RecipientContactRepository {
     }
 
     /**
+     * 사장님 종 알림에 넣을 매장·고객 이름·시술 이름·예약 시작 시각을 읽는다.
+     *
+     * @param reservationId 확정됐거나 취소된 예약 ID
+     * @return 예약이 있으면 정보. 없거나 ID가 없으면 empty
+     */
+    public Optional<OwnerReservationNotice> findOwnerReservationNotice(Long reservationId) {
+        if (reservationId == null) {
+            return Optional.empty();
+        }
+        List<OwnerReservationNotice> rows = jdbcTemplate.query(
+                FIND_OWNER_RESERVATION_NOTICE,
+                Map.of("reservationId", reservationId),
+                (rs, rowNum) -> new OwnerReservationNotice(
+                        rs.getLong("SHOP_ID"),
+                        rs.getString("CUSTOMER_NAME"),
+                        rs.getString("TREATMENT_NAME"),
+                        rs.getTimestamp("STARTS_AT").toLocalDateTime()));
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(rows.get(0));
+    }
+
+    /**
      * 예약 확정·취소 문자에 필요한 값.
      *
      * @param userId   예약한 회원
@@ -125,5 +158,17 @@ public class RecipientContactRepository {
      * @param startsAt 예약 시작 시각
      */
     public record CancelSmsInfo(Long userId, String phone, String shopName, LocalDateTime startsAt) {
+    }
+
+    /**
+     * 사장님 종 알림에 필요한 값.
+     *
+     * @param shopId         예약한 매장
+     * @param customerName   고객 이름
+     * @param treatmentName  시술 이름
+     * @param startsAt       예약 시작 시각
+     */
+    public record OwnerReservationNotice(
+            Long shopId, String customerName, String treatmentName, LocalDateTime startsAt) {
     }
 }

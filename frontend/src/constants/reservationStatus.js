@@ -7,6 +7,9 @@ export const RESERVATION_STATUS = {
   EXPIRED: { label: '점유 만료', tone: 'b-neutral' },
 };
 
+// 시작일이 지난 확정 예약. 서버 상태는 CONFIRMED 그대로이고 화면에서만 이렇게 보여준다
+export const PAST_RESERVATION_STATUS = { label: '이용 완료', tone: 'b-neutral' };
+
 export const PAYMENT_STATUS = {
   READY: '결제 대기',
   PAID: '결제 완료',

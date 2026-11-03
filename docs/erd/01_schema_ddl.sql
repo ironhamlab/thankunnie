@@ -350,24 +350,33 @@ CREATE SEQUENCE SEQ_NOTIFICATION_DISPATCH START WITH 1000 INCREMENT BY 1;
 CREATE INDEX IDX_NOTIFICATION_DISPATCH_STATUS ON NOTIFICATION_DISPATCH (STATUS, DISPATCH_ID);
 
 -- ---------------------------------------------------------------------
--- 받은 알림 (문자 발송에 성공한 뒤 종 목록에 보여줄 한 줄)
--- 발송 큐(NOTIFICATION_DISPATCH)와 따로 둔다. 매장 ID 는 두지 않고, 이동은 LINK_PATH 에 적는다.
+-- 받은 알림 (종 목록에 보여줄 한 줄)
+-- 발송 큐(NOTIFICATION_DISPATCH)와 따로 둔다. 화면 이동은 LINK_PATH 에 적는다.
+-- 고객 알림은 USER_ID 만 채운다. 사장님 알림은 SHOP_ID 만 채운다.
+-- 한 줄에 회원과 매장을 같이 넣거나, 둘 다 비우면 CK_NOTIFICATION_INBOX_RECIPIENT 에 걸린다.
 -- ---------------------------------------------------------------------
 CREATE TABLE NOTIFICATION_INBOX (
     INBOX_ID        NUMBER(19)          NOT NULL,
-    USER_ID         NUMBER(19)          NOT NULL,   -- 알림을 받은 회원
+    USER_ID         NUMBER(19),                     -- 알림을 받은 회원. 사장님 알림이면 NULL
+    SHOP_ID         NUMBER(19),                     -- 알림을 받은 매장. 고객 알림이면 NULL
     CATEGORY        VARCHAR2(20 CHAR)   NOT NULL,   -- RESERVATION(예약 확정·취소), INTEREST(빈자리·임박·초임박·묶음)
     TITLE           VARCHAR2(200 CHAR)  NOT NULL,   -- 종 목록에 보이는 제목
-    BODY            VARCHAR2(500 CHAR)  NOT NULL,   -- 보낸 문자와 같은 본문
+    BODY            VARCHAR2(500 CHAR)  NOT NULL,   -- 종 목록에 보이는 본문
     LINK_PATH       VARCHAR2(200 CHAR),             -- 누르면 이동할 화면 경로. 없으면 NULL
     READ_AT         TIMESTAMP(3),                   -- 읽은 시각. NULL 이면 안 읽음
     CREATED_AT      TIMESTAMP(3)        NOT NULL,
     UPDATED_AT      TIMESTAMP(3)        NOT NULL,   -- 읽음 처리처럼 이 줄이 바뀔 때
     CONSTRAINT PK_NOTIFICATION_INBOX PRIMARY KEY (INBOX_ID),
-    CONSTRAINT FK_NOTIFICATION_INBOX_APP_USER FOREIGN KEY (USER_ID) REFERENCES APP_USER (USER_ID)
+    CONSTRAINT FK_NOTIFICATION_INBOX_APP_USER FOREIGN KEY (USER_ID) REFERENCES APP_USER (USER_ID),
+    CONSTRAINT FK_NOTIFICATION_INBOX_SHOP FOREIGN KEY (SHOP_ID) REFERENCES SHOP (SHOP_ID),
+    CONSTRAINT CK_NOTIFICATION_INBOX_RECIPIENT CHECK (
+        (USER_ID IS NOT NULL AND SHOP_ID IS NULL)
+        OR (USER_ID IS NULL AND SHOP_ID IS NOT NULL)
+    )
 );
 CREATE SEQUENCE SEQ_NOTIFICATION_INBOX START WITH 1000 INCREMENT BY 1;
 CREATE INDEX IDX_NOTIFICATION_INBOX_USER ON NOTIFICATION_INBOX (USER_ID, CREATED_AT);
+CREATE INDEX IDX_NOTIFICATION_INBOX_SHOP ON NOTIFICATION_INBOX (SHOP_ID, CREATED_AT);
 
 -- ---------------------------------------------------------------------
 -- 정산 — MVP 범위 밖

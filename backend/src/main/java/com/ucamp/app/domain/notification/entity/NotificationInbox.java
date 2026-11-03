@@ -24,7 +24,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * 받은 알림 한 줄.
- * 문자가 성공적으로 나갔을 때 종 목록에 보여 주려고 남긴다.
+ * 고객 알림은 회원 ID 만, 사장님 알림은 매장 ID 만 채운다.
  * 읽지 않았으면 readAt 이 null 이다.
  */
 @Getter
@@ -44,10 +44,15 @@ public class NotificationInbox extends BaseTimeEntity {
     @Column(name = "INBOX_ID")
     private Long id;
 
-    /** 알림을 받은 회원. */
+    /** 알림을 받은 회원. 사장님 알림이면 null. */
     @JdbcTypeCode(SqlTypes.NUMERIC)
-    @Column(name = "USER_ID", nullable = false)
+    @Column(name = "USER_ID")
     private Long userId;
+
+    /** 알림을 받은 매장. 고객 알림이면 null. */
+    @JdbcTypeCode(SqlTypes.NUMERIC)
+    @Column(name = "SHOP_ID")
+    private Long shopId;
 
     /** 예약(RESERVATION) 또는 관심(INTEREST). */
     @Enumerated(EnumType.STRING)
@@ -58,7 +63,7 @@ public class NotificationInbox extends BaseTimeEntity {
     @Column(name = "TITLE", nullable = false, length = 200)
     private String title;
 
-    /** 보낸 문자와 같은 본문. */
+    /** 종 목록에 보이는 본문. */
     @Column(name = "BODY", nullable = false, length = 500)
     private String body;
 
@@ -70,10 +75,21 @@ public class NotificationInbox extends BaseTimeEntity {
     @Column(name = "READ_AT")
     private LocalDateTime readAt;
 
+    /**
+     * 회원 알림이면 userId 만, 매장 알림이면 shopId 만 넣는다.
+     * 둘 다 있거나 둘 다 없으면 테이블 체크 제약과 같이 거절한다.
+     */
     @Builder
-    private NotificationInbox(Long userId, NotificationInboxCategory category, String title, String body,
+    private NotificationInbox(Long userId, Long shopId, NotificationInboxCategory category, String title, String body,
             String linkPath) {
+        if (userId == null && shopId == null) {
+            throw new IllegalArgumentException("받은 알림은 회원 또는 매장 중 하나는 있어야 한다");
+        }
+        if (userId != null && shopId != null) {
+            throw new IllegalArgumentException("받은 알림은 회원과 매장을 같이 지정할 수 없다");
+        }
         this.userId = userId;
+        this.shopId = shopId;
         this.category = category;
         this.title = title;
         this.body = body;
