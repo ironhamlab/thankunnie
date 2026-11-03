@@ -25,6 +25,8 @@ export const useOwnerCustomerStore = create((set, get) => ({
 
   memoStatus: 'idle',
   memoError: null,
+  // 저장 요청이 진행 중인 고객 ID. 다른 고객을 보다 돌아와도 같은 고객의 저장이 겹치지 않게 한다
+  memoSavingUserIds: [],
 
   loadCustomers: async (query) => {
     const requestId = get().listRequestId + 1;
@@ -60,7 +62,7 @@ export const useOwnerCustomerStore = create((set, get) => ({
       detailUserId: userId,
       detailStatus: 'loading',
       detailError: null,
-      memoStatus: 'idle',
+      memoStatus: get().memoSavingUserIds.includes(userId) ? 'saving' : 'idle',
       memoError: null,
     });
     try {
@@ -90,17 +92,21 @@ export const useOwnerCustomerStore = create((set, get) => ({
     }));
   },
 
-  // 저장 중에는 다시 저장하지 않는다. 응답이 왔을 때 보고 있는 고객이 바뀌었으면 화면에 반영하지 않는다.
-  // 목록의 메모 표시도 함께 맞춘다
+  // 같은 고객의 저장이 진행 중이면 다시 저장하지 않는다. 고객별로 한 번에 하나만 보내므로 응답 순서가 뒤바뀌지 않는다.
+  // 응답이 왔을 때 그 고객을 보고 있을 때만 화면에 반영하고, 목록의 메모 표시는 항상 맞춘다
   saveMemo: async (userId, memo) => {
-    if (get().memoStatus === 'saving') return false;
-    const detailRequestId = get().detailRequestId;
-    const isCurrent = () =>
-      get().detailRequestId === detailRequestId && get().detailUserId === userId;
-    set({ memoStatus: 'saving', memoError: null });
+    if (get().memoSavingUserIds.includes(userId)) return false;
+    const isCurrent = () => get().detailUserId === userId;
+    const finish = (state) => state.memoSavingUserIds.filter((id) => id !== userId);
+    set((state) => ({
+      memoSavingUserIds: [...state.memoSavingUserIds, userId],
+      memoStatus: 'saving',
+      memoError: null,
+    }));
     try {
       const saved = await ownerCustomerApi.saveMemo(userId, memo);
       set((state) => ({
+        memoSavingUserIds: finish(state),
         customers: state.customers.map((customer) =>
           customer.userId === userId ? { ...customer, hasMemo: Boolean(saved) } : customer,
         ),
@@ -113,6 +119,7 @@ export const useOwnerCustomerStore = create((set, get) => ({
       }
       return true;
     } catch (error) {
+      set((state) => ({ memoSavingUserIds: finish(state) }));
       if (isCurrent()) {
         set({ memoStatus: 'failed', memoError: toError(error, '메모를 저장하지 못했습니다.') });
       }

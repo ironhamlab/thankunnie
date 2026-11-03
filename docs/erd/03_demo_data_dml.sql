@@ -8381,6 +8381,41 @@ FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM APP_USER WHERE LOGIN_ID = 'demo170_c29
 INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, STATUS, ROLE, CREATED_AT, UPDATED_AT)
 SELECT SEQ_APP_USER.NEXTVAL, 'demo170_c30', 'CHANGE_ME', '심유주', '010-0000-0030', 'ACTIVE', 'USER', TIMESTAMP '2026-10-15 09:00:00', TIMESTAMP '2026-10-15 09:00:00'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM APP_USER WHERE LOGIN_ID = 'demo170_c30');
+-- 예전에 시연고객NN 이름으로 들어간 계정은 위 INSERT 가 건너뛰므로 이름만 바꾼다. 이미 바뀐 계정은 건드리지 않는다
+UPDATE APP_USER SET NAME = CASE LOGIN_ID
+    WHEN 'demo170_c01' THEN '김민준'
+    WHEN 'demo170_c02' THEN '이도윤'
+    WHEN 'demo170_c03' THEN '박서연'
+    WHEN 'demo170_c04' THEN '최지우'
+    WHEN 'demo170_c05' THEN '정하윤'
+    WHEN 'demo170_c06' THEN '강예준'
+    WHEN 'demo170_c07' THEN '조수아'
+    WHEN 'demo170_c08' THEN '윤지호'
+    WHEN 'demo170_c09' THEN '장서아'
+    WHEN 'demo170_c10' THEN '임하준'
+    WHEN 'demo170_c11' THEN '한지아'
+    WHEN 'demo170_c12' THEN '오시우'
+    WHEN 'demo170_c13' THEN '서은우'
+    WHEN 'demo170_c14' THEN '신채원'
+    WHEN 'demo170_c15' THEN '권도현'
+    WHEN 'demo170_c16' THEN '황유나'
+    WHEN 'demo170_c17' THEN '안예린'
+    WHEN 'demo170_c18' THEN '송건우'
+    WHEN 'demo170_c19' THEN '류다은'
+    WHEN 'demo170_c20' THEN '전서진'
+    WHEN 'demo170_c21' THEN '홍지안'
+    WHEN 'demo170_c22' THEN '고은서'
+    WHEN 'demo170_c23' THEN '문태윤'
+    WHEN 'demo170_c24' THEN '양하린'
+    WHEN 'demo170_c25' THEN '손지유'
+    WHEN 'demo170_c26' THEN '배주원'
+    WHEN 'demo170_c27' THEN '백소윤'
+    WHEN 'demo170_c28' THEN '허윤서'
+    WHEN 'demo170_c29' THEN '남도하'
+    WHEN 'demo170_c30' THEN '심유주'
+  END
+WHERE LOGIN_ID IN ('demo170_c01', 'demo170_c02', 'demo170_c03', 'demo170_c04', 'demo170_c05', 'demo170_c06', 'demo170_c07', 'demo170_c08', 'demo170_c09', 'demo170_c10', 'demo170_c11', 'demo170_c12', 'demo170_c13', 'demo170_c14', 'demo170_c15', 'demo170_c16', 'demo170_c17', 'demo170_c18', 'demo170_c19', 'demo170_c20', 'demo170_c21', 'demo170_c22', 'demo170_c23', 'demo170_c24', 'demo170_c25', 'demo170_c26', 'demo170_c27', 'demo170_c28', 'demo170_c29', 'demo170_c30')
+  AND NAME LIKE '시연고객%';
 INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT, APPLIED_PRICE, DEPOSIT, HOLD_EXPIRES_AT, CONFIRMED_AT, CUSTOMER_REQUEST, CREATED_AT, UPDATED_AT)
 SELECT SEQ_RESERVATION.NEXTVAL, u.USER_ID, t.TREATMENT_ID, 'CONFIRMED', TIMESTAMP '2026-11-02 10:00:00', TIMESTAMP '2026-11-02 11:00:00', 30000, 20000, TIMESTAMP '2026-10-24 11:32:00', TIMESTAMP '2026-10-24 11:29:00', NULL, TIMESTAMP '2026-10-24 11:27:00', TIMESTAMP '2026-10-24 11:29:00'
 FROM SHOP s JOIN TREATMENT t ON t.SHOP_ID = s.SHOP_ID AND t.TREATMENT_ID = 1 JOIN APP_USER u ON u.LOGIN_ID = 'demo170_c18'
