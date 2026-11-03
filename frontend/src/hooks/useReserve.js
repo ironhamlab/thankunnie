@@ -28,6 +28,7 @@ export default function useReserve() {
   const findMyHold = useReservationStore((s) => s.findMyHold);
   const joinQueue = useReservationStore((s) => s.joinQueue);
   const leaveQueue = useReservationStore((s) => s.leaveQueue);
+  const releaseHold = useReservationStore((s) => s.releaseHold);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   // 바꿀지 묻는 동안 기존 예약과 다시 보낼 요청을 들고 있는다
@@ -58,12 +59,27 @@ export default function useReserve() {
     [leaveQueue],
   );
 
+  // 줄 서기·예약 응답을 기다리는 사이 화면을 떠났는지. 대기 창이 뜨기 전이라 화면을 떠날 때 줄에서 나가는 처리가 걸리지 않는다
+  const unmountedRef = useRef(false);
+  useEffect(() => {
+    unmountedRef.current = false;
+    return () => {
+      unmountedRef.current = true;
+    };
+  }, []);
+
   // retried: 기존 예약이 없어 한 번 다시 보낸 요청인지. 서버와 조회가 엇갈려도 계속 다시 보내지 않도록 한 번만 한다
   const create = async (request, retried = false) => {
     setError('');
     setLoading(true);
     try {
       const reservation = await createReservation(request);
+      // 예약 응답을 기다리는 사이 화면을 떠났으면 결제 화면으로 데려가지 않는다.
+      // 차례가 와서 자동으로 만든 점유일 수 있으므로 5분 동안 남겨 두지 않고 바로 푼다
+      if (unmountedRef.current) {
+        await releaseHold(reservation.reservationId);
+        return;
+      }
       setPendingHold(null);
       // 새로고침해도 결제 화면이 서버에서 예약을 다시 불러올 수 있도록 예약 번호를 주소에 남긴다
       navigate(`${ROUTES.CHECKOUT}?reservationId=${reservation.reservationId}`);
@@ -107,15 +123,6 @@ export default function useReserve() {
       setLoading(false);
     }
   };
-
-  // 줄 서기 응답을 기다리는 사이 화면을 떠났는지. 대기 창이 뜨기 전이라 화면을 떠날 때 줄에서 나가는 처리가 걸리지 않는다
-  const unmountedRef = useRef(false);
-  useEffect(() => {
-    unmountedRef.current = false;
-    return () => {
-      unmountedRef.current = true;
-    };
-  }, []);
 
   // 서버가 알려준 내 순서에 따라 예약하거나, 결제 화면으로 가거나, 계속 기다린다
   const applyTicket = async (ticket, request) => {
