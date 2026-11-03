@@ -59,19 +59,31 @@ export default function MyReservationsPage() {
   const loadShop = useShopDetailStore((state) => state.loadShop);
   const clearShop = useShopDetailStore((state) => state.clearShop);
   const [tabKey, setTabKey] = useState('upcoming');
+  // 지금 보이는 목록이 어느 탭 것인지. 다음 목록을 받는 동안 이전 카드를 새 탭 기준으로 표시하지 않게 한다
+  const [listTabKey, setListTabKey] = useState('upcoming');
   const [page, setPage] = useState(0);
   // 이 화면에서 목록을 한 번 받은 뒤에는, 다음 목록을 받는 동안에도 목록을 남겨 화면이 튀지 않게 한다
   const [hasLoadedList, setHasLoadedList] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const listRef = useRef(null);
-  const tab = TABS.find((item) => item.key === tabKey);
+  const { displayStatus } = TABS.find((item) => item.key === listTabKey);
 
   useEffect(() => {
+    let isLatest = true;
     const { filters } = TABS.find((item) => item.key === tabKey);
-    loadReservations('my', { ...filters(), page, size: PAGE_SIZE }).then(() =>
-      setHasLoadedList(true),
-    );
+    loadReservations('my', { ...filters(), page, size: PAGE_SIZE }).then(() => {
+      if (isLatest) {
+        setHasLoadedList(true);
+        setListTabKey(tabKey);
+      }
+    });
+    return () => {
+      isLatest = false;
+    };
   }, [loadReservations, tabKey, page]);
+
+  // 창을 연 채 취소 화면 등으로 떠나도 공용 스토어에 매장 정보를 남기지 않는다
+  useEffect(() => clearShop, [clearShop]);
 
   const handleTabChange = (key) => {
     setTabKey(key);
@@ -141,7 +153,7 @@ export default function MyReservationsPage() {
             className={`b-stack ${styles.cards} ${pageInfo.totalPages > 1 ? styles.fullPage : ''}`}
           >
             {reservations.map((item) => {
-              const status = tab.displayStatus ?? reservationStatusOf(item.status);
+              const status = displayStatus ?? reservationStatusOf(item.status);
               return (
                 <Panel
                   as="button"
@@ -179,7 +191,7 @@ export default function MyReservationsPage() {
           <ReservationDetailPanel
             viewer="customer"
             cancelPath={cancelPath}
-            displayStatus={tab.displayStatus}
+            displayStatus={displayStatus}
             hideHeading
           />
         </Dialog>
