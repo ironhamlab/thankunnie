@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ACCOUNT_TYPE } from '@/constants/accountType';
 import { ROUTES } from '@/constants/routes';
-import { SHOP_SIGNUP_TERMS, SHOP_TERMS_CONTENT } from '@/constants/terms';
+import { TERMS_TARGET } from '@/constants/terms';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useTermsStore } from '@/store/useTermsStore';
 import {
   collectErrors,
   validateLoginId,
+  validateMobilePhone,
   validatePassword,
   validateCoordinate,
   validatePasswordConfirm,
@@ -18,6 +20,7 @@ import AccountFields from './components/AccountFields';
 import AuthCard from './components/AuthCard';
 import AuthField from './components/AuthField';
 import ShopAddressFields from './components/ShopAddressFields';
+import SignupVerificationFields from './components/SignupVerificationFields';
 import TermsAgreementFields from './components/TermsAgreementFields';
 import styles from './ShopSignupPage.module.css';
 import useSignupVerification from '@/hooks/useSignupVerification';
@@ -58,6 +61,8 @@ const toCoordinate = (value) => Number(Number(value).toFixed(7));
 /**
  * 매장 가입 (REQ-006). 매장 하나당 계정 하나이며, 계정과 매장 필수 정보를 함께 등록한다.
  * 가입하면 바로 매장으로 로그인되어 매장 센터로 이동한다. 대표 이미지는 가입 후 매장 정보에서 올린다.
+ * 매장 휴대폰 번호는 인증을 받아야 하며, 고객과 달리 이미 쓰이는 번호여도 가입할 수 있다.
+ * 매장 약관은 서버의 매장 약관 목록(target=SHOP)을 보여 주고, 동의한 약관을 가입 요청과 함께 보낸다.
  */
 export default function ShopSignupPage() {
   const navigate = useNavigate();
@@ -71,9 +76,12 @@ export default function ShopSignupPage() {
   const loadShopCategories = useAuthStore((state) => state.loadShopCategories);
   const [form, setForm] = useState(EMPTY_FORM);
   const businessVerification = useBusinessVerification(form);
-  // 매장은 사업자등록번호로 가입자를 확인하므로 아이디 중복 확인만 사용한다
-  const verification = useSignupVerification(ACCOUNT_TYPE.SHOP, form.loginId, '');
+  const verification = useSignupVerification(ACCOUNT_TYPE.SHOP, form.loginId, form.phone);
   const [fieldErrors, setFieldErrors] = useState({});
+  const terms = useTermsStore((state) => state.terms);
+  const termsStatus = useTermsStore((state) => state.status);
+  const termsError = useTermsStore((state) => state.error);
+  const loadTerms = useTermsStore((state) => state.loadTerms);
   const [agreedTerms, setAgreedTerms] = useState([]);
 
   useEffect(() => {
@@ -81,11 +89,16 @@ export default function ShopSignupPage() {
     return clearError;
   }, [loadShopCategories, clearError]);
 
+  useEffect(() => {
+    loadTerms(TERMS_TARGET.SHOP);
+  }, [loadTerms]);
+
   const updateForm = (partial) => {
     if (['businessNumber', 'representativeName', 'openedOn'].some((key) => key in partial)) {
       businessVerification.reset();
     }
     if ('loginId' in partial) verification.resetLoginId();
+    if ('phone' in partial) verification.resetPhone();
     setForm((prev) => ({ ...prev, ...partial }));
     // 위치(지역코드·좌표) 오류는 주소 칸에 표시하므로 위치가 바뀌면 주소 오류도 함께 지운다
     const changedKeys = Object.keys(partial);
@@ -121,11 +134,13 @@ export default function ShopSignupPage() {
       passwordConfirm: validatePasswordConfirm(form.password, form.passwordConfirm),
       categoryId: form.categoryId ? '' : '카테고리를 선택해 주세요.',
       name: validateRequired(form.name, '매장명'),
-      phone: validateRequired(form.phone, '매장 연락처'),
+      phone:
+        validateMobilePhone(form.phone) ||
+        (!verification.isPhoneVerified ? '휴대폰 인증을 완료해 주세요.' : ''),
       address: validateRequired(form.address, '매장 주소') || validateLocation(form),
       latitude: validateCoordinate(form.latitude, { label: '위도', min: -90, max: 90 }),
       longitude: validateCoordinate(form.longitude, { label: '경도', min: -180, max: 180 }),
-      terms: SHOP_SIGNUP_TERMS.some((item) => item.required && !agreedTerms.includes(item.code))
+      terms: terms.some((item) => item.required && !agreedTerms.includes(item.code))
         ? '필수 약관에 모두 동의해 주세요.'
         : '',
     });
@@ -144,12 +159,14 @@ export default function ShopSignupPage() {
         addressDetail: toNullable(form.addressDetail),
         latitude: toCoordinate(form.latitude),
         longitude: toCoordinate(form.longitude),
-        phone: form.phone.trim(),
+        phone: form.phone,
         businessNumber: form.businessNumber,
         representativeName: form.representativeName.trim(),
         openedOn: form.openedOn,
         description: toNullable(form.description),
         notice: toNullable(form.notice),
+        agreedTerms,
+        phoneVerificationId: verification.phoneVerificationId,
       });
       navigate(ROUTES.OWNER, { replace: true });
     } catch {
@@ -158,6 +175,7 @@ export default function ShopSignupPage() {
   };
 
   const isSubmitting = status === 'loading';
+  const isTermsReady = termsStatus === 'succeeded';
 
   return (
     <AuthCard
@@ -219,15 +237,17 @@ export default function ShopSignupPage() {
           </AuthField>
           <AuthField
             className="b-span-two"
-            label="매장 연락처"
+            label="휴대폰 번호"
             name="phone"
             type="tel"
             value={form.phone}
             onChange={handleChange}
-            placeholder="02-123-4567"
-            maxLength={20}
-            error={fieldErrors.phone}
+            autoComplete="tel"
+            placeholder="010-1234-5678"
+            hint="본인 휴대폰으로 인증해 주세요. 매장 연락처로 고객에게 안내됩니다."
+            error={verification.isPhoneVerified ? '' : fieldErrors.phone}
           />
+          <SignupVerificationFields verification={verification} mode="phone" />
           <ShopAddressFields value={form} onChange={updateForm} errors={fieldErrors} />
           <AuthField
             as="textarea"
@@ -252,20 +272,29 @@ export default function ShopSignupPage() {
           />
         </section>
 
-        <TermsAgreementFields
-          terms={SHOP_SIGNUP_TERMS}
-          agreed={agreedTerms}
-          onChange={handleTermsChange}
-          error={fieldErrors.terms}
-          contents={SHOP_TERMS_CONTENT}
-        />
+        {isTermsReady && (
+          <TermsAgreementFields
+            terms={terms}
+            agreed={agreedTerms}
+            onChange={handleTermsChange}
+            error={fieldErrors.terms}
+          />
+        )}
+        {termsStatus === 'failed' && (
+          <Alert as="p" tone="error" role="alert">
+            {termsError.message}{' '}
+            <Button size="small" type="button" onClick={() => loadTerms(TERMS_TARGET.SHOP)}>
+              다시 불러오기
+            </Button>
+          </Alert>
+        )}
 
         {error && (
           <Alert as="p" tone="error" role="alert">
             {error.message}
           </Alert>
         )}
-        <Button variant="primary" type="submit" wide disabled={isSubmitting}>
+        <Button variant="primary" type="submit" wide disabled={isSubmitting || !isTermsReady}>
           {isSubmitting ? '가입하는 중…' : '매장 가입하기'}
         </Button>
       </form>

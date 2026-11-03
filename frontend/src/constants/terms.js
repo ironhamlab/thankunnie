@@ -9,6 +9,16 @@ export const TERMS_CODE = {
   THIRD_PARTY: 'THIRD_PARTY',
   SMS_NOTIFICATION: 'SMS_NOTIFICATION',
   MODEL_PHOTO: 'MODEL_PHOTO',
+  SHOP_SERVICE: 'SHOP_SERVICE',
+  SHOP_PRIVACY: 'SHOP_PRIVACY',
+  SHOP_BUSINESS_CHECK: 'SHOP_BUSINESS_CHECK',
+  SHOP_SMS_NOTIFICATION: 'SHOP_SMS_NOTIFICATION',
+};
+
+// 약관 목록 조회 대상 (GET /api/v1/terms?target=). 고객과 매장은 가입 약관이 다르다
+export const TERMS_TARGET = {
+  CUSTOMER: 'CUSTOMER',
+  SHOP: 'SHOP',
 };
 
 // 회원가입 화면에 보이지 않는 약관. 초보 시술 촬영 동의는 첫 초보 시술 예약 때 따로 받는다
@@ -55,43 +65,30 @@ export const TERMS_CONTENT = {
       '초보 시술은 매장의 포트폴리오를 위해 시술 과정과 결과를 촬영할 수 있습니다. ' +
       '촬영물은 매장의 포트폴리오·SNS 게시에 활용될 수 있으며, 자세한 내용은 시술별 촬영 안내를 확인해 주세요.',
   },
-};
-
-/**
- * 매장 가입 약관. 매장 계정은 회원 약관 동의(APP_USER 기준)를 저장하지 않으므로 서버 약관 목록과 별개로 화면에서 관리하고,
- * 모두 필수라 동의해야 가입 버튼을 누를 수 있다.
- */
-export const SHOP_TERMS_CODE = {
-  SHOP_SERVICE: 'SHOP_SERVICE',
-  SHOP_PRIVACY: 'SHOP_PRIVACY',
-  SHOP_BUSINESS_CHECK: 'SHOP_BUSINESS_CHECK',
-};
-
-export const SHOP_SIGNUP_TERMS = [
-  { code: SHOP_TERMS_CODE.SHOP_SERVICE, title: '매장 서비스 이용약관', required: true },
-  { code: SHOP_TERMS_CODE.SHOP_PRIVACY, title: '매장 개인정보 수집·이용', required: true },
-  { code: SHOP_TERMS_CODE.SHOP_BUSINESS_CHECK, title: '사업자 정보 조회', required: true },
-];
-
-export const SHOP_TERMS_CONTENT = {
-  [SHOP_TERMS_CODE.SHOP_SERVICE]: {
+  [TERMS_CODE.SHOP_SERVICE]: {
     summary: '매장 서비스 이용약관',
     body:
       '매장은 등록한 빈 시간·시술·가격을 정확하게 관리하고, 예약이 확정된 고객에게 시술을 제공해야 합니다. ' +
       '매장 사정으로 예약을 취소하면 고객이 낸 예약금 전액이 환불됩니다. ' +
       '매장 가입은 관리자 승인 후 완료되며, 승인 전에는 매장이 고객에게 노출되지 않습니다.',
   },
-  [SHOP_TERMS_CODE.SHOP_PRIVACY]: {
+  [TERMS_CODE.SHOP_PRIVACY]: {
     summary: '매장 개인정보 수집·이용',
     body:
-      '수집 항목: 아이디, 사업자등록번호, 대표자명, 개업일자, 매장 연락처·주소. ' +
+      '수집 항목: 아이디, 사업자등록번호, 대표자명, 개업일자, 휴대폰 번호, 매장 주소. ' +
       '이용 목적: 사업자 확인, 가입 심사, 매장 운영 관련 연락. 보유 기간: 매장 탈퇴 시까지.',
   },
-  [SHOP_TERMS_CODE.SHOP_BUSINESS_CHECK]: {
+  [TERMS_CODE.SHOP_BUSINESS_CHECK]: {
     summary: '사업자 정보 조회',
     body:
       '입력한 사업자등록번호·대표자명·개업일자로 국세청 사업자등록정보 진위확인을 조회합니다. ' +
       '영업 중인 사업자로 확인된 경우에만 가입할 수 있습니다.',
+  },
+  [TERMS_CODE.SHOP_SMS_NOTIFICATION]: {
+    summary: '매장 알림 문자 수신',
+    body:
+      '가입 승인 결과, 예약·취소 등 매장 운영에 필요한 소식을 가입한 휴대폰 번호로 문자로 보냅니다. ' +
+      '동의하지 않아도 매장 가입과 이용에는 제한이 없습니다.',
   },
 };
 
