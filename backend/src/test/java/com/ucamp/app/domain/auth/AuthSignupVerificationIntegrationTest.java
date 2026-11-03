@@ -176,7 +176,7 @@ class AuthSignupVerificationIntegrationTest {
                 """;
         mvc.perform(post("/api/v1/auth/shops/signup").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.role").value("OWNER"));
+                .andExpect(jsonPath("$.data.status").value("PENDING"));
         assertThat(jdbc.queryForObject("SELECT PHONE FROM SHOP WHERE LOGIN_ID = 'nailshop'", String.class))
                 .isEqualTo("02-111-1111");
         assertThat(jdbc.queryForObject("SELECT BUSINESS_NUMBER FROM SHOP WHERE LOGIN_ID = 'nailshop'", String.class))

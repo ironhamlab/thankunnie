@@ -18,6 +18,7 @@ import com.ucamp.app.domain.auth.dto.request.AuthBusinessVerificationRequest;
 import com.ucamp.app.domain.auth.dto.request.AuthLoginRequest;
 import com.ucamp.app.domain.auth.dto.request.AuthShopSignupRequest;
 import com.ucamp.app.domain.auth.dto.response.AuthShopCategoryResponse;
+import com.ucamp.app.domain.auth.dto.response.AuthShopSignupResponse;
 import com.ucamp.app.domain.auth.dto.response.AuthTokenResponse;
 import com.ucamp.app.domain.auth.entity.ShopAccount;
 import com.ucamp.app.domain.auth.repository.ShopAccountRepository;
@@ -89,9 +90,9 @@ public class AuthService {
         return issue(saved.toAuthUser());
     }
 
-    /** 매장 정보와 함께 매장 계정으로 가입하고 바로 로그인한다. */
+    /** 매장 정보와 함께 매장 계정으로 가입 신청한다. 관리자 승인 전이라 토큰을 발급하지 않는다. */
     @Transactional
-    public AuthTokenResponse signupShop(AuthShopSignupRequest request) {
+    public AuthShopSignupResponse signupShop(AuthShopSignupRequest request) {
         if (shopAccountRepository.existsByLoginId(request.loginId())) {
             throw new BusinessException(ErrorCode.AUTH_DUPLICATE_LOGIN_ID);
         }
@@ -115,8 +116,7 @@ public class AuthService {
                 .description(request.description())
                 .notice(request.notice())
                 .build();
-        ShopAccount saved = saveShopAccount(account);
-        return issue(saved.toAuthUser());
+        return AuthShopSignupResponse.from(saveShopAccount(account));
     }
 
     /** 고객·관리자 로그인. 아이디가 없을 때와 비밀번호가 틀릴 때를 구분하지 않는다. */
@@ -133,13 +133,20 @@ public class AuthService {
     }
 
     /**
-     * 매장 계정 로그인. SHOP.STATUS 는 매장 노출·판매 여부라 계정 잠금으로 쓰지 않는다.
-     * INACTIVE 매장도 로그인해서 매장을 관리할 수 있어야 한다.
+     * 매장 계정 로그인. 관리자 승인 전(PENDING)·거절(REJECTED) 매장은 로그인할 수 없다.
+     * INACTIVE 는 노출 중지일 뿐이라 로그인해서 매장을 관리할 수 있어야 한다.
      */
     public AuthTokenResponse loginShop(AuthLoginRequest request) {
         ShopAccount account = shopAccountRepository.findByLoginId(request.loginId()).orElse(null);
         if (!matchesPassword(request.password(), account == null ? null : account.getPasswordHash())) {
             throw new BusinessException(ErrorCode.AUTH_LOGIN_FAILED);
+        }
+        // 비밀번호가 맞은 뒤에만 승인 상태를 알려 계정 존재 여부가 드러나지 않게 한다
+        switch (account.getStatus()) {
+            case PENDING -> throw new BusinessException(ErrorCode.AUTH_SHOP_PENDING);
+            case REJECTED -> throw new BusinessException(ErrorCode.AUTH_SHOP_REJECTED, rejectedMessage(account));
+            default -> {
+            }
         }
         return issue(account.toAuthUser());
     }
@@ -177,6 +184,12 @@ public class AuthService {
             return false;
         }
         return passwordEncoder.matches(rawPassword, passwordHash);
+    }
+
+    private static String rejectedMessage(ShopAccount account) {
+        String message = ErrorCode.AUTH_SHOP_REJECTED.getMessage();
+        String reason = account.getRejectReason();
+        return reason == null || reason.isBlank() ? message : message + " 사유: " + reason;
     }
 
     private AuthTokenResponse issue(AuthUser authUser) {

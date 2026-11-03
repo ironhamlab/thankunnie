@@ -200,9 +200,42 @@ class AuthIntegrationTest {
     }
 
     @Test
-    @DisplayName("매장 가입 토큰으로 본인 매장은 조회되고 다른 매장은 403")
+    @DisplayName("매장 가입은 승인 대기로 저장되고 토큰을 주지 않으며, 승인 전에는 로그인하면 403")
+    void signupShop_pending_cannotLogin() throws Exception {
+        signupShop("waitshop")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.accessToken").doesNotExist());
+
+        assertThat(jdbc.queryForObject("SELECT STATUS FROM SHOP WHERE LOGIN_ID = 'waitshop'", String.class))
+                .isEqualTo("PENDING");
+        login("/api/v1/auth/shops/login", "waitshop", PASSWORD)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("AUTH_011"));
+        // 비밀번호가 틀리면 승인 상태를 알리지 않는다
+        login("/api/v1/auth/shops/login", "waitshop", "wrong-password")
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("AUTH_002"));
+    }
+
+    @Test
+    @DisplayName("거절된 매장은 로그인하면 403 과 함께 거절 사유를 받는다")
+    void loginShop_rejectedShop_returnsReason() throws Exception {
+        signupShop("rejectshop").andExpect(status().isCreated());
+        jdbc.update("UPDATE SHOP SET STATUS = 'REJECTED', REJECT_REASON = '사업자 정보 불일치' "
+                + "WHERE LOGIN_ID = 'rejectshop'");
+        entityManager.clear();
+
+        login("/api/v1/auth/shops/login", "rejectshop", PASSWORD)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("AUTH_012"))
+                .andExpect(jsonPath("$.error.message").value("매장 가입이 거절되었습니다. 사유: 사업자 정보 불일치"));
+    }
+
+    @Test
+    @DisplayName("승인된 매장 토큰으로 본인 매장은 조회되고 다른 매장은 403")
     void signupShop_thenOwnShopOnly() throws Exception {
-        JsonNode data = data(signupShop("nailshop").andExpect(status().isCreated()));
+        JsonNode data = approvedShopLogin("nailshop");
 
         assertThat(data.get("role").asText()).isEqualTo("OWNER");
         long shopId = data.get("shopId").asLong();
@@ -359,7 +392,7 @@ class AuthIntegrationTest {
     @Test
     @DisplayName("매장은 약관 동의 API 를 쓸 수 없다 (403)")
     void agree_owner_returnsForbidden() throws Exception {
-        JsonNode data = data(signupShop("owner10").andExpect(status().isCreated()));
+        JsonNode data = approvedShopLogin("owner10");
 
         mvc.perform(put("/api/v1/users/me/terms-agreements/SMS_NOTIFICATION")
                         .header(HttpHeaders.AUTHORIZATION, bearer(data)))
@@ -391,6 +424,14 @@ class AuthIntegrationTest {
         return mvc.perform(post("/api/v1/auth/shops/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(shopSignupBody(loginId, CATEGORY_ID)));
+    }
+
+    // 가입 후 관리자 승인을 DB 로 대신하고 로그인한 응답을 돌려준다
+    private JsonNode approvedShopLogin(String loginId) throws Exception {
+        signupShop(loginId).andExpect(status().isCreated());
+        jdbc.update("UPDATE SHOP SET STATUS = 'ACTIVE' WHERE LOGIN_ID = ?", loginId);
+        entityManager.clear();
+        return data(login("/api/v1/auth/shops/login", loginId, PASSWORD).andExpect(status().isOk()));
     }
 
     private static String shopSignupBody(String loginId, long categoryId) {

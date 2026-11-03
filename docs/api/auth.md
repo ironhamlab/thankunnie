@@ -76,6 +76,9 @@
 
 `SHOP`의 필수 컬럼을 한 번에 넣어야 해서 계정과 매장 정보를 함께 받는다. 매장 정보 검증은 매장 수정 API(`shops.md`)와 같다. 대표 이미지는 가입 후 이미지 API로 올린다. `201 Created`.
 
+가입한 매장은 승인 대기(`PENDING`)로 저장되고 토큰을 발급하지 않는다. 관리자가 승인(`admin-shop-applications.md`)하면 `ACTIVE`가 되어 로그인할 수 있다.
+응답 data: `{ "shopId": 10, "status": "PENDING" }`
+
 ```json
 {
   "loginId": "nailshop",
@@ -118,9 +121,11 @@
 
 요청 형식은 고객 로그인과 같다. 응답의 `role`은 `OWNER`, `userId`·`shopId`는 매장 ID.
 
-`SHOP.STATUS`는 매장 노출·판매 여부라서 로그인 판단에 쓰지 않는다. INACTIVE 매장도 로그인해 매장을 관리할 수 있다.
+비밀번호가 맞은 뒤 `SHOP.STATUS`를 확인한다. 승인 대기(`PENDING`)·거절(`REJECTED`) 매장은 로그인할 수 없다.
+`INACTIVE`는 노출 중지일 뿐이라 로그인해 매장을 관리할 수 있다.
 
-오류: 아이디 없음·비밀번호 불일치 `AUTH_002`(401)
+오류: 아이디 없음·비밀번호 불일치 `AUTH_002`(401), 승인 대기 `AUTH_011`(403),
+거절 `AUTH_012`(403, 사유가 있으면 메시지 끝에 `사유: {거절 사유}`를 붙인다)
 
 ## GET /api/v1/auth/shop-categories — 매장 가입용 카테고리
 
