@@ -32,6 +32,7 @@ public interface ExploreVacancyQueryRepository extends Repository<ShopScheduleEx
               and (:treatmentType is null or t.treatmentType = :treatmentType)
               and (:keyword is null
                    or upper(s.name) like :keyword escape '!'
+                   or upper(s.address) like :keyword escape '!'
                    or upper(t.name) like :keyword escape '!')
               and (:minLat is null
                    or (s.latitude between :minLat and :maxLat and s.longitude between :minLng and :maxLng))

@@ -106,7 +106,8 @@ export default function Header() {
   const handleSearch = (event) => {
     event.preventDefault();
     setSearch(search.trim());
-    navigate(`${ROUTES.HOME}?search=1`);
+    // 검색은 날짜보다 매장·시술 이름을 찾는 것이라, 오늘 하루가 아니라 전체 날짜에서 찾는다
+    navigate(`${ROUTES.HOME}?search=1&date=all`);
   };
   const handleLogout = () => logout(ROUTES.HOME);
   const handleBellClick = () => {
