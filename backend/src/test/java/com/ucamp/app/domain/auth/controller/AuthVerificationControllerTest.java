@@ -1,5 +1,8 @@
 package com.ucamp.app.domain.auth.controller;
 
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -71,6 +74,32 @@ class AuthVerificationControllerTest {
                                 {"phone":"02-123-4567"}
                                 """))
                 .andExpect(status().isBadRequest());
+        verifyNoInteractions(verificationService);
+    }
+
+    @Test
+    @DisplayName("매장 가입 인증번호는 휴대폰 번호 중복을 검사하지 않고 발송한다")
+    void send_shop_skipsDuplicatePhoneCheck() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/phone/send").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"phone":"01012345678","accountType":"shop"}
+                                """))
+                .andExpect(status().isOk());
+        verify(authService, never()).validatePhoneAvailable("01012345678");
+        verify(verificationService).send("01012345678");
+    }
+
+    @Test
+    @DisplayName("고객 가입 인증번호는 휴대폰 번호 중복을 먼저 검사한다")
+    void send_customer_checksDuplicatePhone() throws Exception {
+        doThrow(new BusinessException(ErrorCode.AUTH_DUPLICATE_PHONE))
+                .when(authService).validatePhoneAvailable("01012345678");
+        mockMvc.perform(post("/api/v1/auth/phone/send").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"phone":"01012345678"}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("AUTH_010"));
         verifyNoInteractions(verificationService);
     }
 

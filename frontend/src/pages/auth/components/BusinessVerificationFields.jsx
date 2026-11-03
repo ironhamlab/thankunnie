@@ -1,5 +1,6 @@
 import Button from '@/components/common/Button';
 import AuthField from './AuthField';
+import styles from './VerificationMessage.module.css';
 
 export default function BusinessVerificationFields({ form, onChange, verification, error }) {
   return (
@@ -44,7 +45,9 @@ export default function BusinessVerificationFields({ form, onChange, verificatio
         >
           {verification.busy ? '국세청 정보 확인 중…' : '사업자 정보 확인'}
         </Button>
-        <p role="status">{verification.message}</p>
+        <p role="status" className={styles.message}>
+          {verification.message}
+        </p>
         <small>
           영업 중인 사업자만 등록할 수 있어요. 신규 개업 정보는 국세청 반영까지 1~2일 걸릴 수
           있어요.
