@@ -1,0 +1,74 @@
+/* 탭 배경 → 선택 표시 → 글자 순으로 쌓이도록 이 안에서만 쌓임 순서를 정한다 */
+.root {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 20px;
+  overflow-x: auto;
+}
+.root button {
+  position: relative;
+  flex-shrink: 0;
+  min-width: 88px;
+  padding: 10px 22px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  transition:
+    color 0.2s,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.root button::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: -2;
+  border: 1px solid var(--color-border-strong);
+  border-radius: inherit;
+  background: white;
+}
+.root button[aria-selected='true'] {
+  color: white;
+}
+/* 눌림 효과로 탭의 쌓임 순서가 바뀌어도 흰 배경이 선택 표시를 덮지 않게 한다 */
+.root button[aria-selected='true']::before {
+  border-color: transparent;
+  background: none;
+}
+.root button:active {
+  transform: scale(0.96);
+}
+.indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+}
+.moving {
+  transition:
+    transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1),
+    width 0.35s ease;
+}
+@media (hover: hover) {
+  .root button:not([aria-selected='true']):hover {
+    color: var(--color-primary-text);
+    transform: translateY(-2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .root button,
+  .moving {
+    transition: none;
+  }
+  .root button:active,
+  .root button:not([aria-selected='true']):hover {
+    transform: none;
+  }
+}

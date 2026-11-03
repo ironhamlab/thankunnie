@@ -444,3 +444,114 @@
     right: -4px;
   }
 }
+/* 상단 메뉴 움직임. 알림 벨과 같은 느낌으로 맞춘다 */
+.root nav a {
+  position: relative;
+  transition: color 0.2s;
+}
+.root nav a::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -6px;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-primary);
+  transform: scaleX(0);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.root nav a[aria-current='page']::after {
+  transform: scaleX(1);
+}
+.root nav a svg {
+  transform-origin: top center;
+}
+/* 폰의 하단 메뉴는 현재 위치를 색으로 보여주므로 밑줄을 쓰지 않는다 */
+@media (max-width: 767px) {
+  .root nav a::after {
+    display: none;
+  }
+}
+.root nav a:active {
+  transform: scale(0.95);
+}
+.brand .logo {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.search button {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.search button:active {
+  transform: scale(0.9);
+}
+.ownerLink,
+.loginLink {
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s;
+}
+.ownerLink:active,
+.loginLink:active {
+  transform: scale(0.95);
+}
+.profileLink {
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.16s;
+}
+.profileLink:active {
+  transform: scale(0.92);
+}
+@media (hover: hover) {
+  .root nav a:hover {
+    color: var(--color-primary-text);
+  }
+  .root nav a:hover::after {
+    transform: scaleX(1);
+  }
+  .root nav a:hover svg {
+    animation: bellRing 420ms ease;
+  }
+  .brand:hover .logo {
+    transform: rotate(-8deg) scale(1.12);
+  }
+  .search button:hover {
+    transform: scale(1.12);
+  }
+  .ownerLink:hover,
+  .loginLink:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px color-mix(in srgb, var(--color-primary) 16%, transparent);
+  }
+  .profileLink:hover {
+    transform: scale(1.1);
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .root nav a,
+  .root nav a::after,
+  .brand .logo,
+  .search button,
+  .ownerLink,
+  .loginLink,
+  .profileLink {
+    transition: none;
+  }
+  .root nav a:hover svg {
+    animation: none;
+  }
+  .root nav a:active,
+  .brand:hover .logo,
+  .search button:hover,
+  .search button:active,
+  .ownerLink:hover,
+  .ownerLink:active,
+  .loginLink:hover,
+  .loginLink:active,
+  .profileLink:hover,
+  .profileLink:active {
+    transform: none;
+  }
+}

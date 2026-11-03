@@ -1,0 +1,69 @@
+.digit {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.leave {
+  position: absolute;
+  inset: 0;
+  animation: 0.4s ease forwards;
+}
+.enter {
+  display: inline-block;
+  animation: 0.45s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+/* 처음 나타날 때는 아래에서 굴러 올라온다 */
+.intro {
+  display: inline-block;
+  animation: enter-from-below 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.down .leave {
+  animation-name: leave-up;
+}
+.down .enter {
+  animation-name: enter-from-below;
+}
+.up .leave {
+  animation-name: leave-down;
+}
+.up .enter {
+  animation-name: enter-from-above;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@keyframes leave-up {
+  to {
+    transform: translateY(-100%);
+  }
+}
+@keyframes enter-from-below {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes leave-down {
+  to {
+    transform: translateY(100%);
+  }
+}
+@keyframes enter-from-above {
+  from {
+    transform: translateY(-100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .leave {
+    display: none;
+  }
+  .enter,
+  .intro {
+    animation: none;
+  }
+}
