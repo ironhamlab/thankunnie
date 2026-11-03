@@ -138,7 +138,8 @@ export default function ShopRow({
             aria-controls={panelId}
             onClick={onToggle}
           >
-            {expanded ? '접기' : '시간 보기'}
+            {/* 펼칠 때 글자 폭이 바뀌면 왼쪽 가격이 밀리므로 두 문구의 글자 수를 맞춘다 (옆 지도 패널과 같은 문구) */}
+            {expanded ? '시간 접기' : '시간 보기'}
             <span aria-hidden="true">{expanded ? '▴' : '▾'}</span>
           </button>
         )}
