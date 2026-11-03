@@ -1,5 +1,11 @@
 import { toKstDateTime } from './scheduleDate.js';
 
+const sameId = (left, right) => {
+  if (left == null && right == null) return true;
+  if (left == null || right == null) return false;
+  return Number(left) === Number(right);
+};
+
 const sameInstant = (left, right) => {
   if (left == null && right == null) return true;
   if (left == null || right == null) return false;
@@ -46,8 +52,31 @@ export function hopeTimeError(startTime, endTime) {
   return 'NOTIFICATION_003';
 }
 
+/** 판매 중인 일반 시술만 알림에 고를 수 있다. 초보 시술 모집과 판매 중이 아닌 시술은 뺀다. */
+export function selectableTreatments(treatments) {
+  return (treatments ?? []).filter((item) => {
+    if (item?.treatmentType !== 'NORMAL') return false;
+    if (item.status && item.status !== 'ACTIVE') return false;
+    return true;
+  });
+}
+
+/** 시술명을 받았으면 그 이름, 없으면 시술 번호. */
+export function treatmentLabel(treatmentId, treatmentName) {
+  if (typeof treatmentName === 'string' && treatmentName.trim()) return treatmentName.trim();
+  if (treatmentId == null) return '시술';
+  return `시술 ${treatmentId}`;
+}
+
+/** 매장 시술 목록에서 구독에 들어 있는 시술 이름을 찾는다. */
+export function treatmentNameOf(treatments, treatmentId) {
+  const found = (treatments ?? []).find((item) => Number(item.treatmentId) === Number(treatmentId));
+  return treatmentLabel(treatmentId, found?.name);
+}
+
 /**
  * 같은 대상이고 희망 시작·종료가 둘 다 같으면 004.
+ * 업장 구독은 매장과 시술이 같아야 중복이다. 시술이 다르면 다른 알림이다.
  * 수정할 때는 excludeId 로 자기 구독을 뺀다.
  */
 export function findDuplicateSubscription(subscriptions, candidate, excludeId) {
@@ -57,7 +86,7 @@ export function findDuplicateSubscription(subscriptions, candidate, excludeId) {
     if (!sameInstant(item.startTime, candidate.startTime)) return false;
     if (!sameInstant(item.endTime, candidate.endTime)) return false;
     if (candidate.subscriptionType === 'STORE') {
-      return Number(item.shopId) === Number(candidate.shopId);
+      return Number(item.shopId) === Number(candidate.shopId) && sameId(item.treatmentId, candidate.treatmentId);
     }
     return (
       Number(item.categoryId) === Number(candidate.categoryId) &&
@@ -68,13 +97,14 @@ export function findDuplicateSubscription(subscriptions, candidate, excludeId) {
 
 /**
  * 수정 본문. 구독 유형은 보내지 않는다.
- * 업장 구독은 매장 ID를 유지하고 희망 시간만 바꾼다.
+ * 업장 구독은 매장 ID를 유지하고 시술과 희망 시간을 바꾼다.
  * 카테고리·지역 구독은 시술·지역·시간을 바꾼다.
  */
 export function toUpdateBody(current, request) {
   if (current?.subscriptionType === 'STORE') {
     return {
       shopId: current.shopId,
+      treatmentId: Number(request.treatmentId),
       categoryId: null,
       regionCode: null,
       startTime: request.startTime,
@@ -99,11 +129,12 @@ export function toUpdateBody(current, request) {
   };
 }
 
-/** 업장 구독 등록 본문. 시술·지역은 보내지 않는다. 희망 시각이 없으면 알림 전 찜이다. */
-export function buildStoreRequest(shopId, period) {
+/** 업장 구독 등록 본문. 고객이 고른 시술을 넣고, 지역은 보내지 않는다. 희망 시각이 없으면 알림 전 찜이다. */
+export function buildStoreRequest(shopId, treatmentId, period) {
   return {
     subscriptionType: 'STORE',
     shopId: Number(shopId),
+    treatmentId: treatmentId == null || treatmentId === '' ? null : Number(treatmentId),
     categoryId: null,
     regionCode: null,
     startTime: period?.startTime ?? null,
@@ -128,6 +159,7 @@ export function duplicateCandidate(current, body) {
   return {
     subscriptionType: current?.subscriptionType,
     shopId: body.shopId,
+    treatmentId: body.treatmentId,
     categoryId: body.categoryId,
     regionCode: body.regionCode,
     startTime: body.startTime,

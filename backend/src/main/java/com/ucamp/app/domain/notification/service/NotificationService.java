@@ -20,6 +20,10 @@ import com.ucamp.app.domain.notification.entity.NotificationSubscription;
 import com.ucamp.app.domain.notification.entity.SubscriptionStatus;
 import com.ucamp.app.domain.notification.entity.SubscriptionType;
 import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepository;
+import com.ucamp.app.domain.treatment.entity.Treatment;
+import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
+import com.ucamp.app.domain.treatment.entity.TreatmentType;
+import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
 import com.ucamp.app.domain.user.entity.TermsCode;
 import com.ucamp.app.domain.user.service.TermsAgreementService;
 
@@ -33,6 +37,7 @@ import com.ucamp.app.domain.user.service.TermsAgreementService;
 public class NotificationService {
 
     private final NotificationSubscriptionRepository notificationSubscriptionRepository;
+    private final TreatmentRepository treatmentRepository;
     private final StoreSubscriptionDispatchService storeSubscriptionDispatchService;
     private final CategoryRegionSubscriptionDispatchService categoryRegionSubscriptionDispatchService;
     private final Clock clock;
@@ -58,18 +63,20 @@ public class NotificationService {
                 .userId(loginUser.userId())
                 .subscriptionType(request.subscriptionType())
                 .shopId(request.shopId())
+                .treatmentId(request.treatmentId())
                 .categoryId(request.categoryId())
                 .regionCode(request.regionCode())
                 .startTime(request.localStartTime())
                 .endTime(request.localEndTime())
                 .build();
+        validateChosenTreatment(subscription);
         if (hasHopeTime(subscription)) {
             requireSmsAgreement(loginUser);
         }
         // 등록이므로 제외할 구독 ID 는 없다 (excludeId = null)
         validateNoDuplicate(loginUser.userId(), subscription.getSubscriptionType(), subscription.getShopId(),
-                subscription.getCategoryId(), subscription.getRegionCode(), subscription.getStartTime(),
-                subscription.getEndTime(), null);
+                subscription.getTreatmentId(), subscription.getCategoryId(), subscription.getRegionCode(),
+                subscription.getStartTime(), subscription.getEndTime(), null);
         NotificationSubscription saved = notificationSubscriptionRepository.save(subscription);
         enqueueOpenVacancies(saved);
         return NotificationSubscriptionResponse.from(saved);
@@ -109,15 +116,16 @@ public class NotificationService {
         validateNotExpired(request.localEndTime());
         // 대상·시간 형식을 먼저 검사한 뒤 동의·중복을 본다 (잘못된 요청이 동의 필요·409 로 나가면 안 됨).
         // 동의·중복 검사에서 예외가 나면 트랜잭션이 롤백되어 바꾼 조건은 저장되지 않는다
-        subscription.changeCondition(request.shopId(), request.categoryId(), request.regionCode(),
-                request.localStartTime(), request.localEndTime());
+        subscription.changeCondition(request.shopId(), request.treatmentId(), request.categoryId(),
+                request.regionCode(), request.localStartTime(), request.localEndTime());
+        validateChosenTreatment(subscription);
         if (!wasNotifying && hasHopeTime(subscription)) {
             requireSmsAgreement(loginUser);
         }
         // 수정이므로 자기 구독은 중복에서 뺀다 (excludeId = 자기 ID). 중복이면 트랜잭션이 롤백된다.
         validateNoDuplicate(loginUser.userId(), subscription.getSubscriptionType(), subscription.getShopId(),
-                subscription.getCategoryId(), subscription.getRegionCode(), subscription.getStartTime(),
-                subscription.getEndTime(), subscription.getId());
+                subscription.getTreatmentId(), subscription.getCategoryId(), subscription.getRegionCode(),
+                subscription.getStartTime(), subscription.getEndTime(), subscription.getId());
         // 처음 희망 시간을 넣을 때와 같이, 수정 후에도 지금 열린 빈자리 중 희망 시간에 들어오는 것을 다시 찾는다.
         // 이미 같은 이벤트·회원으로 보낸 줄이 있으면 발송 쪽에서 다시 만들지 않는다.
         enqueueOpenVacancies(subscription);
@@ -207,35 +215,52 @@ public class NotificationService {
         }
     }
 
+    // 업장 알림은 고객이 고른 시술이 그 매장의 판매 중인 일반 시술이어야 한다.
+    // 시간 없는 찜은 시술을 아직 고르지 않았을 수 있다.
+    private void validateChosenTreatment(NotificationSubscription subscription) {
+        if (subscription.getSubscriptionType() != SubscriptionType.STORE) {
+            return;
+        }
+        if (subscription.getTreatmentId() == null) {
+            return;
+        }
+        Treatment treatment = treatmentRepository
+                .findByTreatmentIdAndShopShopId(subscription.getTreatmentId(), subscription.getShopId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TREATMENT));
+        if (treatment.getStatus() != TreatmentStatus.ACTIVE || treatment.getTreatmentType() != TreatmentType.NORMAL) {
+            throw new BusinessException(ErrorCode.SUBSCRIPTION_INVALID_TREATMENT);
+        }
+    }
+
     /**
      * ACTIVE 구독 중 같은 대상·같은 희망 시간(시작·종료 둘 다 동일)이 있으면 막는다.
-     * INACTIVE 는 다시 등록할 수 있다.
+     * 업장 구독은 매장과 시술이 같아야 같은 대상이다. INACTIVE 는 다시 등록할 수 있다.
      *
      * @param excludeId 수정 시 자기 구독 ID. 등록 시에는 null
      */
-    private void validateNoDuplicate(Long userId, SubscriptionType subscriptionType, Long shopId,
+    private void validateNoDuplicate(Long userId, SubscriptionType subscriptionType, Long shopId, Long treatmentId,
             Long categoryId, String regionCode, LocalDateTime startTime, LocalDateTime endTime,
             Long excludeId) {
         boolean duplicated;
         if (subscriptionType == SubscriptionType.STORE && startTime == null && endTime == null) {
             if (excludeId == null) {
                 duplicated = notificationSubscriptionRepository
-                        .existsByUserIdAndStatusAndShopIdAndStartTimeIsNullAndEndTimeIsNull(
-                                userId, SubscriptionStatus.ACTIVE, shopId);
+                        .existsByUserIdAndStatusAndShopIdAndTreatmentIdAndStartTimeIsNullAndEndTimeIsNull(
+                                userId, SubscriptionStatus.ACTIVE, shopId, treatmentId);
             } else {
                 duplicated = notificationSubscriptionRepository
-                        .existsByUserIdAndStatusAndShopIdAndStartTimeIsNullAndEndTimeIsNullAndIdNot(
-                                userId, SubscriptionStatus.ACTIVE, shopId, excludeId);
+                        .existsByUserIdAndStatusAndShopIdAndTreatmentIdAndStartTimeIsNullAndEndTimeIsNullAndIdNot(
+                                userId, SubscriptionStatus.ACTIVE, shopId, treatmentId, excludeId);
             }
         } else if (subscriptionType == SubscriptionType.STORE) {
             if (excludeId == null) {
                 duplicated = notificationSubscriptionRepository
-                        .existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTime(
-                                userId, SubscriptionStatus.ACTIVE, shopId, startTime, endTime);
+                        .existsByUserIdAndStatusAndShopIdAndTreatmentIdAndStartTimeAndEndTime(
+                                userId, SubscriptionStatus.ACTIVE, shopId, treatmentId, startTime, endTime);
             } else {
                 duplicated = notificationSubscriptionRepository
-                        .existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
-                                userId, SubscriptionStatus.ACTIVE, shopId, startTime, endTime, excludeId);
+                        .existsByUserIdAndStatusAndShopIdAndTreatmentIdAndStartTimeAndEndTimeAndIdNot(
+                                userId, SubscriptionStatus.ACTIVE, shopId, treatmentId, startTime, endTime, excludeId);
             }
         } else {
             // CATEGORY_REGION

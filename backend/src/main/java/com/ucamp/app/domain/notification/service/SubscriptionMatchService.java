@@ -29,11 +29,13 @@ public class SubscriptionMatchService {
 
     private final NotificationSubscriptionRepository notificationSubscriptionRepository;
     private final ShopCategoryRegionRepository shopCategoryRegionRepository;
+    private final StoreSubscriptionTreatmentService storeSubscriptionTreatmentService;
     private final Clock clock;
 
     /**
      * 조건 A. 이 매장 빈자리를 받을 업장 구독을 고른다.
      * 구독 매장 ID가 빈자리 매장 ID와 같고, 빈자리 시작 시각이 희망 시간 안이어야 한다.
+     * 고객이 고른 시술을 그 시각에 예약할 수 있어야 한다. 시술이 없거나 판매 중이 아니면 빠진다.
      * 해제한 구독과 희망 종료가 지난 구독은 빠진다.
      *
      * @param shopId       빈자리 매장 번호
@@ -44,7 +46,44 @@ public class SubscriptionMatchService {
         if (shopId == null || slotStartsAt == null) {
             return List.of();
         }
-        return notificationSubscriptionRepository.findNotifiableByShop(shopId, slotStartsAt, now());
+        List<NotificationSubscription> bookable = new ArrayList<>();
+        for (NotificationSubscription match : notificationSubscriptionRepository.findNotifiableByShop(
+                shopId, slotStartsAt, now())) {
+            if (storeSubscriptionTreatmentService.canBook(match.getShopId(), match.getTreatmentId(), slotStartsAt)) {
+                bookable.add(match);
+            }
+        }
+        return bookable;
+    }
+
+    /**
+     * 업장 알림 링크에 넣을 시술 ID를 고른다.
+     * 이 회원이 그 매장에 걸어 둔 구독 중, 그 시각에 예약되는 시술만 본다.
+     * 여러 개면 ID가 가장 작은 시술을 쓴다. 없으면 null 이다.
+     *
+     * @param shopId       빈자리 매장 번호
+     * @param slotStartsAt 빈자리 시작 시각
+     * @param userId       문자를 받을 회원
+     * @return 링크에 넣을 시술 ID. 그 회원에게 맞는 시술이 없으면 null
+     */
+    public Long findLinkTreatmentId(Long shopId, LocalDateTime slotStartsAt, Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        Long smallestTreatmentId = null;
+        for (NotificationSubscription match : findStoreMatches(shopId, slotStartsAt)) {
+            if (!userId.equals(match.getUserId())) {
+                continue;
+            }
+            Long treatmentId = match.getTreatmentId();
+            if (treatmentId == null) {
+                continue;
+            }
+            if (smallestTreatmentId == null || treatmentId < smallestTreatmentId) {
+                smallestTreatmentId = treatmentId;
+            }
+        }
+        return smallestTreatmentId;
     }
 
     /**
