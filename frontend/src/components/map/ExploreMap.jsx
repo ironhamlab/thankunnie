@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Spinner from '@/components/common/Spinner';
+import { useMyLocation } from '@/hooks/useMyLocation';
 import { money } from '@/utils/demoData';
 import { hasKakaoMapKey, loadKakaoMap } from '@/utils/kakaoMapLoader';
 import { logger } from '@/utils/logger';
@@ -35,12 +36,6 @@ const CLUSTER_STYLE = {
   fontWeight: '700',
   textAlign: 'center',
 };
-
-// 내 위치는 정확도보다 빠른 응답이 중요하고, 1분 안에 얻은 위치는 다시 쓴다
-const LOCATE_OPTIONS = { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 };
-// 위치를 못 얻었을 때 안내를 보여주는 시간
-const LOCATE_MESSAGE_MS = 4000;
-const PERMISSION_DENIED = 1;
 
 // 매장이 다 보이게 범위를 맞출 때 기본 여백(px)
 const DEFAULT_FIT_PADDING = { top: 40, right: 40, bottom: 40, left: 40 };
@@ -87,8 +82,7 @@ export default function ExploreMap({
   const callbacksRef = useRef({ onSelect, onBoundsChange, onUnavailable });
   const [status, setStatus] = useState(hasKakaoMapKey() ? 'loading' : 'error');
   const myLocationRef = useRef(null);
-  const [locating, setLocating] = useState(false);
-  const [locateMessage, setLocateMessage] = useState('');
+  const { position: myPosition, locating, message: locateMessage, locate } = useMyLocation();
 
   useEffect(() => {
     callbacksRef.current = { onSelect, onBoundsChange, onUnavailable };
@@ -258,54 +252,28 @@ export default function ExploreMap({
     map.setCenter(new window.kakao.maps.LatLng(focusPosition.lat, focusPosition.lng));
   }, [status, focusPosition]);
 
-  useEffect(() => {
-    if (!locateMessage) return undefined;
-    const timer = window.setTimeout(() => setLocateMessage(''), LOCATE_MESSAGE_MS);
-    return () => window.clearTimeout(timer);
-  }, [locateMessage]);
-
   // 내 위치로 지도를 옮기면 idle 로 그 주변을 다시 조회한다
-  const locate = () => {
-    if (!navigator.geolocation) {
-      setLocateMessage('이 브라우저에서는 위치를 확인할 수 없어요');
-      return;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (status !== 'ready' || !map || !myPosition) return;
+    const { maps } = window.kakao;
+    const position = new maps.LatLng(myPosition.lat, myPosition.lng);
+    if (myLocationRef.current) {
+      myLocationRef.current.setPosition(position);
+    } else {
+      const dot = document.createElement('span');
+      dot.className = styles.myLocation;
+      dot.setAttribute('aria-label', '내 위치');
+      myLocationRef.current = new maps.CustomOverlay({
+        map,
+        position,
+        content: dot,
+        zIndex: 3,
+      });
     }
-    setLocating(true);
-    setLocateMessage('');
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setLocating(false);
-        const map = mapRef.current;
-        if (!map) return;
-        const { maps } = window.kakao;
-        const position = new maps.LatLng(coords.latitude, coords.longitude);
-        if (myLocationRef.current) {
-          myLocationRef.current.setPosition(position);
-        } else {
-          const dot = document.createElement('span');
-          dot.className = styles.myLocation;
-          dot.setAttribute('aria-label', '내 위치');
-          myLocationRef.current = new maps.CustomOverlay({
-            map,
-            position,
-            content: dot,
-            zIndex: 3,
-          });
-        }
-        map.setLevel(DEFAULT_LEVEL);
-        map.setCenter(position);
-      },
-      (error) => {
-        setLocating(false);
-        setLocateMessage(
-          error.code === PERMISSION_DENIED
-            ? '위치 권한이 꺼져 있어요. 브라우저 설정에서 허용해 주세요'
-            : '위치를 가져오지 못했어요. 잠시 후 다시 시도해 주세요',
-        );
-      },
-      LOCATE_OPTIONS,
-    );
-  };
+    map.setLevel(DEFAULT_LEVEL);
+    map.setCenter(position);
+  }, [status, myPosition]);
 
   if (status === 'error') return null;
   return (
