@@ -90,7 +90,10 @@ public class AuthService {
         return issue(saved.toAuthUser());
     }
 
-    /** 매장 정보와 함께 매장 계정으로 가입 신청한다. 관리자 승인 전이라 토큰을 발급하지 않는다. */
+    /**
+     * 매장 정보와 함께 매장 계정으로 가입 신청한다. 매장 약관 동의도 같은 트랜잭션에서 저장한다.
+     * 관리자 승인 전이라 토큰을 발급하지 않는다.
+     */
     @Transactional
     public AuthShopSignupResponse signupShop(AuthShopSignupRequest request) {
         if (shopAccountRepository.existsByLoginId(request.loginId())) {
@@ -99,6 +102,9 @@ public class AuthService {
         if (!shopCategoryRepository.existsById(request.categoryId())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "존재하지 않는 매장 카테고리입니다.");
         }
+        termsAgreementService.validateShopSignupAgreements(request.agreedTerms());
+        // 매장 번호는 고객·다른 매장과 겹쳐도 되므로 인증만 확인하고 중복은 검사하지 않는다
+        phoneVerificationService.consume(request.phone(), request.phoneVerificationId());
         businessVerificationService.verify(new AuthBusinessVerificationRequest(request.businessNumber(),
                 request.representativeName(), request.openedOn()));
         ShopAccount account = ShopAccount.builder()
@@ -112,11 +118,13 @@ public class AuthService {
                 .addressDetail(request.addressDetail())
                 .latitude(request.latitude())
                 .longitude(request.longitude())
-                .phone(request.phone())
+                .phone(normalizeMobilePhone(request.phone()))
                 .description(request.description())
                 .notice(request.notice())
                 .build();
-        return AuthShopSignupResponse.from(saveShopAccount(account));
+        ShopAccount saved = saveShopAccount(account);
+        termsAgreementService.agreeOnShopSignup(saved.getShopId(), request.agreedTerms());
+        return AuthShopSignupResponse.from(saved);
     }
 
     /** 고객·관리자 로그인. 아이디가 없을 때와 비밀번호가 틀릴 때를 구분하지 않는다. */
@@ -167,7 +175,7 @@ public class AuthService {
         };
     }
 
-    /** 휴대폰 인증은 고객 가입에만 쓰며, 번호당 고객 계정 하나만 허용한다. */
+    /** 고객은 번호당 계정 하나만 허용한다. 매장 가입은 번호 중복을 허용하므로 호출하지 않는다. */
     public void validatePhoneAvailable(String phone) {
         if (appUserRepository.existsByPhone(normalizeMobilePhone(phone))) {
             throw new BusinessException(ErrorCode.AUTH_DUPLICATE_PHONE);

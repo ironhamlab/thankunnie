@@ -9,7 +9,7 @@ import com.ucamp.app.domain.user.entity.TermsCode;
  * @param code     약관 코드
  * @param version  버전
  * @param title    제목
- * @param required 회원가입 필수 동의 여부
+ * @param required 가입 필수 동의 여부
  */
 public record TermsResponse(TermsCode code, int version, String title, boolean required) {
 

@@ -1,0 +1,12 @@
+/* 아이디 중복 확인·휴대폰 인증·사업자 정보 확인 버튼을 누른 뒤 나오는 결과 안내. 놓치지 않게 강조색 굵은 글씨로 보인다 */
+.message {
+  margin: 8px 0 0;
+  color: var(--color-primary-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* 안내가 없을 때는 자리를 차지하지 않는다. 화면 낭독기가 읽도록 요소(role="status")는 남겨 둔다 */
+.message:empty {
+  margin: 0;
+}
