@@ -263,6 +263,16 @@ class NotificationControllerTest {
     }
 
     @Test
+    @DisplayName("한 건 읽음은 처리 후 안 읽은 수를 반환한다")
+    void markRead_customer_returnsUnreadCount() throws Exception {
+        given(notificationInboxService.markRead(any(AuthUser.class), eq(10L))).willReturn(1L);
+
+        mockMvc.perform(patch(INBOX_URL + "/10/read").header(StubAuthFilter.HEADER_NAME, "CUSTOMER_1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").value(1));
+    }
+
+    @Test
     @DisplayName("모두 읽음은 처리 후 안 읽은 수를 반환한다")
     void markAllRead_customer_returnsUnreadCount() throws Exception {
         given(notificationInboxService.markAllRead(any(AuthUser.class))).willReturn(0L);

@@ -20,6 +20,8 @@ const OWNER_INBOX_TABS = [
   { id: 'CANCELLED', label: '취소' },
 ];
 
+const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 /**
  * 사장님 화면 상단의 알림 종.
  * 고객 종과 같은 뱃지·목록·모두 읽음이다. 관심 탭 대신 예약 완료·취소로 나눈다.
@@ -31,16 +33,26 @@ export default function OwnerInboxBell() {
   const hasSession = Boolean(token) || Boolean(getDevTestUser());
   const isOwner = hasSession && role === USER_ROLE.OWNER;
   const [open, setOpen] = useState(false);
+  // 닫을 때 사라지는 움직임이 끝날 때까지 목록 창을 남겨 둔다
+  const [leaving, setLeaving] = useState(false);
   const [tab, setTab] = useState('ALL');
   const [isCountIncreased, setIsCountIncreased] = useState(false);
+  // 탭 전환·모두 읽음 뒤에 목록이 다시 나타나게 한다
+  const [listKey, setListKey] = useState(0);
+  const [isClearing, setIsClearing] = useState(false);
   const unreadCount = useInboxStore((state) => state.unreadCount);
   const items = useInboxStore((state) => state.items);
   const listStatus = useInboxStore((state) => state.listStatus);
   const listError = useInboxStore((state) => state.listError);
   const loadInbox = useInboxStore((state) => state.loadInbox);
+  const markRead = useInboxStore((state) => state.markRead);
   const markAllRead = useInboxStore((state) => state.markAllRead);
   const previousCountRef = useRef(null);
   const popoverRef = useRef(null);
+  const openRef = useRef(open);
+  const leavingRef = useRef(leaving);
+  openRef.current = open;
+  leavingRef.current = leaving;
   useInboxStream(isOwner, open);
 
   useEffect(() => {
@@ -51,18 +63,40 @@ export default function OwnerInboxBell() {
     }
   }, [unreadCount]);
 
+  const closePanel = () => {
+    if (!openRef.current || leavingRef.current) {
+      return;
+    }
+    if (reduceMotion()) {
+      setOpen(false);
+      setLeaving(false);
+      return;
+    }
+    setLeaving(true);
+    setOpen(false);
+  };
+
+  const handlePanelAnimationEnd = (event) => {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+    if (leavingRef.current && String(event.animationName).includes('panelLeave')) {
+      setLeaving(false);
+    }
+  };
+
   useEffect(() => {
     if (!open) {
       return undefined;
     }
     const handleClick = (event) => {
       if (!popoverRef.current?.contains(event.target)) {
-        setOpen(false);
+        closePanel();
       }
     };
     const handleKey = (event) => {
       if (event.key === 'Escape') {
-        setOpen(false);
+        closePanel();
       }
     };
     document.addEventListener('pointerdown', handleClick);
@@ -74,23 +108,57 @@ export default function OwnerInboxBell() {
   }, [open]);
 
   const handleBellClick = () => {
-    const nextOpen = !open;
-    setOpen(nextOpen);
-    if (nextOpen && isOwner) {
+    if (openRef.current || leavingRef.current) {
+      closePanel();
+      return;
+    }
+    setLeaving(false);
+    setOpen(true);
+    if (isOwner) {
       loadInbox();
     }
   };
 
+  const handleTabChange = (nextTab) => {
+    if (nextTab === tab) {
+      return;
+    }
+    setTab(nextTab);
+    setListKey((value) => value + 1);
+  };
+
+  const handleItemClick = async (item) => {
+    if (item.readAt == null) {
+      try {
+        await markRead(item.inboxId);
+      } catch {
+        // 읽음 실패해도 이동·닫기는 한다.
+      }
+    }
+    closePanel();
+  };
+
   const handleMarkAllRead = async () => {
+    if (!isOwner || unreadCount === 0 || isClearing) {
+      return;
+    }
+    setIsClearing(true);
     try {
+      if (!reduceMotion()) {
+        await wait(220);
+      }
       await markAllRead();
       await loadInbox();
+      setListKey((value) => value + 1);
     } catch {
       // 모두 읽음이 실패하면 뱃지와 목록은 그대로 둔다.
+    } finally {
+      setIsClearing(false);
     }
   };
 
   const visibleItems = items.filter((item) => matchesOwnerInboxTab(item, tab));
+  const showPanel = open || leaving;
 
   return (
     <div className={styles.root} ref={popoverRef}>
@@ -116,15 +184,25 @@ export default function OwnerInboxBell() {
           </b>
         )}
       </button>
-      {open && (
-        <section id="owner-notifications" className={styles.panel} aria-label="알림">
+      {showPanel && (
+        <section
+          id="owner-notifications"
+          className={leaving ? `${styles.panel} ${styles.isLeaving}` : styles.panel}
+          aria-label="알림"
+          aria-hidden={leaving || undefined}
+          onAnimationEnd={handlePanelAnimationEnd}
+        >
           <div className={styles.title}>
-            <strong>알림 {unreadCount}</strong>
+            <strong className={isClearing ? styles.isCleared : undefined}>알림 {unreadCount}</strong>
             <div>
-              <button type="button" onClick={handleMarkAllRead} disabled={!isOwner || unreadCount === 0}>
+              <button
+                type="button"
+                onClick={handleMarkAllRead}
+                disabled={!isOwner || unreadCount === 0 || isClearing || leaving}
+              >
                 모두 읽음
               </button>
-              <button type="button" aria-label="알림 닫기" onClick={() => setOpen(false)}>
+              <button type="button" aria-label="알림 닫기" onClick={closePanel}>
                 ✕
               </button>
             </div>
@@ -135,34 +213,53 @@ export default function OwnerInboxBell() {
                 key={item.id}
                 type="button"
                 aria-pressed={tab === item.id}
-                onClick={() => setTab(item.id)}
+                onClick={() => handleTabChange(item.id)}
+                disabled={leaving}
               >
                 {item.label}
               </button>
             ))}
           </div>
-          {listStatus === 'loading' && visibleItems.length === 0 && (
-            <p className={styles.item}>불러오는 중입니다.</p>
-          )}
-          {listStatus === 'failed' && <p className={styles.item}>{listError}</p>}
-          {listStatus !== 'loading' && listStatus !== 'failed' && visibleItems.length === 0 && (
-            <p className={styles.item}>알림이 없습니다.</p>
-          )}
-          {visibleItems.map((item) => (
-            <div className={styles.item} key={item.inboxId}>
-              {item.linkPath ? (
-                <Link to={item.linkPath} onClick={() => setOpen(false)}>
-                  <InboxItemBody item={item} />
-                </Link>
-              ) : (
-                <InboxItemBody item={item} />
-              )}
-            </div>
-          ))}
+          <div key={`${tab}-${listKey}`} className={styles.list}>
+            {listStatus === 'loading' && visibleItems.length === 0 && (
+              <p className={styles.item}>불러오는 중입니다.</p>
+            )}
+            {listStatus === 'failed' && <p className={styles.item}>{listError}</p>}
+            {listStatus !== 'loading' && listStatus !== 'failed' && visibleItems.length === 0 && (
+              <p className={styles.item}>알림이 없습니다.</p>
+            )}
+            {visibleItems.map((item) => (
+              <div
+                className={isClearing ? `${styles.item} ${styles.isClearing}` : styles.item}
+                key={item.inboxId}
+              >
+                {item.linkPath ? (
+                  <Link
+                    to={item.linkPath}
+                    onClick={() => {
+                      handleItemClick(item);
+                    }}
+                  >
+                    <InboxItemBody item={item} />
+                  </Link>
+                ) : (
+                  <button type="button" className={styles.itemButton} onClick={() => handleItemClick(item)}>
+                    <InboxItemBody item={item} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         </section>
       )}
     </div>
   );
+}
+
+function wait(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 }
 
 function matchesOwnerInboxTab(item, tab) {

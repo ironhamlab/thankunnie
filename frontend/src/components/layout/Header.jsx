@@ -27,6 +27,13 @@ const INBOX_TABS = [
   { id: 'INTEREST', label: '관심' },
 ];
 
+const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const wait = (ms) =>
+  new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+
 /**
  * 지금 주소에 해당하는 메뉴를 고른다. 초보 시술 모집·빈자리 탐색·타임세일은 같은 홈 주소에 붙은 값(?type, ?view, ?sale)으로 구분한다.
  * 초보 시술 모집도 ?view=list 를 쓰므로 빈자리 탐색보다 먼저 본다.
@@ -67,8 +74,13 @@ export default function Header() {
   const search = useDesignStore((s) => s.search);
   const setSearch = useDesignStore((s) => s.setSearch);
   const [open, setOpen] = useState(false);
+  // 닫을 때 사라지는 움직임이 끝날 때까지 목록 창을 남겨 둔다
+  const [leaving, setLeaving] = useState(false);
   const [tab, setTab] = useState('ALL');
   const [isCountIncreased, setIsCountIncreased] = useState(false);
+  // 탭 전환·모두 읽음 뒤에 목록이 다시 나타나게 한다
+  const [listKey, setListKey] = useState(0);
+  const [isClearing, setIsClearing] = useState(false);
   // 개발 서버의 테스트 계정 스위치도 로그인으로 본다. API 토큰과 같은 기준이다.
   const hasSession = Boolean(token) || Boolean(getDevTestUser());
   const isCustomer = hasSession && role === USER_ROLE.CUSTOMER;
@@ -77,9 +89,14 @@ export default function Header() {
   const listStatus = useInboxStore((state) => state.listStatus);
   const listError = useInboxStore((state) => state.listError);
   const loadInbox = useInboxStore((state) => state.loadInbox);
+  const markRead = useInboxStore((state) => state.markRead);
   const markAllRead = useInboxStore((state) => state.markAllRead);
   const previousCountRef = useRef(null);
   const popoverRef = useRef(null);
+  const openRef = useRef(open);
+  const leavingRef = useRef(leaving);
+  openRef.current = open;
+  leavingRef.current = leaving;
   useInboxStream(isCustomer, open);
   useEffect(() => {
     const previousCount = previousCountRef.current;
@@ -88,13 +105,42 @@ export default function Header() {
       setIsCountIncreased(true);
     }
   }, [unreadCount]);
+
+  const closePanel = () => {
+    if (!openRef.current || leavingRef.current) {
+      return;
+    }
+    if (reduceMotion()) {
+      setOpen(false);
+      setLeaving(false);
+      return;
+    }
+    setLeaving(true);
+    setOpen(false);
+  };
+
+  const handlePanelAnimationEnd = (event) => {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+    if (leavingRef.current && String(event.animationName).includes('panelLeave')) {
+      setLeaving(false);
+    }
+  };
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return undefined;
+    }
     const handleClick = (event) => {
-      if (!popoverRef.current?.contains(event.target)) setOpen(false);
+      if (!popoverRef.current?.contains(event.target)) {
+        closePanel();
+      }
     };
     const handleKey = (event) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') {
+        closePanel();
+      }
     };
     document.addEventListener('pointerdown', handleClick);
     document.addEventListener('keydown', handleKey);
@@ -110,21 +156,54 @@ export default function Header() {
   };
   const handleLogout = () => logout(ROUTES.HOME);
   const handleBellClick = () => {
-    const nextOpen = !open;
-    setOpen(nextOpen);
-    if (nextOpen && isCustomer) {
+    if (openRef.current || leavingRef.current) {
+      closePanel();
+      return;
+    }
+    setLeaving(false);
+    setOpen(true);
+    if (isCustomer) {
       loadInbox();
     }
   };
+  const handleTabChange = (nextTab) => {
+    if (nextTab === tab) {
+      return;
+    }
+    setTab(nextTab);
+    setListKey((value) => value + 1);
+  };
+  const handleItemClick = async (item) => {
+    if (item.readAt == null) {
+      try {
+        await markRead(item.inboxId);
+      } catch {
+        // 읽음 실패해도 이동·닫기는 한다.
+      }
+    }
+    closePanel();
+  };
+
   const handleMarkAllRead = async () => {
+    if (!isCustomer || unreadCount === 0 || isClearing) {
+      return;
+    }
+    setIsClearing(true);
     try {
+      if (!reduceMotion()) {
+        await wait(220);
+      }
       await markAllRead();
       await loadInbox();
+      setListKey((value) => value + 1);
     } catch {
       // 모두 읽음이 실패하면 뱃지와 목록은 그대로 둔다.
+    } finally {
+      setIsClearing(false);
     }
   };
   const visibleItems = items.filter((item) => tab === 'ALL' || item.category === tab);
+  const showPanel = open || leaving;
   const current = (menu) => (activeMenu === menu ? 'page' : undefined);
   return (
     <>
@@ -189,7 +268,7 @@ export default function Header() {
             )}
 
             {/* 알림 영역. 고객만 서버 알림을 본다 */}
-            <div ref={popoverRef}>
+            <div className={styles.notificationRoot} ref={popoverRef}>
               <button
                 type="button"
                 className={styles.notificationButton}
@@ -215,23 +294,31 @@ export default function Header() {
                   </b>
                 )}
               </button>
-              {open && (
+              {showPanel && (
                 <section
                   id="header-notifications"
-                  className={styles.notifications}
+                  className={
+                    leaving
+                      ? `${styles.notifications} ${styles.isLeaving}`
+                      : styles.notifications
+                  }
                   aria-label="알림"
+                  aria-hidden={leaving || undefined}
+                  onAnimationEnd={handlePanelAnimationEnd}
                 >
                   <div className={styles.notificationsTitle}>
-                    <strong>알림 {unreadCount}</strong>
+                    <strong className={isClearing ? styles.isCleared : undefined}>
+                      알림 {unreadCount}
+                    </strong>
                     <div>
                       <button
                         type="button"
                         onClick={handleMarkAllRead}
-                        disabled={!isCustomer || unreadCount === 0}
+                        disabled={!isCustomer || unreadCount === 0 || isClearing || leaving}
                       >
                         모두 읽음
                       </button>
-                      <button type="button" aria-label="알림 닫기" onClick={() => setOpen(false)}>
+                      <button type="button" aria-label="알림 닫기" onClick={closePanel}>
                         ✕
                       </button>
                     </div>
@@ -244,34 +331,55 @@ export default function Header() {
                             key={item.id}
                             type="button"
                             aria-pressed={tab === item.id}
-                            onClick={() => setTab(item.id)}
+                            onClick={() => handleTabChange(item.id)}
+                            disabled={leaving}
                           >
                             {item.label}
                           </button>
                         ))}
                       </div>
-                      {listStatus === 'loading' && visibleItems.length === 0 && (
-                        <p className={styles.notificationItem}>불러오는 중입니다.</p>
-                      )}
-                      {listStatus === 'failed' && (
-                        <p className={styles.notificationItem}>{listError}</p>
-                      )}
-                      {listStatus !== 'loading' &&
-                        listStatus !== 'failed' &&
-                        visibleItems.length === 0 && (
-                          <p className={styles.notificationItem}>알림이 없습니다.</p>
+                      <div key={`${tab}-${listKey}`} className={styles.notificationList}>
+                        {listStatus === 'loading' && visibleItems.length === 0 && (
+                          <p className={styles.notificationItem}>불러오는 중입니다.</p>
                         )}
-                      {visibleItems.map((item) => (
-                        <div className={styles.notificationItem} key={item.inboxId}>
-                          {item.linkPath ? (
-                            <Link to={item.linkPath} onClick={() => setOpen(false)}>
-                              <InboxItemBody item={item} />
-                            </Link>
-                          ) : (
-                            <InboxItemBody item={item} />
+                        {listStatus === 'failed' && (
+                          <p className={styles.notificationItem}>{listError}</p>
+                        )}
+                        {listStatus !== 'loading' &&
+                          listStatus !== 'failed' &&
+                          visibleItems.length === 0 && (
+                            <p className={styles.notificationItem}>알림이 없습니다.</p>
                           )}
-                        </div>
-                      ))}
+                        {visibleItems.map((item) => (
+                          <div
+                            className={
+                              isClearing
+                                ? `${styles.notificationItem} ${styles.isClearing}`
+                                : styles.notificationItem
+                            }
+                            key={item.inboxId}
+                          >
+                            {item.linkPath ? (
+                              <Link
+                                to={item.linkPath}
+                                onClick={() => {
+                                  handleItemClick(item);
+                                }}
+                              >
+                                <InboxItemBody item={item} />
+                              </Link>
+                            ) : (
+                              <button
+                                type="button"
+                                className={styles.notificationItemButton}
+                                onClick={() => handleItemClick(item)}
+                              >
+                                <InboxItemBody item={item} />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </>
                   ) : (
                     <p className={styles.notificationItem}>

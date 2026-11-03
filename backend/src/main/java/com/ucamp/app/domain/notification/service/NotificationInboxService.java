@@ -16,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 
 import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.UserRole;
+import com.ucamp.app.common.exception.BusinessException;
+import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.domain.notification.dto.response.NotificationInboxResponse;
 import com.ucamp.app.domain.notification.entity.NotificationInbox;
 import com.ucamp.app.domain.notification.entity.NotificationInboxCategory;
@@ -149,6 +151,36 @@ public class NotificationInboxService {
         for (NotificationInbox inbox : unread) {
             inbox.markRead(now);
         }
+        return publishAndCountUnread(loginUser);
+    }
+
+    /**
+     * 로그인한 고객 또는 사장님 본인의 받은 알림 한 건을 읽음으로 바꾼다.
+     * 이미 읽은 알림의 시각은 바꾸지 않는다.
+     * 없거나 다른 사람·다른 매장 알림이면 없는 것으로 본다.
+     *
+     * @param loginUser 로그인한 고객 또는 사장님
+     * @param inboxId   읽음으로 바꿀 받은 알림 ID
+     * @return 처리 후 안 읽은 알림 수
+     */
+    @Transactional
+    public long markRead(AuthUser loginUser, Long inboxId) {
+        loginUser.requireRole(UserRole.CUSTOMER, UserRole.OWNER);
+        NotificationInbox inbox = notificationInboxRepository.findById(inboxId)
+                .filter(found -> belongsTo(loginUser, found))
+                .orElseThrow(() -> new BusinessException(ErrorCode.INBOX_NOT_FOUND));
+        inbox.markRead(LocalDateTime.now(clock));
+        return publishAndCountUnread(loginUser);
+    }
+
+    private boolean belongsTo(AuthUser loginUser, NotificationInbox inbox) {
+        if (loginUser.hasRole(UserRole.OWNER)) {
+            return loginUser.shopId().equals(inbox.getShopId());
+        }
+        return loginUser.userId().equals(inbox.getUserId());
+    }
+
+    private long publishAndCountUnread(AuthUser loginUser) {
         long unreadCount = countUnread(loginUser);
         if (loginUser.hasRole(UserRole.OWNER)) {
             publishShopUnreadCount(loginUser.shopId());

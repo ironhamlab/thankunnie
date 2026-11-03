@@ -126,6 +126,37 @@ class NotificationInboxQueryTest {
     }
 
     @Test
+    @DisplayName("한 건만 읽으면 그 알림만 읽음이 되고 남의 알림은 읽지 못한다")
+    void markRead_marksOwnInboxOnly() {
+        notificationInboxService.save(CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,
+                "첫 알림", "본문1", "/my-reservations");
+        notificationInboxService.save(CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,
+                "둘째 알림", "본문2", "/my-reservations");
+        notificationInboxService.save(OTHER_CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,
+                "다른 고객", "본문3", "/my-reservations");
+
+        Long secondId = notificationInboxService.getMyInbox(CUSTOMER, null).get(0).inboxId();
+        Long otherId = notificationInboxService.getMyInbox(OTHER_CUSTOMER, null).get(0).inboxId();
+
+        assertThat(notificationInboxService.markRead(CUSTOMER, secondId)).isEqualTo(1);
+        assertThat(notificationInboxService.getMyInbox(CUSTOMER, null))
+                .filteredOn(item -> item.inboxId().equals(secondId))
+                .extracting(NotificationInboxResponse::readAt)
+                .isNotEmpty()
+                .allSatisfy(readAt -> assertThat(readAt).isNotNull());
+        assertThat(notificationInboxService.getMyInbox(CUSTOMER, null))
+                .filteredOn(item -> !item.inboxId().equals(secondId))
+                .extracting(NotificationInboxResponse::readAt)
+                .containsOnlyNulls();
+
+        assertThatThrownBy(() -> notificationInboxService.markRead(CUSTOMER, otherId))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INBOX_NOT_FOUND);
+        assertThat(notificationInboxService.countUnread(OTHER_CUSTOMER)).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("사장님은 본인 매장 예약 알림만 보고 같은 숫자의 고객 알림은 보지 않는다")
     void getMyInbox_owner_returnsOwnShopOnly() {
         commitShops();
