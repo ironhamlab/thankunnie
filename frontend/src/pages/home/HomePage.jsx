@@ -4,6 +4,7 @@ import { ROUTES } from '@/constants/routes';
 import { useExploreStore } from '@/store/useExploreStore';
 import { datePart } from '@/utils/scheduleDate';
 import { shopPagePath } from '@/utils/exploreVacancy';
+import CategoryTabs from '@/pages/home/components/CategoryTabs';
 import VacancySearch from '@/pages/home/components/VacancySearch';
 import HomeBeautyMap from '@/pages/home/components/HomeBeautyMap';
 import HomeIntro from '@/pages/home/components/HomeIntro';
@@ -77,8 +78,13 @@ export default function HomePage() {
   if (searchMode) return <VacancySearch />;
   return (
     <div className="b-container home-redesign">
-      <HomeIntro />
-      <section className={styles.discover} aria-label="오늘 임박 빈자리와 주변 빈자리 지도">
+      <div className={styles.riseIn}>
+        <HomeIntro />
+      </div>
+      <section
+        className={`${styles.discover} ${styles.fadeIn}`}
+        aria-label="오늘 임박 빈자리와 주변 빈자리 지도"
+      >
         <ImminentCarousel
           onShowShop={showImminent}
           paused={mapHovered || mapExplored}
@@ -92,7 +98,7 @@ export default function HomePage() {
           onPickShop={(shopId) => setCarouselRequest({ shopId })}
         />
       </section>
-      <section id="home-deals" className="home-deals">
+      <section id="home-deals" className={`home-deals ${styles.riseIn} ${styles.later}`}>
         <div className={styles.sectionHeading}>
           <div>
             <h2>
@@ -103,23 +109,15 @@ export default function HomePage() {
           </div>
           {category && (
             <Link to={categoryListPath(category.categoryId, homeShops[0])}>
-              {category.name} 전체보기 ›
+              {category.name} 전체보기 <span className={styles.arrow}>›</span>
             </Link>
           )}
         </div>
-        <div className={styles.categoryTabs} role="tablist" aria-label="시술 분야">
-          {categories.map((item) => (
-            <button
-              key={item.categoryId}
-              type="button"
-              role="tab"
-              aria-selected={item.categoryId === category?.categoryId}
-              onClick={() => setSelectedCategoryId(item.categoryId)}
-            >
-              {item.name}
-            </button>
-          ))}
-        </div>
+        <CategoryTabs
+          categories={categories}
+          selectedId={category?.categoryId}
+          onSelect={setSelectedCategoryId}
+        />
         {homeShopsStatus === 'failed' && (
           <p className="b-muted" role="alert">
             빈자리를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.

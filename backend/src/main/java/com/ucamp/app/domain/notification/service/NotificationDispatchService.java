@@ -36,6 +36,8 @@ import com.ucamp.app.domain.notification.repository.NotificationEventRepository;
 import com.ucamp.app.domain.notification.repository.NotificationSubscriptionRepository;
 import com.ucamp.app.domain.notification.repository.RecipientContactRepository;
 import com.ucamp.app.domain.notification.repository.VacancySlotRepository;
+import com.ucamp.app.domain.user.entity.TermsCode;
+import com.ucamp.app.domain.user.service.TermsAgreementService;
 import com.ucamp.app.domain.vacancy.repository.ShopStatusQueryRepository;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
@@ -43,6 +45,7 @@ import com.ucamp.app.domain.vacancy.service.AvailabilityService;
  * 알림 이벤트를 회원별 발송 대기 작업으로 저장하고, 그 작업을 하나씩 가져간다.
  * 재검사를 통과한 작업은 문자를 보내고 결과를 같은 줄에 남긴다.
  * 문자 발송에 성공하면 받은 알림에 한 줄 남긴다. 실패·결과 불명·생략은 남기지 않는다.
+ * 알림 문자 수신(최신 버전 약관)에 동의한 회원에게만 보낸다. 철회했거나 동의 기록이 없으면 보내지 않는다.
  */
 @Slf4j
 @Service
@@ -77,6 +80,7 @@ public class NotificationDispatchService {
     private final ObjectProvider<NotificationDispatchService> self;
     private final Clock clock;
     private final ShopStatusQueryRepository shopStatusQueryRepository;
+    private final TermsAgreementService termsAgreementService;
 
     /**
      * PENDING 이벤트 하나를 고른다. 매장 구독 회원은 대기 작업을 넣고, 카테고리 구독은 쿨다운을 보고 나눈다.
@@ -228,6 +232,12 @@ public class NotificationDispatchService {
         NotificationSubscription subscription = notificationSubscriptionRepository.findById(subscriptionId).orElse(null);
         if (subscription == null) {
             categoryRegionPendingQueue.clearPendingEvents(subscriptionId);
+            return SummaryResult.skipped();
+        }
+        if (!termsAgreementService.hasAgreed(subscription.getUserId(), TermsCode.SMS_NOTIFICATION)) {
+            categoryRegionPendingQueue.clearPendingEvents(subscriptionId);
+            log.info("카테고리 묶음 문자 생략(문자 수신 미동의) subscriptionId={}, userId={}",
+                    subscriptionId, subscription.getUserId());
             return SummaryResult.skipped();
         }
         Optional<String> phone = recipientContactRepository.findPhoneByUserId(subscription.getUserId());
@@ -425,6 +435,11 @@ public class NotificationDispatchService {
             notificationDispatchRepository.save(latest);
             log.warn("문자 발송 실패 dispatchId={}, userId={}, reason={}",
                     latest.getId(), latest.getUserId(), reason);
+            return null;
+        }
+
+        if (!termsAgreementService.hasAgreed(latest.getUserId(), TermsCode.SMS_NOTIFICATION)) {
+            finishWithoutSending(latest);
             return null;
         }
 

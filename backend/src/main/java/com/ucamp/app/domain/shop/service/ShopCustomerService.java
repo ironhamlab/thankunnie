@@ -28,7 +28,7 @@ import com.ucamp.app.domain.shop.repository.ShopCustomerRepository;
 
 /**
  * 매장 고객 관리. 이 매장에 확정·취소 완료 예약이 있는 고객만 다루고, 다른 고객은 404 로 숨긴다.
- * 이용 횟수·금액은 조회할 때마다 예약에서 계산한다 (종료 시각이 지난 확정 예약 = 이용 추정).
+ * 이용 횟수·금액은 조회할 때마다 예약에서 계산한다 (종료 시각이 지났고 노쇼가 아닌 확정 예약 = 이용 추정).
  * 연락처는 여러 고객이 한 화면에 보이는 목록에서 가운데를 가리고, 고객 상세에서만 전체를 준다 (예약 상세와 같은 기준).
  */
 @Service
@@ -143,6 +143,7 @@ public class ShopCustomerService {
                 toOffset(row.getFirstVisitAt()),
                 toOffset(row.getLastVisitAt()),
                 toOffset(row.getNextReservationAt()),
+                row.getNoShowCount() == null ? 0 : row.getNoShowCount(),
                 CustomerSegment.of(visitCount),
                 row.getHasMemo() != null && row.getHasMemo() == 1);
     }
@@ -169,6 +170,8 @@ public class ShopCustomerService {
         ShopCustomerDetailResponse.HistoryStatus status;
         if ("CANCELLED".equals(row.getStatus())) {
             status = ShopCustomerDetailResponse.HistoryStatus.CANCELLED;
+        } else if (row.getNoShow() != null && row.getNoShow() == 1) {
+            status = ShopCustomerDetailResponse.HistoryStatus.NO_SHOW;
         } else if (row.getEndsAt().isAfter(now)) {
             status = ShopCustomerDetailResponse.HistoryStatus.UPCOMING;
         } else {

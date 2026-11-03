@@ -15,6 +15,7 @@ import Panel from '@/components/common/Panel';
 import EmptyState from '@/components/common/EmptyState';
 import Alert from '@/components/common/Alert';
 import MyNotificationsPage from './MyNotificationsPage';
+import SmsAgreementSetting from './components/SmsAgreementSetting';
 import WithdrawDialog from './components/WithdrawDialog';
 import styles from './CustomerProfilePage.module.css';
 
@@ -107,6 +108,7 @@ export default function CustomerProfilePage() {
             </div>
           ))}
         </div>
+        <SmsAgreementSetting />
       </Panel>
       {listStatus === 'loading' && (
         <p role="status" className={styles.nearestState}>

@@ -220,10 +220,13 @@ public class ReservationDashboardService {
         long nonRefundedDeposit = 0;
         int lastMinute = 0;
         long lastMinuteAmount = 0;
+        int noShow = 0;
         Set<Long> customers = new HashSet<>();
         for (ReservationDashboardRow row : period) {
             if (row.confirmed()) {
-                if (row.completed(now)) {
+                if (row.noShowed()) {
+                    noShow++;
+                } else if (row.completed(now)) {
                     completed++;
                     completedAmount += row.appliedPrice();
                     customers.add(row.userId());
@@ -259,7 +262,7 @@ public class ReservationDashboardService {
                 .count();
 
         Rebook rebook = rebook(rows, period);
-        int confirmed = completed + upcoming;
+        int confirmed = completed + upcoming + noShow;
         return new ReservationPeriodSummary(
                 start,
                 end,
@@ -281,13 +284,15 @@ public class ReservationDashboardService {
                 customers.size(),
                 customers.size() - returning,
                 returning,
-                percent(returning, customers.size()));
+                percent(returning, customers.size()),
+                noShow,
+                percent(noShow, completed + noShow));
     }
 
     /**
      * 취소로 비었던 시간과 그중 다시 채운 시간.
      * 비었던 시간: 기간 안 취소 완료 예약의 시간 합집합. 매장이 취소하며 닫은 시간은 다시 팔 수 없으므로 뺀다.
-     * 다시 채운 시간: 그 취소가 완료된 뒤 생성된 확정 예약과 겹치는 부분의 합집합.
+     * 다시 채운 시간: 그 취소가 완료된 뒤 생성된 확정 예약(노쇼 제외)과 겹치는 부분의 합집합.
      * 금액: 겹치는 부분이 있는 확정 예약의 적용가 합계 (한 예약은 한 번만 센다).
      * 예약은 날짜를 넘기지 않으므로 같은 날짜의 예약끼리만 비교한다.
      */
@@ -300,7 +305,8 @@ public class ReservationDashboardService {
         }
         Map<LocalDate, List<ReservationDashboardRow>> confirmedByDate = new HashMap<>();
         for (ReservationDashboardRow row : rows) {
-            if (row.confirmed()) {
+            // 노쇼 예약은 자리를 채웠다고 보지 않는다
+            if (row.occupied()) {
                 confirmedByDate.computeIfAbsent(row.startsAt().toLocalDate(), date -> new ArrayList<>()).add(row);
             }
         }
@@ -391,7 +397,7 @@ public class ReservationDashboardService {
             amounts.put(day, new long[1]);
         }
         for (ReservationDashboardRow row : period) {
-            if (row.confirmed()) {
+            if (row.occupied()) {
                 DayOfWeek day = row.startsAt().getDayOfWeek();
                 counts.get(day)[0]++;
                 amounts.get(day)[0] += row.appliedPrice();
@@ -408,7 +414,7 @@ public class ReservationDashboardService {
     private static List<ReservationStatsResponse.HeatmapCell> heatmap(List<ReservationDashboardRow> period) {
         Map<DayOfWeek, TreeMap<Integer, Long>> minutes = new EnumMap<>(DayOfWeek.class);
         for (ReservationDashboardRow row : period) {
-            if (!row.confirmed()) {
+            if (!row.occupied()) {
                 continue;
             }
             LocalDateTime cursor = row.startsAt();
@@ -431,7 +437,7 @@ public class ReservationDashboardService {
         Map<Long, TreatmentAccumulator> byId = new LinkedHashMap<>();
         long total = 0;
         for (ReservationDashboardRow row : period) {
-            if (!row.confirmed()) {
+            if (!row.occupied()) {
                 continue;
             }
             TreatmentAccumulator acc = byId.computeIfAbsent(row.treatmentId(),

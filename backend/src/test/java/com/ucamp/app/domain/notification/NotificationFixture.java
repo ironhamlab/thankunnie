@@ -41,6 +41,23 @@ public final class NotificationFixture {
         return "010-" + part + "-" + part;
     }
 
+    /** 알림 문자 수신 약관(TERMS_ID 9105). 알림 문자는 이 약관에 동의한 회원에게만 나간다. */
+    public static void smsTerms(JdbcTemplate jdbc) {
+        jdbc.update("""
+                INSERT INTO TERMS (TERMS_ID, CODE, VERSION, TITLE, IS_REQUIRED, CREATED_AT, UPDATED_AT)
+                VALUES (9105, 'SMS_NOTIFICATION', 1, '알림 문자 수신', 'N', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """);
+    }
+
+    /** 회원의 알림 문자 수신 동의. {@link #smsTerms(JdbcTemplate)} 를 먼저 넣는다. */
+    public static void smsAgreement(JdbcTemplate jdbc, long userId) {
+        jdbc.update("""
+                INSERT INTO USER_TERMS_AGREEMENT
+                    (AGREEMENT_ID, USER_ID, TERMS_ID, AGREED_AT, CREATED_AT, UPDATED_AT)
+                VALUES (?, ?, 9105, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """, 9000 + userId, userId);
+    }
+
     public static void treatment(JdbcTemplate jdbc, long treatmentId, long shopId, String treatmentType) {
         jdbc.update("""
                 INSERT INTO TREATMENT (TREATMENT_ID, SHOP_ID, NAME, REGULAR_PRICE, PRICE, LAST_MINUTE_PRICE,

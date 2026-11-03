@@ -41,27 +41,70 @@
     font-size: 12px;
   }
 }
-.categoryTabs {
-  display: flex;
-  gap: 8px;
-  margin: 4px 0 20px;
-  overflow-x: auto;
+.arrow {
+  display: inline-block;
+  transition: transform 0.2s;
 }
-.categoryTabs button {
-  flex-shrink: 0;
-  min-width: 88px;
-  padding: 10px 22px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-pill);
-  background: white;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
+@media (hover: hover) {
+  .sectionHeading > a:hover .arrow {
+    animation: arrowNudge 0.6s ease infinite;
+  }
 }
-.categoryTabs button[aria-selected='true'] {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: white;
+@keyframes arrowNudge {
+  50% {
+    transform: translateX(5px);
+  }
+}
+/* 메인에 들어올 때 위에서부터 차례로 나타난다. 임박 카드·지도는 위치를 건드리지 않고 투명도만 바꾼다 */
+.riseIn {
+  animation: riseIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.fadeIn {
+  animation: fadeIn 0.65s ease 0.12s backwards;
+}
+.later {
+  animation-delay: 0.24s;
+}
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+/* 탭을 바꾸면 매장 카드가 앞에서부터 차례로 튀어 오른다 */
+.shopGrid > * {
+  animation: cardPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+.shopGrid > :nth-child(2) {
+  animation-delay: 0.05s;
+}
+.shopGrid > :nth-child(3) {
+  animation-delay: 0.1s;
+}
+.shopGrid > :nth-child(4) {
+  animation-delay: 0.15s;
+}
+.shopGrid > :nth-child(n + 5) {
+  animation-delay: 0.2s;
+}
+@keyframes cardPop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.95);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arrow,
+  .riseIn,
+  .fadeIn,
+  .shopGrid > * {
+    animation: none !important;
+  }
 }
 .shopGrid {
   display: grid;

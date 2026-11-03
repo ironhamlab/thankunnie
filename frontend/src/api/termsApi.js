@@ -7,4 +7,6 @@ export const termsApi = {
   getMyAgreements: () => axiosInstance.get('/v1/users/me/terms-agreements'),
   /** 약관 동의. 이미 동의했으면 기존 동의를 그대로 돌려준다 */
   agree: (termsCode) => axiosInstance.put(`/v1/users/me/terms-agreements/${termsCode}`),
+  /** 선택 약관 동의 철회. 동의한 적이 없거나 이미 철회했어도 성공한다 */
+  withdraw: (termsCode) => axiosInstance.delete(`/v1/users/me/terms-agreements/${termsCode}`),
 };

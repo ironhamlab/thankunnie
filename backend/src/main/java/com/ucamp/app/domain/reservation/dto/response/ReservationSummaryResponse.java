@@ -13,6 +13,8 @@ import com.ucamp.app.domain.reservation.repository.ReservationView;
  * @param paymentStatus 최근 결제 상태 (READY, PAID, REFUND_PENDING, REFUNDED 등), 결제 전이면 null
  * @param cancelStatus  취소 처리 상태 (REQUESTED, COMPLETED 등), 취소 전이면 null
  * @param cancellable   취소 버튼 표시 여부. 확정 상태이고 시작 전이면 true (실제 취소 가능 판단은 취소 API 가 한다)
+ * @param customerId    예약한 고객 ID. 매장 화면에서 고객 관리 상세로 이동할 때 쓴다
+ * @param noShow        매장이 노쇼로 표시한 확정 예약인지
  */
 public record ReservationSummaryResponse(
         Long reservationId,
@@ -29,7 +31,9 @@ public record ReservationSummaryResponse(
         int balance,
         String paymentStatus,
         String cancelStatus,
-        boolean cancellable) {
+        boolean cancellable,
+        Long customerId,
+        boolean noShow) {
 
     public static ReservationSummaryResponse from(ReservationView view, boolean cancellable) {
         return new ReservationSummaryResponse(
@@ -47,6 +51,8 @@ public record ReservationSummaryResponse(
                 view.appliedPrice() - view.deposit(),
                 view.paymentStatus(),
                 view.cancelStatus(),
-                cancellable);
+                cancellable,
+                view.userId(),
+                view.noShow());
     }
 }

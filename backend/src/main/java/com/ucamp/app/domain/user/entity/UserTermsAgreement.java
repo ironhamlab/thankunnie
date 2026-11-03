@@ -22,7 +22,7 @@ import com.ucamp.app.common.entity.BaseTimeEntity;
 
 /**
  * 회원의 약관 동의. 회원·약관 버전당 한 행이다 (UK_USER_TERMS_AGREEMENT).
- * WITHDRAWN_AT 은 철회 기능을 위한 자리로, MVP 에서는 철회가 없어 항상 null 이다.
+ * 선택 약관(문자 수신 등)은 철회할 수 있다. 철회하면 WITHDRAWN_AT 을 채우고, 다시 동의하면 같은 행을 되살린다.
  */
 @Entity
 @Table(name = "USER_TERMS_AGREEMENT")
@@ -62,5 +62,20 @@ public class UserTermsAgreement extends BaseTimeEntity {
     /** 철회되지 않은 동의인지. */
     public boolean isActive() {
         return withdrawnAt == null;
+    }
+
+    /** 동의를 철회한다. 이미 철회했으면 처음 철회한 시각을 그대로 둔다. */
+    public void withdraw(LocalDateTime now) {
+        if (withdrawnAt == null) {
+            withdrawnAt = now;
+        }
+    }
+
+    /** 철회한 동의에 다시 동의한다. 회원·약관 버전당 한 행(UK)이라 새 행 대신 이 행의 동의 시각을 바꾼다. */
+    public void reagree(LocalDateTime now) {
+        if (withdrawnAt != null) {
+            agreedAt = now;
+            withdrawnAt = null;
+        }
     }
 }

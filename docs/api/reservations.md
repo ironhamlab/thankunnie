@@ -18,6 +18,8 @@
 | POST | `/api/v1/my/reservations/{reservationId}/release` | 내 점유 풀기 | 고객 | 204 |
 | GET | `/api/v1/owner/reservations` | 본인 매장 예약 목록 | 매장 | 200 |
 | GET | `/api/v1/owner/reservations/{reservationId}` | 본인 매장 예약 상세 | 매장 | 200 |
+| PUT | `/api/v1/owner/reservations/{reservationId}/no-show` | 노쇼 표시 | 매장 | 200 |
+| DELETE | `/api/v1/owner/reservations/{reservationId}/no-show` | 노쇼 해제 | 매장 | 200 |
 
 ## 예약 생성(점유) `POST /api/v1/reservations`
 
@@ -152,7 +154,9 @@
     "balance": 10000,
     "paymentStatus": null,
     "cancelStatus": null,
-    "cancellable": false
+    "cancellable": false,
+    "customerId": 1,
+    "noShow": false
   },
   "customerPhone": "010-1111-1111",
   "customerRequest": null,
@@ -170,6 +174,8 @@
 | `summary` | 목록과 같은 요약. `balance`는 현장 결제 잔금(적용 판매가 − 예약금) |
 | `customerPhone` | 예약자 휴대폰 번호. 탈퇴 회원(`APP_USER.STATUS = INACTIVE`)이면 null. 이름(`summary.customerName`)은 "탈퇴회원"으로 내려간다 |
 | `summary.cancellable` | 취소 버튼 표시 여부. 확정 상태이고 시작 전이면 true. 실제 취소 가능 판단은 취소 API가 한다 |
+| `summary.customerId` | 예약한 고객 ID. 매장 화면에서 고객 관리 상세(`/owner/customers?customer={id}`)로 이동할 때 쓴다 |
+| `summary.noShow` | 매장이 노쇼로 표시한 확정 예약인지. 상태는 `CONFIRMED` 그대로다 |
 | `payment` | 최근 예약금 결제. `status`(READY, PAID, FAILED, UNKNOWN, REFUND_PENDING, PART_REFUNDED, REFUNDED), `amount`, `refundedAmount`, `approvedAt`, `refundedAt`. 결제 전이면 null |
 | `cancel` | 취소. `cancelType`(CUSTOMER, SHOP_FAULT, CUSTOMER_REQUEST), `status`, `policyRefundAmount`, `refundAmount`, `requestedAt`, `completedAt`. 취소 전이면 null |
 | `serverTime` | 응답을 만든 서버 시각. 화면은 기기 시각과의 차이를 보정해 `holdExpiresAt`까지 남은 시간을 센다 |
@@ -183,6 +189,33 @@
 | CANCEL_PENDING | 취소 처리 중. 환불 완료 전까지 시간을 계속 잡고 있다 |
 | CANCELLED | 취소 완료 |
 | EXPIRED | 점유 만료. 5분 안에 결제하지 않았거나, 결제 화면을 떠나 점유를 풀었음 |
+
+## 노쇼 표시·해제 `PUT·DELETE /api/v1/owner/reservations/{reservationId}/no-show` (UNNIE-191)
+
+- 매장 계정이 고객이 오지 않은 예약을 표시한다. 응답은 예약 상세(`summary.noShow` 반영)다.
+- 표시(PUT): **확정(`CONFIRMED`) 예약이고 종료 시각이 지났을 때만** 된다. 늦게 온 고객을 일찍 노쇼로 처리하지 않게 시작이 아니라 종료 기준이다.
+- 해제(DELETE): 기한 없이 된다. 잘못 표시한 노쇼는 언제든 되돌린다.
+- 같은 상태로 다시 요청하면 바꾸지 않고 현재 예약을 돌려준다. 이때도 확정 예약이 아니면 `RESERVATION_008` 이다. 동시에 들어온 요청은 조건부 갱신으로 한 번만 반영된다.
+- 응답의 `cancellable` 은 예약 상세와 같이 확정이고 시작 전일 때 true 다.
+- 예약 상태·예약금·결제는 바뀌지 않는다. 노쇼 예약은 매장 대시보드의 이용 추정 금액·이용 횟수·피크·시술 비중과 고객 관리의 이용 횟수에서 빠지고, 노쇼 건수·노쇼율로 따로 센다.
+- 취소는 시작 전에만, 노쇼는 종료 후에만 바뀌어 둘이 겹치지 않는다.
+
+| 상황 | 응답 |
+|---|---|
+| 다른 매장 예약, 없는 예약 | 404 `COMMON_404` |
+| 확정이 아닌 예약 (취소·취소 처리 중·점유) | 409 `RESERVATION_008` |
+| 아직 끝나지 않은 예약을 표시 | 409 `RESERVATION_009` |
+
+### 기존 DB 적용
+
+`RESERVATION`에 `NO_SHOW` 컬럼을 추가했다. 새 DB는 `docs/erd/01_schema_ddl.sql`로 만들면 된다.
+스키마 검증(`ddl-auto: validate`)을 쓰므로 이미 만들어진 Oracle에는 **배포 전에** 아래를 실행한다. 컬럼이 이미 있으면 다시 실행하지 않는다.
+
+```sql
+ALTER TABLE RESERVATION ADD (NO_SHOW CHAR(1) DEFAULT 'N' NOT NULL);
+```
+
+기존 행은 기본값 `'N'`으로 채워진다. Oracle DDL은 자동 커밋되므로 실행 전 대상 스키마를 확인한다.
 
 ## 점유 풀기·교체 규칙 (UNNIE-138 구현)
 

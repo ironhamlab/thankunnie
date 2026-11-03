@@ -23,7 +23,7 @@ public class ReservationQueryRepository {
 
     private static final String SELECT_COLUMNS = """
             SELECT r.RESERVATION_ID, r.STATUS, r.STARTS_AT, r.ENDS_AT, r.APPLIED_PRICE, r.DEPOSIT,
-                   r.HOLD_EXPIRES_AT, r.CONFIRMED_AT, r.CUSTOMER_REQUEST, r.CREATED_AT,
+                   r.HOLD_EXPIRES_AT, r.CONFIRMED_AT, r.CUSTOMER_REQUEST, r.CREATED_AT, r.NO_SHOW,
                    s.SHOP_ID, s.NAME AS SHOP_NAME, t.TREATMENT_ID, t.NAME AS TREATMENT_NAME,
                    u.USER_ID, u.NAME AS CUSTOMER_NAME,
                    -- 탈퇴 회원 번호는 재가입 안내용으로 DB 에만 남기고 매장 화면에는 보내지 않는다
@@ -134,7 +134,8 @@ public class ReservationQueryRepository {
             nullableInt(rs, "POLICY_REFUND_AMOUNT"),
             nullableInt(rs, "REFUND_AMOUNT"),
             time(rs, "CANCEL_REQUESTED_AT"),
-            time(rs, "CANCEL_COMPLETED_AT"));
+            time(rs, "CANCEL_COMPLETED_AT"),
+            "Y".equals(rs.getString("NO_SHOW")));
 
     private static LocalDateTime time(ResultSet rs, String column) throws SQLException {
         return rs.getObject(column, LocalDateTime.class);

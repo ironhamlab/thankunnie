@@ -64,6 +64,23 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("to") ReservationStatus to, @Param("now") LocalDateTime now);
 
     /**
+     * 확정 예약의 노쇼 여부를 from 일 때만 to 로 바꾸고 바뀐 건수를 반환한다. 종료 시각이 지난 예약만 바꾼다.
+     * 조건으로 갱신하므로 같은 예약에 동시에 들어온 요청은 한 건만 성공한다(나머지는 0).
+     * 취소는 시작 전에만 되고 노쇼는 종료 후에만 바뀌어 두 변경이 겹치지 않는다.
+     *
+     * @return 바뀐 행 수. 0 이면 예약이 없거나, 확정이 아니거나, 아직 안 끝났거나, 이미 to 상태다
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE Reservation r
+            SET r.noShow = :to, r.updatedAt = :now
+            WHERE r.id = :reservationId AND r.status = :confirmed AND r.noShow = :from AND r.endsAt <= :now
+            """)
+    int changeNoShow(@Param("reservationId") Long reservationId, @Param("from") boolean from,
+            @Param("to") boolean to, @Param("confirmed") ReservationStatus confirmed,
+            @Param("now") LocalDateTime now);
+
+    /**
      * 매장의 [startsAt, endsAt) 구간과 겹치고 취소·만료가 아닌 예약을 조회한다.
      * 점유(HOLD)의 만료 여부는 SalePolicy.isOccupying 으로 판단한다.
      * 시술 엔티티가 생기기 전까지 시술 → 매장 조인을 SQL 로 한다.

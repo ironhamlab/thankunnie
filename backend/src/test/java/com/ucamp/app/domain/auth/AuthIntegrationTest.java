@@ -2,6 +2,7 @@ package com.ucamp.app.domain.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -426,6 +427,47 @@ class AuthIntegrationTest {
         insertTerms(9116, "MODEL_PHOTO", 2, false);
 
         assertThat(termsAgreementService.hasAgreed(userId, TermsCode.MODEL_PHOTO)).isFalse();
+    }
+
+    @Test
+    @DisplayName("문자 수신 동의를 철회하면 동의 목록에서 빠지고, 다시 동의하면 같은 행이 되살아난다")
+    void withdraw_smsNotification_thenAgreeAgain() throws Exception {
+        JsonNode data = data(signupCustomer("unnie18",
+                "[\"AGE_14\",\"SERVICE\",\"PRIVACY\",\"THIRD_PARTY\",\"SMS_NOTIFICATION\"]")
+                .andExpect(status().isCreated()));
+        long userId = data.get("userId").asLong();
+
+        mvc.perform(delete("/api/v1/users/me/terms-agreements/SMS_NOTIFICATION")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isNoContent());
+        // 반복 요청도 성공한다
+        mvc.perform(delete("/api/v1/users/me/terms-agreements/SMS_NOTIFICATION")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/v1/users/me/terms-agreements").header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.code == 'SMS_NOTIFICATION')]").isEmpty());
+        assertThat(termsAgreementService.hasAgreed(userId, TermsCode.SMS_NOTIFICATION)).isFalse();
+
+        mvc.perform(put("/api/v1/users/me/terms-agreements/SMS_NOTIFICATION")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isOk());
+        assertThat(termsAgreementService.hasAgreed(userId, TermsCode.SMS_NOTIFICATION)).isTrue();
+        assertThat(jdbc.queryForObject(
+                "SELECT COUNT(*) FROM USER_TERMS_AGREEMENT WHERE USER_ID = ? AND TERMS_ID = 9105",
+                Integer.class, userId)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("필수 약관은 철회할 수 없다 (400)")
+    void withdraw_requiredTerms_returnsBadRequest() throws Exception {
+        JsonNode data = data(signupCustomer("unnie17").andExpect(status().isCreated()));
+
+        mvc.perform(delete("/api/v1/users/me/terms-agreements/PRIVACY")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("TERMS_002"));
     }
 
     @Test

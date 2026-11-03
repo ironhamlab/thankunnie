@@ -311,7 +311,7 @@ class ReservationDashboardServiceTest {
                 confirmed(1L, 1L, at(6, 13, 30), 90, 30000, createdAt),
                 // 2/13 토요일 14:00~15:00 → 14시 60분
                 new ReservationDashboardRow(2L, 2L, 2L, "손 케어", ReservationStatus.CONFIRMED, at(13, 14, 0),
-                        at(13, 15, 0), createdAt.plusMinutes(5), createdAt, 10000, null, null, 0, false),
+                        at(13, 15, 0), createdAt.plusMinutes(5), createdAt, 10000, null, null, 0, false, false),
                 // 취소는 요일·시간대·시술에 넣지 않는다
                 cancelled(3L, at(8, 10, 0), 60, CancelType.CUSTOMER, 0, false)));
 
@@ -415,6 +415,52 @@ class ReservationDashboardServiceTest {
         verifyNoInteractions(reservationDashboardRepository, availabilityService);
     }
 
+    @Test
+    @DisplayName("노쇼는 이용 추정·이용 고객·요일·시간대·시술 집계에서 빠지고 노쇼율로 따로 센다")
+    void summarize_noShow_excludedAndCounted() {
+        LocalDateTime createdAt = LocalDateTime.of(2027, 1, 20, 9, 0);
+        ReservationDashboardRow noShow = new ReservationDashboardRow(2L, 2L, 1L, "젤네일", ReservationStatus.CONFIRMED,
+                at(6, 13, 0), at(6, 14, 0), createdAt.plusMinutes(5), createdAt, 30000, null, null, 0, false, true);
+        given(reservationDashboardRepository.findRows(any(), any(), any())).willReturn(List.of(
+                confirmed(1L, 1L, at(6, 10, 0), 60, 30000, createdAt),
+                noShow,
+                confirmed(3L, 3L, at(7, 10, 0), 60, 30000, createdAt)));
+
+        ReservationStatsResponse response = stats(FEB_1, FEB_28);
+        ReservationPeriodSummary summary = response.summary();
+
+        assertThat(summary.completedCount()).isEqualTo(2);
+        assertThat(summary.completedAmount()).isEqualTo(60000);
+        assertThat(summary.noShowCount()).isEqualTo(1);
+        // 노쇼 1 ÷ (이용 2 + 노쇼 1)
+        assertThat(summary.noShowRate()).isEqualTo(33.3);
+        assertThat(summary.customerCount()).isEqualTo(2);
+        assertThat(response.byWeekday().get(5).count()).isEqualTo(1);
+        assertThat(response.heatmap()).extracting(ReservationStatsResponse.HeatmapCell::hour).doesNotContain(13);
+        assertThat(response.treatments().get(0).count()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("취소 자리에 들어온 예약이 노쇼면 다시 채운 시간·재판매 금액에서 뺀다")
+    void summarize_rebook_excludesNoShow() {
+        LocalDateTime completedAt = LocalDateTime.of(2027, 2, 8, 9, 0);
+        LocalDateTime createdAt = LocalDateTime.of(2027, 2, 9, 9, 0);
+        ReservationDashboardRow noShowRebook = new ReservationDashboardRow(3L, 1L, 1L, "젤네일",
+                ReservationStatus.CONFIRMED, at(12, 14, 0), at(12, 15, 0), createdAt.plusMinutes(5), createdAt,
+                20000, null, null, 0, false, true);
+        given(reservationDashboardRepository.findRows(any(), any(), any())).willReturn(List.of(
+                cancelled(1L, at(12, 13, 0), 120, CancelType.CUSTOMER, 0, false, completedAt),
+                confirmed(2L, 1L, at(12, 13, 0), 60, 20000, createdAt),
+                noShowRebook));
+
+        ReservationPeriodSummary summary = stats(FEB_1, FEB_28).summary();
+
+        assertThat(summary.cancelledMinutes()).isEqualTo(120);
+        assertThat(summary.rebookedMinutes()).isEqualTo(60);
+        assertThat(summary.rebookRate()).isEqualTo(50.0);
+        assertThat(summary.rebookedBookingAmount()).isEqualTo(20000);
+    }
+
     private ReservationStatsResponse stats(LocalDate from, LocalDate to) {
         return reservationDashboardService.getOwnerStats(OWNER, from, to, false);
     }
@@ -422,7 +468,7 @@ class ReservationDashboardServiceTest {
     private static ReservationDashboardRow confirmed(Long id, Long userId, LocalDateTime startsAt, int minutes,
             int price, LocalDateTime createdAt) {
         return new ReservationDashboardRow(id, userId, 1L, "젤네일", ReservationStatus.CONFIRMED, startsAt,
-                startsAt.plusMinutes(minutes), createdAt.plusMinutes(5), createdAt, price, null, null, 0, false);
+                startsAt.plusMinutes(minutes), createdAt.plusMinutes(5), createdAt, price, null, null, 0, false, false);
     }
 
     private static ReservationDashboardRow cancelled(Long id, LocalDateTime startsAt, int minutes, CancelType type,
@@ -435,7 +481,7 @@ class ReservationDashboardServiceTest {
         LocalDateTime createdAt = startsAt.minusDays(10);
         return new ReservationDashboardRow(id, 9L, 1L, "젤네일", ReservationStatus.CANCELLED, startsAt,
                 startsAt.plusMinutes(minutes), createdAt.plusMinutes(5), createdAt, 30000, type, completedAt,
-                retainedDeposit, closedAfterCancel);
+                retainedDeposit, closedAfterCancel, false);
     }
 
     private static ReservationDashboardRepository.Visit visit(Long userId, LocalDateTime endsAt) {

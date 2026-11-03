@@ -36,5 +36,6 @@ public record ReservationView(
         Integer policyRefundAmount,
         Integer refundAmount,
         LocalDateTime cancelRequestedAt,
-        LocalDateTime cancelCompletedAt) {
+        LocalDateTime cancelCompletedAt,
+        boolean noShow) {
 }
