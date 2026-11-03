@@ -23,7 +23,7 @@ public enum ErrorCode {
     // AUTH
     AUTH_DUPLICATE_LOGIN_ID(HttpStatus.CONFLICT, "AUTH_001", "이미 사용 중인 아이디입니다."),
     AUTH_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "AUTH_002", "아이디 또는 비밀번호가 올바르지 않습니다."),
-    AUTH_INACTIVE_ACCOUNT(HttpStatus.FORBIDDEN, "AUTH_003", "사용할 수 없는 계정입니다."),
+    AUTH_INACTIVE_ACCOUNT(HttpStatus.FORBIDDEN, "AUTH_003", "탈퇴한 계정입니다. 같은 휴대폰 번호로 다시 가입할 수 있어요."),
     AUTH_PHONE_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "AUTH_004", "휴대폰 인증을 확인해 주세요."),
     AUTH_PHONE_SEND_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "AUTH_005", "인증번호 요청 횟수를 초과했습니다."),
     AUTH_PHONE_SEND_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AUTH_006", "인증번호 발송에 실패했습니다."),
@@ -33,6 +33,10 @@ public enum ErrorCode {
     AUTH_DUPLICATE_PHONE(HttpStatus.CONFLICT, "AUTH_010", "이미 가입된 휴대폰 번호입니다."),
     AUTH_SHOP_PENDING(HttpStatus.FORBIDDEN, "AUTH_011", "매장 가입 승인 대기 중입니다."),
     AUTH_SHOP_REJECTED(HttpStatus.FORBIDDEN, "AUTH_012", "매장 가입이 거절되었습니다."),
+
+    // USER
+    USER_WITHDRAW_PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "USER_001", "비밀번호가 올바르지 않습니다."),
+    USER_WITHDRAW_HAS_RESERVATION(HttpStatus.CONFLICT, "USER_002", "진행 중인 예약이 있어 탈퇴할 수 없습니다. 결제 대기 중이면 잠시 후, 예약이 있으면 취소하거나 방문을 마친 뒤 다시 시도해 주세요."),
 
     // ADMIN
     ADMIN_SHOP_APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ADMIN_001", "매장 가입 신청을 찾을 수 없습니다."),

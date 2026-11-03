@@ -25,6 +25,7 @@ import com.ucamp.app.domain.auth.repository.ShopAccountRepository;
 import com.ucamp.app.domain.shop.repository.ShopCategoryRepository;
 import com.ucamp.app.domain.user.entity.AppUser;
 import com.ucamp.app.domain.user.entity.AppUserRole;
+import com.ucamp.app.domain.user.entity.AppUserStatus;
 import com.ucamp.app.domain.user.repository.AppUserRepository;
 import com.ucamp.app.domain.user.service.TermsAgreementService;
 
@@ -78,6 +79,7 @@ public class AuthService {
         termsAgreementService.validateSignupAgreements(request.agreedTerms());
         validatePhoneAvailable(request.phone());
         phoneVerificationService.consume(request.phone(), request.phoneVerificationId());
+        releaseWithdrawnPhone(normalizeMobilePhone(request.phone()));
         AppUser user = AppUser.builder()
                 .loginId(request.loginId())
                 .passwordHash(passwordEncoder.encode(request.password()))
@@ -175,11 +177,22 @@ public class AuthService {
         };
     }
 
-    /** 고객은 번호당 계정 하나만 허용한다. 매장 가입은 번호 중복을 허용하므로 호출하지 않는다. */
+    /**
+     * 고객은 번호당 사용 중인 계정 하나만 허용한다. 탈퇴 계정의 번호는 다시 쓸 수 있다.
+     * 매장 가입은 번호 중복을 허용하므로 호출하지 않는다.
+     */
     public void validatePhoneAvailable(String phone) {
-        if (appUserRepository.existsByPhone(normalizeMobilePhone(phone))) {
+        if (appUserRepository.existsByPhoneAndStatus(normalizeMobilePhone(phone), AppUserStatus.ACTIVE)) {
             throw new BusinessException(ErrorCode.AUTH_DUPLICATE_PHONE);
         }
+    }
+
+    // Hibernate 는 flush 때 INSERT 를 UPDATE 보다 먼저 실행하므로, 번호를 비운 것을 먼저 반영해야 새 계정이 UNIQUE 에 걸리지 않는다
+    private void releaseWithdrawnPhone(String phone) {
+        appUserRepository.findByPhoneAndStatus(phone, AppUserStatus.INACTIVE).ifPresent(withdrawn -> {
+            withdrawn.releasePhone();
+            appUserRepository.flush();
+        });
     }
 
     // 계정이 없어도 같은 비용의 BCrypt 비교를 한 번 수행해 응답 시간으로 아이디 존재 여부가 드러나지 않게 한다.

@@ -56,6 +56,7 @@ import com.ucamp.app.domain.user.controller.TermsController;
 import com.ucamp.app.domain.user.entity.AppUser;
 import com.ucamp.app.domain.user.entity.TermsCode;
 import com.ucamp.app.domain.user.repository.AppUserRepository;
+import com.ucamp.app.domain.user.service.CustomerLoginStatusChecker;
 import com.ucamp.app.domain.user.service.TermsAgreementService;
 
 @SpringBootTest(classes = AuthIntegrationTest.AuthTestConfiguration.class)
@@ -71,7 +72,8 @@ class AuthIntegrationTest {
     @EntityScan(basePackageClasses = {AppUser.class, ShopAccount.class, Shop.class})
     @EnableJpaRepositories(basePackageClasses = {AppUserRepository.class, ShopAccountRepository.class,
             ShopRepository.class})
-    @Import({AuthController.class, AuthService.class, ShopLoginStatusChecker.class, ShopController.class, ShopService.class,
+    @Import({AuthController.class, AuthService.class, ShopLoginStatusChecker.class, CustomerLoginStatusChecker.class,
+            ShopController.class, ShopService.class,
             TermsController.class, TermsAgreementService.class, UserLock.class, GlobalExceptionHandler.class, SecurityConfig.class, TimeConfig.class, WebConfig.class})
     static class AuthTestConfiguration {
     }
@@ -192,6 +194,36 @@ class AuthIntegrationTest {
         login("/api/v1/auth/login", "unnie04", PASSWORD)
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("AUTH_003"));
+    }
+
+    @Test
+    @DisplayName("탈퇴 전에 받은 고객 토큰은 탈퇴 뒤 다음 요청부터 401")
+    void customerToken_afterWithdraw_returnsUnauthorized() throws Exception {
+        JsonNode data = data(signupCustomer("unnie10").andExpect(status().isCreated()));
+        mvc.perform(get("/api/v1/auth/me").header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isOk());
+
+        jdbc.update("UPDATE APP_USER SET STATUS = 'INACTIVE' WHERE LOGIN_ID = 'unnie10'");
+        entityManager.clear();
+
+        mvc.perform(get("/api/v1/auth/me").header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("탈퇴 회원의 휴대폰 번호로 새 아이디 가입을 하면 새 계정을 만들고 탈퇴 계정의 번호를 비운다")
+    void signupCustomer_withdrawnPhone_createsNewAccount() throws Exception {
+        signupCustomer("unnie08").andExpect(status().isCreated());
+        Long withdrawnId = jdbc.queryForObject("SELECT USER_ID FROM APP_USER WHERE LOGIN_ID = 'unnie08'", Long.class);
+        jdbc.update("UPDATE APP_USER SET STATUS = 'INACTIVE' WHERE USER_ID = ?", withdrawnId);
+        entityManager.clear();
+
+        signupCustomer("unnie09").andExpect(status().isCreated());
+
+        assertThat(jdbc.queryForObject("SELECT PHONE FROM APP_USER WHERE LOGIN_ID = 'unnie09'", String.class))
+                .isEqualTo("010-1234-5678");
+        assertThat(jdbc.queryForObject("SELECT PHONE FROM APP_USER WHERE USER_ID = ?", String.class, withdrawnId))
+                .isEqualTo("WD-" + withdrawnId);
     }
 
     @Test

@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { getHomePathByRole, getRedirectPath, isFromOwnerArea } from '@/utils/authRedirect';
 import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
+import Dialog from '@/components/common/Dialog';
 import Notice from '@/components/common/Notice';
 import AuthCard from './components/AuthCard';
 import AuthField from './components/AuthField';
@@ -13,6 +14,7 @@ import ShopApprovalDialog from './components/ShopApprovalDialog';
 import styles from './LoginPage.module.css';
 
 const EMPTY_FORM = { loginId: '', password: '' };
+const WITHDRAWN_ACCOUNT = 'AUTH_003';
 
 // 매장 승인 대기(AUTH_011)·거절(AUTH_012)은 오류 문구 대신 팝업으로 알린다. 거절 사유는 서버 문구에 있다
 const SHOP_APPROVAL_NOTICE = {
@@ -48,6 +50,8 @@ export default function LoginPage() {
 
   const isSubmitting = status === 'loading';
   const isShop = accountType === ACCOUNT_TYPE.SHOP;
+  // 탈퇴 계정은 비밀번호가 맞을 때만 이 코드가 오므로, 다시 가입할 수 있다는 안내를 창으로 띄운다
+  const isWithdrawn = error?.code === WITHDRAWN_ACCOUNT;
 
   const handleTypeChange = (type) => {
     setAccountType(type);
@@ -127,7 +131,7 @@ export default function LoginPage() {
           autoComplete="current-password"
           required
         />
-        {error && !approvalNotice && (
+        {error && !isWithdrawn && !approvalNotice && (
           <Alert as="p" tone="error" role="alert">
             {error.message}
           </Alert>
@@ -151,6 +155,20 @@ export default function LoginPage() {
             매장 owner1, owner2
           </small>
         </Notice>
+      )}
+
+      {isWithdrawn && (
+        <Dialog title="탈퇴한 계정이에요" onClose={clearError}>
+          <p>{error.message}</p>
+          <div className={styles.actions}>
+            <Button type="button" onClick={clearError}>
+              닫기
+            </Button>
+            <Button as={Link} variant="primary" to={ROUTES.SIGNUP}>
+              회원가입
+            </Button>
+          </div>
+        </Dialog>
       )}
 
       {approvalNotice && (

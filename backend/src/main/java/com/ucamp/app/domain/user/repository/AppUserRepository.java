@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.ucamp.app.domain.user.entity.AppUser;
+import com.ucamp.app.domain.user.entity.AppUserStatus;
 
 /** 회원 계정 저장소. */
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
@@ -13,5 +14,9 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
     boolean existsByLoginId(String loginId);
 
-    boolean existsByPhone(String phone);
+    boolean existsByUserIdAndStatus(Long userId, AppUserStatus status);
+
+    boolean existsByPhoneAndStatus(String phone, AppUserStatus status);
+
+    Optional<AppUser> findByPhoneAndStatus(String phone, AppUserStatus status);
 }

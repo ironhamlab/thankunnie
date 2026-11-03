@@ -25,7 +25,9 @@ public class ReservationQueryRepository {
             SELECT r.RESERVATION_ID, r.STATUS, r.STARTS_AT, r.ENDS_AT, r.APPLIED_PRICE, r.DEPOSIT,
                    r.HOLD_EXPIRES_AT, r.CONFIRMED_AT, r.CUSTOMER_REQUEST, r.CREATED_AT, r.NO_SHOW,
                    s.SHOP_ID, s.NAME AS SHOP_NAME, t.TREATMENT_ID, t.NAME AS TREATMENT_NAME,
-                   u.USER_ID, u.NAME AS CUSTOMER_NAME, u.PHONE AS CUSTOMER_PHONE,
+                   u.USER_ID, u.NAME AS CUSTOMER_NAME,
+                   -- 탈퇴 회원 번호는 재가입 안내용으로 DB 에만 남기고 매장 화면에는 보내지 않는다
+                   CASE WHEN u.STATUS = 'INACTIVE' THEN NULL ELSE u.PHONE END AS CUSTOMER_PHONE,
                    p.STATUS AS PAYMENT_STATUS, p.AMOUNT AS PAYMENT_AMOUNT, p.REFUNDED_AMOUNT,
                    p.APPROVED_AT, p.REFUNDED_AT,
                    c.CANCEL_TYPE, c.STATUS AS CANCEL_STATUS, c.POLICY_REFUND_AMOUNT, c.REFUND_AMOUNT,

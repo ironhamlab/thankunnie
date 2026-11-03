@@ -69,4 +69,22 @@ public interface NotificationDispatchRepository extends JpaRepository<Notificati
             @Param("pending") NotificationDispatchStatus pending,
             @Param("processing") NotificationDispatchStatus processing,
             @Param("now") LocalDateTime now);
+
+    /**
+     * 회원에게 아직 보내지 않은 대기 작업(PENDING)을 보내지 않고 끝낸다(SKIPPED). 회원 탈퇴 때 쓴다.
+     * 이미 가져간 처리 중 작업은 발송 중이라 건드리지 않는다.
+     *
+     * @param userId 회원 ID
+     * @param now    수정 시각
+     * @return 생략으로 바꾼 작업 수
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update NotificationDispatch d
+            set d.status = com.ucamp.app.domain.notification.entity.NotificationDispatchStatus.SKIPPED,
+                d.failReason = null, d.updatedAt = :now
+            where d.userId = :userId
+              and d.status = com.ucamp.app.domain.notification.entity.NotificationDispatchStatus.PENDING
+            """)
+    int skipPendingByUserId(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 }

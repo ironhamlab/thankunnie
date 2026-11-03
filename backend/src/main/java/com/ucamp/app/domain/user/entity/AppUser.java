@@ -28,6 +28,9 @@ import com.ucamp.app.common.entity.BaseTimeEntity;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AppUser extends BaseTimeEntity {
 
+    private static final String WITHDRAWN_NAME = "탈퇴회원";
+    private static final String RELEASED_PHONE_PREFIX = "WD-";
+
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_app_user")
     @SequenceGenerator(name = "seq_app_user", sequenceName = "SEQ_APP_USER", allocationSize = 1)
@@ -67,6 +70,20 @@ public class AppUser extends BaseTimeEntity {
 
     public boolean isActive() {
         return status == AppUserStatus.ACTIVE;
+    }
+
+    /**
+     * 탈퇴한다. 예약 기록은 남기므로 행을 지우지 않고 상태만 바꾸며, 매장 화면에 보이는 이름은 가린다.
+     * 휴대폰 번호는 탈퇴 계정으로 로그인할 때 안내하려고 같은 번호로 다시 가입하기 전까지 남긴다.
+     */
+    public void withdraw() {
+        this.status = AppUserStatus.INACTIVE;
+        this.name = WITHDRAWN_NAME;
+    }
+
+    /** 같은 번호로 다시 가입할 때 탈퇴 계정의 번호를 비운다. PHONE 은 NOT NULL·UNIQUE 라 회원별 값으로 바꾼다. */
+    public void releasePhone() {
+        this.phone = RELEASED_PHONE_PREFIX + userId;
     }
 
     /** 인증 공통 사용자로 바꾼다. 회원은 매장 ID 가 없다. */

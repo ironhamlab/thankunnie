@@ -2,6 +2,7 @@ package com.ucamp.app.config;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,8 +54,11 @@ public class SecurityConfig {
         if (environment.acceptsProfiles(Profiles.of(STUB_AUTH_PROFILES))) {
             http.addFilterBefore(new StubAuthFilter(), AnonymousAuthenticationFilter.class);
         }
-        // 앱에서는 매장 상태 검사기(ShopLoginStatusChecker)가 등록된다. 도메인 빈이 없는 슬라이스 테스트만 검사를 건너뛴다
-        AuthUserStatusChecker statusChecker = statusCheckerProvider.getIfAvailable(() -> AuthUserStatusChecker.ALLOW_ALL);
+        // 앱에서는 매장(ShopLoginStatusChecker)·고객(CustomerLoginStatusChecker) 상태 검사기가 등록되고, 모두 통과해야 인증한다.
+        // 각 검사기는 자기 역할의 토큰만 본다. 도메인 빈이 없는 슬라이스 테스트는 목록이 비어 검사를 건너뛴다
+        List<AuthUserStatusChecker> statusCheckers = statusCheckerProvider.orderedStream().toList();
+        AuthUserStatusChecker statusChecker = authUser -> statusCheckers.stream()
+                .allMatch(checker -> checker.canAuthenticate(authUser));
         http.addFilterBefore(new JwtAuthFilter(jwtProvider, statusChecker), AnonymousAuthenticationFilter.class);
         http
                 .csrf(AbstractHttpConfigurer::disable)

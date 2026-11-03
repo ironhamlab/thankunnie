@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { PAYMENT_STATUS, reservationStatusOf } from '@/constants/reservationStatus';
@@ -16,6 +16,7 @@ import EmptyState from '@/components/common/EmptyState';
 import Alert from '@/components/common/Alert';
 import MyNotificationsPage from './MyNotificationsPage';
 import SmsAgreementSetting from './components/SmsAgreementSetting';
+import WithdrawDialog from './components/WithdrawDialog';
 import styles from './CustomerProfilePage.module.css';
 
 // 내 예약 '이용 예정' 탭과 같은 조건. 시작 시각 오름차순이라 첫 건이 가장 가까운 예약이다
@@ -40,6 +41,7 @@ export default function CustomerProfilePage() {
   // 구독 목록은 아래 알림 영역의 SubscriptionList가 불러온다
   const subscriptions = useNotificationStore((s) => s.subscriptions);
   const subscriptionStatus = useNotificationStore((s) => s.listStatus);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   // 로그아웃 뒤 다른 계정에 이전 개인정보가 보이지 않도록 화면을 벗어나면 지운다
   useEffect(() => {
@@ -184,6 +186,13 @@ export default function CustomerProfilePage() {
         </EmptyState>
       )}
       <MyNotificationsPage />
+      {/* 실수로 누르지 않도록 페이지 맨 아래에 작은 글씨로 둔다 */}
+      <div className={styles.withdraw}>
+        <button type="button" onClick={() => setWithdrawOpen(true)}>
+          회원탈퇴
+        </button>
+      </div>
+      {withdrawOpen && <WithdrawDialog onClose={() => setWithdrawOpen(false)} />}
     </div>
   );
 }
