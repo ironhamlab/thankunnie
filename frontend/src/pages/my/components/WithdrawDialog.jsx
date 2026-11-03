@@ -11,8 +11,7 @@ import styles from './WithdrawDialog.module.css';
 const HAS_RESERVATION = 'USER_002';
 
 const NOTICES = [
-  '방문 전 예약이나 환불 처리 중인 취소가 있으면 탈퇴할 수 없어요.',
-  '결제 대기 중인 예약은 함께 취소돼요.',
+  '결제 대기·방문 전 예약이나 환불 처리 중인 취소가 있으면 탈퇴할 수 없어요.',
   '받은 알림, 빈자리 알림 조건, 찜이 모두 사라져요.',
   '지난 예약 기록은 매장 정산을 위해 "탈퇴회원"으로 남아요.',
   '탈퇴한 아이디는 다시 쓸 수 없어요. 같은 휴대폰 번호로는 다시 가입할 수 있어요.',
@@ -37,9 +36,13 @@ export default function WithdrawDialog({ onClose }) {
   const submitting = withdrawStatus === 'loading';
   const done = withdrawStatus === 'succeeded';
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    withdraw(password);
+    try {
+      await withdraw(password);
+    } catch {
+      // 오류 문구는 store 의 withdrawError 로 화면에 표시한다
+    }
   };
 
   if (done) {

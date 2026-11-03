@@ -43,19 +43,17 @@ export const useUserStore = create((set, get) => ({
   withdrawStatus: 'idle',
   withdrawError: null,
 
-  // 성공하면 true. 세션 정리와 화면 이동은 탈퇴 완료 안내를 보여준 뒤 화면에서 한다
+  // 실패하면 오류 상태를 갱신한 뒤 오류를 던진다 (useAuthStore 와 같은 방식).
+  // 세션 정리와 화면 이동은 탈퇴 완료 안내를 보여준 뒤 화면에서 한다
   withdraw: async (password) => {
     set({ withdrawStatus: 'loading', withdrawError: null });
     try {
       await userApi.withdraw({ password });
       set({ withdrawStatus: 'succeeded' });
-      return true;
     } catch (error) {
-      set({
-        withdrawStatus: 'failed',
-        withdrawError: toError(error, '탈퇴하지 못했습니다.'),
-      });
-      return false;
+      const withdrawError = toError(error, '탈퇴하지 못했습니다.');
+      set({ withdrawStatus: 'failed', withdrawError });
+      throw withdrawError;
     }
   },
 
