@@ -53,11 +53,13 @@ export const useTermsStore = create((set, get) => ({
     try {
       await termsApi.agree(pending.termsCode);
       // 구독 등록 중에 동의해도 마이페이지 문자 수신 체크박스가 켜지게 한다
-      if (
-        pending.termsCode === TERMS_CODE.SMS_NOTIFICATION &&
-        get().smsRequestId === pending.smsRequestId
-      ) {
-        set({ smsAgreement: { ...get().smsAgreement, agreed: true } });
+      if (pending.termsCode === TERMS_CODE.SMS_NOTIFICATION) {
+        if (get().smsRequestId === pending.smsRequestId) {
+          set({ smsAgreement: { ...get().smsAgreement, agreed: true } });
+        } else if (get().smsAgreement.status !== 'idle') {
+          // 모달을 연 뒤 마이페이지를 다시 열었으면, 새 조회가 동의보다 먼저 처리됐을 수 있어 한 번 더 불러온다
+          get().loadSmsAgreement();
+        }
       }
       if (!isCurrent()) return;
       set({ pending: null });
