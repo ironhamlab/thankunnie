@@ -5,7 +5,34 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: border-color 0.2s;
+  transition:
+    border-color 0.2s,
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.25s;
+}
+/* 터치 화면에서는 누른 뒤에도 떠 있지 않게 마우스가 있을 때만 띄운다 */
+@media (hover: hover) {
+  .root:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px color-mix(in srgb, var(--color-primary) 14%, transparent);
+  }
+  .root:hover .thumb {
+    transform: scale(1.06);
+  }
+  .root:hover .price em {
+    animation: discountRing 0.5s ease;
+  }
+}
+@keyframes discountRing {
+  20% {
+    transform: rotate(-8deg) scale(1.12);
+  }
+  45% {
+    transform: rotate(6deg) scale(1.12);
+  }
+  70% {
+    transform: rotate(-3deg);
+  }
 }
 .expanded {
   border-color: var(--color-primary);
@@ -34,8 +61,20 @@
   .located {
     animation: none;
   }
+  .root,
+  .thumb {
+    transition: none;
+  }
+  .root:hover,
+  .root:hover .thumb {
+    transform: none;
+  }
+  .root:hover .price em {
+    animation: none;
+  }
 }
 .thumb {
+  transition: transform 0.3s;
   width: 72px;
   height: 72px;
   flex-shrink: 0;
@@ -77,6 +116,7 @@
   gap: 2px;
 }
 .price em {
+  transform-origin: top center;
   font-style: normal;
   font-size: 11px;
   font-weight: 700;
@@ -122,6 +162,9 @@
   gap: 6px;
 }
 .slots a {
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.15s;
   min-width: 64px;
   padding: 7px 12px;
   border: 1px solid var(--color-border-strong);
@@ -132,6 +175,9 @@
   text-align: center;
   color: var(--color-text);
   text-decoration: none;
+}
+.slots a:active {
+  transform: scale(0.94);
 }
 .slots a:hover,
 .slots a:focus-visible {
