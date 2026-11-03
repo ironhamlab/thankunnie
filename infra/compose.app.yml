@@ -34,6 +34,7 @@ services:
       SERVER_FORWARD_HEADERS_STRATEGY: framework
       SPRINGDOC_APIDOCS_ENABLED: ${SWAGGER_ENABLED:-false}
       SPRINGDOC_SWAGGERUI_ENABLED: ${SWAGGER_ENABLED:-false}
+      NTS_SERVICE_KEY: ${NTS_SERVICE_KEY:?Required}
 
     networks:
       - unnie-network
