@@ -16,14 +16,16 @@ import Notice from '@/components/common/Notice';
  * 예약 상세 (매장 예약 현황·고객 내 예약 공용). 매장은 예약자 연락처를, 고객은 매장을 본다.
  * 취소 버튼은 서버가 취소 가능(확정 + 시작 전)으로 알려준 예약에만 보이고, 취소 화면(E)으로 이동한다.
  *
- * @param hideHeading     창 제목이 이미 "예약 상세" 일 때 같은 제목을 또 보여주지 않는다
+ * @param hideHeading      창 제목이 이미 "예약 상세" 일 때 같은 제목을 또 보여주지 않는다
  * @param keepWhileLoading 다음 상세를 받는 동안 지금 상세를 유지해, 패널이 줄어 화면이 튀지 않게 한다
+ * @param displayStatus    서버 상태 대신 보여줄 라벨·색. 지난 이용 탭에서 쓴다
  */
 export default function ReservationDetailPanel({
   viewer,
   cancelPath,
   hideHeading = false,
   keepWhileLoading = false,
+  displayStatus,
 }) {
   const detail = useReservationStore((state) => state.detail);
   const detailStatus = useReservationStore((state) => state.detailStatus);
@@ -48,7 +50,7 @@ export default function ReservationDetailPanel({
   }
 
   const { summary, payment, cancel } = detail;
-  const status = reservationStatusOf(summary.status);
+  const status = displayStatus ?? reservationStatusOf(summary.status);
 
   return (
     <Panel as="section" padded className="b-stack">
@@ -72,7 +74,9 @@ export default function ReservationDetailPanel({
       ) : (
         <Notice>
           <h3>매장</h3>
-          <strong>{summary.shopName}</strong>
+          <div>
+            <strong>{summary.shopName}</strong>
+          </div>
           <small>요청사항: {detail.customerRequest || '없음'}</small>
         </Notice>
       )}
