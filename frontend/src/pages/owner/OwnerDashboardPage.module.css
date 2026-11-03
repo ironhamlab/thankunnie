@@ -23,6 +23,32 @@
     width: 100%;
   }
 }
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-self: flex-start;
+  padding: 4px;
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+}
+.tabs button {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 14px;
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.tabs button:global(.is-selected) {
+  background: var(--color-white);
+  color: var(--color-text);
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
 .error {
   display: flex;
   align-items: center;
@@ -54,13 +80,44 @@
     grid-template-columns: 90px minmax(0, 1fr);
   }
 }
+/* 카드 5개: 넓으면 한 줄, 중간 폭은 2개·3개 두 줄로 나눠 한 개만 떨어지지 않게 한다 */
 .todayGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+@media (max-width: 1100px) {
+  .todayGrid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .todayGrid > :nth-child(-n + 2) {
+    grid-column: span 3;
+  }
+  .todayGrid > :nth-child(n + 3) {
+    grid-column: span 2;
+  }
 }
 @media (max-width: 640px) {
   .todayGrid {
     grid-template-columns: minmax(0, 1fr);
   }
+  .todayGrid > :nth-child(n) {
+    grid-column: auto;
+  }
+}
+.todayGrid h2 {
+  font-size: 26px;
+}
+.statsLink {
+  flex-wrap: wrap;
+  gap: 12px;
+  background: var(--color-surface);
+}
+.statsLink h2 {
+  margin-bottom: 4px;
+}
+.statsLink p {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 0;
 }
 .empty {
   display: flex;

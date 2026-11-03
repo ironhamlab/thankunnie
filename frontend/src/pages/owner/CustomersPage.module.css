@@ -1,0 +1,172 @@
+.title {
+  font-size: 24px;
+  margin: 0 0 6px;
+}
+.layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+.list {
+  flex: 999 1 520px;
+  min-width: 0;
+}
+.detail {
+  flex: 1 1 340px;
+  min-width: 0;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+}
+.search {
+  display: flex;
+  gap: 6px;
+  flex: 1 1 220px;
+}
+.search input {
+  flex: 1;
+  min-width: 0;
+}
+.sort select {
+  min-height: 36px;
+}
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.count {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.row {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.row:hover {
+  background: var(--color-primary-faint);
+}
+.selected {
+  background: var(--color-primary-tint);
+}
+.who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.who small {
+  width: 100%;
+  color: var(--color-text-muted);
+}
+.numbers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.numbers small {
+  color: var(--color-text-muted);
+}
+.hint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+.detailName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.detailName h2 {
+  margin: 0;
+}
+.miniStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.miniStats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--color-primary-faint);
+  border-radius: var(--radius-sm);
+}
+.miniStats strong {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.miniStats small {
+  color: var(--color-text-secondary);
+}
+.memoLabel {
+  font-weight: 700;
+}
+.memoLabel small {
+  font-weight: 400;
+  color: var(--color-text-muted);
+  margin-left: 6px;
+}
+.memoActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.historyTitle {
+  font-size: 15px;
+  margin: 0;
+}
+.historyTitle small {
+  font-weight: 400;
+  color: var(--color-text-muted);
+  margin-left: 6px;
+}
+.history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.history li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0;
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+}
+.request {
+  background: var(--color-primary-faint);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}

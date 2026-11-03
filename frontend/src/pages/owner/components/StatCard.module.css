@@ -19,6 +19,17 @@
   color: var(--color-text-secondary);
   line-height: 1.6;
 }
+.good {
+  color: var(--color-success-text);
+  font-weight: 700;
+}
+.bad {
+  color: var(--color-danger-text);
+  font-weight: 700;
+}
+.flat {
+  font-weight: 700;
+}
 .action {
   margin-top: 10px;
   font-size: 13px;

@@ -8,10 +8,21 @@ import styles from './StatCard.module.css';
  * @param {string|number} [value] 큰 숫자
  * @param {string} [unit] 큰 숫자 단위
  * @param {{ label: string, value: string|number, unit?: string }[]} [values] 나란히 보여 줄 큰 숫자들
+ * @param {{ text: string, tone: 'good'|'bad'|'flat' } | null} [change] 비교 기간 대비 변화 (예: ▲ 10.8%)
+ * @param {string} [changeLabel] 변화 옆 설명 (예: 직전 기간 대비)
  * @param {string[]} [notes] 아래 보조 설명 줄
  * @param {import('react').ReactNode} [action] 맨 아래 링크·버튼 (예: 설정 화면으로 이동)
  */
-export default function StatCard({ label, value, unit, values, notes = [], action }) {
+export default function StatCard({
+  label,
+  value,
+  unit,
+  values,
+  change,
+  changeLabel,
+  notes = [],
+  action,
+}) {
   return (
     <Panel as="article" padded>
       <small>{label}</small>
@@ -27,8 +38,14 @@ export default function StatCard({ label, value, unit, values, notes = [], actio
       ) : (
         <BigNumber value={value} unit={unit} />
       )}
-      {notes.map((note) => (
-        <small key={note} className={styles.note}>
+      {change && (
+        <small className={styles.note}>
+          <span className={styles[change.tone]}>{change.text}</span>
+          {changeLabel && ` ${changeLabel}`}
+        </small>
+      )}
+      {notes.map((note, index) => (
+        <small key={index} className={styles.note}>
           {note}
         </small>
       ))}

@@ -1,10 +1,15 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { reservationStatusOf } from '@/constants/reservationStatus';
 import { useOwnerDashboardStore } from '@/store/useOwnerDashboardStore';
 import { useShopStore } from '@/store/useShopStore';
-import { formatMinutes, formatTimeRange } from '@/utils/ownerDashboardFormat';
+import {
+  describeChange,
+  formatAmount,
+  formatMinutes,
+  formatTimeRange,
+} from '@/utils/ownerDashboardFormat';
 import { timePart } from '@/utils/scheduleDate';
 import Alert from '@/components/common/Alert';
 import Badge from '@/components/common/Badge';
@@ -19,23 +24,23 @@ import styles from './OwnerDashboardPage.module.css';
 // 빈 시간대는 카드에 앞의 몇 개만 보여 준다
 const MAX_RANGES_ON_CARD = 3;
 
+const VIEWS = [
+  { key: 'today', label: '오늘' },
+  { key: 'stats', label: '매출·예약 분석' },
+];
+
 /**
- * 사장님 메인 (사장님 센터 첫 화면). 매장 요약, 오늘 운영 현황, 오늘 예약, 매출·예약 통계.
+ * 사장님 센터 운영 현황. 오늘(카드·오늘 예약)과 매출·예약 분석을 탭으로 나눈다.
+ * 탭은 주소(?view=stats)에 남겨 새로고침·뒤로 가기에도 유지한다. 분석 탭을 열 때만 통계를 불러온다.
  */
 export default function OwnerDashboardPage() {
   const shop = useShopStore((state) => state.shop);
-  const dashboard = useOwnerDashboardStore((state) => state.dashboard);
-  const dashboardStatus = useOwnerDashboardStore((state) => state.dashboardStatus);
-  const todayReservations = useOwnerDashboardStore((state) => state.todayReservations);
-  const reservationsStatus = useOwnerDashboardStore((state) => state.reservationsStatus);
-  const loadDashboard = useOwnerDashboardStore((state) => state.loadDashboard);
-  const loadToday = useOwnerDashboardStore((state) => state.loadToday);
-  const loadTodayReservations = useOwnerDashboardStore((state) => state.loadTodayReservations);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const view = searchParams.get('view') === 'stats' ? 'stats' : 'today';
 
-  // 매장 정보는 사장님 센터 레이아웃(OwnerLayout)이 불러온다
-  useEffect(() => {
-    loadDashboard();
-  }, [loadDashboard]);
+  const selectView = (key) => {
+    setSearchParams(key === 'today' ? {} : { view: key }, { replace: true });
+  };
 
   return (
     <div className="b-stack">
@@ -59,24 +64,56 @@ export default function OwnerDashboardPage() {
         </Panel>
       )}
 
-      <section className="b-stack">
-        <h2>오늘 운영 현황</h2>
+      <div className={styles.tabs} role="tablist" aria-label="운영 현황 보기">
+        {VIEWS.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            role="tab"
+            id={`owner-view-${item.key}`}
+            aria-selected={view === item.key}
+            aria-controls={`owner-panel-${item.key}`}
+            className={view === item.key ? 'is-selected' : ''}
+            onClick={() => selectView(item.key)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      <div role="tabpanel" id={`owner-panel-${view}`} aria-labelledby={`owner-view-${view}`}>
+        {view === 'today' ? (
+          <TodayView onOpenStats={() => selectView('stats')} />
+        ) : (
+          <StatsSection />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TodayView({ onOpenStats }) {
+  const dashboard = useOwnerDashboardStore((state) => state.dashboard);
+  const dashboardStatus = useOwnerDashboardStore((state) => state.dashboardStatus);
+  const todayReservations = useOwnerDashboardStore((state) => state.todayReservations);
+  const reservationsStatus = useOwnerDashboardStore((state) => state.reservationsStatus);
+  const loadDashboard = useOwnerDashboardStore((state) => state.loadDashboard);
+  const loadToday = useOwnerDashboardStore((state) => state.loadToday);
+  const loadTodayReservations = useOwnerDashboardStore((state) => state.loadTodayReservations);
+
+  // 매장 정보는 사장님 센터 레이아웃(OwnerLayout)이 불러온다
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  return (
+    <div className="b-stack">
+      <section className="b-stack" aria-label="오늘 요약">
         {dashboardStatus === 'failed' && (
           <LoadError message="오늘 운영 현황을 불러오지 못했어요." onRetry={loadToday} />
         )}
         {dashboardStatus === 'loading' && <Spinner />}
-        {dashboardStatus === 'succeeded' && dashboard && (
-          <div className={`b-stat-grid ${styles.todayGrid}`}>
-            <TodayAvailableCard today={dashboard.today} />
-            <StatCard
-              label="오늘 예약"
-              values={[
-                { label: '남은 예약', value: dashboard.today.upcomingCount, unit: '건' },
-                { label: '확정 예약', value: dashboard.today.confirmedCount, unit: '건' },
-              ]}
-            />
-          </div>
-        )}
+        {dashboardStatus === 'succeeded' && dashboard && <TodayCards dashboard={dashboard} />}
       </section>
 
       <TodayReservations
@@ -85,7 +122,52 @@ export default function OwnerDashboardPage() {
         onRetry={loadTodayReservations}
       />
 
-      <StatsSection />
+      <Panel as="section" padded className={`b-row ${styles.statsLink}`}>
+        <div>
+          <h2>매출·예약 흐름이 궁금하다면</h2>
+          <p>최근 1년 금액, 피크 요일·시간, 신규·재방문 고객을 확인해 보세요.</p>
+        </div>
+        <Button type="button" variant="soft" onClick={onOpenStats}>
+          매출·예약 분석 보기 →
+        </Button>
+      </Panel>
+    </div>
+  );
+}
+
+function TodayCards({ dashboard }) {
+  const { today, monthToDate } = dashboard;
+  const change = describeChange(monthToDate.completedAmount, monthToDate.previousCompletedAmount);
+  return (
+    <div className={`b-stat-grid ${styles.todayGrid}`}>
+      <StatCard
+        label="오늘 예약"
+        values={[
+          { label: '남은', value: today.upcomingCount, unit: '건' },
+          { label: '확정', value: today.confirmedCount, unit: '건' },
+        ]}
+      />
+      <TodayAvailableCard today={today} />
+      <StatCard
+        label="내일 확정 예약"
+        value={dashboard.tomorrowConfirmedCount}
+        unit="건"
+        action={<Link to={ROUTES.OWNER_BOOKINGS}>예약 관리 →</Link>}
+      />
+      <StatCard
+        label="이번 달 이용 금액"
+        value={formatAmount(monthToDate.completedAmount)}
+        unit="원"
+        change={change}
+        changeLabel="지난달 같은 기간 대비"
+        notes={change ? [] : ['지난달 같은 기간 이용 내역이 없어요']}
+      />
+      <StatCard
+        label="우리 매장 찜 고객"
+        value={dashboard.favoriteCustomerCount}
+        unit="명"
+        notes={['빈자리를 열면 알림을 받아요']}
+      />
     </div>
   );
 }
@@ -154,7 +236,13 @@ function TodayReservationList({ reservations }) {
               {timePart(item.startsAt)}~{timePart(item.endsAt)}
             </strong>
             <span>{item.treatmentName}</span>
-            <span className="b-muted">{item.customerName}</span>
+            {/* 고객 관리에서 같은 이름으로 찾아 방문 이력·메모를 본다 */}
+            <Link
+              className="b-muted"
+              to={`${ROUTES.OWNER_CUSTOMERS}?keyword=${encodeURIComponent(item.customerName)}`}
+            >
+              {item.customerName}
+            </Link>
             <Badge className={reservationStatus.tone}>{reservationStatus.label}</Badge>
           </li>
         );

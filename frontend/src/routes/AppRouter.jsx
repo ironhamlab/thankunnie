@@ -29,6 +29,7 @@ const MenusPage = lazy(() => import('@/pages/owner/MenusPage'));
 const SchedulePage = lazy(() => import('@/pages/owner/SchedulePage'));
 const VacancyManagePage = lazy(() => import('@/pages/owner/VacancyManagePage'));
 const OwnerBookingsPage = lazy(() => import('@/pages/owner/OwnerBookingsPage'));
+const CustomersPage = lazy(() => import('@/pages/owner/CustomersPage'));
 
 const LEGACY_EXPLORE_PATHS = ['/explore', '/explore-classic'];
 
@@ -96,6 +97,7 @@ export default function AppRouter() {
               <Route path={ROUTES.OWNER_SCHEDULE} element={<SchedulePage />} />
               <Route path={ROUTES.OWNER_VACANCIES} element={<VacancyManagePage />} />
               <Route path={ROUTES.OWNER_BOOKINGS} element={<OwnerBookingsPage />} />
+              <Route path={ROUTES.OWNER_CUSTOMERS} element={<CustomersPage />} />
               <Route path={ROUTES.OWNER_RESERVATION_CANCEL} element={<OwnerCancelPage />} />
               <Route
                 path={ROUTES.OWNER_RESERVATION_CANCEL_RESULT}
