@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.auth.dto.request;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
@@ -13,7 +14,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 /**
- * 사장님(매장) 회원가입 요청. SHOP 의 필수 컬럼이 많아 계정과 매장 정보를 함께 받는다.
+ * 매장 회원가입 요청. SHOP 의 필수 컬럼이 많아 계정과 매장 정보를 함께 받는다.
  * 매장 정보 검증 규칙은 매장 수정(ShopUpdateRequest)과 같다. 대표 이미지는 가입 후 이미지 API 로 올린다.
  *
  * @param regionCode 시군구 지역코드 (구독 알림 매칭 기준)
@@ -32,7 +33,10 @@ public record AuthShopSignupRequest(
         @NotNull @DecimalMin("-180") @DecimalMax("180") @Digits(integer = 3, fraction = 7) BigDecimal longitude,
         @NotBlank @Size(max = 20) String phone,
         @Size(max = 2000) String description,
-        @Size(max = 2000) String notice) {
+        @Size(max = 2000) String notice,
+        @NotBlank @Pattern(regexp = "[0-9]{10}") String businessNumber,
+        @NotBlank @Size(max = 100) String representativeName,
+        @NotNull LocalDate openedOn) {
 
     @AssertTrue(message = AuthInputRules.PASSWORD_BYTES_MESSAGE)
     public boolean isPasswordWithinBytes() {

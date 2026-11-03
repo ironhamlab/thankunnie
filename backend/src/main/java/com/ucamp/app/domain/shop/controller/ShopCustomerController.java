@@ -27,9 +27,9 @@ import com.ucamp.app.domain.shop.dto.response.ShopCustomerResponse;
 import com.ucamp.app.domain.shop.service.ShopCustomerService;
 
 /**
- * 사장님 고객 관리 API. 매장은 로그인한 사장님의 매장으로 정해진다.
+ * 매장 고객 관리 API. 매장은 로그인한 매장 계정으로 정해진다.
  */
-@Tag(name = "사장님 고객 관리", description = "본인 매장 예약 고객 목록·상세·매장 메모")
+@Tag(name = "매장 고객 관리", description = "본인 매장 예약 고객 목록·상세·매장 메모")
 @RestController
 @RequestMapping("/api/v1/owner/customers")
 public class ShopCustomerController {

@@ -29,9 +29,9 @@ import com.ucamp.app.domain.schedule.dto.response.ScheduleExceptionResponse;
 import com.ucamp.app.domain.schedule.service.ShopScheduleExceptionService;
 
 /**
- * 사장님 시간대 열기·닫기 API. 매장은 로그인한 사장님의 매장으로 정해진다.
+ * 매장 시간대 열기·닫기 API. 매장은 로그인한 매장 계정으로 정해진다.
  */
-@Tag(name = "시간대 열기·닫기", description = "사장님 일회성 연장 영업·휴무 (예외 일정)")
+@Tag(name = "시간대 열기·닫기", description = "매장 일회성 연장 영업·휴무 (예외 일정)")
 @RestController
 @RequestMapping("/api/v1/schedule-exceptions")
 public class ShopScheduleExceptionController {

@@ -16,7 +16,7 @@ public final class BookingPolicy {
     /** 예약금 상한. 실제 예약금은 min(할인가, 이 값) */
     public static final int MAX_DEPOSIT_AMOUNT = 20_000;
 
-    /** 사장님 판매가 입력 단위(원) */
+    /** 매장 판매가 입력 단위(원) */
     public static final int PRICE_UNIT = 100;
 
     /** 예약 클릭 후 점유 유지 시간 */

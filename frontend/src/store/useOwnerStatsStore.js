@@ -10,7 +10,7 @@ const toError = (error) => ({
 export const statsPeriodKey = (period) => (period.all ? 'all' : `${period.from}~${period.to}`);
 
 /**
- * 사장님 매출·예약 분석 (GET /owner/dashboard/stats).
+ * 매장 매출·예약 분석 (GET /owner/dashboard/stats).
  * statsKey 는 지금 들고 있는 stats 가 어떤 조회 조건의 결과인지 나타낸다.
  */
 export const useOwnerStatsStore = create((set, get) => ({
@@ -21,7 +21,7 @@ export const useOwnerStatsStore = create((set, get) => ({
   requestId: 0,
 
   // 기간을 빠르게 바꾸면 요청이 겹치므로 마지막 요청의 응답만 반영한다.
-  // 시작할 때 이전 통계를 비워 다른 기간·다른 사장님의 숫자가 남아 보이지 않게 한다
+  // 시작할 때 이전 통계를 비워 다른 기간·다른 매장의 숫자가 남아 보이지 않게 한다
   loadStats: async (period) => {
     const requestId = get().requestId + 1;
     const key = statsPeriodKey(period);

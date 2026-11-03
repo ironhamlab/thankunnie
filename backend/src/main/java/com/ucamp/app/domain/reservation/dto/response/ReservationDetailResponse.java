@@ -7,7 +7,7 @@ import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.reservation.repository.ReservationView;
 
 /**
- * 예약 상세. 고객 내 예약·사장님 예약 현황·관리자 조회가 같은 모양을 쓴다.
+ * 예약 상세. 고객 내 예약·매장 예약 현황·관리자 조회가 같은 모양을 쓴다.
  *
  * @param summary         목록과 같은 요약
  * @param customerPhone   예약자 연락처

@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 
 import com.ucamp.app.common.entity.BaseTimeEntity;
 
-/** 사장님만 보는 매장별 고객 메모. 매장·고객당 1행이다. */
+/** 매장 계정만 보는 고객 메모. 매장·고객당 1행이다. */
 @Entity
 @Table(name = "SHOP_CUSTOMER_MEMO")
 @Getter

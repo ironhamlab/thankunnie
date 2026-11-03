@@ -14,7 +14,7 @@ import styles from './LoginPage.module.css';
 const EMPTY_FORM = { loginId: '', password: '' };
 
 /**
- * 로그인 (A-F7). 고객·관리자는 회원 계정, 사장님은 매장 계정 탭으로 로그인한다.
+ * 로그인 (A-F7). 고객·관리자는 회원 계정, 매장은 매장 계정 탭으로 로그인한다.
  * 로그인 전에 보려던 화면이 있으면 그 화면으로, 없으면 역할별 첫 화면으로 이동한다.
  */
 export default function LoginPage() {
@@ -74,7 +74,7 @@ export default function LoginPage() {
             로그아웃
           </Button>
           <Button as={Link} variant="primary" to={getHomePathByRole(user?.role)}>
-            {user?.role === 'OWNER' ? '사장님 센터로' : '홈으로'}
+            {user?.role === 'OWNER' ? '매장 센터로' : '홈으로'}
           </Button>
         </div>
       </AuthCard>
@@ -136,7 +136,7 @@ export default function LoginPage() {
         <Notice>
           <small>
             개발용 테스트 계정 · 비밀번호 test1234! · 고객 customer1, customer2, 관리자 admin ·
-            사장님 owner1, owner2
+            매장 owner1, owner2
           </small>
         </Notice>
       )}

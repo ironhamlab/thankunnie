@@ -27,7 +27,7 @@ class CancelPolicyTest {
     private static final AuthUser ADMIN = new AuthUser(99L, UserRole.ADMIN, null);
 
     @Test
-    @DisplayName("고객은 본인 예약, 사장님은 본인 매장 예약을 취소할 수 있다")
+    @DisplayName("고객은 본인 예약, 매장은 본인 매장 예약을 취소할 수 있다")
     void validateRequester_ownReservation_passes() {
         assertThatCode(() -> CancelPolicy.validateRequester(CUSTOMER, 1L, 7L)).doesNotThrowAnyException();
         assertThatCode(() -> CancelPolicy.validateRequester(OWNER, 1L, 7L)).doesNotThrowAnyException();
@@ -47,7 +47,7 @@ class CancelPolicyTest {
     }
 
     @Test
-    @DisplayName("고객은 직접 취소만, 사장님은 매장 사유·고객 요청 대리 취소만 고를 수 있다")
+    @DisplayName("고객은 직접 취소만, 매장은 매장 사유·고객 요청 대리 취소만 고를 수 있다")
     void validateCancelType_byRole() {
         assertThatCode(() -> CancelPolicy.validateCancelType(CUSTOMER, CancelType.CUSTOMER)).doesNotThrowAnyException();
         assertThatCode(() -> CancelPolicy.validateCancelType(OWNER, CancelType.SHOP_FAULT)).doesNotThrowAnyException();

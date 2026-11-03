@@ -175,7 +175,7 @@ class ShopCustomerServiceTest {
     }
 
     @Test
-    @DisplayName("사장님이 아니면 FORBIDDEN 이다")
+    @DisplayName("매장이 아니면 FORBIDDEN 이다")
     void customer_throwsForbidden() {
         AuthUser customer = new AuthUser(1L, UserRole.CUSTOMER, null);
 

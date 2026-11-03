@@ -56,7 +56,7 @@ function validateRefund(value, quote) {
 }
 
 /**
- * 사장님 취소 (E-F2). 매장 사유·고객 요청 대리 취소 중 고르고, 대리 취소면 환불액을 입력한다.
+ * 매장 취소 (E-F2). 매장 사유·고객 요청 대리 취소 중 고르고, 대리 취소면 환불액을 입력한다.
  * 취소한 시간은 다시 열지 닫을지 매번 고른다 (REO-02).
  */
 export default function OwnerCancelPage() {

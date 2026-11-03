@@ -30,7 +30,7 @@ const VIEWS = [
 ];
 
 /**
- * 사장님 센터 운영 현황. 오늘(카드·오늘 예약)과 매출·예약 분석을 탭으로 나눈다.
+ * 매장 센터 운영 현황. 오늘(카드·오늘 예약)과 매출·예약 분석을 탭으로 나눈다.
  * 탭은 주소(?view=stats)에 남겨 새로고침·뒤로 가기에도 유지한다. 분석 탭을 열 때만 통계를 불러온다.
  */
 export default function OwnerDashboardPage() {
@@ -101,7 +101,7 @@ function TodayView({ onOpenStats }) {
   const loadToday = useOwnerDashboardStore((state) => state.loadToday);
   const loadTodayReservations = useOwnerDashboardStore((state) => state.loadTodayReservations);
 
-  // 매장 정보는 사장님 센터 레이아웃(OwnerLayout)이 불러온다
+  // 매장 정보는 매장 센터 레이아웃(OwnerLayout)이 불러온다
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
@@ -197,7 +197,7 @@ function TodayAvailableCard({ today }) {
   );
 }
 
-// 영역별 불러오기 실패 안내. 서버 메시지 대신 사장님이 이해할 문구와 다시 시도를 보여 준다
+// 영역별 불러오기 실패 안내. 서버 메시지 대신 매장이 이해할 문구와 다시 시도를 보여 준다
 function LoadError({ message, onRetry }) {
   return (
     <Alert tone="error" role="alert" className={styles.error}>

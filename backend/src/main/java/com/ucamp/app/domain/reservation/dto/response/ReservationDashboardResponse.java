@@ -5,7 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * 사장님 홈 대시보드(오늘). 날짜는 서버 시각(한국 시간) 기준이다. 기간 분석은 통계 API 가 맡는다.
+ * 매장 홈 대시보드(오늘). 날짜는 서버 시각(한국 시간) 기준이다. 기간 분석은 통계 API 가 맡는다.
  *
  * @param date                   기준 날짜 (오늘)
  * @param today                  오늘 지표

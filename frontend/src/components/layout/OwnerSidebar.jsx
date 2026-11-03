@@ -19,7 +19,7 @@ const NAVIGATION = [
 ];
 
 /**
- * 사장님 센터 사이드바
+ * 매장 센터 사이드바
  */
 export default function OwnerSidebar() {
   const shop = useShopStore((s) => s.shop);
@@ -28,7 +28,7 @@ export default function OwnerSidebar() {
     <aside className={styles.root}>
       <Link to={ROUTES.OWNER} className={styles.brand}>
         <strong>땡잡은 언니</strong>
-        <small>사장님 센터</small>
+        <small>매장 센터</small>
       </Link>
       {shop && (
         <div className={styles.shop}>
@@ -41,7 +41,7 @@ export default function OwnerSidebar() {
       <Button as={Link} variant="primary" wide to={ROUTES.OWNER_VACANCIES}>
         ⊕ 빈자리 열기·닫기
       </Button>
-      <nav aria-label="사장님 메뉴">
+      <nav aria-label="매장 메뉴">
         {NAVIGATION.map(([to, label, Icon]) => (
           <NavLink key={to} to={to}>
             <Icon size={20} />

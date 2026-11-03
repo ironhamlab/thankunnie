@@ -1,12 +1,13 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
+import AdminLayout from '@/components/layout/AdminLayout';
 import OwnerLayout from '@/components/layout/OwnerLayout';
 import Spinner from '@/components/common/Spinner';
 import PrivateRoute from '@/routes/PrivateRoute';
 import RoleRoute from '@/routes/RoleRoute';
 import { ROUTES } from '@/constants/routes';
-import { CUSTOMER_AREA_ROLES, OWNER_AREA_ROLES } from '@/constants/userRole';
+import { ADMIN_AREA_ROLES, CUSTOMER_AREA_ROLES, OWNER_AREA_ROLES } from '@/constants/userRole';
 
 const HomePage = lazy(() => import('@/pages/home/HomePage'));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
@@ -30,6 +31,7 @@ const SchedulePage = lazy(() => import('@/pages/owner/SchedulePage'));
 const VacancyManagePage = lazy(() => import('@/pages/owner/VacancyManagePage'));
 const OwnerBookingsPage = lazy(() => import('@/pages/owner/OwnerBookingsPage'));
 const CustomersPage = lazy(() => import('@/pages/owner/CustomersPage'));
+const AdminShopApplicationsPage = lazy(() => import('@/pages/admin/AdminShopApplicationsPage'));
 
 const LEGACY_EXPLORE_PATHS = ['/explore', '/explore-classic'];
 
@@ -53,7 +55,7 @@ export default function AppRouter() {
           <Route path={ROUTES.SIGNUP} element={<SignupPage />} />
           <Route path={ROUTES.SHOP_SIGNUP} element={<ShopSignupPage />} />
         </Route>
-        {/* 고객 화면. 사장님 계정이면 홈은 사장님 센터로 보내고, 나머지는 로그아웃 확인 창을 띄운다 */}
+        {/* 고객 화면. 매장 계정이면 홈은 매장 센터로 보내고, 나머지는 로그아웃 확인 창을 띄운다 */}
         <Route
           element={
             <RoleRoute
@@ -87,9 +89,9 @@ export default function AppRouter() {
             <Route path={ROUTES.NOT_FOUND} element={<NotFoundPage />} />
           </Route>
         </Route>
-        {/* 사장님 센터는 사장님으로 로그인한 뒤에 들어간다. 고객 계정이면 레이아웃(매장 조회)도 열지 않는다 */}
+        {/* 매장 센터는 매장으로 로그인한 뒤에 들어간다. 고객 계정이면 레이아웃(매장 조회)도 열지 않는다 */}
         <Route element={<PrivateRoute />}>
-          <Route element={<RoleRoute allow={OWNER_AREA_ROLES} areaName="사장님 센터" />}>
+          <Route element={<RoleRoute allow={OWNER_AREA_ROLES} areaName="매장 센터" />}>
             <Route path={ROUTES.OWNER} element={<OwnerLayout />}>
               <Route index element={<OwnerDashboardPage />} />
               <Route path={ROUTES.OWNER_SHOP} element={<ShopPage />} />
@@ -103,6 +105,15 @@ export default function AppRouter() {
                 path={ROUTES.OWNER_RESERVATION_CANCEL_RESULT}
                 element={<CancelResultPage viewer="owner" />}
               />
+              <Route path={ROUTES.NOT_FOUND} element={<NotFoundPage />} />
+            </Route>
+          </Route>
+        </Route>
+        {/* 관리자 화면은 관리자로 로그인한 뒤에 들어간다 */}
+        <Route element={<PrivateRoute />}>
+          <Route element={<RoleRoute allow={ADMIN_AREA_ROLES} areaName="관리자 화면" />}>
+            <Route path={ROUTES.ADMIN} element={<AdminLayout />}>
+              <Route index element={<AdminShopApplicationsPage />} />
               <Route path={ROUTES.NOT_FOUND} element={<NotFoundPage />} />
             </Route>
           </Route>

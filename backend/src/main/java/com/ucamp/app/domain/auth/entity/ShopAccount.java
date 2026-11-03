@@ -25,7 +25,7 @@ import com.ucamp.app.common.auth.UserRole;
 import com.ucamp.app.common.entity.BaseTimeEntity;
 
 /**
- * 사장님 로그인 계정. SHOP 테이블에 매장 정보와 함께 있으며, 매장 프로필은 shop 도메인의 Shop 이 관리한다.
+ * 매장 로그인 계정. SHOP 테이블에 매장 정보와 함께 있으며, 매장 프로필은 shop 도메인의 Shop 이 관리한다.
  *
  * <p>가입 시 SHOP 의 필수 컬럼을 한 번에 넣어야 해서 프로필 컬럼도 매핑한다. 가입 후 프로필 수정은 Shop 으로만 한다.
  * STATUS 는 가입 시 ACTIVE 로 넣기만 하고 로그인 판단에는 쓰지 않는다 (매장 노출·판매 여부).
@@ -50,6 +50,10 @@ public class ShopAccount extends BaseTimeEntity {
 
     @Column(name = "PASSWORD_HASH", nullable = false, length = 255)
     private String passwordHash;
+
+    // 기존 매장은 미등록(null)을 유지한다. 새 가입은 국세청 검증을 통과한 번호만 저장한다.
+    @Column(name = "BUSINESS_NUMBER", length = 10, updatable = false)
+    private String businessNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", nullable = false, length = 10)
@@ -86,12 +90,17 @@ public class ShopAccount extends BaseTimeEntity {
     @Column(name = "NOTICE", length = 2000, updatable = false)
     private String notice;
 
+    /** 관리자가 입력한 가입 거절 사유. 거절 상태일 때만 값이 있다 */
+    @Column(name = "REJECT_REASON", length = 500)
+    private String rejectReason;
+
     @Builder
     private ShopAccount(String loginId, String passwordHash, Long categoryId, String name, String regionCode,
             String address, String addressDetail, BigDecimal latitude, BigDecimal longitude, String phone,
-            String description, String notice) {
+            String description, String notice, String businessNumber) {
         this.loginId = loginId;
         this.passwordHash = passwordHash;
+        this.businessNumber = businessNumber;
         this.categoryId = categoryId;
         this.name = name;
         this.regionCode = regionCode;
@@ -105,7 +114,25 @@ public class ShopAccount extends BaseTimeEntity {
         this.status = ShopAccountStatus.ACTIVE;
     }
 
-    /** 인증 공통 사용자로 바꾼다. 사장님은 APP_USER 행이 없으므로 사용자 ID 자리에 매장 ID 를 쓴다. */
+    /** 가입을 승인해 매장을 노출 상태로 바꾼다. 승인 대기 여부는 호출한 쪽이 먼저 확인한다. */
+    public void approve() {
+        this.status = ShopAccountStatus.ACTIVE;
+        this.rejectReason = null;
+    }
+
+    /** 가입을 거절하고 매장에 보여줄 사유를 남긴다. 승인 대기 여부는 호출한 쪽이 먼저 확인한다. */
+    public void reject(String reason) {
+        this.status = ShopAccountStatus.REJECTED;
+        this.rejectReason = reason;
+    }
+
+    /** 잘못 거절한 신청을 승인 대기로 되돌리고 사유를 지운다. 거절 여부는 호출한 쪽이 먼저 확인한다. */
+    public void restoreToPending() {
+        this.status = ShopAccountStatus.PENDING;
+        this.rejectReason = null;
+    }
+
+    /** 인증 공통 사용자로 바꾼다. 매장은 APP_USER 행이 없으므로 사용자 ID 자리에 매장 ID 를 쓴다. */
     public AuthUser toAuthUser() {
         return new AuthUser(shopId, UserRole.OWNER, shopId);
     }

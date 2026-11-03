@@ -8,8 +8,8 @@ import com.ucamp.app.domain.cancel.policy.GraceCancelResult;
 import com.ucamp.app.domain.cancel.policy.RefundQuote;
 
 /**
- * 취소 환불 견적. 고객 취소 확인 화면(E-F1)과 사장님 대리 취소 환불액 입력 범위(E-F2)에 쓴다.
- * 사장님 대리 취소 환불액은 policyRefundAmount 이상, paidAmount 이하로 입력한다.
+ * 취소 환불 견적. 고객 취소 확인 화면(E-F1)과 매장 대리 취소 환불액 입력 범위(E-F2)에 쓴다.
+ * 매장 대리 취소 환불액은 policyRefundAmount 이상, paidAmount 이하로 입력한다.
  *
  * @param refundAmount        고객 직접 취소 시 실제 환불액 (무료 취소 반영)
  * @param graceApplied        무료 취소 적용 여부. 적용되면 오늘 무료 취소 횟수가 차감된다

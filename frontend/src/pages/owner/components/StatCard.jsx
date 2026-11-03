@@ -2,7 +2,7 @@ import Panel from '@/components/common/Panel';
 import styles from './StatCard.module.css';
 
 /**
- * 사장님 대시보드·통계의 숫자 카드. 큰 숫자 하나(value) 또는 나란히 놓인 큰 숫자 여러 개(values)를 보여 준다.
+ * 매장 대시보드·통계의 숫자 카드. 큰 숫자 하나(value) 또는 나란히 놓인 큰 숫자 여러 개(values)를 보여 준다.
  *
  * @param {string} label 카드 제목
  * @param {string|number} [value] 큰 숫자

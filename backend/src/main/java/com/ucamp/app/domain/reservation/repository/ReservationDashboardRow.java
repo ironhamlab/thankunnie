@@ -15,7 +15,7 @@ import com.ucamp.app.domain.reservation.entity.ReservationStatus;
  * @param cancelType        취소 유형. 취소 행이 없으면 null (확정 예약에도 실패한 취소 행이 있을 수 있다)
  * @param cancelCompletedAt 결제 취소 완료 시각
  * @param retainedDeposit   취소 완료 건의 납부 예약금 - 환불액. 확정 예약은 0
- * @param closedAfterCancel 사장님이 취소하며 그 시간을 닫았는지
+ * @param closedAfterCancel 매장이 취소하며 그 시간을 닫았는지
  */
 public record ReservationDashboardRow(
         Long reservationId,

@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.policy.BookingPolicy;
+import com.ucamp.app.domain.auth.entity.ShopAccountStatus;
+import com.ucamp.app.domain.auth.repository.ShopAccountRepository;
 import com.ucamp.app.domain.reservation.entity.Reservation;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
@@ -40,14 +42,16 @@ public class AvailabilityService {
     private final ShopBusinessHourRepository shopBusinessHourRepository;
     private final ShopScheduleExceptionRepository shopScheduleExceptionRepository;
     private final ReservationRepository reservationRepository;
+    private final ShopAccountRepository shopAccountRepository;
     private final Clock clock;
 
     public AvailabilityService(ShopBusinessHourRepository shopBusinessHourRepository,
             ShopScheduleExceptionRepository shopScheduleExceptionRepository,
-            ReservationRepository reservationRepository, Clock clock) {
+            ReservationRepository reservationRepository, ShopAccountRepository shopAccountRepository, Clock clock) {
         this.shopBusinessHourRepository = shopBusinessHourRepository;
         this.shopScheduleExceptionRepository = shopScheduleExceptionRepository;
         this.reservationRepository = reservationRepository;
+        this.shopAccountRepository = shopAccountRepository;
         this.clock = clock;
     }
 
@@ -59,7 +63,7 @@ public class AvailabilityService {
     }
 
     /**
-     * 날짜에 시술을 시작할 수 있는 시각과, 그중 영업시간만으로는 안 되고 사장님이 연 시간 덕분에 되는 시각.
+     * 날짜에 시술을 시작할 수 있는 시각과, 그중 영업시간만으로는 안 되고 매장이 연 시간 덕분에 되는 시각.
      * 시술이 영업시간 밖으로 조금이라도 넘어가면 연장 영업 시각이다 (휴무일에 연 시간은 모두 해당).
      * 고객 상세 화면이 연장 영업임을 표시하는 데 쓴다.
      */
@@ -106,6 +110,10 @@ public class AvailabilityService {
         requirePositive(durationMinutes);
         LocalDateTime now = LocalDateTime.now(clock);
         SalePolicy.validateBookable(startsAt, now);
+        // 화면을 열어 둔 사이 승인이 취소된 매장에 예약이 들어가지 않게 한다. 잠금 뒤에 읽어 승인 취소와 순서가 맞는다
+        if (!shopAccountRepository.existsByShopIdAndStatus(shopId, ShopAccountStatus.ACTIVE)) {
+            throw new BusinessException(ErrorCode.VACANCY_NOT_OPEN_TIME);
+        }
         TimeRange range = new TimeRange(startsAt, startsAt.plusMinutes(durationMinutes));
         Schedule schedule = loadSchedule(shopId, range.start(), range.end(), now);
         if (schedule.reservedRanges().stream().anyMatch(range::overlaps)) {
@@ -151,7 +159,7 @@ public class AvailabilityService {
 
     /**
      * 날짜에 영업시간·시간대 열기로 열려 있고 닫기로 막히지 않은 시간이 하루 중 조금이라도 있는지 판단한다
-     * (사장님 대시보드: 휴무와 만석 구분용). 예약과 현재 시각은 보지 않으며 30분 단위로 확인한다.
+     * (매장 대시보드: 휴무와 만석 구분용). 예약과 현재 시각은 보지 않으며 30분 단위로 확인한다.
      */
     public boolean hasOpenTime(Long shopId, LocalDate date) {
         LocalDateTime from = date.atStartOfDay();
@@ -211,7 +219,7 @@ public class AvailabilityService {
 
     /**
      * @param businessRanges 요일 영업시간만의 구간 (연장 영업 판단용)
-     * @param openRanges     영업시간과 사장님이 연 시간을 합친 구간
+     * @param openRanges     영업시간과 매장이 연 시간을 합친 구간
      * @param confirmedRanges 결제 대기 점유가 아닌 예약(CONFIRMED·CANCEL_PENDING) 구간
      * @param holdRanges      유효한 결제 대기 점유(HOLD) 구간
      */

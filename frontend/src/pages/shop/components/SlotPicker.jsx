@@ -17,7 +17,7 @@ const toTime = (minutes) =>
 
 /**
  * 영업시간 안에서 시술이 끝날 수 있는 30분 단위 시작 시각에, 서버가 알려준 시작 가능 시각을 합친다.
- * 예약 가능 여부는 서버 응답(available-times)만 따른다. 영업시간 밖이라도 사장님이 연 시각은 서버 응답에 들어 있다.
+ * 예약 가능 여부는 서버 응답(available-times)만 따른다. 영업시간 밖이라도 매장이 연 시각은 서버 응답에 들어 있다.
  * 다른 고객이 결제 중인 시각(held)은 대기열에 설 수 있으므로 고를 수 있게 둔다.
  */
 const buildSlots = (
@@ -56,7 +56,7 @@ const extendedNotice = (businessHour, extendedStartTimes) => {
     return null;
   }
   if (!businessHour || businessHour.closed) {
-    return '휴무일이지만 사장님이 따로 연 시간이에요.';
+    return '휴무일이지만 매장이 따로 연 시간이에요.';
   }
   return `평소 영업시간(${businessHour.openTime}~${businessHour.closeTime}) 밖에도 연 시간이 있어요. '연장' 표시 시간을 확인해 주세요.`;
 };
