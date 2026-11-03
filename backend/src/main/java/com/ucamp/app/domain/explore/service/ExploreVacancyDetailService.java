@@ -66,7 +66,9 @@ public class ExploreVacancyDetailService {
             return ExploreNotBookableReason.BOOKING_CLOSED;
         }
         if (!availabilityService.isAvailable(candidate.shopId(), startsAt, candidate.durationMinutes())) {
-            return ExploreNotBookableReason.NOT_AVAILABLE;
+            return availabilityService.isHeldOnly(candidate.shopId(), startsAt, candidate.durationMinutes())
+                    ? ExploreNotBookableReason.HELD
+                    : ExploreNotBookableReason.NOT_AVAILABLE;
         }
         return null;
     }

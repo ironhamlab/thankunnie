@@ -106,6 +106,20 @@ class ExploreVacancyDetailServiceTest {
     }
 
     @Test
+    @DisplayName("다른 고객이 결제 중(점유)인 시각은 대기열에 설 수 있도록 HELD 다")
+    void getDetail_activeHold_held() {
+        jdbcTemplate.update("""
+                INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT,
+                                         APPLIED_PRICE, DEPOSIT, HOLD_EXPIRES_AT, CREATED_AT, UPDATED_AT)
+                VALUES (901, 1, 1, 'HOLD', ?, ?, 30000, 20000, ?, ?, ?)
+                """, NOW.withHour(20), NOW.withHour(21), NOW.plusMinutes(5), NOW, NOW);
+
+        ExploreVacancyDetailResponse held = exploreVacancyDetailService.getDetail(2L, NOW.withHour(20).withMinute(30));
+        assertThat(held.bookable()).isFalse();
+        assertThat(held.notBookableReason()).isEqualTo(ExploreNotBookableReason.HELD);
+    }
+
+    @Test
     @DisplayName("시술 이미지가 없으면 매장 이미지를 쓴다")
     void getDetail_noTreatmentImage_usesShopImage() {
         jdbcTemplate.update("UPDATE SHOP SET IMAGE_URL = '/shop.jpg' WHERE SHOP_ID = 1");

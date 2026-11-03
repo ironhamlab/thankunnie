@@ -24,6 +24,20 @@ public enum ErrorCode {
     AUTH_DUPLICATE_LOGIN_ID(HttpStatus.CONFLICT, "AUTH_001", "이미 사용 중인 아이디입니다."),
     AUTH_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "AUTH_002", "아이디 또는 비밀번호가 올바르지 않습니다."),
     AUTH_INACTIVE_ACCOUNT(HttpStatus.FORBIDDEN, "AUTH_003", "사용할 수 없는 계정입니다."),
+    AUTH_PHONE_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "AUTH_004", "휴대폰 인증을 확인해 주세요."),
+    AUTH_PHONE_SEND_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "AUTH_005", "인증번호 요청 횟수를 초과했습니다."),
+    AUTH_PHONE_SEND_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AUTH_006", "인증번호 발송에 실패했습니다."),
+    AUTH_BUSINESS_INVALID(HttpStatus.BAD_REQUEST, "AUTH_007", "사업자 정보를 확인해 주세요."),
+    AUTH_BUSINESS_LOOKUP_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AUTH_008", "국세청 사업자 정보를 조회하지 못했습니다. 잠시 후 다시 시도해 주세요."),
+    AUTH_DUPLICATE_BUSINESS_NUMBER(HttpStatus.CONFLICT, "AUTH_009", "이미 등록된 사업자등록번호입니다."),
+    AUTH_DUPLICATE_PHONE(HttpStatus.CONFLICT, "AUTH_010", "이미 가입된 휴대폰 번호입니다."),
+
+    // ADMIN
+    ADMIN_SHOP_APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ADMIN_001", "매장 가입 신청을 찾을 수 없습니다."),
+    ADMIN_SHOP_APPLICATION_NOT_PENDING(HttpStatus.CONFLICT, "ADMIN_002", "이미 처리된 가입 신청입니다."),
+    ADMIN_SHOP_APPLICATION_NOT_APPROVED(HttpStatus.CONFLICT, "ADMIN_003", "승인된 매장이 아닙니다."),
+    ADMIN_SHOP_APPLICATION_HAS_RESERVATION(HttpStatus.CONFLICT, "ADMIN_004", "진행 중이거나 앞으로 있을 예약이 있어 승인을 취소할 수 없습니다."),
+    ADMIN_SHOP_APPLICATION_NOT_REJECTED(HttpStatus.CONFLICT, "ADMIN_005", "거절된 신청이 아닙니다."),
 
     // TERMS
     TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "TERMS_001", "약관을 찾을 수 없습니다."),
@@ -38,6 +52,7 @@ public enum ErrorCode {
     RESERVATION_NOT_HOLD(HttpStatus.CONFLICT, "RESERVATION_004", "결제 대기 중인 예약이 아닙니다."),
     RESERVATION_DEPOSIT_MISMATCH(HttpStatus.BAD_REQUEST, "RESERVATION_005", "결제 금액이 예약금과 다릅니다."),
     RESERVATION_HOLD_EXISTS(HttpStatus.CONFLICT, "RESERVATION_006", "결제 대기 중인 예약이 있습니다."),
+    RESERVATION_QUEUE_NOT_YOUR_TURN(HttpStatus.CONFLICT, "RESERVATION_007", "아직 예약 순서가 아닙니다."),
 
     // NOTIFICATION
     SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION_001", "구독을 찾을 수 없습니다."),

@@ -164,11 +164,13 @@ export default function ShopDetailPage({ model = false }) {
   const currentTimes =
     times.key === timesKey
       ? times
-      : { status: 'loading', startTimes: [], extendedStartTimes: [], error: null };
-  // 서버가 시작 가능하다고 알려준 시각만 선택된 것으로 본다
+      : { status: 'loading', startTimes: [], extendedStartTimes: [], heldStartTimes: [], error: null };
+  // 서버가 시작 가능하거나 결제 중이라 대기할 수 있다고 알려준 시각만 선택된 것으로 본다
   const time =
     currentTimes.status === 'succeeded' &&
-    currentTimes.startTimes.some((startTime) => startTime.slice(11, 16) === selectedTime)
+    [...currentTimes.startTimes, ...(currentTimes.heldStartTimes ?? [])].some(
+      (startTime) => startTime.slice(11, 16) === selectedTime,
+    )
       ? selectedTime
       : null;
 

@@ -12,6 +12,7 @@ import Notice from '@/components/common/Notice';
 import EmptyState from '@/components/common/EmptyState';
 import Alert from '@/components/common/Alert';
 import HoldReplaceDialog from '@/components/reservation/HoldReplaceDialog';
+import QueueWaitingDialog from '@/components/reservation/QueueWaitingDialog';
 import styles from './ReservationPage.module.css';
 
 const dayLabel = (isClosed) => (isClosed ? '휴무' : '•');
@@ -38,6 +39,8 @@ export default function ReservationPage() {
     pendingHold,
     replaceHold,
     cancelReplace,
+    queue,
+    cancelQueue,
   } = useReserve();
   const today = todayKst();
   const [date, setDate] = useState(today);
@@ -293,6 +296,13 @@ export default function ReservationPage() {
             {loading || mode === 'loading' ? '실시간 검증 중…' : '다음 (예약 가능 여부 확인)'}
           </Button>
           <p className="b-help">매장 사정으로 취소되면 예약금 전액을 환불합니다.</p>
+          {queue && (
+            <QueueWaitingDialog
+              aheadCount={queue.aheadCount}
+              paying={queue.paying}
+              onCancel={cancelQueue}
+            />
+          )}
           {pendingHold && (
             <HoldReplaceDialog
               hold={pendingHold}

@@ -28,6 +28,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.util.TimeUtils;
+import com.ucamp.app.domain.auth.entity.ShopAccountStatus;
+import com.ucamp.app.domain.auth.repository.ShopAccountRepository;
 import com.ucamp.app.domain.reservation.entity.Reservation;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
@@ -56,14 +58,19 @@ class AvailabilityServiceTest {
     @Mock
     private ReservationRepository reservationRepository;
 
+    @Mock
+    private ShopAccountRepository shopAccountRepository;
+
     private AvailabilityService service;
 
     @BeforeEach
     void setUp() {
         Clock fixedClock = Clock.fixed(NOW.atZone(TimeUtils.KST).toInstant(), TimeUtils.KST);
-        service = new AvailabilityService(
-                shopBusinessHourRepository, shopScheduleExceptionRepository, reservationRepository, fixedClock);
+        service = new AvailabilityService(shopBusinessHourRepository, shopScheduleExceptionRepository,
+                reservationRepository, shopAccountRepository, fixedClock);
         // 소요 시간 검증 테스트는 DB 조회 전에 끝나므로 lenient 로 둔다
+        lenient().when(shopAccountRepository.existsByShopIdAndStatus(SHOP_ID, ShopAccountStatus.ACTIVE))
+                .thenReturn(true);
         lenient().when(shopBusinessHourRepository.findByShopId(SHOP_ID)).thenReturn(List.of(ShopBusinessHour.builder()
                 .shopId(SHOP_ID)
                 .dayOfWeek(BusinessDay.of(DATE))
@@ -77,6 +84,16 @@ class AvailabilityServiceTest {
     @DisplayName("영업시간 안의 빈 시각이면 예약할 수 있다")
     void validateAvailable_freeTime_passes() {
         assertThatCode(() -> service.validateAvailable(SHOP_ID, at(14, 0), ONE_HOUR)).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("승인이 취소되는 등 운영 중이 아닌 매장은 빈 시각이어도 예약할 수 없다")
+    void validateAvailable_shopNotActive_throwsNotOpenTime() {
+        given(shopAccountRepository.existsByShopIdAndStatus(SHOP_ID, ShopAccountStatus.ACTIVE)).willReturn(false);
+
+        assertThatThrownBy(() -> service.validateAvailable(SHOP_ID, at(14, 0), ONE_HOUR))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_NOT_OPEN_TIME);
     }
 
     @Test
@@ -176,6 +193,31 @@ class AvailabilityServiceTest {
     }
 
     @Test
+    @DisplayName("다른 고객의 결제 대기 점유 때문에만 막힌 시각은 대기 가능 시각으로 따로 알려준다")
+    void getDayAvailability_activeHold_marksHeldStartTimes() {
+        given(reservationRepository.findActiveOverlapping(eq(SHOP_ID), any(), any()))
+                .willReturn(List.of(activeHold(14, 0), reservation(17, 0, ReservationStatus.CONFIRMED)));
+
+        DayAvailability result = service.getDayAvailability(SHOP_ID, DATE, ONE_HOUR);
+
+        // 14:00~15:00 점유와 겹치는 13:30·14:00·14:30 만 대기 가능이고, 확정 예약과 겹치는 시각은 어디에도 없다
+        assertThat(result.heldStartTimes()).containsExactly(at(13, 30), at(14, 0), at(14, 30));
+        assertThat(result.startTimes()).doesNotContain(at(14, 0), at(16, 30), at(17, 0));
+        assertThat(result.heldStartTimes()).doesNotContain(at(16, 30), at(17, 0));
+    }
+
+    @Test
+    @DisplayName("isHeldOnly 는 결제 대기 점유만 막고 있을 때 true, 확정 예약이 막거나 비어 있으면 false 다")
+    void isHeldOnly_onlyActiveHold() {
+        given(reservationRepository.findActiveOverlapping(eq(SHOP_ID), any(), any()))
+                .willReturn(List.of(activeHold(14, 0), reservation(17, 0, ReservationStatus.CONFIRMED)));
+
+        assertThat(service.isHeldOnly(SHOP_ID, at(14, 0), ONE_HOUR)).isTrue();
+        assertThat(service.isHeldOnly(SHOP_ID, at(17, 0), ONE_HOUR)).isFalse();
+        assertThat(service.isHeldOnly(SHOP_ID, at(11, 0), ONE_HOUR)).isFalse();
+    }
+
+    @Test
     @DisplayName("isAvailable 은 영업시간 안의 빈 시각이면 true 다")
     void isAvailable_freeTime_returnsTrue() {
         assertThat(service.isAvailable(SHOP_ID, at(14, 0), ONE_HOUR)).isTrue();
@@ -268,6 +310,13 @@ class AvailabilityServiceTest {
         // 상태 변경 메서드는 예약 담당(D)이 추가하므로 테스트에서는 직접 넣는다
         ReflectionTestUtils.setField(reservation, "status", status);
         return reservation;
+    }
+
+    // 아직 만료되지 않은 결제 대기 점유
+    private static Reservation activeHold(int hour, int minute) {
+        Reservation hold = reservation(hour, minute, ReservationStatus.HOLD);
+        ReflectionTestUtils.setField(hold, "holdExpiresAt", NOW.plusMinutes(5));
+        return hold;
     }
 
     @Test

@@ -27,7 +27,8 @@ public record AuthCustomerSignupRequest(
         @NotBlank @Size(max = 50) String name,
         @NotBlank @Pattern(regexp = AuthInputRules.MOBILE_PHONE, message = AuthInputRules.MOBILE_PHONE_MESSAGE)
         String phone,
-        @NotNull List<@NotNull TermsCode> agreedTerms) {
+        @NotNull List<@NotNull TermsCode> agreedTerms,
+        @NotBlank @Size(max = 36) String phoneVerificationId) {
 
     @AssertTrue(message = AuthInputRules.PASSWORD_BYTES_MESSAGE)
     public boolean isPasswordWithinBytes() {
