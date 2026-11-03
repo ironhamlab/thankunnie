@@ -32,6 +32,13 @@ public enum ErrorCode {
     AUTH_DUPLICATE_BUSINESS_NUMBER(HttpStatus.CONFLICT, "AUTH_009", "이미 등록된 사업자등록번호입니다."),
     AUTH_DUPLICATE_PHONE(HttpStatus.CONFLICT, "AUTH_010", "이미 가입된 휴대폰 번호입니다."),
 
+    // ADMIN
+    ADMIN_SHOP_APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ADMIN_001", "매장 가입 신청을 찾을 수 없습니다."),
+    ADMIN_SHOP_APPLICATION_NOT_PENDING(HttpStatus.CONFLICT, "ADMIN_002", "이미 처리된 가입 신청입니다."),
+    ADMIN_SHOP_APPLICATION_NOT_APPROVED(HttpStatus.CONFLICT, "ADMIN_003", "승인된 매장이 아닙니다."),
+    ADMIN_SHOP_APPLICATION_HAS_RESERVATION(HttpStatus.CONFLICT, "ADMIN_004", "진행 중이거나 앞으로 있을 예약이 있어 승인을 취소할 수 없습니다."),
+    ADMIN_SHOP_APPLICATION_NOT_REJECTED(HttpStatus.CONFLICT, "ADMIN_005", "거절된 신청이 아닙니다."),
+
     // TERMS
     TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "TERMS_001", "약관을 찾을 수 없습니다."),
     TERMS_REQUIRED_NOT_AGREED(HttpStatus.BAD_REQUEST, "TERMS_002", "필수 약관에 모두 동의해야 합니다."),
