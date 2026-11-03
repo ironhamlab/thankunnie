@@ -16,6 +16,9 @@ import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
 import Panel from '@/components/common/Panel';
+import SlidingIndicator from '@/components/common/SlidingIndicator';
+import { useSlidingIndicator } from '@/hooks/useSlidingIndicator';
+import RollingValue from '@/pages/home/components/RollingValue';
 import EmptyState from '@/components/common/EmptyState';
 import VisitShopLocation from './components/VisitShopLocation';
 import styles from './MyReservationsPage.module.css';
@@ -66,6 +69,7 @@ export default function MyReservationsPage() {
   const [hasLoadedList, setHasLoadedList] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const listRef = useRef(null);
+  const tabIndicator = useSlidingIndicator(tabKey);
   const { displayStatus } = TABS.find((item) => item.key === listTabKey);
 
   useEffect(() => {
@@ -118,16 +122,21 @@ export default function MyReservationsPage() {
   const isEmpty = listStatus === 'succeeded' && !reservations.length;
 
   return (
-    <div className="b-container b-page">
+    <div className={`b-container b-page ${styles.page}`}>
       <div className="b-row b-title-row">
         <h1>
-          내 예약 <Badge>{pageInfo.totalElements}건</Badge>
+          내 예약{' '}
+          <Badge>
+            <RollingValue value={`${pageInfo.totalElements}건`} />
+          </Badge>
         </h1>
       </div>
-      <div className="b-options b-tabs" role="group" aria-label="예약 구분">
+      <div className={`b-options b-tabs ${styles.tabs}`} role="group" aria-label="예약 구분">
+        <SlidingIndicator indicator={tabIndicator} className={styles.tabIndicator} />
         {TABS.map((item) => (
           <button
             key={item.key}
+            ref={tabKey === item.key ? tabIndicator.selectedRef : null}
             type="button"
             aria-pressed={tabKey === item.key}
             className={tabKey === item.key ? 'is-selected' : ''}
