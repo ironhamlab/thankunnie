@@ -69,7 +69,8 @@ export default function ReservationDetailPanel({
           <h3>예약자</h3>
           <div className="b-row">
             <strong>{summary.customerName}</strong>
-            <span>{detail.customerPhone}</span>
+            {/* 탈퇴 회원은 서버가 번호를 보내지 않는다 */}
+            <span>{detail.customerPhone ?? '-'}</span>
           </div>
           <small>요청사항: {detail.customerRequest || '없음'}</small>
         </Notice>

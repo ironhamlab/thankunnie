@@ -40,6 +40,27 @@ export const useUserStore = create((set, get) => ({
     }
   },
 
+  withdrawStatus: 'idle',
+  withdrawError: null,
+
+  // 성공하면 true. 세션 정리와 화면 이동은 탈퇴 완료 안내를 보여준 뒤 화면에서 한다
+  withdraw: async (password) => {
+    set({ withdrawStatus: 'loading', withdrawError: null });
+    try {
+      await userApi.withdraw({ password });
+      set({ withdrawStatus: 'succeeded' });
+      return true;
+    } catch (error) {
+      set({
+        withdrawStatus: 'failed',
+        withdrawError: toError(error, '탈퇴하지 못했습니다.'),
+      });
+      return false;
+    }
+  },
+
+  resetWithdraw: () => set({ withdrawStatus: 'idle', withdrawError: null }),
+
   // 진행 중인 조회의 응답도 버리도록 요청 번호를 올린다
   resetProfile: () =>
     set((state) => ({
