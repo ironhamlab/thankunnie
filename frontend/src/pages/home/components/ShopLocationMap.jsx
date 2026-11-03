@@ -101,15 +101,10 @@ export default function ShopLocationMap({
               <Button
                 as={Link}
                 variant="primary"
-                to={shopPagePath(
-                  selected.shopId,
-                  hasVacancy
-                    ? {
-                        date: datePart(selected.earliestStartsAt),
-                        model: model || selected.modelOnly,
-                      }
-                    : {},
-                )}
+                to={shopPagePath(selected.shopId, {
+                  view: 'info',
+                  model: hasVacancy && (model || selected.modelOnly),
+                })}
               >
                 매장 보기
               </Button>

@@ -8,15 +8,35 @@ import {
   shopPagePath,
 } from '@/utils/exploreVacancy';
 import { datePart } from '@/utils/scheduleDate';
-import LocationIcon from '@/components/icons/LocationIcon';
 import styles from './ShopRow.module.css';
 
 // 전체 날짜 보기는 60일 치가 섞여 길어지므로 빈자리가 있는 가장 빠른 날짜 이만큼만 펼쳐 보여준다
 const SHOWN_DAYS = 2;
 
+// 옆 지도가 있는 목록(onLocate)은 카드를 눌러 지도에 위치를 띄우고, 없으면 매장 페이지로 간다
+function Card({ to, onLocate, located, children }) {
+  if (!onLocate) {
+    return (
+      <Link className={styles.shopLink} to={to}>
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className={`${styles.shopLink} ${styles.locateCard}`}
+      aria-pressed={located}
+      onClick={onLocate}
+    >
+      {children}
+    </button>
+  );
+}
+
 /**
- * 검색 화면의 한 줄 매장 카드. 매장을 누르면 매장 페이지로 가고, 오른쪽 '시간 보기'를 누르면
- * 아래가 펼쳐지며 시술별 시작 시각 버튼을 보여준다. 시각을 누르면 그 시간이 골라진 매장 페이지로 간다.
+ * 검색 화면의 한 줄 매장 카드. 매장을 누르면 매장 페이지로 가고(onLocate 가 있으면 옆 지도에 위치를 보여주고),
+ * 오른쪽 '시간 보기'를 누르면 아래가 펼쳐지며 시술별 시작 시각 버튼을 보여준다. 시각을 누르면 그 시간이 골라진 매장 페이지로 간다.
  *
  * @param shop     매장 요약(C-02) 한 건
  * @param expanded 펼쳐져 있는지
@@ -24,7 +44,8 @@ const SHOWN_DAYS = 2;
  * @param onToggle 펼치기·접기
  * @param onRetry  빈자리를 다시 받기
  * @param showTimes 시간 보기 버튼을 보일지
- * @param onLocate  있으면 '지도에서 보기' 버튼을 보이고, 누르면 옆 지도에서 이 매장을 가까이 보여준다
+ * @param onLocate  있으면 카드를 눌렀을 때 매장 페이지로 가지 않고 옆 지도에서 이 매장을 가까이 보여준다.
+ *                  매장 페이지는 시간 버튼이나 옆 지도의 매장 보기로 간다
  * @param located   옆 지도에서 지금 이 매장을 보여주는 중인지
  * @param distance  내 위치에서 매장까지 거리 ("1.2km"). 위치를 모르면 undefined 라 보이지 않는다
  * @param model    초보 시술 모집 목록이면 매장 대신 초보 시술 모집 상세로 보낸다. 초보 시술 빈자리만 있는 매장(shop.modelOnly)도 그렇다.
@@ -48,6 +69,7 @@ export default function ShopRow({
       {distance && ` · ${distance}`}
     </span>
   );
+  const locate = onLocate && (() => onLocate(shop));
   const panelId = `shop-${shop.shopId}-vacancies`;
   // 여러 날짜의 빈자리가 섞이면 앞쪽 날짜만 날짜별로 묶고, 나머지는 매장 페이지에서 고르게 한다
   const vacancies = detail?.vacancies ?? [];
@@ -64,31 +86,19 @@ export default function ShopRow({
   // 다음 날짜가 없으면 잘린 빈자리는 마지막으로 받은 날짜부터 이어진다
   const moreDate = nextDate ?? dates.at(-1);
   const dayOf = (date) => vacancies.find((vacancy) => datePart(vacancy.startsAt) === date).day;
-  const locateButton = onLocate && (
-    <button
-      type="button"
-      className={styles.toggle}
-      aria-pressed={located}
-      onClick={() => onLocate(shop)}
-    >
-      <LocationIcon size={16} />
-      {located ? '지도에 표시 중' : '지도에서 보기'}
-    </button>
-  );
   // 전체 매장 목록에서 온 매장은 빈자리 요약이 없다. 매장 상세에서 날짜를 골라 다시 찾아보게 한다
   if (shop.earliestStartsAt == null) {
     return (
       <article className={`${styles.root} ${styles.noVacancy} ${located ? styles.located : ''}`}>
         <div className={styles.summary}>
-          <Link className={styles.shopLink} to={shopPagePath(shop.shopId)}>
+          <Card to={shopPagePath(shop.shopId)} onLocate={locate} located={located}>
             <img className={styles.thumb} src={shopImage(shop.imageUrl)} alt="" />
             <span className={styles.info}>
               <strong>{shop.shopName}</strong>
               {area}
               <span className={styles.none}>지금은 빈자리가 없어요</span>
             </span>
-          </Link>
-          {locateButton}
+          </Card>
         </div>
       </article>
     );
@@ -97,13 +107,14 @@ export default function ShopRow({
     <article
       className={`${styles.root} ${expanded ? styles.expanded : ''} ${located ? styles.located : ''}`}
     >
-      <div className={`${styles.summary} ${onLocate && showTimes ? styles.twoActions : ''}`}>
-        <Link
-          className={styles.shopLink}
+      <div className={styles.summary}>
+        <Card
           to={shopPagePath(shop.shopId, {
             date: datePart(shop.earliestStartsAt),
             model: model || shop.modelOnly,
           })}
+          onLocate={locate}
+          located={located}
         >
           <img className={styles.thumb} src={shopImage(shop.imageUrl)} alt="" />
           <span className={styles.info}>
@@ -118,8 +129,7 @@ export default function ShopRow({
             {shop.maxDiscountRate > 0 && <em>최대 {shop.maxDiscountRate}%↓</em>}
             <b>{money(shop.minSalePrice)}~</b>
           </span>
-        </Link>
-        {locateButton}
+        </Card>
         {showTimes && (
           <button
             type="button"
