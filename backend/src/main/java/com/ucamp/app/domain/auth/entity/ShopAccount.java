@@ -51,6 +51,10 @@ public class ShopAccount extends BaseTimeEntity {
     @Column(name = "PASSWORD_HASH", nullable = false, length = 255)
     private String passwordHash;
 
+    // 기존 매장은 미등록(null)을 유지한다. 새 가입은 국세청 검증을 통과한 번호만 저장한다.
+    @Column(name = "BUSINESS_NUMBER", length = 10, updatable = false)
+    private String businessNumber;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", nullable = false, length = 10)
     private ShopAccountStatus status;
@@ -93,9 +97,10 @@ public class ShopAccount extends BaseTimeEntity {
     @Builder
     private ShopAccount(String loginId, String passwordHash, Long categoryId, String name, String regionCode,
             String address, String addressDetail, BigDecimal latitude, BigDecimal longitude, String phone,
-            String description, String notice) {
+            String description, String notice, String businessNumber) {
         this.loginId = loginId;
         this.passwordHash = passwordHash;
+        this.businessNumber = businessNumber;
         this.categoryId = categoryId;
         this.name = name;
         this.regionCode = regionCode;
