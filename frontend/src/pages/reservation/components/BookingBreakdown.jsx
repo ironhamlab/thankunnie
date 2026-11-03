@@ -1,4 +1,4 @@
-import { money } from '@/utils/demoData';
+import { formatMoney } from '@/utils/reservationFormat';
 import { PAYMENT_STATUS } from '@/constants/reservationStatus';
 import { datePart, timePart } from '@/utils/scheduleDate';
 import Badge from '@/components/common/Badge';
@@ -22,7 +22,7 @@ export default function BookingBreakdown({ summary, payment, compact = false }) 
           <dt>
             <strong>총 시술 금액 (확정가)</strong>
           </dt>
-          <dd className="b-pink">{money(summary.appliedPrice)}</dd>
+          <dd className="b-pink">{formatMoney(summary.appliedPrice)}</dd>
         </div>
       </dl>
       <div className="b-two-grid">
@@ -31,7 +31,7 @@ export default function BookingBreakdown({ summary, payment, compact = false }) 
             결제한 예약금{' '}
             {payment && <Badge>{PAYMENT_STATUS[payment.status] ?? payment.status}</Badge>}
           </small>
-          <strong className="b-pink">{money(paidAmount)}</strong>
+          <strong className="b-pink">{formatMoney(paidAmount)}</strong>
           {payment?.approvedAt && (
             <small>
               결제 시각 {datePart(payment.approvedAt)} {timePart(payment.approvedAt)}
@@ -40,7 +40,7 @@ export default function BookingBreakdown({ summary, payment, compact = false }) 
         </div>
         <Notice>
           <small>매장 방문 현장 잔금</small>
-          <strong>{money(summary.balance)}</strong>
+          <strong>{formatMoney(summary.balance)}</strong>
           <small>시술 종료 후 매장에서 직접 결제</small>
         </Notice>
       </div>

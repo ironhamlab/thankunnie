@@ -402,9 +402,8 @@ export default function App() {
 - `/shops/:shopId`: 시술·날짜·시간을 고르고 예약하기 버튼을 누르면 먼저 대기열에 선다(`joinQueue`).
   내 차례면 `createReservation`을 호출하고 성공하면 `/checkout?reservationId={번호}`로 이동한다.
   앞사람이 있으면 대기 창(`QueueWaitingDialog`)을 띄우고 2초마다 순서를 다시 물어, 차례가 오면 자동으로 예약한다.
-  실패하면 화면에 머물며 서버 오류 메시지를 보여준다. `/reserve/:id`도 같은 훅(`useReserve`)을 쓴다.
-- `/reserve/:id`: 시연용 시술 주소(`/reserve/nail` 등)를 쓰는 예전 예약 화면. `utils/demoData.js`의 `treatmentId`로
-  초기 데이터의 실제 시술과 연결했고, 빈 시간 표시는 시연용 계산이라 비어 있지 않은 시간은 서버가 거절한다.
+  실패하면 화면에 머물며 서버 오류 메시지를 보여준다.
+- 시연 데이터를 쓰던 예전 예약 화면(`/reserve/:id`)은 들어오는 링크가 없어 UNNIE-207에서 삭제했다.
 - `/checkout?reservationId={번호}`: 내 예약 상세 API로 예약을 불러와 매장·시술·시각·금액·예약금·잔금을 표시한다.
   - 저장소의 상세는 다른 화면에서 보던 예약일 수 있으므로 주소의 예약 번호와 같을 때만 쓴다.
   - 남은 시간은 `holdExpiresAt` 기준이며 새로고침해도 유지된다. 만료되면 결제 버튼 대신 시간 다시 선택하기를 보여준다.

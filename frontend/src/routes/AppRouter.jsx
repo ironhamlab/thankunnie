@@ -16,7 +16,6 @@ const ShopSignupPage = lazy(() => import('@/pages/auth/ShopSignupPage'));
 const NotFoundPage = lazy(() => import('@/pages/not-found/NotFoundPage'));
 const ShopDetailPage = lazy(() => import('@/pages/shop/ShopDetailPage'));
 const MapPage = lazy(() => import('@/pages/map/MapPage'));
-const ReservationPage = lazy(() => import('@/pages/reservation/ReservationPage'));
 const CheckoutPage = lazy(() => import('@/pages/reservation/CheckoutPage'));
 const BookingResultPage = lazy(() => import('@/pages/reservation/BookingResultPage'));
 const MyReservationsPage = lazy(() => import('@/pages/my/MyReservationsPage'));
@@ -73,7 +72,6 @@ export default function AppRouter() {
               element={<ShopDetailPage key="model" model />}
             />
             <Route path={ROUTES.MAP} element={<MapPage />} />
-            <Route path={ROUTES.RESERVE} element={<ReservationPage />} />
             <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />
             <Route path={ROUTES.BOOKING_RESULT} element={<BookingResultPage />} />
             {/* 실제 API 로 로그인 사용자 데이터를 불러오는 화면은 로그인이 필요하다 */}

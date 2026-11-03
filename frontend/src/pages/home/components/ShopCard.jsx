@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { money } from '@/utils/demoData';
+import { formatMoney } from '@/utils/reservationFormat';
 import { areaName, earliestLabel, shopImage } from '@/utils/exploreVacancy';
 import styles from './ShopCard.module.css';
 
@@ -22,7 +22,7 @@ export default function ShopCard({ shop, to }) {
           ◷ {earliestLabel(shop)}부터 · 빈자리 {shop.vacancyCount}개
         </span>
         <span className={styles.price}>
-          <b>{money(shop.minSalePrice)}</b>부터
+          <b>{formatMoney(shop.minSalePrice)}</b>부터
         </span>
       </div>
     </Link>

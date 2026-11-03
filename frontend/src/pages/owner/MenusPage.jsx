@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTreatmentStore } from '@/store/useTreatmentStore';
-import { money } from '@/utils/demoData';
+import { formatMoney } from '@/utils/reservationFormat';
 import TreatmentForm from '@/pages/owner/components/TreatmentForm';
 import TreatmentThumbnail from './components/TreatmentThumbnail';
 import Badge from '@/components/common/Badge';
@@ -153,7 +153,7 @@ export default function MenusPage() {
                         <td>{item.description || '상세 설명 없음'}</td>
                         <td>{item.durationMinutes}분</td>
                         <td>
-                          <strong>{money(item.regularPrice)}</strong>
+                          <strong>{formatMoney(item.regularPrice)}</strong>
                         </td>
                         <td>{item.status === 'ACTIVE' ? '활성' : '비활성'}</td>
                         <td>
