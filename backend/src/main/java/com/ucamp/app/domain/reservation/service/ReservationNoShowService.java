@@ -49,23 +49,25 @@ public class ReservationNoShowService {
         loginUser.requireRole(UserRole.OWNER);
         LocalDateTime now = LocalDateTime.now(clock);
         ReservationView view = findOwned(loginUser, reservationId);
+        // 이미 같은 상태여도 확정이 아닌 예약(취소·점유 등)은 성공으로 돌려주지 않는다
+        validate(view, noShow, now);
         if (view.noShow() != noShow) {
-            validate(view, noShow, now);
             int updated = reservationRepository.changeNoShow(
                     reservationId, !noShow, noShow, ReservationStatus.CONFIRMED, now);
-            if (updated == 0) {
-                // 그사이 다른 요청이 먼저 바꿨다. 이미 원하는 상태면 성공으로 보고, 아니면 바뀐 상태 기준으로 다시 거절한다
-                view = findOwned(loginUser, reservationId);
-                if (view.noShow() != noShow) {
-                    validate(view, noShow, now);
-                    throw new BusinessException(ErrorCode.RESERVATION_NOT_CONFIRMED);
-                }
-            } else {
-                view = findOwned(loginUser, reservationId);
+            // 그사이 다른 요청이 먼저 바꿨을 수 있어 다시 읽는다
+            view = findOwned(loginUser, reservationId);
+            if (updated == 0 && view.noShow() != noShow) {
+                // 원하는 상태가 아니면 바뀐 상태 기준으로 다시 거절한다
+                validate(view, noShow, now);
+                throw new BusinessException(ErrorCode.RESERVATION_NOT_CONFIRMED);
             }
         }
-        // 노쇼를 바꿀 수 있는 예약은 이미 시작한 예약이라 취소 버튼은 보이지 않는다
-        return ReservationDetailResponse.from(view, false, now);
+        return ReservationDetailResponse.from(view, isCancellable(view, now), now);
+    }
+
+    // 예약 상세 조회와 같은 기준이다. 시작 전 확정 예약에 해제를 다시 보내면 취소 버튼이 그대로 보여야 한다
+    private static boolean isCancellable(ReservationView view, LocalDateTime now) {
+        return view.status() == ReservationStatus.CONFIRMED && now.isBefore(view.startsAt());
     }
 
     // 다른 매장 예약은 없는 것으로 본다

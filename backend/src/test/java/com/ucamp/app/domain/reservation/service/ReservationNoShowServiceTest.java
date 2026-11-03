@@ -105,6 +105,28 @@ class ReservationNoShowServiceTest {
     }
 
     @Test
+    @DisplayName("이미 노쇼가 아니어도 확정이 아닌 예약의 해제는 RESERVATION_NOT_CONFIRMED 이다")
+    void unmarkNoShow_cancelledSameState_throws() {
+        given(reservationQueryRepository.findOne(8L, 1L, null))
+                .willReturn(Optional.of(view(ReservationStatus.CANCELLED, NOW.plusDays(1), false)));
+
+        assertThatThrownBy(() -> service.unmarkNoShow(OWNER, 8L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.RESERVATION_NOT_CONFIRMED);
+        verify(reservationRepository, never()).changeNoShow(any(), anyBoolean(), anyBoolean(), any(), any());
+    }
+
+    @Test
+    @DisplayName("시작 전 확정 예약에 해제를 다시 보내면 바꾸지 않고 취소 가능으로 돌려준다")
+    void unmarkNoShow_upcomingSameState_keepsCancellable() {
+        given(reservationQueryRepository.findOne(7L, 1L, null))
+                .willReturn(Optional.of(view(ReservationStatus.CONFIRMED, NOW.plusHours(2), false)));
+
+        assertThat(service.unmarkNoShow(OWNER, 7L).summary().cancellable()).isTrue();
+        verify(reservationRepository, never()).changeNoShow(any(), anyBoolean(), anyBoolean(), any(), any());
+    }
+
+    @Test
     @DisplayName("다른 매장 예약은 404, 매장 계정이 아니면 403 이다")
     void scope_and_role() {
         given(reservationQueryRepository.findOne(9L, 1L, null)).willReturn(Optional.empty());
