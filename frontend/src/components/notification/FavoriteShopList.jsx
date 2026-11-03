@@ -65,9 +65,16 @@ export default function FavoriteShopList({ onBusyChange }) {
       // 서버의 최신 문자 수신 동의를 확인하고, 없으면 동의 모달에서 PUT 으로 저장한다
       const agreed = await ensureAgreement(TERMS_CODE.SMS_NOTIFICATION);
       if (agreed) {
+        const shopKey = String(Number(shop.shopId));
+        // 목록 조회가 실패하면 키가 없다. 카드를 열 때 한 번 더 받는다
+        if (!(shopKey in useNotificationStore.getState().shopTreatments)) {
+          await loadShopNames([shop.shopId]);
+        }
+        const treatments = useNotificationStore.getState().shopTreatments[shopKey];
         const savedId = shop.treatmentId != null ? String(shop.treatmentId) : '';
-        const choices = selectableTreatments(shopTreatments[String(Number(shop.shopId))]);
-        const stillThere = choices.some((item) => String(item.treatmentId) === savedId);
+        const stillThere = selectableTreatments(treatments).some(
+          (item) => String(item.treatmentId) === savedId,
+        );
         setTreatmentId(stillThere ? savedId : '');
         setOpenId(shop.subscriptionId);
       }
