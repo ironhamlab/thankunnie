@@ -17,6 +17,7 @@ import AccountFields from './components/AccountFields';
 import AuthCard from './components/AuthCard';
 import AuthField from './components/AuthField';
 import ShopAddressFields from './components/ShopAddressFields';
+import ShopApprovalDialog from './components/ShopApprovalDialog';
 import styles from './ShopSignupPage.module.css';
 import useSignupVerification from '@/hooks/useSignupVerification';
 import BusinessVerificationFields from './components/BusinessVerificationFields';
@@ -55,7 +56,8 @@ const toCoordinate = (value) => Number(Number(value).toFixed(7));
 
 /**
  * 매장 가입 (REQ-006). 매장 하나당 계정 하나이며, 계정과 매장 필수 정보를 함께 등록한다.
- * 가입하면 바로 매장으로 로그인되어 매장 센터로 이동한다. 대표 이미지는 가입 후 매장 정보에서 올린다.
+ * 가입하면 관리자 승인 대기 상태가 되어, 신청 완료 팝업을 보여준 뒤 매장 로그인 화면으로 보낸다.
+ * 대표 이미지는 승인 후 매장 정보에서 올린다.
  */
 export default function ShopSignupPage() {
   const navigate = useNavigate();
@@ -72,6 +74,12 @@ export default function ShopSignupPage() {
   // 매장은 사업자등록번호로 가입자를 확인하므로 아이디 중복 확인만 사용한다
   const verification = useSignupVerification(ACCOUNT_TYPE.SHOP, form.loginId, '');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+
+  // 승인 전에는 로그인할 수 없으므로 확인을 누르면 매장 로그인 화면으로 보낸다
+  const handleSubmittedClose = () => {
+    navigate(ROUTES.LOGIN, { replace: true, state: { from: { pathname: ROUTES.OWNER } } });
+  };
 
   useEffect(() => {
     loadShopCategories();
@@ -140,7 +148,7 @@ export default function ShopSignupPage() {
         description: toNullable(form.description),
         notice: toNullable(form.notice),
       });
-      navigate(ROUTES.OWNER, { replace: true });
+      setSubmitted(true);
     } catch {
       // 오류 문구는 store 의 error 로 화면에 표시한다
     }
@@ -257,6 +265,17 @@ export default function ShopSignupPage() {
           매장 로그인
         </Link>
       </p>
+
+      {submitted && (
+        <ShopApprovalDialog
+          title="매장 등록 신청 완료"
+          lines={[
+            '매장 등록 신청이 완료되었습니다.',
+            '가입 승인 대기 중입니다. 관리자 승인 후 매장 센터에 로그인할 수 있어요.',
+          ]}
+          onClose={handleSubmittedClose}
+        />
+      )}
     </AuthCard>
   );
 }
