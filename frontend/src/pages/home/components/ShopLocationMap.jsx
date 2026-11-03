@@ -103,6 +103,8 @@ export default function ShopLocationMap({
                 variant="primary"
                 to={shopPagePath(selected.shopId, {
                   view: 'info',
+                  // 상세정보에서 예약하기로 넘어가면 첫 영업일이 아니라 빈자리가 있는 날짜를 고른 채로 보여준다
+                  date: hasVacancy ? datePart(selected.earliestStartsAt) : undefined,
                   model: hasVacancy && (model || selected.modelOnly),
                 })}
               >
