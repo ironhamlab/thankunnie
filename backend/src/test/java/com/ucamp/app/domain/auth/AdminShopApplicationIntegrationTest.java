@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -95,6 +96,17 @@ class AdminShopApplicationIntegrationTest {
                 .andExpect(jsonPath("$.data.content[0].categoryName").value("네일"))
                 .andExpect(jsonPath("$.data.content[0].appliedAt").value("2026-11-01T10:00:00+09:00"))
                 .andExpect(jsonPath("$.data.content[1].shopId").value(LATER_PENDING_ID));
+    }
+
+    @Test
+    @DisplayName("사업자등록번호를 함께 내려주고, 번호가 없는 기존 매장은 null 이다")
+    void getApplications_returnsBusinessNumber() throws Exception {
+        jdbc.update("UPDATE SHOP SET BUSINESS_NUMBER = '1234567891' WHERE SHOP_ID = ?", PENDING_ID);
+
+        mvc.perform(get(URL).header(HttpHeaders.AUTHORIZATION, ADMIN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content[0].businessNumber").value("1234567891"))
+                .andExpect(jsonPath("$.data.content[1].businessNumber").value(nullValue()));
     }
 
     @Test

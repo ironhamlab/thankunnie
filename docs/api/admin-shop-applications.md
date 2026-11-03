@@ -21,6 +21,8 @@
 
 `keyword` 는 매장명·아이디·연락처에서 일부 일치로 찾는다. 대소문자를 구분하지 않고, 연락처는 하이픈 없이 입력해도 찾는다.
 
+`businessNumber` 는 숫자 10자리다. 번호 없이 가입한 기존 매장은 `null` 이다.
+
 ```json
 {
   "content": [
@@ -33,6 +35,7 @@
       "address": "서울특별시 강남구 선릉로 300",
       "addressDetail": null,
       "phone": "02-555-1862",
+      "businessNumber": "0000001862",
       "description": "런치 오마카세 코스를 판매합니다.",
       "status": "PENDING",
       "rejectReason": null,

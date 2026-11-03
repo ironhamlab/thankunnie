@@ -11,6 +11,10 @@ import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
 import styles from './ShopApplicationDialog.module.css';
 
+// 숫자 10자리로 저장된 번호를 사업자등록증 표기(123-45-67890)로 보여준다
+const formatBusinessNumber = (number) =>
+  number ? number.replace(/^(\d{3})(\d{2})(\d{5})$/, '$1-$2-$3') : '-';
+
 /**
  * 가입 신청 상세. 상태에 맞는 처리를 고르고, 실수를 줄이도록 한 번 더 확인한 뒤 저장한다.
  * 승인 대기는 승인·거절, 승인은 승인 취소, 거절은 거절 취소를 할 수 있다.
@@ -35,6 +39,7 @@ export default function ShopApplicationDialog({ application, onClose, onDone }) 
     ['업종', application.categoryName ?? '-'],
     ['주소', [application.address, application.addressDetail].filter(Boolean).join(' ')],
     ['연락처', application.phone],
+    ['사업자번호', formatBusinessNumber(application.businessNumber)],
     ['아이디', application.loginId],
     ['신청일', formatDateTime(application.appliedAt)],
     ['매장 소개', application.description || '-'],
