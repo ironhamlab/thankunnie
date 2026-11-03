@@ -172,7 +172,7 @@ class ReservationServiceTest {
     }
 
     @Test
-    @DisplayName("영업 외 시간이나 사장님이 닫은 시간이면 VACANCY_NOT_OPEN_TIME 예외가 발생한다")
+    @DisplayName("영업 외 시간이나 매장이 닫은 시간이면 VACANCY_NOT_OPEN_TIME 예외가 발생한다")
     void createReservation_notOpenTime_throwsNotOpenTime() {
         givenTreatment(TreatmentStatus.ACTIVE);
         willThrow(new BusinessException(ErrorCode.VACANCY_NOT_OPEN_TIME))

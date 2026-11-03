@@ -167,10 +167,10 @@ export default function Header() {
           </nav>
 
           <div className={styles.actions}>
-            {/* 사장님 센터는 사장님 계정으로 따로 로그인한다. 로그인한 고객에게는 보여주지 않는다 */}
+            {/* 매장 센터는 매장 계정으로 따로 로그인한다. 로그인한 고객에게는 보여주지 않는다 */}
             {!role && (
               <Link to={ROUTES.OWNER} className={styles.ownerLink}>
-                사장님 센터
+                매장 센터
               </Link>
             )}
 

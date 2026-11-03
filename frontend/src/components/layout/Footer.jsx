@@ -36,7 +36,7 @@ export default function Footer() {
                 {label}
               </button>
             ))}
-            <Link to={ROUTES.OWNER}>사장님 센터</Link>
+            <Link to={ROUTES.OWNER}>매장 센터</Link>
           </div>
         </div>
       </footer>

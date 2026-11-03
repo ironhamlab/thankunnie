@@ -7,7 +7,7 @@ import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationView;
 
 /**
- * 예약 목록 항목. 고객 내 예약·사장님 예약 현황·관리자 조회가 같은 모양을 쓴다.
+ * 예약 목록 항목. 고객 내 예약·매장 예약 현황·관리자 조회가 같은 모양을 쓴다.
  *
  * @param balance       현장 결제 잔금 (적용 판매가 - 예약금)
  * @param paymentStatus 최근 결제 상태 (READY, PAID, REFUND_PENDING, REFUNDED 등), 결제 전이면 null

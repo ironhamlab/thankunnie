@@ -39,7 +39,7 @@ public class ReservationCancel extends BaseTimeEntity {
     private Long reservationId;
 
     /**
-     * 예약한 고객의 회원 ID. 사장님 취소도 고객 ID 를 넣는다 (사장님은 APP_USER 가 아니라 FK 를 만족할 수 없음).
+     * 예약한 고객의 회원 ID. 매장 취소도 고객 ID 를 넣는다 (매장은 APP_USER 가 아니라 FK 를 만족할 수 없음).
      * 누가 취소했는지는 cancelType 으로 구분한다.
      */
     @Column(name = "USER_ID", nullable = false)

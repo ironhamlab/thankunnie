@@ -10,7 +10,7 @@ import OwnerSidebar from './OwnerSidebar';
 import styles from './OwnerLayout.module.css';
 
 /**
- * 사장님 센터 레이아웃: 사이드바 + 상단 매장 정보 + 본문
+ * 매장 센터 레이아웃: 사이드바 + 상단 매장 정보 + 본문
  */
 export default function OwnerLayout() {
   const shop = useShopStore((s) => s.shop);
@@ -19,7 +19,7 @@ export default function OwnerLayout() {
   const location = useLocation();
   const logout = useLogout();
 
-  // 상단·사이드바의 매장 이름은 로그인한 사장님 매장으로 보여 준다
+  // 상단·사이드바의 매장 이름은 로그인한 매장으로 보여 준다
   useEffect(() => {
     if (token) {
       loadShop();

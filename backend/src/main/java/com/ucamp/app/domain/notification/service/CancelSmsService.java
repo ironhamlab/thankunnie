@@ -36,7 +36,7 @@ public class CancelSmsService {
 
     /**
      * @param reservationId 취소된 예약 ID
-     * @param cancelType    고객 취소와 사장님 취소의 문구를 나눈다
+     * @param cancelType    고객 취소와 매장 취소의 문구를 나눈다
      */
     public void send(Long reservationId, CancelType cancelType) {
         Optional<CancelSmsInfo> found = recipientContactRepository.findCancelSmsInfo(reservationId);

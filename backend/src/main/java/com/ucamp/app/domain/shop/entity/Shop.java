@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 import com.ucamp.app.common.entity.BaseTimeEntity;
 import com.ucamp.app.domain.shop.dto.request.ShopUpdateRequest;
 
-/** 기존 사장님 계정의 매장 프로필. 인증 정보는 이 도메인에서 취급하지 않는다. */
+/** 기존 매장 계정의 매장 프로필. 인증 정보는 이 도메인에서 취급하지 않는다. */
 @Entity
 @Table(name = "SHOP")
 @Getter

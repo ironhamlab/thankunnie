@@ -8,7 +8,7 @@ import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 /**
  * 예약 조회 조건. null 인 조건은 적용하지 않는다.
  *
- * @param shopId       매장 (사장님 조회)
+ * @param shopId       매장 (매장 계정 조회)
  * @param userId       예약 고객 (고객 조회)
  * @param statuses     포함할 예약 상태. 비어 있으면 안 된다
  * @param startsFrom   시작 시각 하한 (포함)

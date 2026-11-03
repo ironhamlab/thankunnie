@@ -98,7 +98,7 @@ class CancelResultServiceTest {
     }
 
     @Test
-    @DisplayName("사장님이 취소하며 닫은 시간은 취소 완료돼도 재공개 이벤트를 발행하지 않는다")
+    @DisplayName("매장이 취소하며 닫은 시간은 취소 완료돼도 재공개 이벤트를 발행하지 않는다")
     void complete_closed_noReopenEvent() {
         saveClose();
 

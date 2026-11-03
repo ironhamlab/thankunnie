@@ -13,7 +13,7 @@ const toError = (error, fallback) => ({
 });
 
 /**
- * 사장님 메인 대시보드. 오늘 지표(GET /owner/dashboard)와 오늘 예약 목록(GET /owner/reservations)은
+ * 매장 메인 대시보드. 오늘 지표(GET /owner/dashboard)와 오늘 예약 목록(GET /owner/reservations)은
  * 서로 독립된 상태로 둔다. 한쪽이 실패해도 다른 쪽은 그대로 보여 주고, 실패한 영역만 다시 불러온다.
  * 예약 현황 화면의 목록 상태와 섞이지 않도록 예약 스토어와 따로 둔다.
  */
@@ -32,7 +32,7 @@ export const useOwnerDashboardStore = create((set, get) => ({
     get().loadTodayReservations();
   },
 
-  // 요청 시작 시 이전 값을 비운다. 로그아웃 후 다른 사장님이 로그인해도 이전 매장 숫자가 남지 않게 한다
+  // 요청 시작 시 이전 값을 비운다. 로그아웃 후 다른 매장이 로그인해도 이전 매장 숫자가 남지 않게 한다
   loadToday: async () => {
     const requestId = get().dashboardRequestId + 1;
     set({

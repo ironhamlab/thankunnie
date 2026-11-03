@@ -257,7 +257,7 @@ class ExploreVacancyServiceTest {
     // 타임세일(초임박): 지금(10:00)부터 13:00 까지 영업시간 안 빈 시각. 매장 1(금 10~20시)은 클릭 마감 20분 뒤 10:30,
     // 매장 2(금 11~21시)는 11:00 부터. 남성 커트(시술 3)는 초임박가가 판매가와 같아 빠진다
     @Test
-    @DisplayName("타임세일은 사장님이 열지 않아도 영업시간 안 빈 시각을 시작 3시간 이내만 낸다")
+    @DisplayName("타임세일은 매장이 열지 않아도 영업시간 안 빈 시각을 시작 3시간 이내만 낸다")
     void search_lastMinuteTier_usesBusinessHoursWithinThreeHours() {
         List<ExploreVacancyResponse> content = saleSearch(request()).content();
 
@@ -356,7 +356,7 @@ class ExploreVacancyServiceTest {
     // 임박 빈자리: 지금(10:00)부터 18:00 전까지 시작. 매장 1(금 10~20시)은 클릭 마감 20분 뒤 첫 시각 10:30,
     // 매장 2(금 11~21시)는 11:00 이 가장 빠르다. 같은 시각이면 할인율이 높은 시술을 고른다
     @Test
-    @DisplayName("임박 빈자리는 사장님이 열지 않아도 영업시간 안 빈 시각에서 매장마다 가장 빠른 1건을 빠른 시작순으로 낸다")
+    @DisplayName("임박 빈자리는 매장이 열지 않아도 영업시간 안 빈 시각에서 매장마다 가장 빠른 1건을 빠른 시작순으로 낸다")
     void searchImminent_withoutOpen_returnsEarliestPerShop() {
         List<ExploreVacancyResponse> result = exploreVacancyService.searchImminent();
 

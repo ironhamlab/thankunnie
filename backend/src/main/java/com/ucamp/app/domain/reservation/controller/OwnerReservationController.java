@@ -24,9 +24,9 @@ import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.service.ReservationQueryService;
 
 /**
- * 사장님 예약 현황 API (B-10). 매장은 로그인한 사장님의 매장으로 정해진다.
+ * 매장 예약 현황 API (B-10). 매장은 로그인한 매장 계정으로 정해진다.
  */
-@Tag(name = "사장님 예약 현황", description = "본인 매장 예약·예약자·결제·취소 상태 조회")
+@Tag(name = "매장 예약 현황", description = "본인 매장 예약·예약자·결제·취소 상태 조회")
 @RestController
 @RequestMapping("/api/v1/owner/reservations")
 public class OwnerReservationController {

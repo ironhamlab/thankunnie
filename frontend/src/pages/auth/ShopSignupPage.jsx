@@ -48,8 +48,8 @@ const toNullable = (value) => value.trim() || null;
 const toCoordinate = (value) => Number(Number(value).toFixed(7));
 
 /**
- * 사장님(매장) 가입 (REQ-006). 매장 하나당 계정 하나이며, 계정과 매장 필수 정보를 함께 등록한다.
- * 가입하면 바로 사장님으로 로그인되어 사장님 센터로 이동한다. 대표 이미지는 가입 후 매장 정보에서 올린다.
+ * 매장 가입 (REQ-006). 매장 하나당 계정 하나이며, 계정과 매장 필수 정보를 함께 등록한다.
+ * 가입하면 바로 매장으로 로그인되어 매장 센터로 이동한다. 대표 이미지는 가입 후 매장 정보에서 올린다.
  */
 export default function ShopSignupPage() {
   const navigate = useNavigate();
@@ -222,7 +222,7 @@ export default function ShopSignupPage() {
       <p className={styles.links}>
         이미 매장 계정이 있으신가요?{' '}
         <Link to={ROUTES.LOGIN} state={{ from: { pathname: ROUTES.OWNER } }}>
-          사장님 로그인
+          매장 로그인
         </Link>
       </p>
     </AuthCard>

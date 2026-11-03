@@ -27,7 +27,7 @@ import com.ucamp.app.domain.auth.dto.response.AuthTokenResponse;
 import com.ucamp.app.domain.auth.service.AuthService;
 
 /**
- * 인증 API. 고객·관리자는 회원(APP_USER), 사장님은 매장(SHOP) 계정으로 가입·로그인한다.
+ * 인증 API. 고객·관리자는 회원(APP_USER), 매장은 매장(SHOP) 계정으로 가입·로그인한다.
  * 로그아웃은 서버 상태가 없으므로 클라이언트가 토큰을 지우는 것으로 처리한다.
  * local·test 프로필에서는 X-Test-User 테스트 사용자도 계속 쓸 수 있다.
  */
@@ -56,7 +56,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(authService.loginCustomer(request)));
     }
 
-    @Operation(summary = "사장님(매장) 회원가입", description = "계정과 매장 정보를 함께 저장하고 로그인된 토큰을 반환한다")
+    @Operation(summary = "매장 회원가입", description = "계정과 매장 정보를 함께 저장하고 로그인된 토큰을 반환한다")
     @PostMapping("/shops/signup")
     public ResponseEntity<ApiResponse<AuthTokenResponse>> signupShop(
             @Valid @RequestBody AuthShopSignupRequest request) {
@@ -64,7 +64,7 @@ public class AuthController {
                 .body(ApiResponse.success(authService.signupShop(request)));
     }
 
-    @Operation(summary = "사장님(매장) 로그인", description = "아이디 또는 비밀번호가 틀리면 401")
+    @Operation(summary = "매장 로그인", description = "아이디 또는 비밀번호가 틀리면 401")
     @PostMapping("/shops/login")
     public ResponseEntity<ApiResponse<AuthTokenResponse>> loginShop(@Valid @RequestBody AuthLoginRequest request) {
         return ResponseEntity.ok(ApiResponse.success(authService.loginShop(request)));

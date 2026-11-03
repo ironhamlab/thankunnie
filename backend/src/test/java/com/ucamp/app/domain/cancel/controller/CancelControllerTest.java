@@ -121,7 +121,7 @@ class CancelControllerTest {
     }
 
     @Test
-    @DisplayName("사장님 취소는 유형과 닫기 여부가 없으면 거부한다")
+    @DisplayName("매장 취소는 유형과 닫기 여부가 없으면 거부한다")
     void cancelByOwner_missingFields_badRequest() throws Exception {
         for (String body : new String[] {"{\"closeAfterCancel\":false}", "{\"cancelType\":\"SHOP_FAULT\"}"}) {
             mockMvc.perform(post("/api/v1/reservations/100/owner-cancel").header("X-Test-User", "OWNER_1")
@@ -132,7 +132,7 @@ class CancelControllerTest {
     }
 
     @Test
-    @DisplayName("사장님 취소 결과에 닫기 여부와 고객 연락처를 담아 반환한다")
+    @DisplayName("매장 취소 결과에 닫기 여부와 고객 연락처를 담아 반환한다")
     void cancelByOwner_returnsResultWithContact() throws Exception {
         given(cancelService.cancelByOwner(any(), eq(100L), any())).willReturn(new OwnerCancelResponse(7L, 100L,
                 CancelType.SHOP_FAULT, CancelStatus.COMPLETED, ReservationStatus.CANCELLED, 20_000, true, "고객",

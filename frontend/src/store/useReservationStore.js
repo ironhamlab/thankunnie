@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { reservationApi } from '@/api/reservationApi';
 import { withTermsAgreement } from '@/store/useTermsStore';
 
-// 사장님 예약 현황(owner)과 고객 내 예약(my)이 같은 응답 모양을 쓰므로 조회 범위만 바꿔 호출한다.
+// 매장 예약 현황(owner)과 고객 내 예약(my)이 같은 응답 모양을 쓰므로 조회 범위만 바꿔 호출한다.
 const API_BY_SCOPE = {
   owner: { list: reservationApi.getOwnerReservations, detail: reservationApi.getOwnerReservation },
   my: { list: reservationApi.getMyReservations, detail: reservationApi.getMyReservation },

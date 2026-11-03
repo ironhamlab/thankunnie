@@ -14,8 +14,8 @@
 | GET | `/api/v1/my/reservations/{reservationId}` | 내 예약 상세 | 고객 | 200 |
 | GET | `/api/v1/my/reservations/current-hold` | 내 현재 점유 | 고객 | 200 |
 | POST | `/api/v1/my/reservations/{reservationId}/release` | 내 점유 풀기 | 고객 | 204 |
-| GET | `/api/v1/owner/reservations` | 본인 매장 예약 목록 | 사장님 | 200 |
-| GET | `/api/v1/owner/reservations/{reservationId}` | 본인 매장 예약 상세 | 사장님 | 200 |
+| GET | `/api/v1/owner/reservations` | 본인 매장 예약 목록 | 매장 | 200 |
+| GET | `/api/v1/owner/reservations/{reservationId}` | 본인 매장 예약 상세 | 매장 | 200 |
 
 ## 예약 생성(점유) `POST /api/v1/reservations`
 
@@ -74,7 +74,7 @@
 
 ## 예약 상세 `GET /api/v1/my/reservations/{id}`, `GET /api/v1/owner/reservations/{id}`
 
-- 고객은 본인 예약만, 사장님은 본인 매장 예약만 조회한다. 다른 사람의 예약은 존재 여부를 드러내지 않도록 404다.
+- 고객은 본인 예약만, 매장은 본인 매장 예약만 조회한다. 다른 사람의 예약은 존재 여부를 드러내지 않도록 404다.
 - HOLD 예약도 조회된다. 결제 화면(`/checkout`)이 이 API로 점유 중인 예약을 불러온다.
 
 응답 `data`:
@@ -290,7 +290,7 @@ export default function App() {
 | VACANCY_003 | 400 | 오늘부터 60일 이내가 아님 |
 | VACANCY_004 | 400 | 시작 시각이 30분 단위가 아님 |
 | COMMON_401 | 401 | 비로그인 |
-| COMMON_403 | 403 | 역할이 맞지 않음 (생성·내 예약은 고객, 매장 예약은 사장님) |
+| COMMON_403 | 403 | 역할이 맞지 않음 (생성·내 예약은 고객, 매장 예약은 매장) |
 | COMMON_404 | 404 | 없는 예약 또는 다른 고객·다른 매장의 예약 (상세) |
 | TREATMENT_001 | 404 | 없는 시술 또는 판매 중이 아닌 시술 |
 | VACANCY_001 | 409 | 예약 접수 마감 (시작 20분 전 이후) |

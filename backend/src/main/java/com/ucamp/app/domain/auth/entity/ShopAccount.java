@@ -25,7 +25,7 @@ import com.ucamp.app.common.auth.UserRole;
 import com.ucamp.app.common.entity.BaseTimeEntity;
 
 /**
- * 사장님 로그인 계정. SHOP 테이블에 매장 정보와 함께 있으며, 매장 프로필은 shop 도메인의 Shop 이 관리한다.
+ * 매장 로그인 계정. SHOP 테이블에 매장 정보와 함께 있으며, 매장 프로필은 shop 도메인의 Shop 이 관리한다.
  *
  * <p>가입 시 SHOP 의 필수 컬럼을 한 번에 넣어야 해서 프로필 컬럼도 매핑한다. 가입 후 프로필 수정은 Shop 으로만 한다.
  * STATUS 는 가입 시 ACTIVE 로 넣기만 하고 로그인 판단에는 쓰지 않는다 (매장 노출·판매 여부).
@@ -105,7 +105,7 @@ public class ShopAccount extends BaseTimeEntity {
         this.status = ShopAccountStatus.ACTIVE;
     }
 
-    /** 인증 공통 사용자로 바꾼다. 사장님은 APP_USER 행이 없으므로 사용자 ID 자리에 매장 ID 를 쓴다. */
+    /** 인증 공통 사용자로 바꾼다. 매장은 APP_USER 행이 없으므로 사용자 ID 자리에 매장 ID 를 쓴다. */
     public AuthUser toAuthUser() {
         return new AuthUser(shopId, UserRole.OWNER, shopId);
     }

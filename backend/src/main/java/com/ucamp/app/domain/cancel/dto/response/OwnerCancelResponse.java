@@ -8,7 +8,7 @@ import com.ucamp.app.domain.cancel.service.AcceptedCancel;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 
 /**
- * 사장님 취소 결과. 매장 사유 취소는 문자 안내가 없으므로 고객 연락처를 함께 내려 사장님이 직접 연락하게 한다 (CNL-20, E-F2).
+ * 매장 취소 결과. 매장 사유 취소는 문자 안내가 없으므로 고객 연락처를 함께 내려 매장이 직접 연락하게 한다 (CNL-20, E-F2).
  *
  * @param closed 취소한 시간을 닫았는지. false 면 다시 예약 가능 시간으로 열린다
  */
