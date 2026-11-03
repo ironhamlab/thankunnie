@@ -137,17 +137,19 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     /**
      * 회원 탈퇴를 막는 진행 중 예약이 있는지 확인한다.
-     * 방문이 끝나지 않은 예약 완료(CONFIRMED)와 환불이 끝나지 않은 취소 처리 중(CANCEL_PENDING)을 본다.
-     * 결제 대기(HOLD)는 탈퇴하면서 풀므로 여기서 보지 않는다.
+     * 만료 전 결제 대기(HOLD), 방문이 끝나지 않은 예약 완료(CONFIRMED), 환불이 끝나지 않은 취소 처리 중(CANCEL_PENDING)을 본다.
+     * 결제 확정은 HOLD 에서만 일어나므로, HOLD 도 막아야 확정과 탈퇴가 겹쳐도 확정 예약이 남지 않는다.
      *
      * @param userId 회원 ID
-     * @param now    기준 시각. 종료 시각이 이보다 뒤인 예약 완료는 아직 방문 전이거나 시술 중이다
+     * @param now    기준 시각. 점유 만료 시각·종료 시각이 이보다 뒤면 진행 중이다
      * @return 하나라도 있으면 true
      */
     @Query("""
             SELECT COUNT(r) > 0 FROM Reservation r
             WHERE r.userId = :userId
               AND (r.status = com.ucamp.app.domain.reservation.entity.ReservationStatus.CANCEL_PENDING
+                   OR r.status = com.ucamp.app.domain.reservation.entity.ReservationStatus.HOLD
+                      AND r.holdExpiresAt > :now
                    OR r.status = com.ucamp.app.domain.reservation.entity.ReservationStatus.CONFIRMED
                       AND r.endsAt > :now)
             """)

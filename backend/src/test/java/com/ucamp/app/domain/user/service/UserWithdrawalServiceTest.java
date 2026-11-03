@@ -64,9 +64,10 @@ class UserWithdrawalServiceTest {
     }
 
     @Test
-    @DisplayName("탈퇴하면 상태를 바꾸고 이름을 가리며, 구독 해제·알림 삭제·대기 문자 취소·결제 대기를 푼다")
+    @DisplayName("탈퇴하면 상태를 바꾸고 이름을 가리며, 구독 해제·알림 삭제·대기 문자를 취소한다")
     void withdraw_cleansUp() {
-        long holdId = insertReservation(9901L, "HOLD", now.plusDays(1));
+        // 지난 예약과 만료된 결제 대기는 탈퇴를 막지 않는다
+        insertReservation(9901L, "HOLD", now.plusDays(1), now.minusMinutes(1));
         insertReservation(9902L, "CONFIRMED", now.minusDays(1));
         jdbc.update("""
                 INSERT INTO NOTIFICATION_SUBSCRIPTION (SUBSCRIPTION_ID, USER_ID, SHOP_ID, SUBSCRIPTION_TYPE, STATUS,
@@ -93,7 +94,6 @@ class UserWithdrawalServiceTest {
                 .containsEntry("STATUS", "INACTIVE")
                 .containsEntry("NAME", "탈퇴회원")
                 .containsEntry("PHONE", "010-9900-9900");
-        assertThat(statusOf("RESERVATION", "RESERVATION_ID", holdId)).isEqualTo("EXPIRED");
         assertThat(statusOf("NOTIFICATION_SUBSCRIPTION", "SUBSCRIPTION_ID", 9901L)).isEqualTo("INACTIVE");
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM NOTIFICATION_INBOX WHERE USER_ID = ?", Integer.class,
                 USER_ID)).isZero();
@@ -104,6 +104,14 @@ class UserWithdrawalServiceTest {
     @DisplayName("방문 전 예약이 있으면 탈퇴할 수 없다")
     void withdraw_upcomingReservation_conflict() {
         insertReservation(9901L, "CONFIRMED", now.plusDays(1));
+
+        assertWithdrawFails(PASSWORD, ErrorCode.USER_WITHDRAW_HAS_RESERVATION);
+    }
+
+    @Test
+    @DisplayName("만료 전 결제 대기가 있으면 탈퇴할 수 없다")
+    void withdraw_activeHold_conflict() {
+        insertReservation(9901L, "HOLD", now.plusDays(1));
 
         assertWithdrawFails(PASSWORD, ErrorCode.USER_WITHDRAW_HAS_RESERVATION);
     }
@@ -140,14 +148,18 @@ class UserWithdrawalServiceTest {
         assertThat(statusOf("APP_USER", "USER_ID", USER_ID)).isEqualTo("ACTIVE");
     }
 
-    private long insertReservation(long reservationId, String status, LocalDateTime startsAt) {
+    private void insertReservation(long reservationId, String status, LocalDateTime startsAt) {
+        insertReservation(reservationId, status, startsAt, now.plusMinutes(5));
+    }
+
+    private void insertReservation(long reservationId, String status, LocalDateTime startsAt,
+            LocalDateTime holdExpiresAt) {
         jdbc.update("""
                 INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT,
                                          APPLIED_PRICE, DEPOSIT, HOLD_EXPIRES_AT, CREATED_AT, UPDATED_AT)
                 VALUES (?, ?, ?, ?, ?, ?, 30000, 20000, ?, ?, ?)
                 """, reservationId, USER_ID, treatmentId, status, ts(startsAt.withNano(0)),
-                ts(startsAt.withNano(0).plusHours(1)), ts(now.plusMinutes(5)), ts(now), ts(now));
-        return reservationId;
+                ts(startsAt.withNano(0).plusHours(1)), ts(holdExpiresAt), ts(now), ts(now));
     }
 
     private String statusOf(String table, String idColumn, long id) {

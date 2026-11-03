@@ -36,7 +36,7 @@ public enum ErrorCode {
 
     // USER
     USER_WITHDRAW_PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "USER_001", "비밀번호가 올바르지 않습니다."),
-    USER_WITHDRAW_HAS_RESERVATION(HttpStatus.CONFLICT, "USER_002", "진행 중인 예약이 있어 탈퇴할 수 없습니다. 예약을 취소하거나 방문을 마친 뒤 다시 시도해 주세요."),
+    USER_WITHDRAW_HAS_RESERVATION(HttpStatus.CONFLICT, "USER_002", "진행 중인 예약이 있어 탈퇴할 수 없습니다. 결제 대기 중이면 잠시 후, 예약이 있으면 취소하거나 방문을 마친 뒤 다시 시도해 주세요."),
 
     // ADMIN
     ADMIN_SHOP_APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ADMIN_001", "매장 가입 신청을 찾을 수 없습니다."),

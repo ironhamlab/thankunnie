@@ -56,6 +56,7 @@ import com.ucamp.app.domain.user.controller.TermsController;
 import com.ucamp.app.domain.user.entity.AppUser;
 import com.ucamp.app.domain.user.entity.TermsCode;
 import com.ucamp.app.domain.user.repository.AppUserRepository;
+import com.ucamp.app.domain.user.service.CustomerLoginStatusChecker;
 import com.ucamp.app.domain.user.service.TermsAgreementService;
 
 @SpringBootTest(classes = AuthIntegrationTest.AuthTestConfiguration.class)
@@ -71,7 +72,8 @@ class AuthIntegrationTest {
     @EntityScan(basePackageClasses = {AppUser.class, ShopAccount.class, Shop.class})
     @EnableJpaRepositories(basePackageClasses = {AppUserRepository.class, ShopAccountRepository.class,
             ShopRepository.class})
-    @Import({AuthController.class, AuthService.class, ShopLoginStatusChecker.class, ShopController.class, ShopService.class,
+    @Import({AuthController.class, AuthService.class, ShopLoginStatusChecker.class, CustomerLoginStatusChecker.class,
+            ShopController.class, ShopService.class,
             TermsController.class, TermsAgreementService.class, UserLock.class, GlobalExceptionHandler.class, SecurityConfig.class, TimeConfig.class, WebConfig.class})
     static class AuthTestConfiguration {
     }
@@ -192,6 +194,20 @@ class AuthIntegrationTest {
         login("/api/v1/auth/login", "unnie04", PASSWORD)
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("AUTH_003"));
+    }
+
+    @Test
+    @DisplayName("탈퇴 전에 받은 고객 토큰은 탈퇴 뒤 다음 요청부터 401")
+    void customerToken_afterWithdraw_returnsUnauthorized() throws Exception {
+        JsonNode data = data(signupCustomer("unnie10").andExpect(status().isCreated()));
+        mvc.perform(get("/api/v1/auth/me").header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isOk());
+
+        jdbc.update("UPDATE APP_USER SET STATUS = 'INACTIVE' WHERE LOGIN_ID = 'unnie10'");
+        entityManager.clear();
+
+        mvc.perform(get("/api/v1/auth/me").header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
