@@ -79,6 +79,21 @@ class ShopCustomerRepositoryTest {
     }
 
     @Test
+    @DisplayName("노쇼는 이용 횟수·금액·최근 이용에서 빠지고 노쇼 횟수로 센다")
+    void findCustomers_noShow_excludedFromVisits() {
+        entityManager.createNativeQuery("UPDATE RESERVATION SET NO_SHOW = 'Y' WHERE RESERVATION_ID = 1").executeUpdate();
+
+        ShopCustomerRepository.CustomerRow first = find("%", "ALL", "RECENT").stream()
+                .filter(row -> row.getUserId() == 1L).findFirst().orElseThrow();
+
+        assertThat(first.getVisitCount()).isZero();
+        assertThat(first.getTotalAmount()).isZero();
+        assertThat(first.getLastVisitAt()).isNull();
+        assertThat(first.getNoShowCount()).isEqualTo(1L);
+        assertThat(shopCustomerRepository.findHistory(1L, 1L).get(1).getNoShow()).isEqualTo(1L);
+    }
+
+    @Test
     @DisplayName("이름·연락처 일부로 찾고, 메모가 있으면 표시하며, 페이지를 나눈다")
     void findCustomers_keywordMemoAndPaging() {
         shopCustomerMemoRepository.saveAndFlush(ShopCustomerMemo.create(1L, 1L, "누드톤 선호"));

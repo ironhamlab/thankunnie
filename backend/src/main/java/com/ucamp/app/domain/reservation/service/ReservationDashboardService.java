@@ -220,10 +220,13 @@ public class ReservationDashboardService {
         long nonRefundedDeposit = 0;
         int lastMinute = 0;
         long lastMinuteAmount = 0;
+        int noShow = 0;
         Set<Long> customers = new HashSet<>();
         for (ReservationDashboardRow row : period) {
             if (row.confirmed()) {
-                if (row.completed(now)) {
+                if (row.noShowed()) {
+                    noShow++;
+                } else if (row.completed(now)) {
                     completed++;
                     completedAmount += row.appliedPrice();
                     customers.add(row.userId());
@@ -259,7 +262,7 @@ public class ReservationDashboardService {
                 .count();
 
         Rebook rebook = rebook(rows, period);
-        int confirmed = completed + upcoming;
+        int confirmed = completed + upcoming + noShow;
         return new ReservationPeriodSummary(
                 start,
                 end,
@@ -281,7 +284,9 @@ public class ReservationDashboardService {
                 customers.size(),
                 customers.size() - returning,
                 returning,
-                percent(returning, customers.size()));
+                percent(returning, customers.size()),
+                noShow,
+                percent(noShow, completed + noShow));
     }
 
     /**
@@ -391,7 +396,7 @@ public class ReservationDashboardService {
             amounts.put(day, new long[1]);
         }
         for (ReservationDashboardRow row : period) {
-            if (row.confirmed()) {
+            if (row.occupied()) {
                 DayOfWeek day = row.startsAt().getDayOfWeek();
                 counts.get(day)[0]++;
                 amounts.get(day)[0] += row.appliedPrice();
@@ -408,7 +413,7 @@ public class ReservationDashboardService {
     private static List<ReservationStatsResponse.HeatmapCell> heatmap(List<ReservationDashboardRow> period) {
         Map<DayOfWeek, TreeMap<Integer, Long>> minutes = new EnumMap<>(DayOfWeek.class);
         for (ReservationDashboardRow row : period) {
-            if (!row.confirmed()) {
+            if (!row.occupied()) {
                 continue;
             }
             LocalDateTime cursor = row.startsAt();
@@ -431,7 +436,7 @@ public class ReservationDashboardService {
         Map<Long, TreatmentAccumulator> byId = new LinkedHashMap<>();
         long total = 0;
         for (ReservationDashboardRow row : period) {
-            if (!row.confirmed()) {
+            if (!row.occupied()) {
                 continue;
             }
             TreatmentAccumulator acc = byId.computeIfAbsent(row.treatmentId(),
