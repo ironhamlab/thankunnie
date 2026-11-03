@@ -2,19 +2,28 @@
   font-size: 24px;
   margin: 0 0 6px;
 }
+/* 넓은 화면: 목록은 촘촘하게 두고 예약 이력·메모를 보는 상세에 더 많은 폭을 준다.
+   상세는 목록을 내려도 따라오게 붙여 둔다. 1180px 이하는 상세를 창으로 연다 (CustomersPage.jsx) */
 .layout {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
   gap: 16px;
-  align-items: flex-start;
+  align-items: start;
 }
 .list {
-  flex: 999 1 520px;
   min-width: 0;
 }
 .detail {
-  flex: 1 1 340px;
   min-width: 0;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+@media (max-width: 1180px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .toolbar {
   display: flex;
@@ -53,16 +62,19 @@
 }
 .row {
   width: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px 16px;
-  padding: 12px;
+  display: grid;
+  /* 고객(이름·배지) | 연락처 | 이용 | 최근 이용. 누적 금액은 상세에서 본다 */
+  grid-template-columns: minmax(0, 1fr) 112px 48px 88px;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 12px 14px;
   border: 0;
   border-bottom: 1px solid var(--color-border);
   background: transparent;
   text-align: left;
   font: inherit;
+  font-size: 14px;
   color: inherit;
   cursor: pointer;
   border-radius: var(--radius-sm);
@@ -73,27 +85,73 @@
 .selected {
   background: var(--color-primary-tint);
 }
+.head.head {
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 8px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  cursor: default;
+}
+.head:hover {
+  background: transparent;
+}
 .who {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px 6px;
   min-width: 0;
 }
-.who small {
-  width: 100%;
-  color: var(--color-text-muted);
-}
-.numbers {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 14px;
-  font-size: 13px;
+.phone,
+.num {
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.numbers small {
-  color: var(--color-text-muted);
+.phone {
+  color: var(--color-text-secondary);
+}
+.num {
+  text-align: right;
+}
+.recent {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+.head .recent {
+  font-size: inherit;
+  color: inherit;
+}
+/* 목록 폭이 좁아 이름 옆 배지가 다음 줄로 밀릴 만하면 최근 이용 칸을 뺀다 (상세에서 볼 수 있다) */
+.table {
+  container-type: inline-size;
+}
+@container (max-width: 540px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr) 112px 48px;
+  }
+  .recent {
+    display: none;
+  }
+}
+/* 목록 칸이 아주 좁을 때만(폰 세로 등) 이름 줄 아래에 연락처·이용을 이어 둔다. 머리글은 숨긴다.
+   그보다 넓으면 한 줄을 유지하고, 배지가 많으면 이름 칸 안에서만 줄을 바꾼다 */
+@container (max-width: 360px) {
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+  }
+  .who {
+    width: 100%;
+  }
+  .head.head {
+    display: none;
+  }
+  .visits::before {
+    content: '이용 ';
+    color: var(--color-text-muted);
+  }
 }
 .hint {
   font-size: 12px;
@@ -110,8 +168,13 @@
 }
 .miniStats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
+}
+@media (max-width: 480px) {
+  .miniStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .miniStats > div {
   display: flex;
@@ -187,4 +250,42 @@
   color: var(--color-danger-text);
   background: var(--color-danger-bg);
   border: 1px solid color-mix(in srgb, var(--color-danger) 30%, var(--color-white));
+}
+/* 페이지 이동은 다른 목록 화면(예약 현황·내 예약·입점 신청)처럼 오른쪽에 둔다.
+   목록 아래 여백이 커지지 않게 공용 여백(b-pad)은 뺀다 */
+.pager {
+  margin-left: auto;
+}
+.pager > :global(.b-flex) {
+  justify-content: flex-end;
+  padding: 0;
+}
+.listFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+/* 태블릿·폰의 고객 상세 창. 창이 이미 테두리·여백을 가지므로 안의 패널 테두리는 뺀다 */
+html:has(.detailDialog[open]) {
+  overflow: hidden;
+}
+.detailDialog {
+  overscroll-behavior: contain;
+}
+.detailDialog.detailDialog aside {
+  position: static;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+@media (max-width: 640px) {
+  .miniStats strong {
+    font-size: 13px;
+  }
+  .miniStats > div {
+    padding: 8px 10px;
+  }
 }

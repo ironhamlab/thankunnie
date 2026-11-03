@@ -26,10 +26,28 @@ export const useOwnerDashboardStore = create((set, get) => ({
   reservationsStatus: 'idle',
   reservationsError: null,
   reservationsRequestId: 0,
+  // 이번 달 1일~오늘 분석 요약. 이번 달 금액 카드의 시술 건수·객단가에만 쓰고, 실패하면 그 줄만 숨긴다
+  monthSummary: null,
+  monthSummaryRequestId: 0,
 
   loadDashboard: () => {
     get().loadToday();
     get().loadTodayReservations();
+    get().loadMonthSummary();
+  },
+
+  loadMonthSummary: async () => {
+    const requestId = get().monthSummaryRequestId + 1;
+    set({ monthSummaryRequestId: requestId, monthSummary: null });
+    const today = todayKst();
+    try {
+      const stats = await ownerDashboardApi.getStats({ from: `${today.slice(0, 8)}01`, to: today });
+      if (get().monthSummaryRequestId === requestId) {
+        set({ monthSummary: stats?.summary ?? null });
+      }
+    } catch {
+      // 보조 정보라 실패를 따로 알리지 않는다
+    }
   },
 
   // 요청 시작 시 이전 값을 비운다. 로그아웃 후 다른 매장이 로그인해도 이전 매장 숫자가 남지 않게 한다

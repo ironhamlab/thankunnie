@@ -11,6 +11,7 @@ import styles from './StatCard.module.css';
  * @param {{ text: string, tone: 'good'|'bad'|'flat' } | null} [change] 비교 기간 대비 변화 (예: ▲ 10.8%)
  * @param {string} [changeLabel] 변화 옆 설명 (예: 직전 기간 대비)
  * @param {string[]} [notes] 아래 보조 설명 줄
+ * @param {import('react').ReactNode} [children] 보조 설명 아래에 둘 내용 (예: 시간대 칩)
  * @param {import('react').ReactNode} [action] 맨 아래 링크·버튼 (예: 설정 화면으로 이동)
  */
 export default function StatCard({
@@ -21,10 +22,11 @@ export default function StatCard({
   change,
   changeLabel,
   notes = [],
+  children,
   action,
 }) {
   return (
-    <Panel as="article" padded>
+    <Panel as="article" padded className={styles.card}>
       <small>{label}</small>
       {values ? (
         <div className={styles.values}>
@@ -49,6 +51,7 @@ export default function StatCard({
           {note}
         </small>
       ))}
+      {children}
       {action && <div className={styles.action}>{action}</div>}
     </Panel>
   );
