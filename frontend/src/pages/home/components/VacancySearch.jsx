@@ -42,6 +42,8 @@ const KEYWORD_DELAY_MS = 300;
 const NEXT_SEARCH_DAYS = 14;
 // 매장을 골라 지도까지 올릴 때 헤더와 지도 사이에 띄울 간격(px)
 const MAP_SCROLL_GAP = 12;
+// 이 폭(px)부터 지도가 목록 옆에 붙는다. VacancySearch.module.css 의 900px 구간과 맞춘다
+const SIDE_MAP_MIN_WIDTH = 901;
 const MODEL = 'MODEL';
 
 function Filter({ label, options, value, onChange, segmented = false }) {
@@ -171,7 +173,8 @@ export default function VacancySearch() {
   const pagingKey = pagingKeyOf(sort);
 
   useEffect(() => {
-    if (allDates) loadAllShops({ categoryId: categoryId ?? undefined, keyword: keyword || undefined });
+    if (allDates)
+      loadAllShops({ categoryId: categoryId ?? undefined, keyword: keyword || undefined });
   }, [allDates, categoryId, keyword, loadAllShops]);
 
   useEffect(() => {
@@ -214,15 +217,12 @@ export default function VacancySearch() {
     const distanceOf = (shop) =>
       distanceKm(myPosition, { lat: shop.latitude, lng: shop.longitude });
     const compare =
-      appliedSort === NEAREST
-        ? (a, b) => distanceOf(a) - distanceOf(b)
-        : SHOP_SORTS[appliedSort];
+      appliedSort === NEAREST ? (a, b) => distanceOf(a) - distanceOf(b) : SHOP_SORTS[appliedSort];
     const withVacancy = [...shops].sort((a, b) => compare(a, b) || a.shopId - b.shopId);
     if (!allDates || time !== ALL) return withVacancy;
     const vacancyIds = new Set(shops.map((shop) => shop.shopId));
     const noVacancyShops = allShops.filter(
-      (shop) =>
-        !vacancyIds.has(shop.shopId) && (!regionCode || shop.regionCode === regionCode),
+      (shop) => !vacancyIds.has(shop.shopId) && (!regionCode || shop.regionCode === regionCode),
     );
     if (appliedSort === NEAREST) {
       noVacancyShops.sort((a, b) => distanceOf(a) - distanceOf(b) || a.shopId - b.shopId);
@@ -410,7 +410,8 @@ export default function VacancySearch() {
       </section>
       <div id="vacancy-results" className={`b-row ${styles.resultsHeading}`}>
         <h2>
-          {allDates && allShopsStatus !== 'failed' ? allDatesTitle : listTitle} <Badge>{sortedShops.length}곳</Badge>
+          {allDates && allShopsStatus !== 'failed' ? allDatesTitle : listTitle}{' '}
+          <Badge>{sortedShops.length}곳</Badge>
         </h2>
       </div>
       <div className={styles.layout}>
@@ -521,6 +522,16 @@ export default function VacancySearch() {
               // 지도에서 고른 매장이 다른 페이지에 있으면 그 페이지로 넘긴다
               setPaging({ key: pagingKey, page: pageOf(id) });
               updateOption('pin', String(id));
+              // 지도가 목록 옆에 있는 넓은 화면에서만 그 카드가 보이게 목록을 옮긴다.
+              // 좁은 화면은 지도와 목록이 위아래라 옮기면 보던 지도가 화면 밖으로 나간다
+              if (window.matchMedia?.(`(min-width: ${SIDE_MAP_MIN_WIDTH}px)`).matches) {
+                // 페이지가 바뀌면 카드가 다시 그려진 뒤에 찾아야 하므로 한 번 미룬다
+                window.setTimeout(() =>
+                  document
+                    .getElementById(`shop-row-${id}`)
+                    ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }),
+                );
+              }
             }}
             onShowShop={(id) => {
               // 지도에서 고른 매장이 다른 페이지에 있으면 그 페이지로 넘긴다
