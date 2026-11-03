@@ -93,18 +93,27 @@ export default function ImminentCarousel({
     }
   }
 
+  // 위에 고정된 헤더에 가린 부분은 빼고 세려고 헤더 높이를 잰다. 화면 폭이 바뀌면 헤더 높이도 바뀌어 다시 잰다
+  const [headerHeight, setHeaderHeight] = useState(0);
+  useEffect(() => {
+    const header = document.querySelector('header');
+    if (!header || !window.ResizeObserver) return undefined;
+    const observer = new ResizeObserver(() => setHeaderHeight(header.offsetHeight));
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     const root = rootRef.current;
     if (!root || !window.IntersectionObserver) return undefined;
-    // isIntersecting 은 조금만 걸쳐도 true 라서 보이는 비율로 본다. 위에 고정된 헤더에 가린 부분은 빼고 센다
-    const headerHeight = document.querySelector('header')?.offsetHeight ?? 0;
+    // isIntersecting 은 조금만 걸쳐도 true 라서 보이는 비율로 본다
     const observer = new IntersectionObserver(
       ([entry]) => setInView(entry.intersectionRatio >= VISIBLE_RATIO),
       { threshold: VISIBLE_RATIO, rootMargin: `-${headerHeight}px 0px 0px 0px` },
     );
     observer.observe(root);
     return () => observer.disconnect();
-  }, []);
+  }, [headerHeight]);
 
   // 장이 바뀔 때마다 다시 센다. 손으로 넘긴 직후에 바로 다음 장으로 넘어가지 않게 한다
   useEffect(() => {

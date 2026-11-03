@@ -57,16 +57,19 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
     () => (saleOnly ? vacancies.filter((card) => card.priceTier === 'LAST_MINUTE') : vacancies),
     [vacancies, saleOnly],
   );
+  // 마감이 지나 목록을 다시 받으면 예전 카드가 빠질 수 있어, 지금 목록에 있는 카드만 쓴다
+  const imminentNow = imminent
+    ? vacancies.find((card) => card.shopId === imminent.shopId)
+    : undefined;
   // 타임세일만 볼 때도 캐러셀이 보여주는 매장은 핀을 남긴다.
   // 핀 목록이 바뀌면 지도가 범위를 다시 맞추므로, 목록에 없는 매장일 때만 핀 목록을 바꾼다
   const extra =
-    imminent && !cards.some((card) => card.shopId === imminent.shopId) ? imminent : null;
+    imminentNow && !cards.some((card) => card.shopId === imminentNow.shopId) ? imminentNow : null;
   const mapShops = useMemo(
     () => [...cards, ...(extra ? [extra] : [])].map(toPinShop),
     [cards, extra],
   );
-  const selected =
-    vacancies.find((card) => String(card.shopId) === selectedId) ?? imminent ?? cards[0];
+  const selected = vacancies.find((card) => String(card.shopId) === selectedId) ?? cards[0];
 
   const handleUnavailable = useCallback(() => setMapUnavailable(true), []);
   return (
