@@ -58,11 +58,24 @@ function Filter({ label, options, value, onChange, segmented = false }) {
             className={value === option ? 'is-selected' : ''}
             onClick={() => onChange(option)}
           >
-            {option}
+            <OptionLabel option={option} />
           </button>
         ))}
       </div>
     </div>
+  );
+}
+
+// '오전 (12시 이전)' 처럼 괄호 설명이 붙은 선택지는 이름과 설명을 나눠 휴대폰에서도 한 줄에 들어가게 한다
+function OptionLabel({ option }) {
+  const [, name, hint] = option.match(/^(.+?) \((.+)\)$/) ?? [null, option, null];
+  return hint ? (
+    <>
+      <span>{name}</span>
+      <small className={styles.optionHint}>{hint}</small>
+    </>
+  ) : (
+    option
   );
 }
 
@@ -326,10 +339,11 @@ export default function VacancySearch() {
   };
   return (
     <div className={`b-container ${styles.home}`}>
-      <section className="b-hero">
-        <div>
-          <div className="b-eyebrow">
-            <FireIcon size={16} />
+      <section className={`b-hero ${styles.hero}`}>
+        <div className={styles.heroText}>
+          <div className={`b-eyebrow ${styles.eyebrow}`}>
+            <span className={styles.liveDot} aria-hidden="true" />
+            <FireIcon size={13} />
             {modelOnly ? 'MODEL RECRUITING' : 'REAL-TIME BEAUTY FLASH SALE'}
           </div>
           {modelOnly ? (
