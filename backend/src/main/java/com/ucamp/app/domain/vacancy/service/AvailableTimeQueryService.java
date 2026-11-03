@@ -55,7 +55,8 @@ public class AvailableTimeQueryService {
         }
         DayAvailability availability = availabilityService.getDayAvailability(shopId, date, durationMinutes);
         return new AvailableTimesResponse(shopId, date, durationMinutes,
-                toOffsets(availability.startTimes()), toOffsets(availability.extendedStartTimes()));
+                toOffsets(availability.startTimes()), toOffsets(availability.extendedStartTimes()),
+                toOffsets(availability.heldStartTimes()));
     }
 
     private static List<OffsetDateTime> toOffsets(List<LocalDateTime> times) {

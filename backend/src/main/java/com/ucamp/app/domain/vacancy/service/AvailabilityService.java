@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.policy.BookingPolicy;
+import com.ucamp.app.domain.reservation.entity.Reservation;
+import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.schedule.entity.BusinessDay;
 import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
@@ -74,14 +76,26 @@ public class AvailabilityService {
                 .filter(start -> !AvailabilityCalculator.isFree(
                         new TimeRange(start, start.plus(duration)), schedule.businessRanges(), List.of()))
                 .toList();
-        return new DayAvailability(startTimes, extendedStartTimes);
+        // 결제 대기 중인 점유만 없으면 시작할 수 있는 시각. 점유가 결제 없이 풀릴 수 있어 예약 대기열에 설 수 있다
+        List<LocalDateTime> heldStartTimes = AvailabilityCalculator.availableStartTimes(
+                        date, duration, schedule.openRanges(), schedule.blockedRangesWithoutHolds(), now).stream()
+                .filter(start -> !startTimes.contains(start))
+                .toList();
+        return new DayAvailability(startTimes, extendedStartTimes, heldStartTimes);
     }
 
     /**
      * @param startTimes         시작 가능 시각, 오름차순
      * @param extendedStartTimes startTimes 중 영업시간 밖 연장 영업이 있어야 가능한 시각, 오름차순
+     * @param heldStartTimes     다른 고객의 결제 대기 점유(HOLD) 때문에만 지금 시작할 수 없는 시각, 오름차순.
+     *                           startTimes 와 겹치지 않는다
      */
-    public record DayAvailability(List<LocalDateTime> startTimes, List<LocalDateTime> extendedStartTimes) {
+    public record DayAvailability(List<LocalDateTime> startTimes, List<LocalDateTime> extendedStartTimes,
+            List<LocalDateTime> heldStartTimes) {
+
+        public DayAvailability(List<LocalDateTime> startTimes, List<LocalDateTime> extendedStartTimes) {
+            this(startTimes, extendedStartTimes, List.of());
+        }
     }
 
     /**
@@ -116,6 +130,23 @@ public class AvailabilityService {
         TimeRange range = new TimeRange(startsAt, startsAt.plusMinutes(durationMinutes));
         Schedule schedule = loadSchedule(shopId, range.start(), range.end(), now);
         return AvailabilityCalculator.isFree(range, schedule.openRanges(), schedule.blockedRanges());
+    }
+
+    /**
+     * 지금은 예약할 수 없지만, 막고 있는 것이 다른 고객의 결제 대기 점유(HOLD)뿐인지 판단한다 (예약 대기열용).
+     * 점유가 결제 없이 풀리면 예약할 수 있으므로 화면은 예약하기 대신 대기하기를 보여준다.
+     * 확정된 예약·닫힌 시간·영업 외 시간과 겹치면 기다려도 소용없으므로 false 다. 지금 바로 예약할 수 있어도 false 다.
+     */
+    public boolean isHeldOnly(Long shopId, LocalDateTime startsAt, int durationMinutes) {
+        requirePositive(durationMinutes);
+        LocalDateTime now = LocalDateTime.now(clock);
+        if (!SalePolicy.isBookable(startsAt, now)) {
+            return false;
+        }
+        TimeRange range = new TimeRange(startsAt, startsAt.plusMinutes(durationMinutes));
+        Schedule schedule = loadSchedule(shopId, range.start(), range.end(), now);
+        return !AvailabilityCalculator.isFree(range, schedule.openRanges(), schedule.blockedRanges())
+                && AvailabilityCalculator.isFree(range, schedule.openRanges(), schedule.blockedRangesWithoutHolds());
     }
 
     /**
@@ -163,24 +194,46 @@ public class AvailabilityService {
                 closedRanges.add(range);
             }
         }
-        List<TimeRange> reservedRanges = reservationRepository.findActiveOverlapping(shopId, from, to).stream()
+        List<Reservation> occupying = reservationRepository.findActiveOverlapping(shopId, from, to).stream()
                 .filter(reservation -> SalePolicy.isOccupying(
                         reservation.getStatus(), reservation.getHoldExpiresAt(), now))
+                .toList();
+        List<TimeRange> confirmedRanges = occupying.stream()
+                .filter(reservation -> reservation.getStatus() != ReservationStatus.HOLD)
                 .map(reservation -> new TimeRange(reservation.getStartsAt(), reservation.getEndsAt()))
                 .toList();
-        return new Schedule(businessRanges, openRanges, closedRanges, reservedRanges);
+        List<TimeRange> holdRanges = occupying.stream()
+                .filter(reservation -> reservation.getStatus() == ReservationStatus.HOLD)
+                .map(reservation -> new TimeRange(reservation.getStartsAt(), reservation.getEndsAt()))
+                .toList();
+        return new Schedule(businessRanges, openRanges, closedRanges, confirmedRanges, holdRanges);
     }
 
     /**
      * @param businessRanges 요일 영업시간만의 구간 (연장 영업 판단용)
      * @param openRanges     영업시간과 매장이 연 시간을 합친 구간
+     * @param confirmedRanges 결제 대기 점유가 아닌 예약(CONFIRMED·CANCEL_PENDING) 구간
+     * @param holdRanges      유효한 결제 대기 점유(HOLD) 구간
      */
     private record Schedule(List<TimeRange> businessRanges, List<TimeRange> openRanges,
-            List<TimeRange> closedRanges, List<TimeRange> reservedRanges) {
+            List<TimeRange> closedRanges, List<TimeRange> confirmedRanges, List<TimeRange> holdRanges) {
+
+        List<TimeRange> reservedRanges() {
+            List<TimeRange> reserved = new ArrayList<>(confirmedRanges);
+            reserved.addAll(holdRanges);
+            return reserved;
+        }
 
         List<TimeRange> blockedRanges() {
             List<TimeRange> blocked = new ArrayList<>(closedRanges);
-            blocked.addAll(reservedRanges);
+            blocked.addAll(reservedRanges());
+            return blocked;
+        }
+
+        // 결제 대기 점유가 모두 결제 없이 풀렸다고 볼 때 막히는 구간
+        List<TimeRange> blockedRangesWithoutHolds() {
+            List<TimeRange> blocked = new ArrayList<>(closedRanges);
+            blocked.addAll(confirmedRanges);
             return blocked;
         }
     }

@@ -18,11 +18,19 @@ const toTime = (minutes) =>
 /**
  * 영업시간 안에서 시술이 끝날 수 있는 30분 단위 시작 시각에, 서버가 알려준 시작 가능 시각을 합친다.
  * 예약 가능 여부는 서버 응답(available-times)만 따른다. 영업시간 밖이라도 매장이 연 시각은 서버 응답에 들어 있다.
+ * 다른 고객이 결제 중인 시각(held)은 대기열에 설 수 있으므로 고를 수 있게 둔다.
  */
-const buildSlots = (businessHour, durationMinutes, startTimes, extendedStartTimes = []) => {
+const buildSlots = (
+  businessHour,
+  durationMinutes,
+  startTimes,
+  extendedStartTimes = [],
+  heldStartTimes = [],
+) => {
   const available = new Set(startTimes.map(timePart));
   const extended = new Set(extendedStartTimes.map(timePart));
-  const times = new Set(available);
+  const held = new Set(heldStartTimes.map(timePart));
+  const times = new Set([...available, ...held]);
   if (businessHour && !businessHour.closed) {
     const lastStart = toMinutes(businessHour.closeTime) - durationMinutes;
     for (let minutes = toMinutes(businessHour.openTime); minutes <= lastStart; minutes += TIME_UNIT_MINUTES) {
@@ -31,7 +39,12 @@ const buildSlots = (businessHour, durationMinutes, startTimes, extendedStartTime
   }
   return [...times]
     .sort()
-    .map((time) => ({ time, available: available.has(time), extended: extended.has(time) }));
+    .map((time) => ({
+      time,
+      available: available.has(time),
+      extended: extended.has(time),
+      held: held.has(time),
+    }));
 };
 
 /**
@@ -49,13 +62,16 @@ const extendedNotice = (businessHour, extendedStartTimes) => {
 };
 
 // 화면 읽기 도구용 칸 이름. 진행 시간이면서 연장 영업인 칸은 두 상태를 함께 읽는다
-const slotLabel = (time, { inProgress, extended }) => {
+const slotLabel = (time, { inProgress, extended, held }) => {
   const states = [];
   if (inProgress) {
     states.push('선택한 시술 진행 시간');
   }
   if (extended) {
     states.push('연장 영업');
+  }
+  if (held) {
+    states.push('다른 분이 결제 중, 대기 가능');
   }
   return states.length ? `${time} ${states.join(', ')}` : undefined;
 };
@@ -82,11 +98,17 @@ export default function SlotPicker({
   const extendedStartTimes = times.extendedStartTimes ?? [];
   const slots =
     times.status === 'succeeded'
-      ? buildSlots(businessHour, durationMinutes, times.startTimes, extendedStartTimes)
+      ? buildSlots(
+          businessHour,
+          durationMinutes,
+          times.startTimes,
+          extendedStartTimes,
+          times.heldStartTimes,
+        )
       : [];
   const notice =
     times.status === 'succeeded' ? extendedNotice(businessHour, extendedStartTimes) : null;
-  const availableCount = slots.filter((slot) => slot.available).length;
+  const availableCount = slots.filter((slot) => slot.available || slot.held).length;
   // 시술은 시작 시각부터 소요 시간 동안 이어지므로, 고른 시각 뒤 칸도 함께 잡힌 것으로 표시한다
   const selectionEnd = selectedTime ? toMinutes(selectedTime) + durationMinutes : null;
   const inSelection = (time) =>
@@ -128,11 +150,11 @@ export default function SlotPicker({
         <>
           {notice && <p className={styles.extendedNotice}>{notice}</p>}
           <div className={`b-time-grid ${styles.slots}`} role="group" aria-label="시작 시간">
-            {slots.map(({ time, available, extended }) => (
+            {slots.map(({ time, available, extended, held }) => (
               <button
                 key={time}
                 type="button"
-                disabled={!available}
+                disabled={!available && !held}
                 className={
                   time === selectedTime ? 'is-selected' : inSelection(time) ? styles.inRange : undefined
                 }
@@ -140,6 +162,7 @@ export default function SlotPicker({
                 aria-label={slotLabel(time, {
                   inProgress: inSelection(time),
                   extended: extended && available,
+                  held,
                 })}
                 onClick={() => onSelectTime(time)}
               >
@@ -147,6 +170,11 @@ export default function SlotPicker({
                 {extended && available && (
                   <span className={styles.extendedTag} aria-hidden="true">
                     연장
+                  </span>
+                )}
+                {held && (
+                  <span className={styles.heldTag} aria-hidden="true">
+                    결제 중
                   </span>
                 )}
               </button>

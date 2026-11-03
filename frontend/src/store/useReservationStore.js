@@ -80,6 +80,24 @@ export const useReservationStore = create((set, get) => ({
     }
   },
 
+  // 대기 화면은 화면마다 따로 보여주므로 결과만 돌려주고 store 상태는 바꾸지 않는다.
+  joinQueue: async (slot) => {
+    try {
+      return await reservationApi.joinQueue(slot);
+    } catch (error) {
+      throw toError(error);
+    }
+  },
+
+  // 대기 화면을 닫을 때 부른다. 오류를 던지지 않는다.
+  leaveQueue: async (slot) => {
+    try {
+      await reservationApi.leaveQueue(slot);
+    } catch {
+      // 실패해도 서버가 한동안 순서를 묻지 않은 사람을 줄에서 뺀다
+    }
+  },
+
   // 결제 화면을 떠날 때 부른다. 실패해도 이동은 막지 않으므로(5분 뒤 자동 만료) 오류를 던지지 않고 결과만 돌려준다.
   releaseHold: async (reservationId) => {
     try {

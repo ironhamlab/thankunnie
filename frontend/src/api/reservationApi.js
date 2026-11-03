@@ -14,6 +14,10 @@ const toParams = ({ from, to, statuses = [], page = 0, size = 20 }) => {
 export const reservationApi = {
   // 고객이 고른 시술·시작 시각을 5분간 점유(HOLD)하는 예약을 만든다
   createReservation: (request) => axiosInstance.post('/v1/reservations', request),
+  // 같은 빈자리(시술·시작 시각)를 누른 순서대로 줄에 서거나, 이미 서 있으면 지금 순서를 받는다
+  joinQueue: (slot) => axiosInstance.post('/v1/reservations/queue', slot),
+  // 대기를 취소한다. 줄에 없어도 성공(204)이다
+  leaveQueue: (slot) => axiosInstance.post('/v1/reservations/queue/leave', slot),
   getOwnerReservations: (filters) =>
     axiosInstance.get('/v1/owner/reservations', { params: toParams(filters) }),
   getOwnerReservation: (reservationId) =>

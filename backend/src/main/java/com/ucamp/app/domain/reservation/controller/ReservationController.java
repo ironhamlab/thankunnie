@@ -17,6 +17,7 @@ import com.ucamp.app.common.auth.LoginUser;
 import com.ucamp.app.common.response.ApiResponse;
 import com.ucamp.app.domain.reservation.dto.request.ReservationCreateRequest;
 import com.ucamp.app.domain.reservation.dto.response.ReservationCreateResponse;
+import com.ucamp.app.domain.reservation.service.ReservationQueueService;
 import com.ucamp.app.domain.reservation.service.ReservationService;
 
 /**
@@ -29,9 +30,12 @@ import com.ucamp.app.domain.reservation.service.ReservationService;
 public class ReservationController {
 
     private final ReservationService reservationService;
+    private final ReservationQueueService reservationQueueService;
 
-    public ReservationController(ReservationService reservationService) {
+    public ReservationController(ReservationService reservationService,
+            ReservationQueueService reservationQueueService) {
         this.reservationService = reservationService;
+        this.reservationQueueService = reservationQueueService;
     }
 
     /**
@@ -46,7 +50,9 @@ public class ReservationController {
     @PostMapping
     public ResponseEntity<ApiResponse<ReservationCreateResponse>> createReservation(
             @LoginUser AuthUser loginUser, @Valid @RequestBody ReservationCreateRequest request) {
-        ReservationCreateResponse response = reservationService.createReservation(loginUser, request);
+        // 대기열은 순서만 정한다. 같은 시간 두 명 점유는 예약 생성의 잠금이 막는다
+        ReservationCreateResponse response = reservationQueueService.createInTurn(loginUser, request,
+                () -> reservationService.createReservation(loginUser, request));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response));
     }
