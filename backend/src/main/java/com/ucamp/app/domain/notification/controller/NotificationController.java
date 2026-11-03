@@ -38,7 +38,8 @@ import com.ucamp.app.domain.notification.service.NotificationService;
 
 /**
  * 알림 API.
- * 구독 등록·조회·수정·해제와, 받은 알림 목록·모두 읽음·알림 스트림을 제공한다. 고객만 사용할 수 있다.
+ * 구독 등록·조회·수정·해제는 고객만 사용할 수 있다.
+ * 받은 알림 목록·한 건 읽음·모두 읽음·알림 스트림은 고객과 사장님이 사용할 수 있다.
  */
 @Tag(name = "Notification", description = "알림 구독")
 @RestController
@@ -114,14 +115,15 @@ public class NotificationController {
     }
 
     /**
-     * 본인의 받은 알림을 최신 50건까지 조회한다. category 가 없으면 전체 종류에서 50건을 반환한다.
+     * 본인의 받은 알림을 최신 50건까지 조회한다. category 가 없으면 그 사람의 전체 종류에서 50건을 반환한다.
+     * 고객은 회원 알림, 사장님은 매장 알림이다. 사장님의 관심 알림은 빈 목록이다.
      *
-     * @param loginUser 로그인한 고객
+     * @param loginUser 로그인한 고객 또는 사장님
      * @param category  예약(RESERVATION) 또는 관심(INTEREST). 없으면 전체
      * @return 최신순 받은 알림. 최대 50건
      */
     @Operation(summary = "받은 알림 목록 조회",
-            description = "최신 50건만 반환한다. category 를 생략하면 전체 종류에서 50건이다. RESERVATION 은 예약 확정·취소, INTEREST 는 빈자리·임박·초임박·묶음이다")
+            description = "최신 50건만 반환한다. 고객은 회원 알림, 사장님은 매장 예약 알림이다. category 를 생략하면 그 사람의 전체 종류에서 50건이다. 사장님이 INTEREST 를 주면 빈 목록이다.")
     @GetMapping("/inbox")
     public ResponseEntity<ApiResponse<List<NotificationInboxResponse>>> getInbox(
             @LoginUser AuthUser loginUser,
@@ -130,25 +132,42 @@ public class NotificationController {
     }
 
     /**
-     * 고객의 알림 스트림을 연다. 응답은 JSON 이 아니라 text/event-stream 이다.
+     * 고객 또는 사장님의 알림 스트림을 연다. 응답은 JSON 이 아니라 text/event-stream 이다.
      * 연결되면 지금 안 읽은 수를 data 로 한 번 보낸다.
      *
-     * @param loginUser 로그인한 고객
+     * @param loginUser 로그인한 고객 또는 사장님
      * @return 열린 스트림
      */
-    @Operation(summary = "받은 알림 스트림", description = "연결 직후 data 로 지금 안 읽은 수를 한 번 보낸다. 고객만 연결할 수 있다")
+    @Operation(summary = "받은 알림 스트림",
+            description = "연결 직후 data 로 지금 안 읽은 수를 한 번 보낸다. 고객은 회원 ID, 사장님은 매장 ID로 연결한다.")
     @GetMapping(value = "/inbox/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter stream(@LoginUser AuthUser loginUser) {
         return notificationInboxStreamService.open(loginUser);
     }
 
     /**
-     * 본인의 안 읽은 알림을 모두 읽음으로 바꾼다. 이미 읽은 시각은 유지한다.
+     * 본인의 받은 알림 한 건을 읽음으로 바꾼다. 이미 읽은 시각은 유지한다.
      *
-     * @param loginUser 로그인한 고객
+     * @param loginUser 로그인한 고객 또는 사장님
+     * @param inboxId   읽음으로 바꿀 받은 알림 ID
      * @return 처리 후 안 읽은 알림 수
      */
-    @Operation(summary = "받은 알림 모두 읽음")
+    @Operation(summary = "받은 알림 한 건 읽음",
+            description = "고객은 본인 회원 알림, 사장님은 본인 매장 알림만 읽음으로 바꾼다. 없거나 남의 알림이면 404다.")
+    @PatchMapping("/inbox/{inboxId}/read")
+    public ResponseEntity<ApiResponse<Long>> markRead(
+            @LoginUser AuthUser loginUser, @PathVariable Long inboxId) {
+        return ResponseEntity.ok(ApiResponse.success(notificationInboxService.markRead(loginUser, inboxId)));
+    }
+
+    /**
+     * 본인의 안 읽은 알림을 모두 읽음으로 바꾼다. 이미 읽은 시각은 유지한다.
+     *
+     * @param loginUser 로그인한 고객 또는 사장님
+     * @return 처리 후 안 읽은 알림 수
+     */
+    @Operation(summary = "받은 알림 모두 읽음",
+            description = "고객은 회원 알림, 사장님은 매장 알림만 읽음으로 바꾼다.")
     @PatchMapping("/inbox/read-all")
     public ResponseEntity<ApiResponse<Long>> markAllRead(
             @LoginUser AuthUser loginUser) {

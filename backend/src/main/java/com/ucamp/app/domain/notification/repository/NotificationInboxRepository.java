@@ -39,6 +39,40 @@ public interface NotificationInboxRepository extends JpaRepository<NotificationI
     long countByUserIdAndReadAtIsNull(Long userId);
 
     /**
+     * 한 매장의 안 읽은 알림 수를 센다.
+     *
+     * @param shopId 매장 ID
+     * @return 읽은 시각이 없는 알림 수
+     */
+    long countByShopIdAndReadAtIsNull(Long shopId);
+
+    /**
+     * 한 매장의 받은 알림을 최신 50건까지 조회한다.
+     *
+     * @param shopId 매장 ID
+     * @return 최신순 받은 알림. 최대 50건
+     */
+    List<NotificationInbox> findTop50ByShopIdOrderByCreatedAtDescIdDesc(Long shopId);
+
+    /**
+     * 한 매장의 받은 알림을 종류로 걸러 최신 50건까지 조회한다.
+     *
+     * @param shopId   매장 ID
+     * @param category 예약 또는 관심
+     * @return 최신순 받은 알림. 최대 50건
+     */
+    List<NotificationInbox> findTop50ByShopIdAndCategoryOrderByCreatedAtDescIdDesc(
+            Long shopId, NotificationInboxCategory category);
+
+    /**
+     * 한 매장의 안 읽은 알림을 조회한다.
+     *
+     * @param shopId 매장 ID
+     * @return 읽은 시각이 없는 알림
+     */
+    List<NotificationInbox> findByShopIdAndReadAtIsNull(Long shopId);
+
+    /**
      * 한 회원의 안 읽은 알림을 조회한다.
      *
      * @param userId 회원 ID

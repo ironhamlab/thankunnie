@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { generatePath } from 'react-router-dom';
+import { generatePath, useLocation, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { PAYMENT_STATUS, reservationStatusOf } from '@/constants/reservationStatus';
 import { useReservationStore } from '@/store/useReservationStore';
@@ -31,6 +31,15 @@ const CARD_LAYOUT_QUERY = '(max-width: 640px)';
 const cancelPath = (reservationId) =>
   generatePath(ROUTES.OWNER_RESERVATION_CANCEL, { reservationId });
 
+// 알림 링크의 ?reservationId= . 숫자만 예약 번호로 본다
+function reservationIdFromSearch(searchParams) {
+  const value = searchParams.get('reservationId');
+  if (!value || !/^\d+$/.test(value)) {
+    return null;
+  }
+  return Number(value);
+}
+
 /**
  * 매장 예약 현황 (B-F6). 본인 매장 예약을 날짜·상태로 거르고, 고른 예약의 예약자·결제·취소 상태를 본다.
  */
@@ -50,6 +59,11 @@ export default function OwnerBookingsPage() {
   const [to, setTo] = useState('');
   const [filterKey, setFilterKey] = useState('ALL');
   const [page, setPage] = useState(0);
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const linkedId = reservationIdFromSearch(searchParams);
+  // 목록에서 고른 예약. 현재 목록에 없으면 첫 예약으로 돌아간다.
+  // 주소의 예약 번호가 바뀌면 비워서, 뒤로 가기·다른 알림이 그 번호를 따르게 한다.
   const [selectedId, setSelectedId] = useState(null);
   // 이 화면에서 목록을 한 번 받은 뒤에는, 다음 목록을 받는 동안에도 표를 남겨 화면이 튀지 않게 한다
   const [hasLoadedList, setHasLoadedList] = useState(false);
@@ -59,6 +73,8 @@ export default function OwnerBookingsPage() {
   );
   const listRef = useRef(null);
   const detailRef = useRef(null);
+  // 같은 예약 번호로 다시 이동해도 상세를 연다. 목록만 다시 받을 때는 반복하지 않는다
+  const openedKeyRef = useRef(null);
 
   useEffect(() => {
     const media = window.matchMedia(CARD_LAYOUT_QUERY);
@@ -74,6 +90,10 @@ export default function OwnerBookingsPage() {
   }, []);
 
   useEffect(() => {
+    setSelectedId((current) => (current != null && current !== linkedId ? null : current));
+  }, [linkedId]);
+
+  useEffect(() => {
     const load = async () => {
       const { statuses } = STATUS_FILTERS.find((filter) => filter.key === filterKey);
       await loadReservations('owner', { from, to, statuses, page, size: PAGE_SIZE });
@@ -82,10 +102,17 @@ export default function OwnerBookingsPage() {
     load();
   }, [loadReservations, from, to, filterKey, page]);
 
-  // 고른 예약이 현재 목록에 없으면 첫 예약을 보여준다
-  const activeId = reservations.some((item) => item.reservationId === selectedId)
-    ? selectedId
-    : reservations[0]?.reservationId;
+  // 목록에서 고른 예약은 그 번호가 지금 목록에 있을 때만 연다. 없으면 첫 예약으로 돌아간다.
+  // 아직 고르지 않았고 알림 링크가 있으면, 목록에 없어도 그 예약을 연다.
+  const selectedInList = reservations.some((item) => item.reservationId === selectedId);
+  let activeId = reservations[0]?.reservationId;
+  if (selectedId != null) {
+    if (selectedInList) {
+      activeId = selectedId;
+    }
+  } else if (linkedId != null) {
+    activeId = linkedId;
+  }
 
   // 새 목록이 오기 전에는 상세를 부르지 않는다. 이전 목록의 상세가 새 조건의 결과처럼 보이지 않게 한다
   useEffect(() => {
@@ -99,11 +126,14 @@ export default function OwnerBookingsPage() {
     }
   }, [loadReservation, clearDetail, activeId, listStatus]);
 
-  // 예약을 고르면 포커스를 상세로 옮겨, 키보드 사용자가 남은 목록을 거치지 않고 바로 상세를 읽게 한다.
-  // 한 단 화면에서는 상세가 목록 아래에 있어 상세 위치로 스크롤도 한다
-  const showDetail = (reservationId) => {
-    setSelectedId(reservationId);
-    if (isCardLayout) {
+  // 알림이나 목록에서 예약을 고르면 포커스를 상세로 옮긴다.
+  // 폰에서는 상세 창을 연다. 같은 알림을 다시 눌러도 주소 이동마다 다시 연다.
+  useEffect(() => {
+    if (!linkedId || listStatus !== 'succeeded' || openedKeyRef.current === location.key) {
+      return;
+    }
+    openedKeyRef.current = location.key;
+    if (window.matchMedia(CARD_LAYOUT_QUERY).matches) {
       setIsDetailDialogOpen(true);
       return;
     }
@@ -115,6 +145,14 @@ export default function OwnerBookingsPage() {
         block: 'start',
       });
     }
+  }, [linkedId, listStatus, location.key]);
+
+  // 목록에서 고르면 그 예약을 기억하고 주소에도 남긴다. 상세 창과 포커스는 위 효과가 연다.
+  const showDetail = (reservationId) => {
+    setSelectedId(reservationId);
+    const next = new URLSearchParams(searchParams);
+    next.set('reservationId', String(reservationId));
+    setSearchParams(next);
   };
 
   // 폰은 목록이 화면보다 길어 페이지를 넘겨도 스크롤이 아래에 남으므로 목록 맨 위로 올린다

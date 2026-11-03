@@ -37,6 +37,7 @@ class NotificationInboxPublishTest {
     private static final AuthUser CUSTOMER = TestUser.CUSTOMER_1.toAuthUser();
     private static final AuthUser OTHER_CUSTOMER = TestUser.CUSTOMER_2.toAuthUser();
     private static final AuthUser OWNER = TestUser.OWNER_1.toAuthUser();
+    private static final AuthUser ADMIN = TestUser.ADMIN.toAuthUser();
 
     private NotificationInboxRepository notificationInboxRepository;
     private NotificationInboxConnections connections;
@@ -81,6 +82,25 @@ class NotificationInboxPublishTest {
     }
 
     @Test
+    @DisplayName("매장 알림이 커밋되면 그 매장 연결에만 안 읽은 수를 보낸다")
+    void saveForShop_afterCommit_sendsUnreadCountOnlyToThatShop() throws Exception {
+        SseEmitter shopEmitter = mock(SseEmitter.class);
+        connections.addShop(CUSTOMER.userId(), shopEmitter);
+        given(notificationInboxRepository.countByShopIdAndReadAtIsNull(CUSTOMER.userId())).willReturn(2L);
+        TransactionSynchronizationManager.initSynchronization();
+
+        notificationInboxService.saveForShop(CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,
+                "예약이 확정되었어요", "김고객 님 · 젤네일 · 11월 2일 10:00 예약이 확정되었습니다.",
+                NotificationInboxService.OWNER_BOOKINGS_PATH);
+
+        verify(shopEmitter, never()).send(anyString());
+        commit();
+        verify(shopEmitter).send("2");
+        verify(customerEmitter, never()).send(anyString());
+        verify(otherEmitter, never()).send(anyString());
+    }
+
+    @Test
     @DisplayName("저장이 취소되면 안 읽은 수를 보내지 않는다")
     void save_withoutCommit_doesNotSend() throws Exception {
         given(notificationInboxRepository.countByUserIdAndReadAtIsNull(CUSTOMER.userId())).willReturn(4L);
@@ -108,11 +128,29 @@ class NotificationInboxPublishTest {
     }
 
     @Test
-    @DisplayName("고객이 아니면 모두 읽음 숫자를 보내지 않는다")
-    void markAllRead_owner_doesNotSend() throws Exception {
+    @DisplayName("사장님 모두 읽음은 매장 연결에만 0을 보낸다")
+    void markAllRead_owner_sendsZeroToShopOnly() throws Exception {
+        SseEmitter shopEmitter = mock(SseEmitter.class);
+        connections.addShop(OWNER.shopId(), shopEmitter);
+        given(notificationInboxRepository.findByShopIdAndReadAtIsNull(OWNER.shopId())).willReturn(List.of());
+        given(notificationInboxRepository.countByShopIdAndReadAtIsNull(OWNER.shopId())).willReturn(0L);
         TransactionSynchronizationManager.initSynchronization();
 
-        assertThatThrownBy(() -> notificationInboxService.markAllRead(OWNER))
+        assertThat(notificationInboxService.markAllRead(OWNER)).isZero();
+
+        verify(shopEmitter, never()).send(anyString());
+        commit();
+        verify(shopEmitter).send("0");
+        verify(customerEmitter, never()).send(anyString());
+        verify(otherEmitter, never()).send(anyString());
+    }
+
+    @Test
+    @DisplayName("관리자는 모두 읽음 숫자를 보내지 않는다")
+    void markAllRead_admin_doesNotSend() throws Exception {
+        TransactionSynchronizationManager.initSynchronization();
+
+        assertThatThrownBy(() -> notificationInboxService.markAllRead(ADMIN))
                 .isInstanceOf(BusinessException.class);
 
         assertThat(TransactionSynchronizationManager.getSynchronizations()).isEmpty();
