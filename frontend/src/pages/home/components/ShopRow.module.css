@@ -14,6 +14,26 @@
 .located {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 1px var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 4%, var(--color-white));
+  /* 지도에서 핀을 눌렀을 때 목록에서 어느 카드인지 바로 보이게 한 번 반짝인다 */
+  animation: locatedPulse 900ms ease-out;
+}
+@keyframes locatedPulse {
+  0% {
+    box-shadow:
+      0 0 0 1px var(--color-primary),
+      0 0 0 0 color-mix(in srgb, var(--color-primary) 45%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 1px var(--color-primary),
+      0 0 0 10px color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .located {
+    animation: none;
+  }
 }
 .thumb {
   width: 72px;
