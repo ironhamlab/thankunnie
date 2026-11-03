@@ -40,6 +40,8 @@ const MAX_DAYS = 60;
 const KEYWORD_DELAY_MS = 300;
 // 고른 날짜에 빈자리가 없을 때 가장 가까운 날짜를 찾아볼 기간(일)
 const NEXT_SEARCH_DAYS = 14;
+// 매장을 골라 지도까지 올릴 때 헤더와 지도 사이에 띄울 간격(px)
+const MAP_SCROLL_GAP = 12;
 const MODEL = 'MODEL';
 
 function Filter({ label, options, value, onChange, segmented = false }) {
@@ -265,8 +267,15 @@ export default function VacancySearch() {
 
   const focusMap = (shop) => {
     setMapFocus({ lat: shop.latitude, lng: shop.longitude, zoom: true });
-    // 좁은 화면은 지도가 목록 위에 있어 눌러도 안 보이므로 지도까지 올린다
-    document.getElementById('vacancy-map')?.scrollIntoView({ block: 'nearest' });
+    // 좁은 화면은 지도가 목록 위에 있어 눌러도 안 보이므로 지도까지 올린다.
+    // 위에 붙어 있는 헤더에 지도 윗부분이 가리지 않게 헤더 바로 아래에 맞춘다. 넓은 화면은 지도가 따라오므로 그대로 둔다
+    const map = document.getElementById('vacancy-map');
+    if (!map) return;
+    const headerBottom = document.querySelector('header')?.getBoundingClientRect().bottom ?? 0;
+    const { top, bottom } = map.getBoundingClientRect();
+    if (top < headerBottom || bottom > window.innerHeight) {
+      window.scrollBy({ top: top - headerBottom - MAP_SCROLL_GAP, behavior: 'smooth' });
+    }
   };
   // 시간 보기로 펼치면 지도에서 보기로 고른 매장 대신 펼친 매장을 보여준다
   const toggleShop = (shop) => {
