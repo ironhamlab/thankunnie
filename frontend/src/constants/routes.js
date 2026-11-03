@@ -29,6 +29,8 @@ export const ROUTES = {
   // 빈자리 열기·닫기: 시간대를 열면 그 안에서 할 수 있는 시술이 고객 빈자리 목록에 노출되고, 닫으면 예약을 받지 않는다
   OWNER_VACANCIES: '/owner/vacancies',
   OWNER_BOOKINGS: '/owner/bookings',
+  // 고객 관리: 우리 매장에 예약한 고객의 이용 횟수·예약 이력과 매장 전용 메모
+  OWNER_CUSTOMERS: '/owner/customers',
   // 매장 예약 취소 화면 (E 담당). 예약 현황의 "취소하기"가 이 경로로 이동한다
   OWNER_RESERVATION_CANCEL: '/owner/bookings/:reservationId/cancel',
   // 매장 취소 결과 (E 담당)
