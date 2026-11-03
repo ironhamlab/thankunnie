@@ -29,7 +29,10 @@ export default function Footer() {
             <Link className="b-brand" to={ROUTES.HOME}>
               땡잡은 언니
             </Link>
-            <p>© 2026 땡잡은 언니</p>
+            <p>
+              © 2026 땡잡은 언니. 본 서비스는 테스트 결제 환경으로, 결제한 금액은 이후 자동으로
+              취소됩니다.
+            </p>
           </div>
           <div className={styles.links}>
             {FOOTER_NOTICES.map((label) => (
