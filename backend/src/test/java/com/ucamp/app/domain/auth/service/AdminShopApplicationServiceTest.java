@@ -158,7 +158,6 @@ class AdminShopApplicationServiceTest {
         verify(eventPublisher, never()).publishEvent(any());
     }
 
-    // 가입 builder 는 상태를 ACTIVE 로 넣으므로, 승인 대기 신청은 여기서 되돌린다
     private static ShopAccount pendingShop() {
         ShopAccount shop = activeShop();
         shop.restoreToPending();
@@ -178,6 +177,7 @@ class AdminShopApplicationServiceTest {
                 .phone("010-1234-5678")
                 .build();
         ReflectionTestUtils.setField(shop, "shopId", SHOP_ID);
+        shop.approve();
         return shop;
     }
 
