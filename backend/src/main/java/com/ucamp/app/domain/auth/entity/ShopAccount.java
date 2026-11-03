@@ -86,6 +86,10 @@ public class ShopAccount extends BaseTimeEntity {
     @Column(name = "NOTICE", length = 2000, updatable = false)
     private String notice;
 
+    /** 관리자가 입력한 가입 거절 사유. 거절 상태일 때만 값이 있다 */
+    @Column(name = "REJECT_REASON", length = 500)
+    private String rejectReason;
+
     @Builder
     private ShopAccount(String loginId, String passwordHash, Long categoryId, String name, String regionCode,
             String address, String addressDetail, BigDecimal latitude, BigDecimal longitude, String phone,
@@ -103,6 +107,24 @@ public class ShopAccount extends BaseTimeEntity {
         this.description = description;
         this.notice = notice;
         this.status = ShopAccountStatus.ACTIVE;
+    }
+
+    /** 가입을 승인해 매장을 노출 상태로 바꾼다. 승인 대기 여부는 호출한 쪽이 먼저 확인한다. */
+    public void approve() {
+        this.status = ShopAccountStatus.ACTIVE;
+        this.rejectReason = null;
+    }
+
+    /** 가입을 거절하고 매장에 보여줄 사유를 남긴다. 승인 대기 여부는 호출한 쪽이 먼저 확인한다. */
+    public void reject(String reason) {
+        this.status = ShopAccountStatus.REJECTED;
+        this.rejectReason = reason;
+    }
+
+    /** 잘못 거절한 신청을 승인 대기로 되돌리고 사유를 지운다. 거절 여부는 호출한 쪽이 먼저 확인한다. */
+    public void restoreToPending() {
+        this.status = ShopAccountStatus.PENDING;
+        this.rejectReason = null;
     }
 
     /** 인증 공통 사용자로 바꾼다. 사장님은 APP_USER 행이 없으므로 사용자 ID 자리에 매장 ID 를 쓴다. */

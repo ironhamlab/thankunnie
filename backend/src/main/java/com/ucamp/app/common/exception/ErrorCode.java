@@ -25,6 +25,13 @@ public enum ErrorCode {
     AUTH_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "AUTH_002", "아이디 또는 비밀번호가 올바르지 않습니다."),
     AUTH_INACTIVE_ACCOUNT(HttpStatus.FORBIDDEN, "AUTH_003", "사용할 수 없는 계정입니다."),
 
+    // ADMIN
+    ADMIN_SHOP_APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ADMIN_001", "매장 가입 신청을 찾을 수 없습니다."),
+    ADMIN_SHOP_APPLICATION_NOT_PENDING(HttpStatus.CONFLICT, "ADMIN_002", "이미 처리된 가입 신청입니다."),
+    ADMIN_SHOP_APPLICATION_NOT_APPROVED(HttpStatus.CONFLICT, "ADMIN_003", "승인된 매장이 아닙니다."),
+    ADMIN_SHOP_APPLICATION_HAS_RESERVATION(HttpStatus.CONFLICT, "ADMIN_004", "진행 중이거나 앞으로 있을 예약이 있어 승인을 취소할 수 없습니다."),
+    ADMIN_SHOP_APPLICATION_NOT_REJECTED(HttpStatus.CONFLICT, "ADMIN_005", "거절된 신청이 아닙니다."),
+
     // TERMS
     TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "TERMS_001", "약관을 찾을 수 없습니다."),
     TERMS_REQUIRED_NOT_AGREED(HttpStatus.BAD_REQUEST, "TERMS_002", "필수 약관에 모두 동의해야 합니다."),
