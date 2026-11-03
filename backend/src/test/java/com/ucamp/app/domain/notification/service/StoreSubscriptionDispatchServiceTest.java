@@ -2,7 +2,10 @@ package com.ucamp.app.domain.notification.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -31,15 +34,19 @@ class StoreSubscriptionDispatchServiceTest {
     private static final LocalDateTime HOPE_END = LocalDateTime.of(2026, 10, 31, 21, 0);
 
     private ExistingVacancyTargetService existingVacancyTargetService;
+    private StoreSubscriptionTreatmentService storeSubscriptionTreatmentService;
     private NotificationDispatchRepository notificationDispatchRepository;
     private StoreSubscriptionDispatchService storeSubscriptionDispatchService;
 
     @BeforeEach
     void setUp() {
         existingVacancyTargetService = mock(ExistingVacancyTargetService.class);
+        storeSubscriptionTreatmentService = mock(StoreSubscriptionTreatmentService.class);
         notificationDispatchRepository = mock(NotificationDispatchRepository.class);
+        lenient().when(storeSubscriptionTreatmentService.canBook(anyLong(), anyLong(), any()))
+                .thenReturn(true);
         storeSubscriptionDispatchService = new StoreSubscriptionDispatchService(
-                existingVacancyTargetService, notificationDispatchRepository);
+                existingVacancyTargetService, storeSubscriptionTreatmentService, notificationDispatchRepository);
     }
 
     @Test
@@ -59,6 +66,20 @@ class StoreSubscriptionDispatchServiceTest {
         verify(notificationDispatchRepository).save(saved.capture());
         assertThat(saved.getValue().getEventId()).isEqualTo(11L);
         assertThat(saved.getValue().getUserId()).isEqualTo(USER_ID);
+    }
+
+    @Test
+    @DisplayName("고른 시술을 그 시각에 예약할 수 없으면 줄을 만들지 않는다")
+    void enqueue_treatmentNotBookable_doesNotSave() {
+        NotificationSubscription subscription = storeSubscription(HOPE_START, HOPE_END);
+        given(existingVacancyTargetService.findForStore(SHOP_ID, HOPE_START, HOPE_END))
+                .willReturn(List.of(event(10L)));
+        given(storeSubscriptionTreatmentService.canBook(eq(SHOP_ID), eq(100L), eq(event(10L).getSlotStartsAt())))
+                .willReturn(false);
+
+        storeSubscriptionDispatchService.enqueue(subscription);
+
+        verify(notificationDispatchRepository, never()).save(any());
     }
 
     @Test
@@ -96,6 +117,7 @@ class StoreSubscriptionDispatchServiceTest {
         return NotificationSubscription.builder()
                 .userId(USER_ID)
                 .subscriptionType(SubscriptionType.STORE)
+                .treatmentId(100L)
                 .shopId(SHOP_ID)
                 .startTime(start)
                 .endTime(end)

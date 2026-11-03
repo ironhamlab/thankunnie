@@ -79,30 +79,30 @@ public interface NotificationSubscriptionRepository extends JpaRepository<Notifi
     Optional<NotificationSubscription> findByIdAndUserId(Long id, Long userId);
 
     /**
-     * 업장 구독 등록 시 중복 여부. ACTIVE 이고 회원·매장·희망 시작·종료가 모두 같으면 true.
+     * 업장 구독 등록 시 중복 여부. ACTIVE 이고 회원·매장·시술·희망 시작·종료가 모두 같으면 true.
      */
-    boolean existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTime(
-            Long userId, SubscriptionStatus status, Long shopId,
+    boolean existsByUserIdAndStatusAndShopIdAndTreatmentIdAndStartTimeAndEndTime(
+            Long userId, SubscriptionStatus status, Long shopId, Long treatmentId,
             LocalDateTime startTime, LocalDateTime endTime);
 
     /**
      * 업장 구독 수정 시 중복 여부. 자기 구독(id)은 제외하고 본다.
      */
-    boolean existsByUserIdAndStatusAndShopIdAndStartTimeAndEndTimeAndIdNot(
-            Long userId, SubscriptionStatus status, Long shopId,
+    boolean existsByUserIdAndStatusAndShopIdAndTreatmentIdAndStartTimeAndEndTimeAndIdNot(
+            Long userId, SubscriptionStatus status, Long shopId, Long treatmentId,
             LocalDateTime startTime, LocalDateTime endTime, Long id);
 
     /**
-     * 시간이 비어 있는 같은 매장 찜이 이미 있는지. null 끼리의 같음은 = 비교로 잡히지 않는다.
+     * 시간이 비어 있는 같은 매장·같은 시술 찜이 이미 있는지. null 끼리의 같음은 = 비교로 잡히지 않는다.
      */
-    boolean existsByUserIdAndStatusAndShopIdAndStartTimeIsNullAndEndTimeIsNull(
-            Long userId, SubscriptionStatus status, Long shopId);
+    boolean existsByUserIdAndStatusAndShopIdAndTreatmentIdAndStartTimeIsNullAndEndTimeIsNull(
+            Long userId, SubscriptionStatus status, Long shopId, Long treatmentId);
 
     /**
-     * 시간이 비어 있는 같은 매장 찜이 있는지. 수정 시 자기 구독은 뺀다.
+     * 시간이 비어 있는 같은 매장·같은 시술 찜이 있는지. 수정 시 자기 구독은 뺀다.
      */
-    boolean existsByUserIdAndStatusAndShopIdAndStartTimeIsNullAndEndTimeIsNullAndIdNot(
-            Long userId, SubscriptionStatus status, Long shopId, Long id);
+    boolean existsByUserIdAndStatusAndShopIdAndTreatmentIdAndStartTimeIsNullAndEndTimeIsNullAndIdNot(
+            Long userId, SubscriptionStatus status, Long shopId, Long treatmentId, Long id);
 
     /**
      * 카테고리·지역 구독 등록 시 중복 여부. ACTIVE 이고 회원·카테고리·지역·희망 시작·종료가 모두 같으면 true.

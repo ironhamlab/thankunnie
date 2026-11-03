@@ -3,6 +3,7 @@ package com.ucamp.app.domain.notification.service;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -31,6 +32,10 @@ public class NotificationInboxService {
 
     /** 내 예약 화면. 예약 확정·취소 알림이 이동하는 경로다. */
     public static final String MY_RESERVATIONS_PATH = "/my-reservations";
+
+    /** 매장 링크의 시작 시각. 2026-11-02T15:00:00 처럼 초까지 두고 오프셋은 붙이지 않는다. */
+    private static final DateTimeFormatter SLOT_START_PARAM =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     private final NotificationInboxRepository notificationInboxRepository;
     private final Clock clock;
@@ -131,13 +136,31 @@ public class NotificationInboxService {
     }
 
     /**
-     * 매장 상세 경로. 빈자리·임박·초임박 한 건이 이동하는 경로다.
+     * 매장 상세 경로. 그 회원에게 맞는 시술을 못 찾으면 이 주소만 둔다.
      *
      * @param shopId 매장 ID
      * @return 매장 상세 경로
      */
     public static String shopPath(Long shopId) {
         return "/shops/" + shopId;
+    }
+
+    /**
+     * 업장 알림이 이동하는 매장 상세 경로. 고른 시술과 빈자리 시작 시각을 붙인다.
+     * 예: /shops/1?treatmentId=10&startsAt=2026-11-02T15:00:00
+     *
+     * @param shopId       매장 ID
+     * @param treatmentId  그 회원 구독 중 이 시각에 예약되는 시술. 여러 개면 ID가 가장 작은 것
+     * @param slotStartsAt 빈자리 시작 시각
+     * @return 시술과 시작 시각이 붙은 매장 상세 경로. 시술이나 시각이 없으면 매장 주소만 반환
+     */
+    public static String shopBookingPath(Long shopId, Long treatmentId, LocalDateTime slotStartsAt) {
+        if (treatmentId == null || slotStartsAt == null) {
+            return shopPath(shopId);
+        }
+        return shopPath(shopId)
+                + "?treatmentId=" + treatmentId
+                + "&startsAt=" + slotStartsAt.format(SLOT_START_PARAM);
     }
 
     /**
