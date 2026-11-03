@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 
+import com.ucamp.app.common.auth.AuthUserStatusChecker;
 import com.ucamp.app.common.auth.JwtAuthFilter;
 import com.ucamp.app.common.auth.JwtProvider;
 import com.ucamp.app.common.auth.StubAuthFilter;
@@ -46,12 +47,15 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtProvider jwtProvider) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtProvider jwtProvider,
+            ObjectProvider<AuthUserStatusChecker> statusCheckerProvider) throws Exception {
         // stub 이 먼저 테스트 사용자를 인증하고, JWT 필터는 아직 인증되지 않은 요청만 처리한다
         if (environment.acceptsProfiles(Profiles.of(STUB_AUTH_PROFILES))) {
             http.addFilterBefore(new StubAuthFilter(), AnonymousAuthenticationFilter.class);
         }
-        http.addFilterBefore(new JwtAuthFilter(jwtProvider), AnonymousAuthenticationFilter.class);
+        // 앱에서는 매장 상태 검사기(ShopLoginStatusChecker)가 등록된다. 도메인 빈이 없는 슬라이스 테스트만 검사를 건너뛴다
+        AuthUserStatusChecker statusChecker = statusCheckerProvider.getIfAvailable(() -> AuthUserStatusChecker.ALLOW_ALL);
+        http.addFilterBefore(new JwtAuthFilter(jwtProvider, statusChecker), AnonymousAuthenticationFilter.class);
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())

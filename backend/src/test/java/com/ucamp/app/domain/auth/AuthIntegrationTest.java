@@ -44,6 +44,7 @@ import com.ucamp.app.domain.auth.controller.AuthController;
 import com.ucamp.app.domain.auth.entity.ShopAccount;
 import com.ucamp.app.domain.auth.repository.ShopAccountRepository;
 import com.ucamp.app.domain.auth.service.AuthService;
+import com.ucamp.app.domain.auth.service.ShopLoginStatusChecker;
 import com.ucamp.app.domain.auth.service.AuthPhoneVerificationService;
 import com.ucamp.app.domain.auth.service.AuthBusinessVerificationService;
 import com.ucamp.app.domain.shop.controller.ShopController;
@@ -69,7 +70,7 @@ class AuthIntegrationTest {
     @EntityScan(basePackageClasses = {AppUser.class, ShopAccount.class, Shop.class})
     @EnableJpaRepositories(basePackageClasses = {AppUserRepository.class, ShopAccountRepository.class,
             ShopRepository.class})
-    @Import({AuthController.class, AuthService.class, ShopController.class, ShopService.class,
+    @Import({AuthController.class, AuthService.class, ShopLoginStatusChecker.class, ShopController.class, ShopService.class,
             TermsController.class, TermsAgreementService.class, UserLock.class, GlobalExceptionHandler.class, SecurityConfig.class, TimeConfig.class, WebConfig.class})
     static class AuthTestConfiguration {
     }
@@ -235,6 +236,24 @@ class AuthIntegrationTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("AUTH_012"))
                 .andExpect(jsonPath("$.error.message").value("매장 가입이 거절되었습니다. 사유: 사업자 정보 불일치"));
+    }
+
+    @Test
+    @DisplayName("승인이 취소(거절)된 매장의 기존 토큰은 다음 요청부터 401, 노출 중지(INACTIVE)는 계속 쓸 수 있다")
+    void shopToken_afterApprovalCancelled_isRejected() throws Exception {
+        JsonNode data = approvedShopLogin("cancelshop");
+        long shopId = data.get("shopId").asLong();
+        mvc.perform(get("/api/v1/shops/{shopId}", shopId).header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isOk());
+
+        jdbc.update("UPDATE SHOP SET STATUS = 'INACTIVE' WHERE SHOP_ID = ?", shopId);
+        mvc.perform(get("/api/v1/shops/{shopId}", shopId).header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isOk());
+
+        jdbc.update("UPDATE SHOP SET STATUS = 'REJECTED', REJECT_REASON = '승인 취소' WHERE SHOP_ID = ?", shopId);
+        mvc.perform(get("/api/v1/shops/{shopId}", shopId).header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("COMMON_401"));
     }
 
     @Test

@@ -20,6 +20,7 @@
 - HS256 JWT, 유효기간 기본 24시간(`app.jwt.access-token-validity`). 리프레시 토큰은 없다.
 - 요청 헤더: `Authorization: Bearer {accessToken}`
 - 만료·변조·형식 오류 토큰은 비로그인으로 처리한다. 로그인이 필요한 API에서 `COMMON_401`.
+- 매장(OWNER) 토큰은 요청마다 `SHOP.STATUS`를 확인한다. 관리자가 승인을 취소해 `PENDING`·`REJECTED`가 되면 이미 발급한 토큰도 비로그인(`COMMON_401`)으로 처리한다. `INACTIVE`는 계속 쓸 수 있다.
 - 로그아웃은 클라이언트가 토큰을 지운다. 서버에 로그아웃 API는 없다.
 - 서명 키: `JWT_SECRET` 환경변수(32바이트 이상). prod는 미설정 시 기동하지 않는다. local·test는 `application.yml`의 더미 키를 쓴다.
 - local·test 프로필에서는 기존 테스트 사용자(`X-Test-User` 또는 `Authorization: Bearer OWNER_1` 등)도 그대로 동작한다. 테스트 사용자 값이 아니면 JWT로 검증한다.

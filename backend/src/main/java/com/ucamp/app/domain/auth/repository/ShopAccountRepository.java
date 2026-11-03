@@ -1,5 +1,6 @@
 package com.ucamp.app.domain.auth.repository;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import jakarta.persistence.LockModeType;
@@ -24,6 +25,8 @@ public interface ShopAccountRepository extends JpaRepository<ShopAccount, Long> 
     boolean existsByBusinessNumber(String businessNumber);
 
     boolean existsByShopIdAndStatus(Long shopId, ShopAccountStatus status);
+
+    boolean existsByShopIdAndStatusIn(Long shopId, Collection<ShopAccountStatus> statuses);
 
     Page<ShopAccount> findByStatus(ShopAccountStatus status, Pageable pageable);
 
