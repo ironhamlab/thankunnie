@@ -4,10 +4,6 @@
   align-items: start;
   gap: 24px;
 }
-/* 예약이 적어 목록이 짧으면 목록 카드를 상세 높이까지 늘려 두 카드의 아래 끝을 맞춘다 */
-.grid > section {
-  align-self: stretch;
-}
 /* 목록을 내려도 고른 예약의 상세가 화면에 남아 있게 한다 */
 .grid > aside {
   position: sticky;
@@ -42,13 +38,96 @@
 /* 짧은 값은 한 줄로 두고, 이름·시술의 긴 영문이 열을 밀어 표가 넓어지지 않게 한다 */
 .table td.id,
 .table td.payment,
-.table td.status,
-.table td.detail {
+.table td.status {
   white-space: nowrap;
 }
 .table td.name,
 .table td.treatment {
   overflow-wrap: anywhere;
+}
+/* 행 전체가 상세를 여는 버튼이다 */
+.table tbody tr {
+  cursor: pointer;
+}
+.table tbody tr:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+/* 터치 화면에서는 누른 뒤에도 색이 남지 않게 마우스가 있을 때만 바꾼다 */
+@media (hover: hover) {
+  .table tbody tr:hover {
+    background: var(--color-primary-faint);
+  }
+}
+.table td.chevron {
+  color: var(--color-text-muted);
+  font-size: 20px;
+  line-height: 1;
+}
+/* 창 안에서는 창 자체가 카드라 상세 패널의 테두리와 여백을 뺀다 */
+/* 창이 떠 있는 동안 뒤 목록이 함께 스크롤되지 않게 하고, 창을 닫으면 보던 자리로 돌아온다 */
+html:has(.detailDialog[open]) {
+  overflow: hidden;
+}
+.detailDialog {
+  overscroll-behavior: contain;
+}
+.detailDialog.detailDialog section {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+/* 공용 페이지 이동을 이 화면에서만 오른쪽 아래에 둔다 */
+.pager > :global(.b-flex) {
+  justify-content: flex-end;
+}
+/* 넓은 화면에서는 양 끝 여백을 같게 하고, 뱃지·버튼 열은 머리글과 가운데 축을 맞춘다 */
+@media (min-width: 641px) {
+  .table th,
+  .table td {
+    padding: 10px 16px;
+  }
+  .table th:first-child,
+  .table td:first-child {
+    padding-left: 24px;
+  }
+  /* 행 높이를 맞추고 머리글과 10행 높이를 잡아, 건수가 달라도 이전·다음 버튼이 움직이지 않게 한다 */
+  .table td {
+    height: 52px;
+  }
+  .list {
+    min-height: 559px;
+  }
+  .table th:last-child,
+  .table td:last-child {
+    width: 48px;
+    padding-left: 0;
+    padding-right: 24px;
+    text-align: right;
+  }
+  /* 이름이 글자 중간에서 꺾이지 않도록 열마다 폭을 나눠 준다 */
+  .table th:nth-child(1) {
+    width: 11%;
+  }
+  .table th:nth-child(2) {
+    width: 17%;
+  }
+  .table th:nth-child(3) {
+    width: 18%;
+  }
+  .table th:nth-child(4) {
+    width: 22%;
+  }
+  .table th:nth-child(5) {
+    width: 13%;
+  }
+  .table th:nth-child(6) {
+    width: 15%;
+  }
+  .table th:nth-child(6),
+  .table td:nth-child(6) {
+    text-align: center;
+  }
 }
 /* 폰에서는 표를 예약 한 건씩 카드로 바꿔 옆으로 밀지 않고 읽게 한다 */
 @media (max-width: 640px) {
@@ -78,18 +157,17 @@
     display: flex;
     flex-direction: column;
   }
+  /* 한 화면에 여러 건이 보이도록 예약 한 건을 세 줄로 줄인다 */
   .table tr {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas:
-      'id status'
-      'name name'
-      'treatment treatment'
-      'time time'
-      'payment detail';
+      'name name status'
+      'treatment treatment chevron'
+      'time payment chevron';
     align-items: center;
-    gap: 4px 12px;
-    padding: 16px 20px;
+    gap: 2px 8px;
+    padding: 12px 16px;
     border-top: 1px solid var(--color-border);
   }
   .table td.id,
@@ -98,17 +176,13 @@
   .table td.time,
   .table td.payment,
   .table td.status,
-  .table td.detail {
+  .table td.chevron {
     padding: 0;
     border: 0;
   }
+  /* 예약번호는 상세 창에서 보여준다 */
   .table td.id {
-    grid-area: id;
-    color: var(--color-text-muted);
-    font-size: 11px;
-  }
-  .table td.id::before {
-    content: '예약번호 ';
+    display: none;
   }
   .table td.name {
     grid-area: name;
@@ -120,19 +194,21 @@
   }
   .table td.time {
     grid-area: time;
-    font-size: 13px;
+    font-size: 12px;
+    white-space: nowrap;
     color: var(--color-text-secondary);
   }
   .table td.payment {
     grid-area: payment;
+    font-size: 12px;
     color: var(--color-text-secondary);
   }
   .table td.status {
     grid-area: status;
     justify-self: end;
   }
-  .table td.detail {
-    grid-area: detail;
+  .table td.chevron {
+    grid-area: chevron;
     justify-self: end;
   }
 }

@@ -15,13 +15,21 @@ import Notice from '@/components/common/Notice';
 /**
  * 예약 상세 (매장 예약 현황·고객 내 예약 공용). 매장은 예약자 연락처를, 고객은 매장을 본다.
  * 취소 버튼은 서버가 취소 가능(확정 + 시작 전)으로 알려준 예약에만 보이고, 취소 화면(E)으로 이동한다.
+ *
+ * @param hideHeading     창 제목이 이미 "예약 상세" 일 때 같은 제목을 또 보여주지 않는다
+ * @param keepWhileLoading 다음 상세를 받는 동안 지금 상세를 유지해, 패널이 줄어 화면이 튀지 않게 한다
  */
-export default function ReservationDetailPanel({ viewer, cancelPath }) {
+export default function ReservationDetailPanel({
+  viewer,
+  cancelPath,
+  hideHeading = false,
+  keepWhileLoading = false,
+}) {
   const detail = useReservationStore((state) => state.detail);
   const detailStatus = useReservationStore((state) => state.detailStatus);
   const detailError = useReservationStore((state) => state.detailError);
 
-  if (detailStatus === 'loading') {
+  if (detailStatus === 'loading' && !(keepWhileLoading && detail)) {
     return (
       <Panel as="section" padded role="status">
         예약 상세를 불러오는 중입니다.
@@ -47,7 +55,7 @@ export default function ReservationDetailPanel({ viewer, cancelPath }) {
       <div className="b-row b-panel-heading">
         <div>
           <small className="b-muted">예약번호 {summary.reservationId}</small>
-          <h2>예약 상세</h2>
+          {!hideHeading && <h2>예약 상세</h2>}
         </div>
         <Badge className={status.tone}>{status.label}</Badge>
       </div>
