@@ -332,14 +332,23 @@ function MemoEditor({ userId, memo }) {
   const memoError = useOwnerCustomerStore((state) => state.memoError);
   const savedText = memo?.memo ?? '';
   const [draft, setDraft] = useState(savedText);
+  // 초안이 어떤 저장 메모에서 시작했는지. 저장 결과가 늦게 와서 메모가 바뀌면 손대지 않은 초안만 맞춘다
+  const [baseText, setBaseText] = useState(savedText);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const saving = memoStatus === 'saving';
   const changed = draft.trim() !== savedText;
 
+  if (savedText !== baseText) {
+    setBaseText(savedText);
+    if (draft === baseText) setDraft(savedText);
+  }
+
+  // 저장 중에 더 고친 내용은 그대로 두고, 보낸 그대로면 앞뒤 공백을 지운 저장 값으로 맞춘다
   const save = async () => {
-    const ok = await saveMemo(userId, draft);
+    const submitted = draft;
+    const ok = await saveMemo(userId, submitted);
     if (ok) {
-      setDraft((current) => (current.trim() === current ? current : current.trim()));
+      setDraft((current) => (current === submitted ? submitted.trim() : current));
     }
   };
 
