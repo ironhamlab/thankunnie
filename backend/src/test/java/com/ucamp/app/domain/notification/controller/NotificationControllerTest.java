@@ -230,7 +230,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    @DisplayName("사장님은 알림 스트림에 연결할 수 없다")
+    @DisplayName("매장은 알림 스트림에 연결할 수 없다")
     void stream_owner_returnsForbidden() throws Exception {
         willThrow(new BusinessException(ErrorCode.FORBIDDEN))
                 .given(notificationInboxService).countUnread(any(AuthUser.class));
@@ -254,7 +254,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    @DisplayName("사장님은 받은 알림을 조회할 수 없다")
+    @DisplayName("매장은 받은 알림을 조회할 수 없다")
     void getInbox_owner_returnsForbidden() throws Exception {
         willThrow(new BusinessException(ErrorCode.FORBIDDEN))
                 .given(notificationInboxService).getMyInbox(any(AuthUser.class), any());

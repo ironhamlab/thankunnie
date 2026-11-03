@@ -20,9 +20,9 @@ import com.ucamp.app.domain.reservation.dto.response.ReservationStatsResponse;
 import com.ucamp.app.domain.reservation.service.ReservationDashboardService;
 
 /**
- * 사장님 메인 대시보드 API. 매장은 로그인한 사장님의 매장으로 정해진다.
+ * 매장 메인 대시보드 API. 매장은 로그인한 매장 계정으로 정해진다.
  */
-@Tag(name = "사장님 대시보드", description = "메인 요약 지표와 기간 통계")
+@Tag(name = "매장 대시보드", description = "메인 요약 지표와 기간 통계")
 @RestController
 @RequestMapping("/api/v1/owner/dashboard")
 public class OwnerDashboardController {
@@ -33,7 +33,7 @@ public class OwnerDashboardController {
         this.reservationDashboardService = reservationDashboardService;
     }
 
-    @Operation(summary = "사장님 메인 대시보드",
+    @Operation(summary = "매장 메인 대시보드",
             description = "오늘 확정·남은 예약, 휴무 여부, 남은 빈 시간대와 이번 달(시술일 기준) 요약: "
                     + "확정 예약 금액, 고객·매장 사유 취소, 고객 취소율, 취소로 남은 예약금, 재판매 금액·회수율, 초임박 판매")
     @GetMapping
@@ -41,7 +41,7 @@ public class OwnerDashboardController {
         return ResponseEntity.ok(ApiResponse.success(reservationDashboardService.getOwnerDashboard(loginUser)));
     }
 
-    @Operation(summary = "사장님 기간 통계",
+    @Operation(summary = "매장 기간 통계",
             description = "from~to 시술일(둘 다 포함, 최대 92일). 생략 시 이번 달 1일~말일. "
                     + "기간 요약, 날짜별 추이, 시술별 성과")
     @GetMapping("/stats")

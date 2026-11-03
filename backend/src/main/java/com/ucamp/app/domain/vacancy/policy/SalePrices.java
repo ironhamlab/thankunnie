@@ -5,7 +5,7 @@ import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.policy.BookingPolicy;
 
 /**
- * 사장님이 시술에 입력한 구간별 최종 판매가(원). 임박 구간은 가격 변동 없이 일반 판매가를 쓰고 화면 강조에만 쓴다.
+ * 매장이 시술에 입력한 구간별 최종 판매가(원). 임박 구간은 가격 변동 없이 일반 판매가를 쓰고 화면 강조에만 쓴다.
  * 할인이 없으면 정가와 같은 값을, 초임박 추가 할인이 없으면 일반 판매가와 같은 값을 입력한다.
  *
  * @param normal     일반·임박 구간 판매가 (treatment.price)

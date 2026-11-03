@@ -1,4 +1,5 @@
 import AuthField from './AuthField';
+import SignupVerificationFields from './SignupVerificationFields';
 
 /**
  * 가입 공통 계정 입력 (아이디·비밀번호·비밀번호 확인). 고객·매장 가입이 같은 규칙을 쓴다.
@@ -13,6 +14,7 @@ export default function AccountFields({
   errors,
   loginIdLabel = '아이디',
   loginIdClassName,
+  verification,
 }) {
   return (
     <>
@@ -24,8 +26,9 @@ export default function AccountFields({
         onChange={onChange}
         autoComplete="username"
         hint="영문 소문자·숫자 4~20자"
-        error={errors.loginId}
+        error={verification?.isLoginIdChecked ? '' : errors.loginId}
       />
+      {verification && <SignupVerificationFields verification={verification} mode="loginId" />}
       <AuthField
         label="비밀번호"
         name="password"

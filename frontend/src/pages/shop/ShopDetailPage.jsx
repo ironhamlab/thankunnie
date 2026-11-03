@@ -32,6 +32,7 @@ const businessDay = (date) => BUSINESS_DAYS[new Date(`${date}T00:00:00Z`).getUTC
  * 예약은 1단계 시술 선택 → 2단계 날짜·30분 단위 시간 선택 순서로 진행한다.
  * 선택값(view, treatmentId, step, date, time)은 화면 상태로만 두며, 주소는 /shops/:shopId 로 유지한다.
  * 탐색 화면(마감 임박·시간 버튼·매장 카드)에서 ?date=&treatmentId=&startsAt= 로 들어오면 처음 선택값으로만 쓴다.
+ * ?view=info 로 들어오면 예약하기 대신 상세정보를 먼저 보여준다 (탐색 지도의 매장 보기).
  *
  * 매장 상세는 일반 시술만, 초보 시술 모집 상세(model, /shops/:shopId/models)는 초보 시술만 같은 흐름으로 보여준다.
  * 초보 시술 모집은 시술 선택 → 모집 안내 확인(참여 조건·촬영 안내 + 필수 체크) → 날짜·시간 선택 3단계다.
@@ -45,6 +46,7 @@ export default function ShopDetailPage({ model = false }) {
   const initialSelection = () => {
     const startsAt = params.get('startsAt');
     const initial = { shopId };
+    if (params.get('view')) initial.view = params.get('view');
     if (params.get('treatmentId')) initial.treatmentId = params.get('treatmentId');
     const date = startsAt ? startsAt.slice(0, 10) : params.get('date');
     if (date) initial.date = date;

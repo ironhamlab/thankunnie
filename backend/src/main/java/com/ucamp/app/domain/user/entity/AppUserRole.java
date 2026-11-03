@@ -3,7 +3,7 @@ package com.ucamp.app.domain.user.entity;
 import com.ucamp.app.common.auth.UserRole;
 
 /**
- * APP_USER.ROLE 값. 사장님은 회원이 아니라 매장(SHOP) 계정이므로 여기에 없다.
+ * APP_USER.ROLE 값. 매장은 회원이 아니라 매장(SHOP) 계정이므로 여기에 없다.
  */
 public enum AppUserRole {
     USER(UserRole.CUSTOMER),

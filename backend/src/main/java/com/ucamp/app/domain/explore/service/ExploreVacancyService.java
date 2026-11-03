@@ -39,7 +39,7 @@ import com.ucamp.app.domain.vacancy.policy.SalePrices;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 /**
- * 고객 빈자리 탐색 (C-01 목록, C-02 지도 매장 요약). 사장님이 연 시간대(OPEN) 안에서 지금 예약할 수 있는 시술 × 시작 시각을 구한다.
+ * 고객 빈자리 탐색 (C-01 목록, C-02 지도 매장 요약). 매장이 연 시간대(OPEN) 안에서 지금 예약할 수 있는 시술 × 시작 시각을 구한다.
  * 타임세일(가격 구간 초임박)과 메인 임박 빈자리는 OPEN 없이 영업시간 안 빈 시각에서 구한다.
  * 예약 가능 판단과 가격은 B 의 AvailabilityService·PriceCalculator 를 그대로 쓴다.
  * 시작 시각을 계산한 뒤 거르고 정렬하므로 페이지 처리·매장 묶기는 메모리에서 한다.
@@ -113,7 +113,7 @@ public class ExploreVacancyService {
 
     /**
      * 메인 화면 임박 빈자리. 지금부터 8시간 안에 시작하는 일반 시술 빈자리를 매장마다 가장 빠른 1건씩,
-     * 빠른 시작순으로 최대 10개 돌려준다. 사장님이 열지 않아도 영업시간 안 빈 시각이면 나온다
+     * 빠른 시작순으로 최대 10개 돌려준다. 매장이 열지 않아도 영업시간 안 빈 시각이면 나온다
      * (빈 시각 판단은 B 의 가용 시간 계산: 영업시간 + 열기 − 닫기 − 예약, 예약 클릭 마감 반영).
      */
     public List<ExploreVacancyResponse> searchImminent() {

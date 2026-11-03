@@ -57,7 +57,7 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("사장님은 회원 테이블을 조회하지 않고 403 이다")
+    @DisplayName("매장은 회원 테이블을 조회하지 않고 403 이다")
     void getMyProfile_owner_forbidden() {
         assertThatThrownBy(() -> userService.getMyProfile(TestUser.OWNER_1.toAuthUser()))
                 .isInstanceOf(BusinessException.class)

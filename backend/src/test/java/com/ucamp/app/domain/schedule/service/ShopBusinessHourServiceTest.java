@@ -141,7 +141,7 @@ class ShopBusinessHourServiceTest {
     }
 
     @Test
-    @DisplayName("사장님이 아니면 영업시간을 저장할 수 없다")
+    @DisplayName("매장이 아니면 영업시간을 저장할 수 없다")
     void updateBusinessHours_customer_throwsForbidden() {
         assertThatThrownBy(() -> service.updateBusinessHours(customer, new BusinessHourSaveRequest(week(10, 20))))
                 .extracting("errorCode").isEqualTo(ErrorCode.FORBIDDEN);

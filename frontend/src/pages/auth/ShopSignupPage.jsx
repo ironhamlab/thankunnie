@@ -18,6 +18,9 @@ import AuthCard from './components/AuthCard';
 import AuthField from './components/AuthField';
 import ShopAddressFields from './components/ShopAddressFields';
 import styles from './ShopSignupPage.module.css';
+import useSignupVerification from '@/hooks/useSignupVerification';
+import BusinessVerificationFields from './components/BusinessVerificationFields';
+import useBusinessVerification from '@/hooks/useBusinessVerification';
 
 const EMPTY_FORM = {
   loginId: '',
@@ -26,6 +29,9 @@ const EMPTY_FORM = {
   categoryId: '',
   name: '',
   phone: '',
+  businessNumber: '',
+  representativeName: '',
+  openedOn: '',
   address: '',
   addressDetail: '',
   regionCode: '',
@@ -48,8 +54,8 @@ const toNullable = (value) => value.trim() || null;
 const toCoordinate = (value) => Number(Number(value).toFixed(7));
 
 /**
- * 사장님(매장) 가입 (REQ-006). 매장 하나당 계정 하나이며, 계정과 매장 필수 정보를 함께 등록한다.
- * 가입하면 바로 사장님으로 로그인되어 사장님 센터로 이동한다. 대표 이미지는 가입 후 매장 정보에서 올린다.
+ * 매장 가입 (REQ-006). 매장 하나당 계정 하나이며, 계정과 매장 필수 정보를 함께 등록한다.
+ * 가입하면 바로 매장으로 로그인되어 매장 센터로 이동한다. 대표 이미지는 가입 후 매장 정보에서 올린다.
  */
 export default function ShopSignupPage() {
   const navigate = useNavigate();
@@ -62,6 +68,9 @@ export default function ShopSignupPage() {
   const categoriesError = useAuthStore((state) => state.shopCategoriesError);
   const loadShopCategories = useAuthStore((state) => state.loadShopCategories);
   const [form, setForm] = useState(EMPTY_FORM);
+  const businessVerification = useBusinessVerification(form);
+  // 매장은 사업자등록번호로 가입자를 확인하므로 아이디 중복 확인만 사용한다
+  const verification = useSignupVerification(ACCOUNT_TYPE.SHOP, form.loginId, '');
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
@@ -70,6 +79,10 @@ export default function ShopSignupPage() {
   }, [loadShopCategories, clearError]);
 
   const updateForm = (partial) => {
+    if (['businessNumber', 'representativeName', 'openedOn'].some((key) => key in partial)) {
+      businessVerification.reset();
+    }
+    if ('loginId' in partial) verification.resetLoginId();
     setForm((prev) => ({ ...prev, ...partial }));
     // 위치(지역코드·좌표) 오류는 주소 칸에 표시하므로 위치가 바뀌면 주소 오류도 함께 지운다
     const changedKeys = Object.keys(partial);
@@ -82,12 +95,20 @@ export default function ShopSignupPage() {
     }));
   };
 
-  const handleChange = (event) => updateForm({ [event.target.name]: event.target.value });
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    updateForm({
+      [name]: name === 'businessNumber' ? value.replace(/[^0-9]/g, '').slice(0, 10) : value,
+    });
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     const errors = collectErrors({
-      loginId: validateLoginId(form.loginId),
+      businessNumber: businessVerification.verified ? '' : '사업자 정보 확인을 완료해 주세요.',
+      loginId:
+        validateLoginId(form.loginId) ||
+        (!verification.isLoginIdChecked ? '아이디 중복 확인을 해 주세요.' : ''),
       password: validatePassword(form.password),
       passwordConfirm: validatePasswordConfirm(form.password, form.passwordConfirm),
       categoryId: form.categoryId ? '' : '카테고리를 선택해 주세요.',
@@ -113,6 +134,9 @@ export default function ShopSignupPage() {
         latitude: toCoordinate(form.latitude),
         longitude: toCoordinate(form.longitude),
         phone: form.phone.trim(),
+        businessNumber: form.businessNumber,
+        representativeName: form.representativeName.trim(),
+        openedOn: form.openedOn,
         description: toNullable(form.description),
         notice: toNullable(form.notice),
       });
@@ -141,8 +165,16 @@ export default function ShopSignupPage() {
             errors={fieldErrors}
             loginIdLabel="매장 아이디"
             loginIdClassName="b-span-two"
+            verification={verification}
           />
         </section>
+
+        <BusinessVerificationFields
+          form={form}
+          onChange={handleChange}
+          verification={businessVerification}
+          error={fieldErrors.businessNumber}
+        />
 
         <section className="b-form-grid" aria-labelledby="shop-signup-shop">
           <h2 id="shop-signup-shop" className="b-span-two">
@@ -222,7 +254,7 @@ export default function ShopSignupPage() {
       <p className={styles.links}>
         이미 매장 계정이 있으신가요?{' '}
         <Link to={ROUTES.LOGIN} state={{ from: { pathname: ROUTES.OWNER } }}>
-          사장님 로그인
+          매장 로그인
         </Link>
       </p>
     </AuthCard>

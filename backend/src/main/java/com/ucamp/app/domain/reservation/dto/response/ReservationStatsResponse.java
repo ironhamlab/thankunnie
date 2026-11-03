@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * 사장님 통계 화면. 시술일 기준이며 확정·취소 완료 예약만 센다.
+ * 매장 통계 화면. 시술일 기준이며 확정·취소 완료 예약만 센다.
  *
  * @param summary    기간 요약 (기간은 summary.from ~ summary.to)
  * @param daily      날짜별 추이. 예약이 없는 날도 0 으로 채워 기간 전체를 담는다

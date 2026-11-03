@@ -9,8 +9,8 @@ export const TEST_USERS = [
   { value: ANONYMOUS, label: '비로그인' },
   { value: 'CUSTOMER_1', label: '고객 1 (고객일)' },
   { value: 'CUSTOMER_2', label: '고객 2 (고객이)' },
-  { value: 'OWNER_1', label: '사장님 1 (매장 1)' },
-  { value: 'OWNER_2', label: '사장님 2 (매장 2)' },
+  { value: 'OWNER_1', label: '매장 1' },
+  { value: 'OWNER_2', label: '매장 2' },
   { value: 'ADMIN', label: '관리자' },
 ];
 

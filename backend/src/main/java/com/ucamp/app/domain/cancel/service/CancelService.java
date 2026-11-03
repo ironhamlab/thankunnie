@@ -56,7 +56,7 @@ public class CancelService {
         return OwnerCancelResponse.of(settle(accepted, ownerReason(request)), accepted);
     }
 
-    // PG 취소 사유는 유형별 고정 문구에 사장님이 입력한 사유를 덧붙인다
+    // PG 취소 사유는 유형별 고정 문구에 매장이 입력한 사유를 덧붙인다
     private String ownerReason(OwnerCancelRequest request) {
         String prefix = request.cancelType() == CancelType.SHOP_FAULT ? SHOP_FAULT_REASON : CUSTOMER_REQUEST_REASON;
         return request.reason() == null || request.reason().isBlank() ? prefix : prefix + ": " + request.reason();

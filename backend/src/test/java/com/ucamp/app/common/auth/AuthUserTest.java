@@ -31,13 +31,13 @@ class AuthUserTest {
     }
 
     @Test
-    @DisplayName("본인 매장의 사장님이면 통과한다")
+    @DisplayName("본인 매장 계정이면 통과한다")
     void requireShopOwner_ownShop_passes() {
         assertThatCode(() -> owner.requireShopOwner(owner.shopId())).doesNotThrowAnyException();
     }
 
     @Test
-    @DisplayName("다른 매장의 사장님이면 FORBIDDEN 예외가 발생한다")
+    @DisplayName("다른 매장 계정이면 FORBIDDEN 예외가 발생한다")
     void requireShopOwner_otherShop_throwsForbidden() {
         Long otherShopId = TestUser.OWNER_2.toAuthUser().shopId();
 
@@ -47,7 +47,7 @@ class AuthUserTest {
     }
 
     @Test
-    @DisplayName("사장님이 아니면 매장 ID 와 관계없이 FORBIDDEN 예외가 발생한다")
+    @DisplayName("매장이 아니면 매장 ID 와 관계없이 FORBIDDEN 예외가 발생한다")
     void requireShopOwner_notOwner_throwsForbidden() {
         assertThatThrownBy(() -> admin.requireShopOwner(owner.shopId()))
                 .isInstanceOf(BusinessException.class)
@@ -55,7 +55,7 @@ class AuthUserTest {
     }
 
     @Test
-    @DisplayName("매장 ID 가 null 이면 사장님이어도 FORBIDDEN 예외가 발생한다")
+    @DisplayName("매장 ID 가 null 이면 매장이어도 FORBIDDEN 예외가 발생한다")
     void requireShopOwner_nullShopId_throwsForbidden() {
         assertThatThrownBy(() -> owner.requireShopOwner(null))
                 .isInstanceOf(BusinessException.class)
@@ -63,7 +63,7 @@ class AuthUserTest {
     }
 
     @Test
-    @DisplayName("매장 ID 가 없는 사장님은 생성할 수 없다")
+    @DisplayName("매장 ID 가 없는 매장은 생성할 수 없다")
     void create_ownerWithoutShop_throwsException() {
         assertThatThrownBy(() -> new AuthUser(99L, UserRole.OWNER, null))
                 .isInstanceOf(IllegalArgumentException.class);

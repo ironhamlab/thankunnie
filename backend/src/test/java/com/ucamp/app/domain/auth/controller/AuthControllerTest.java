@@ -32,7 +32,7 @@ class AuthControllerTest {
     private AuthService authService;
 
     @Test
-    @DisplayName("사장님 테스트 사용자는 ID·역할·매장 ID 를 반환한다")
+    @DisplayName("매장 테스트 사용자는 ID·역할·매장 ID 를 반환한다")
     void getMe_owner_returnsUserWithShop() throws Exception {
         mockMvc.perform(get("/api/v1/auth/me").header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
                 .andExpect(status().isOk())

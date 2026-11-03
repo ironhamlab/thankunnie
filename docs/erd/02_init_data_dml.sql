@@ -20,7 +20,7 @@ INSERT INTO CATEGORY (CATEGORY_ID, NAME) VALUES (5, '메이크업');
 
 -- ---------------------------------------------------------------------
 -- 회원: X-Test-User CUSTOMER_1(1), CUSTOMER_2(2), ADMIN(21)
--- 사장님 계정은 매장(SHOP) 행에 있다
+-- 매장 계정은 매장(SHOP) 행에 있다
 -- ---------------------------------------------------------------------
 INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, STATUS, ROLE, CREATED_AT, UPDATED_AT)
 VALUES (1, 'customer1', '$2a$10$VGbJJf3D1hpZOQRyyP2lIOjNjXvIYgRrMg/JO8j7qUWYrKIP296kO', '고객일', '010-1111-1111', 'ACTIVE', 'USER',

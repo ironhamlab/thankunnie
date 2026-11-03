@@ -2,7 +2,7 @@ package com.ucamp.app.domain.auth.dto.request;
 
 import java.nio.charset.StandardCharsets;
 
-/** 가입 요청의 입력 형식 규칙. 고객·사장님 가입이 같은 규칙을 쓴다. */
+/** 가입 요청의 입력 형식 규칙. 고객·매장 가입이 같은 규칙을 쓴다. */
 final class AuthInputRules {
 
     static final String LOGIN_ID = "^[a-z0-9]{4,20}$";

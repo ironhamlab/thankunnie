@@ -27,6 +27,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +45,8 @@ import com.ucamp.app.domain.auth.controller.AuthController;
 import com.ucamp.app.domain.auth.entity.ShopAccount;
 import com.ucamp.app.domain.auth.repository.ShopAccountRepository;
 import com.ucamp.app.domain.auth.service.AuthService;
+import com.ucamp.app.domain.auth.service.AuthPhoneVerificationService;
+import com.ucamp.app.domain.auth.service.AuthBusinessVerificationService;
 import com.ucamp.app.domain.shop.controller.ShopController;
 import com.ucamp.app.domain.shop.entity.Shop;
 import com.ucamp.app.domain.shop.repository.ShopRepository;
@@ -87,6 +90,13 @@ class AuthIntegrationTest {
     private EntityManager entityManager;
     @Autowired
     private TermsAgreementService termsAgreementService;
+
+    // 이 테스트는 기존 가입·JWT·약관 흐름을 검증한다. 실제 인증은 별도 통합 테스트에서 검증한다.
+    @MockitoBean
+    private AuthPhoneVerificationService phoneVerificationService;
+
+    @MockitoBean
+    private AuthBusinessVerificationService businessVerificationService;
 
     @BeforeEach
     void setUp() {
@@ -389,7 +399,7 @@ class AuthIntegrationTest {
     }
 
     @Test
-    @DisplayName("사장님은 약관 동의 API 를 쓸 수 없다 (403)")
+    @DisplayName("매장은 약관 동의 API 를 쓸 수 없다 (403)")
     void agree_owner_returnsForbidden() throws Exception {
         JsonNode data = data(signupShop("owner10").andExpect(status().isCreated()));
 
@@ -407,7 +417,8 @@ class AuthIntegrationTest {
         return mvc.perform(post("/api/v1/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"loginId":"%s","password":"%s","name":"김언니","phone":"01012345678","agreedTerms":%s}
+                        {"loginId":"%s","password":"%s","name":"김언니","phone":"01012345678",
+                         "agreedTerms":%s,"phoneVerificationId":"test-verification"}
                         """.formatted(loginId, PASSWORD, agreedTermsJson)));
     }
 
@@ -428,7 +439,8 @@ class AuthIntegrationTest {
         return """
                 {"loginId":"%s","password":"%s","categoryId":%d,"name":"언니네 네일","regionCode":"11680",
                  "address":"서울특별시 강남구 테헤란로 1","addressDetail":"2층",
-                 "latitude":37.4979,"longitude":127.0276,"phone":"02-111-1111"}
+                 "latitude":37.4979,"longitude":127.0276,"phone":"02-111-1111",
+                 "businessNumber":"1234567891","representativeName":"테스트 대표","openedOn":"2020-01-01"}
                 """.formatted(loginId, PASSWORD, categoryId);
     }
 

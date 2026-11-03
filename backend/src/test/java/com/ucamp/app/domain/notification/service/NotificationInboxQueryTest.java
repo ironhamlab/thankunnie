@@ -125,7 +125,7 @@ class NotificationInboxQueryTest {
     }
 
     @Test
-    @DisplayName("사장님은 받은 알림을 조회할 수 없다")
+    @DisplayName("매장은 받은 알림을 조회할 수 없다")
     void getMyInbox_owner_isForbidden() {
         assertThatThrownBy(() -> notificationInboxService.getMyInbox(OWNER, null))
                 .isInstanceOf(BusinessException.class)

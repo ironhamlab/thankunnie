@@ -1,6 +1,6 @@
 import Button from '@/components/common/Button';
 /**
- * 예약 목록 페이지 이동 (사장님 예약 현황·고객 내 예약 공용). 한 페이지뿐이면 그리지 않는다.
+ * 예약 목록 페이지 이동 (매장 예약 현황·고객 내 예약 공용). 한 페이지뿐이면 그리지 않는다.
  */
 export default function ReservationPagination({ page, pageInfo, onPageChange }) {
   if (pageInfo.totalPages <= 1) {

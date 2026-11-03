@@ -28,6 +28,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.util.TimeUtils;
+import com.ucamp.app.domain.auth.entity.ShopAccountStatus;
+import com.ucamp.app.domain.auth.repository.ShopAccountRepository;
 import com.ucamp.app.domain.reservation.entity.Reservation;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
@@ -56,14 +58,19 @@ class AvailabilityServiceTest {
     @Mock
     private ReservationRepository reservationRepository;
 
+    @Mock
+    private ShopAccountRepository shopAccountRepository;
+
     private AvailabilityService service;
 
     @BeforeEach
     void setUp() {
         Clock fixedClock = Clock.fixed(NOW.atZone(TimeUtils.KST).toInstant(), TimeUtils.KST);
-        service = new AvailabilityService(
-                shopBusinessHourRepository, shopScheduleExceptionRepository, reservationRepository, fixedClock);
+        service = new AvailabilityService(shopBusinessHourRepository, shopScheduleExceptionRepository,
+                reservationRepository, shopAccountRepository, fixedClock);
         // 소요 시간 검증 테스트는 DB 조회 전에 끝나므로 lenient 로 둔다
+        lenient().when(shopAccountRepository.existsByShopIdAndStatus(SHOP_ID, ShopAccountStatus.ACTIVE))
+                .thenReturn(true);
         lenient().when(shopBusinessHourRepository.findByShopId(SHOP_ID)).thenReturn(List.of(ShopBusinessHour.builder()
                 .shopId(SHOP_ID)
                 .dayOfWeek(BusinessDay.of(DATE))
@@ -77,6 +84,16 @@ class AvailabilityServiceTest {
     @DisplayName("영업시간 안의 빈 시각이면 예약할 수 있다")
     void validateAvailable_freeTime_passes() {
         assertThatCode(() -> service.validateAvailable(SHOP_ID, at(14, 0), ONE_HOUR)).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("승인이 취소되는 등 운영 중이 아닌 매장은 빈 시각이어도 예약할 수 없다")
+    void validateAvailable_shopNotActive_throwsNotOpenTime() {
+        given(shopAccountRepository.existsByShopIdAndStatus(SHOP_ID, ShopAccountStatus.ACTIVE)).willReturn(false);
+
+        assertThatThrownBy(() -> service.validateAvailable(SHOP_ID, at(14, 0), ONE_HOUR))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_NOT_OPEN_TIME);
     }
 
     @Test

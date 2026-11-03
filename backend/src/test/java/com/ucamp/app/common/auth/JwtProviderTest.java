@@ -35,7 +35,7 @@ class JwtProviderTest {
     }
 
     @Test
-    @DisplayName("사장님 토큰은 매장 ID 까지 복원한다")
+    @DisplayName("매장 토큰은 매장 ID 까지 복원한다")
     void issue_owner_keepsShopId() {
         AuthUser owner = new AuthUser(7L, UserRole.OWNER, 7L);
 
