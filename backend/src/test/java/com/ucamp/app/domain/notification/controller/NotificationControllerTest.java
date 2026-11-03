@@ -230,17 +230,36 @@ class NotificationControllerTest {
     }
 
     @Test
-    @DisplayName("사장님은 알림 스트림에 연결할 수 없다")
-    void stream_owner_returnsForbidden() throws Exception {
-        willThrow(new BusinessException(ErrorCode.FORBIDDEN))
-                .given(notificationInboxService).countUnread(any(AuthUser.class));
+    @DisplayName("사장님 스트림은 매장 연결로 안 읽은 수를 한 번 보낸다")
+    void stream_owner_sendsUnreadCount() throws Exception {
+        given(notificationInboxService.countUnread(any(AuthUser.class))).willReturn(1L);
 
-        mockMvc.perform(get(INBOX_URL + "/stream")
+        MvcResult result = mockMvc.perform(get(INBOX_URL + "/stream")
                         .header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .accept(MediaType.TEXT_EVENT_STREAM))
+                .andExpect(request().asyncStarted())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        AuthUser owner = TestUser.OWNER_1.toAuthUser();
+        assertThat(result.getResponse().getContentAsString()).contains("data:1");
+        assertThat(notificationInboxConnections.countShop(owner.shopId())).isEqualTo(1);
+        assertThat(notificationInboxConnections.count(owner.shopId())).isZero();
+        assertThat(notificationInboxConnections.count(owner.userId())).isZero();
+        notificationInboxConnections.completeAll();
+        mockMvc.perform(asyncDispatch(result));
+        assertThat(notificationInboxConnections.countShop(owner.shopId())).isZero();
+    }
+
+    @Test
+    @DisplayName("관리자는 알림 스트림에 연결할 수 없다")
+    void stream_admin_returnsForbidden() throws Exception {
+        mockMvc.perform(get(INBOX_URL + "/stream")
+                        .header(StubAuthFilter.HEADER_NAME, "ADMIN")
                         .accept(MediaType.TEXT_EVENT_STREAM, MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("COMMON_403"));
-        assertThat(notificationInboxConnections.count(TestUser.OWNER_1.toAuthUser().userId())).isZero();
+        verify(notificationInboxService, never()).countUnread(any());
     }
 
     @Test
@@ -254,12 +273,23 @@ class NotificationControllerTest {
     }
 
     @Test
-    @DisplayName("사장님은 받은 알림을 조회할 수 없다")
-    void getInbox_owner_returnsForbidden() throws Exception {
+    @DisplayName("사장님은 본인 매장 알림을 조회한다")
+    void getInbox_owner_returnsList() throws Exception {
+        given(notificationInboxService.getMyInbox(any(AuthUser.class), eq(null)))
+                .willReturn(List.of(inboxResponse()));
+
+        mockMvc.perform(get(INBOX_URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].inboxId").value(10));
+    }
+
+    @Test
+    @DisplayName("관리자는 받은 알림을 조회할 수 없다")
+    void getInbox_admin_returnsForbidden() throws Exception {
         willThrow(new BusinessException(ErrorCode.FORBIDDEN))
                 .given(notificationInboxService).getMyInbox(any(AuthUser.class), any());
 
-        mockMvc.perform(get(INBOX_URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+        mockMvc.perform(get(INBOX_URL).header(StubAuthFilter.HEADER_NAME, "ADMIN"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("COMMON_403"));
     }

@@ -20,6 +20,7 @@ class NotificationInboxStreamServiceTest {
     private static final AuthUser CUSTOMER = TestUser.CUSTOMER_1.toAuthUser();
     private static final AuthUser OTHER_CUSTOMER = TestUser.CUSTOMER_2.toAuthUser();
     private static final AuthUser OWNER = TestUser.OWNER_1.toAuthUser();
+    private static final AuthUser ADMIN = TestUser.ADMIN.toAuthUser();
 
     private NotificationInboxService notificationInboxService;
     private NotificationInboxConnections connections;
@@ -66,13 +67,31 @@ class NotificationInboxStreamServiceTest {
     }
 
     @Test
-    @DisplayName("고객이 아니면 연결을 만들지 않는다")
-    void open_owner_doesNotRegister() {
-        given(notificationInboxService.countUnread(OWNER))
-                .willThrow(new BusinessException(ErrorCode.FORBIDDEN));
+    @DisplayName("사장님 연결은 매장 ID로 남고 같은 숫자의 고객 연결과는 따로다")
+    void open_owner_registersShopConnection() {
+        given(notificationInboxService.countUnread(CUSTOMER)).willReturn(1L);
+        given(notificationInboxService.countUnread(OWNER)).willReturn(2L);
 
-        assertThatThrownBy(() -> notificationInboxStreamService.open(OWNER))
-                .isInstanceOf(BusinessException.class);
+        notificationInboxStreamService.open(CUSTOMER);
+        SseEmitter owner = notificationInboxStreamService.open(OWNER);
+
+        assertThat(connections.count(CUSTOMER.userId())).isEqualTo(1);
+        assertThat(connections.countShop(OWNER.shopId())).isEqualTo(1);
         assertThat(connections.count(OWNER.userId())).isZero();
+
+        connections.removeShop(OWNER.shopId(), owner);
+        assertThat(connections.countShop(OWNER.shopId())).isZero();
+        assertThat(connections.count(CUSTOMER.userId())).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("관리자는 연결을 만들지 않는다")
+    void open_admin_doesNotRegister() {
+        assertThatThrownBy(() -> notificationInboxStreamService.open(ADMIN))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.FORBIDDEN);
+        assertThat(connections.count(ADMIN.userId())).isZero();
+        assertThat(connections.countShop(OWNER.shopId())).isZero();
     }
 }

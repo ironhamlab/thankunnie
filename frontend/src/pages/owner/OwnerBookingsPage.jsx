@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { generatePath } from 'react-router-dom';
+import { generatePath, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { PAYMENT_STATUS, reservationStatusOf } from '@/constants/reservationStatus';
 import { useReservationStore } from '@/store/useReservationStore';
@@ -28,6 +28,15 @@ const SINGLE_COLUMN_QUERY = '(max-width: 1200px)';
 const cancelPath = (reservationId) =>
   generatePath(ROUTES.OWNER_RESERVATION_CANCEL, { reservationId });
 
+// 알림 링크의 ?reservationId= . 숫자만 예약 번호로 본다
+function reservationIdFromSearch(searchParams) {
+  const value = searchParams.get('reservationId');
+  if (!value || !/^\d+$/.test(value)) {
+    return null;
+  }
+  return Number(value);
+}
+
 /**
  * 사장님 예약 현황 (B-F6). 본인 매장 예약을 날짜·상태로 거르고, 고른 예약의 예약자·결제·취소 상태를 본다.
  */
@@ -47,7 +56,8 @@ export default function OwnerBookingsPage() {
   const [to, setTo] = useState('');
   const [filterKey, setFilterKey] = useState('ALL');
   const [page, setPage] = useState(0);
-  const [selectedId, setSelectedId] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const linkedId = reservationIdFromSearch(searchParams);
   const detailRef = useRef(null);
 
   useEffect(() => {
@@ -55,10 +65,9 @@ export default function OwnerBookingsPage() {
     loadReservations('owner', { from, to, statuses, page, size: PAGE_SIZE });
   }, [loadReservations, from, to, filterKey, page]);
 
-  // 고른 예약이 현재 목록에 없으면 첫 예약을 보여준다
-  const activeId = reservations.some((item) => item.reservationId === selectedId)
-    ? selectedId
-    : reservations[0]?.reservationId;
+  // 알림이 지정한 예약 번호가 있으면 그 상세를 연다. 목록에 없어도 그 번호를 조회한다.
+  // 번호가 없으면 지금 목록의 첫 예약을 보여준다.
+  const activeId = linkedId ?? reservations[0]?.reservationId;
 
   // 새 목록이 오기 전에는 상세를 부르지 않는다. 이전 목록의 상세가 새 조건의 결과처럼 보이지 않게 한다
   useEffect(() => {
@@ -72,10 +81,12 @@ export default function OwnerBookingsPage() {
     }
   }, [loadReservation, clearDetail, activeId, listStatus]);
 
-  // 상세 보기를 누르면 포커스를 상세로 옮겨, 키보드 사용자가 남은 목록 버튼을 거치지 않고 바로 상세를 읽게 한다.
-  // 한 단 화면에서는 상세가 목록 아래에 있어 상세 위치로 스크롤도 한다
-  const showDetail = (reservationId) => {
-    setSelectedId(reservationId);
+  // 알림이나 상세 보기로 예약을 고르면 포커스를 상세로 옮긴다.
+  // 한 단 화면에서는 상세가 목록 아래에 있어 상세 위치로 스크롤도 한다.
+  useEffect(() => {
+    if (!linkedId || listStatus !== 'succeeded') {
+      return;
+    }
     detailRef.current?.focus({ preventScroll: true });
     if (window.matchMedia(SINGLE_COLUMN_QUERY).matches) {
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -84,6 +95,12 @@ export default function OwnerBookingsPage() {
         block: 'start',
       });
     }
+  }, [linkedId, listStatus]);
+
+  const showDetail = (reservationId) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('reservationId', String(reservationId));
+    setSearchParams(next);
   };
 
   // 필터를 바꾸면 첫 페이지부터 다시 본다

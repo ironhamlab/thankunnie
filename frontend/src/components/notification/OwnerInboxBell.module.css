@@ -1,0 +1,138 @@
+.root {
+  position: relative;
+}
+
+.button {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  border-radius: 50%;
+  color: var(--color-text);
+}
+
+.button svg {
+  width: 21px;
+  height: 21px;
+}
+
+.count {
+  position: absolute;
+  top: -1px;
+  right: -2px;
+  z-index: 1;
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-radius: var(--radius-xl);
+  font-size: 10px;
+  min-width: 17px;
+  line-height: 17px;
+  text-align: center;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 45%, transparent);
+  transform-origin: center;
+}
+
+.count.isIncreased {
+  animation: countAttend 0.55s cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+@keyframes countAttend {
+  0% {
+    transform: scale(0.55);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 50%, transparent);
+  }
+  45% {
+    transform: scale(1.35);
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+  70% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .count.isIncreased {
+    animation: none;
+  }
+}
+
+.panel {
+  position: absolute;
+  z-index: 30;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  top: 44px;
+  right: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  box-shadow: var(--shadow-popover);
+  overflow: hidden;
+}
+
+.panel button {
+  border: 0;
+  background: none;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.panel button:disabled {
+  opacity: 0.45;
+}
+
+.title {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-surface);
+}
+
+.title strong {
+  font-size: 13px;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabs button {
+  padding: 4px 9px;
+  border-radius: var(--radius-xl);
+}
+
+.tabs button[aria-pressed='true'] {
+  color: var(--color-white);
+  background: var(--color-primary);
+}
+
+.item {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.item strong {
+  display: block;
+  font-size: 13px;
+}
+
+.item p {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-top: 5px;
+}
+
+.item small {
+  color: var(--color-text-muted);
+}

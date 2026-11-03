@@ -44,6 +44,7 @@ class NotificationInboxQueryTest {
     private static final AuthUser CUSTOMER = TestUser.CUSTOMER_1.toAuthUser();
     private static final AuthUser OTHER_CUSTOMER = TestUser.CUSTOMER_2.toAuthUser();
     private static final AuthUser OWNER = TestUser.OWNER_1.toAuthUser();
+    private static final AuthUser ADMIN = TestUser.ADMIN.toAuthUser();
 
     @Autowired
     private NotificationInboxService notificationInboxService;
@@ -125,12 +126,49 @@ class NotificationInboxQueryTest {
     }
 
     @Test
-    @DisplayName("사장님은 받은 알림을 조회할 수 없다")
-    void getMyInbox_owner_isForbidden() {
-        assertThatThrownBy(() -> notificationInboxService.getMyInbox(OWNER, null))
+    @DisplayName("사장님은 본인 매장 예약 알림만 보고 같은 숫자의 고객 알림은 보지 않는다")
+    void getMyInbox_owner_returnsOwnShopOnly() {
+        commitShops();
+        notificationInboxService.saveForShop(OWNER.shopId(), NotificationInboxCategory.RESERVATION,
+                "우리 매장", "김고객 님 · 젤네일 · 11월 2일 10:00 예약이 확정되었습니다.", "/owner/bookings");
+        notificationInboxService.saveForShop(2L, NotificationInboxCategory.RESERVATION,
+                "다른 매장", "다른 매장 예약", "/owner/bookings");
+        notificationInboxService.save(CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,
+                "고객 알림", "고객 문자", "/my-reservations");
+
+        assertThat(notificationInboxService.getMyInbox(OWNER, null))
+                .extracting(NotificationInboxResponse::title)
+                .containsExactly("우리 매장");
+        assertThat(notificationInboxService.getMyInbox(OWNER, NotificationInboxCategory.RESERVATION))
+                .extracting(NotificationInboxResponse::title)
+                .containsExactly("우리 매장");
+        assertThat(notificationInboxService.getMyInbox(OWNER, NotificationInboxCategory.INTEREST)).isEmpty();
+        assertThat(notificationInboxService.getMyInbox(CUSTOMER, null))
+                .extracting(NotificationInboxResponse::title)
+                .containsExactly("고객 알림");
+
+        assertThat(notificationInboxService.countUnread(OWNER)).isEqualTo(1);
+        assertThat(notificationInboxService.markAllRead(OWNER)).isZero();
+        assertThat(notificationInboxService.countUnread(CUSTOMER)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("관리자는 받은 알림을 조회할 수 없다")
+    void getMyInbox_admin_isForbidden() {
+        assertThatThrownBy(() -> notificationInboxService.getMyInbox(ADMIN, null))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.FORBIDDEN);
+    }
+
+    private void commitShops() {
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        template.executeWithoutResult(status -> {
+            NotificationFixture.category(jdbcTemplate, 10L, "네일");
+            NotificationFixture.shop(jdbcTemplate, OWNER.shopId(), 10L, "11680", "ACTIVE");
+            NotificationFixture.shop(jdbcTemplate, 2L, 10L, "11680", "ACTIVE");
+        });
     }
 
     /** 모두 읽음 시각을 NOW 로 고정한다. */

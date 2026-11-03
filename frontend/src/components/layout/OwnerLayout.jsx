@@ -6,11 +6,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useShopStore } from '@/store/useShopStore';
 import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
+import InboxToastStack from '@/components/notification/InboxToastStack';
+import OwnerInboxBell from '@/components/notification/OwnerInboxBell';
 import OwnerSidebar from './OwnerSidebar';
 import styles from './OwnerLayout.module.css';
 
 /**
- * 사장님 센터 레이아웃: 사이드바 + 상단 매장 정보 + 본문
+ * 사장님 센터 레이아웃: 사이드바 + 상단 매장 정보·알림 종 + 본문
  */
 export default function OwnerLayout() {
   const shop = useShopStore((s) => s.shop);
@@ -35,7 +37,8 @@ export default function OwnerLayout() {
         <div className="b-owner-body">
           <header className={styles.header}>
             <strong>{shop?.name}</strong>
-            <div className="b-flex">
+            <div className={`b-flex ${styles.actions}`}>
+              <OwnerInboxBell />
               {token && (
                 <Button type="button" size="small" onClick={handleLogout}>
                   로그아웃
@@ -50,6 +53,7 @@ export default function OwnerLayout() {
           </main>
         </div>
       </div>
+      <InboxToastStack />
     </div>
   );
 }
