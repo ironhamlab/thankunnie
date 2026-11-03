@@ -212,7 +212,7 @@ CREATE TABLE DEPOSIT_PAYMENT (
     CONSTRAINT FK_DEPOSIT_PAYMENT_RESERVATION FOREIGN KEY (RESERVATION_ID) REFERENCES RESERVATION (RESERVATION_ID)
 );
 CREATE SEQUENCE SEQ_DEPOSIT_PAYMENT START WITH 1000 INCREMENT BY 1;
--- 예약별 최근 결제 조회 (사장님 대시보드 장기 통계)
+-- 예약별 최근 결제 조회 (매장 대시보드 장기 통계)
 CREATE INDEX IDX_DEPOSIT_PAYMENT_RESERVATION_ID ON DEPOSIT_PAYMENT (RESERVATION_ID);
 
 -- ---------------------------------------------------------------------
@@ -272,7 +272,7 @@ CREATE TABLE SHOP_SCHEDULE_EXCEPTION (
 );
 CREATE SEQUENCE SEQ_SHOP_SCHEDULE_EXCEPTION START WITH 1000 INCREMENT BY 1;
 CREATE INDEX IDX_SHOP_SCHEDULE_EXCEPTION_SHOP_ID ON SHOP_SCHEDULE_EXCEPTION (SHOP_ID, STARTS_AT);
--- 취소하며 닫은 시간 확인 (사장님 대시보드 장기 통계)
+-- 취소하며 닫은 시간 확인 (매장 대시보드 장기 통계)
 CREATE INDEX IDX_SHOP_SCHEDULE_EXCEPTION_RESERVATION_ID ON SHOP_SCHEDULE_EXCEPTION (RESERVATION_ID);
 
 -- ---------------------------------------------------------------------
@@ -400,7 +400,7 @@ CREATE SEQUENCE SEQ_SHOP_IMAGE_CLEANUP START WITH 1000 INCREMENT BY 1;
 CREATE INDEX IDX_SHOP_IMG_CLEANUP_DUE ON SHOP_IMAGE_CLEANUP (STORAGE_SCOPE, NEXT_ATTEMPT_AT);
 
 -- ---------------------------------------------------------------------
--- 매장 고객 메모 (사장님만 보는 고객별 메모. 매장·고객당 1행. 고객 요청사항은 RESERVATION.CUSTOMER_REQUEST)
+-- 매장 고객 메모 (매장 계정만 보는 고객별 메모. 매장·고객당 1행. 고객 요청사항은 RESERVATION.CUSTOMER_REQUEST)
 -- 방문 횟수·누적 금액은 예약에서 계산하고 저장하지 않는다.
 -- ---------------------------------------------------------------------
 CREATE TABLE SHOP_CUSTOMER_MEMO (

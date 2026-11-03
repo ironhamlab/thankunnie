@@ -2035,7 +2035,7 @@ VALUES (602, 101, 586, 'CLOSE', TIMESTAMP '2026-11-04 19:00:00', TIMESTAMP '2026
         TIMESTAMP '2026-11-01 19:00:00', TIMESTAMP '2026-11-01 19:00:00');
 
 -- ---------------------------------------------------------------------
--- 사장님 대시보드 장기 시연 (UNNIE-188): 매장 101 홍대 핑크네일 2025-11-01 ~ 2026-09-30
+-- 매장 대시보드 장기 시연 (UNNIE-188): 매장 101 홍대 핑크네일 2025-11-01 ~ 2026-09-30
 -- - "최근 1년·전체" 분석과 고객 관리(신규·재방문)가 보이도록 위 UNNIE-154(2026-10~11) 앞 11개월 예약을 둔다.
 --   달마다 예약이 조금씩 늘고, 주말·오후가 붐비며, 고객 취소·대리 취소·매장 사유 취소와 그 시간의 재판매가 섞여 있다.
 -- - ID: 고객 111~140, 예약·결제 625~, 취소 514~, 고객 메모 1~ (모두 시퀀스 시작값 1000 미만).
@@ -4616,7 +4616,7 @@ INSERT INTO RESERVATION_CANCEL (CANCEL_ID, RESERVATION_ID, USER_ID, CANCEL_TYPE,
                                 PG_CANCEL_KEY, STATUS, REQUESTED_AT, COMPLETED_AT, CREATED_AT, UPDATED_AT)
 VALUES (537, 919, 108, 'CUSTOMER', 0, 0, NULL, 'COMPLETED',
         TIMESTAMP '2026-09-27 12:00:00', TIMESTAMP '2026-09-27 12:00:00', TIMESTAMP '2026-09-27 12:00:00', TIMESTAMP '2026-09-27 12:00:00');
--- 사장님 고객 메모
+-- 매장 고객 메모
 INSERT INTO SHOP_CUSTOMER_MEMO (MEMO_ID, SHOP_ID, USER_ID, MEMO, CREATED_AT, UPDATED_AT)
 VALUES (1, 101, 106, '누드톤 선호, 큐티클 정리 꼼꼼히. 주말 오전 선호', TIMESTAMP '2026-10-20 10:00:00', TIMESTAMP '2026-11-01 18:00:00');
 INSERT INTO SHOP_CUSTOMER_MEMO (MEMO_ID, SHOP_ID, USER_ID, MEMO, CREATED_AT, UPDATED_AT)
