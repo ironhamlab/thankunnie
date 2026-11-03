@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { generatePath, useSearchParams } from 'react-router-dom';
+import { generatePath, useLocation, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { PAYMENT_STATUS, reservationStatusOf } from '@/constants/reservationStatus';
 import { useReservationStore } from '@/store/useReservationStore';
@@ -59,9 +59,11 @@ export default function OwnerBookingsPage() {
   const [to, setTo] = useState('');
   const [filterKey, setFilterKey] = useState('ALL');
   const [page, setPage] = useState(0);
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const linkedId = reservationIdFromSearch(searchParams);
-  // 목록에서 고른 예약. 알림 링크와 따로 두어, 현재 목록에 없으면 첫 예약으로 돌아간다
+  // 목록에서 고른 예약. 현재 목록에 없으면 첫 예약으로 돌아간다.
+  // 주소의 예약 번호가 바뀌면 비워서, 뒤로 가기·다른 알림이 그 번호를 따르게 한다.
   const [selectedId, setSelectedId] = useState(null);
   // 이 화면에서 목록을 한 번 받은 뒤에는, 다음 목록을 받는 동안에도 표를 남겨 화면이 튀지 않게 한다
   const [hasLoadedList, setHasLoadedList] = useState(false);
@@ -71,8 +73,8 @@ export default function OwnerBookingsPage() {
   );
   const listRef = useRef(null);
   const detailRef = useRef(null);
-  // 알림으로 연 예약은 한 번만 포커스한다. 같은 번호로 목록만 다시 받으면 반복하지 않는다
-  const focusedIdRef = useRef(null);
+  // 같은 예약 번호로 다시 이동해도 상세를 연다. 목록만 다시 받을 때는 반복하지 않는다
+  const openedKeyRef = useRef(null);
 
   useEffect(() => {
     const media = window.matchMedia(CARD_LAYOUT_QUERY);
@@ -86,6 +88,10 @@ export default function OwnerBookingsPage() {
     media.addEventListener('change', handleChange);
     return () => media.removeEventListener('change', handleChange);
   }, []);
+
+  useEffect(() => {
+    setSelectedId((current) => (current != null && current !== linkedId ? null : current));
+  }, [linkedId]);
 
   useEffect(() => {
     const load = async () => {
@@ -120,13 +126,13 @@ export default function OwnerBookingsPage() {
     }
   }, [loadReservation, clearDetail, activeId, listStatus]);
 
-  // 알림 링크로 들어오면 포커스를 상세로 옮긴다.
-  // 폰에서는 상세 창을 열고, 한 단 화면에서는 상세 위치로 스크롤한다.
+  // 알림이나 목록에서 예약을 고르면 포커스를 상세로 옮긴다.
+  // 폰에서는 상세 창을 연다. 같은 알림을 다시 눌러도 주소 이동마다 다시 연다.
   useEffect(() => {
-    if (!linkedId || listStatus !== 'succeeded' || focusedIdRef.current === linkedId) {
+    if (!linkedId || listStatus !== 'succeeded' || openedKeyRef.current === location.key) {
       return;
     }
-    focusedIdRef.current = linkedId;
+    openedKeyRef.current = location.key;
     if (window.matchMedia(CARD_LAYOUT_QUERY).matches) {
       setIsDetailDialogOpen(true);
       return;
@@ -139,28 +145,14 @@ export default function OwnerBookingsPage() {
         block: 'start',
       });
     }
-  }, [linkedId, listStatus]);
+  }, [linkedId, listStatus, location.key]);
 
-  // 목록에서 고르면 그 예약을 기억하고 주소에도 남긴다.
-  // 폰에서는 상세 창을 연다. 넓은 화면에서는 상세로 포커스를 옮긴다.
+  // 목록에서 고르면 그 예약을 기억하고 주소에도 남긴다. 상세 창과 포커스는 위 효과가 연다.
   const showDetail = (reservationId) => {
     setSelectedId(reservationId);
-    focusedIdRef.current = reservationId;
     const next = new URLSearchParams(searchParams);
     next.set('reservationId', String(reservationId));
     setSearchParams(next);
-    if (isCardLayout) {
-      setIsDetailDialogOpen(true);
-      return;
-    }
-    detailRef.current?.focus({ preventScroll: true });
-    if (window.matchMedia(SINGLE_COLUMN_QUERY).matches) {
-      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      detailRef.current?.scrollIntoView({
-        behavior: reduceMotion ? 'auto' : 'smooth',
-        block: 'start',
-      });
-    }
   };
 
   // 폰은 목록이 화면보다 길어 페이지를 넘겨도 스크롤이 아래에 남으므로 목록 맨 위로 올린다
