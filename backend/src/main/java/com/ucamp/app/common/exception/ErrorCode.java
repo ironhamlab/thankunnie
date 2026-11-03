@@ -45,6 +45,7 @@ public enum ErrorCode {
     RESERVATION_NOT_HOLD(HttpStatus.CONFLICT, "RESERVATION_004", "결제 대기 중인 예약이 아닙니다."),
     RESERVATION_DEPOSIT_MISMATCH(HttpStatus.BAD_REQUEST, "RESERVATION_005", "결제 금액이 예약금과 다릅니다."),
     RESERVATION_HOLD_EXISTS(HttpStatus.CONFLICT, "RESERVATION_006", "결제 대기 중인 예약이 있습니다."),
+    RESERVATION_QUEUE_NOT_YOUR_TURN(HttpStatus.CONFLICT, "RESERVATION_007", "아직 예약 순서가 아닙니다."),
 
     // NOTIFICATION
     SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION_001", "구독을 찾을 수 없습니다."),

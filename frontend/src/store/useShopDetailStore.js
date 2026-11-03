@@ -32,7 +32,10 @@ export const useShopDetailStore = create((set, get) => ({
   loadAvailableTimes: async (shopId, date, durationMinutes) => {
     const timesRequestId = get().timesRequestId + 1;
     const key = `${shopId}-${date}-${durationMinutes}`;
-    set({ timesRequestId, times: { key, status: 'loading', startTimes: [], error: null } });
+    set({
+      timesRequestId,
+      times: { key, status: 'loading', startTimes: [], heldStartTimes: [], error: null },
+    });
     try {
       const response = await shopDetailApi.getAvailableTimes(shopId, date, durationMinutes);
       if (get().timesRequestId === timesRequestId) {
@@ -43,6 +46,8 @@ export const useShopDetailStore = create((set, get) => ({
             startTimes: response?.startTimes ?? [],
             // 영업시간 밖 연장 영업(사장님이 연 시간) 덕분에 가능한 시각. 화면에 연장 표시만 한다
             extendedStartTimes: response?.extendedStartTimes ?? [],
+            // 다른 고객이 결제 중이라 지금은 못 잡지만 대기열에 설 수 있는 시각
+            heldStartTimes: response?.heldStartTimes ?? [],
             error: null,
           },
         });
@@ -54,6 +59,7 @@ export const useShopDetailStore = create((set, get) => ({
             key,
             status: 'failed',
             startTimes: [],
+            heldStartTimes: [],
             error: toError(error, '예약 가능 시간을 불러오지 못했습니다.'),
           },
         });
