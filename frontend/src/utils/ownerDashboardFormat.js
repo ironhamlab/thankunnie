@@ -31,10 +31,53 @@ export const formatShortDate = (date) => {
   return `${month}/${day}`;
 };
 
+/** YYYY-MM-DD → "26.11" (월 단위 그래프 라벨) */
+export const formatShortMonth = (date) => `${date.slice(2, 4)}.${Number(date.slice(5, 7))}`;
+
 /** YYYY-MM-DD 가 속한 달의 1일·말일 */
 export const monthRange = (date) => {
   const [year, month] = date.split('-').map(Number);
   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const prefix = date.slice(0, 8);
   return { from: `${prefix}01`, to: `${prefix}${String(lastDay).padStart(2, '0')}` };
+};
+
+/** YYYY-MM-DD 두 날짜 사이 일수 (둘 다 포함) */
+export const daysBetween = (from, to) => (Date.parse(to) - Date.parse(from)) / 86400000 + 1;
+
+/** 요일 enum → 한 글자 */
+export const WEEKDAY_LABEL = {
+  MONDAY: '월',
+  TUESDAY: '화',
+  WEDNESDAY: '수',
+  THURSDAY: '목',
+  FRIDAY: '금',
+  SATURDAY: '토',
+  SUNDAY: '일',
+};
+export const WEEKDAYS = Object.keys(WEEKDAY_LABEL);
+
+/**
+ * 직전 기간 대비 변화. 비율(%)은 %p, 그 밖은 증감률(%)로 보여 준다.
+ * 비교할 값이 없으면 null. higherIsBetter 가 false 인 지표(취소율 등)는 늘면 나쁜 쪽이다.
+ *
+ * @returns {{ text: string, tone: 'good'|'bad'|'flat' } | null}
+ */
+export const describeChange = (
+  current,
+  previous,
+  { isRate = false, higherIsBetter = true } = {},
+) => {
+  if (current === null || current === undefined || previous === null || previous === undefined) {
+    return null;
+  }
+  // 비율 지표는 %p 차이, 나머지는 증감률. 직전 값이 0 이면 증감률을 낼 수 없다
+  if (!isRate && previous === 0) return null;
+  const diff = isRate ? current - previous : ((current - previous) / previous) * 100;
+  const rounded = Math.round(diff * 10) / 10;
+  if (rounded === 0) return { text: '변화 없음', tone: 'flat' };
+  const arrow = rounded > 0 ? '▲' : '▼';
+  const unit = isRate ? '%p' : '%';
+  const good = rounded > 0 === higherIsBetter;
+  return { text: `${arrow} ${Math.abs(rounded)}${unit}`, tone: good ? 'good' : 'bad' };
 };

@@ -33,7 +33,8 @@ let shopVacancySeq = 0;
 
 // 결과를 dataKey 하나에 담는 조회. 실패하면 빈 목록으로 두고 statusKey·errorKey 로 알린다.
 // 조건을 빠르게 바꾸면 이전 응답이 늦게 와서 현재 결과를 덮을 수 있어 요청 번호로 마지막 요청만 반영한다
-const simpleLoader = (set, keys, fetch) => {
+// keepDataOnError: 주기적으로 다시 받는 값은 한 번 실패해도 마지막으로 받은 값을 지우지 않는다
+const simpleLoader = (set, keys, fetch, { keepDataOnError = false } = {}) => {
   const { data: dataKey, status: statusKey, error: errorKey } = keys;
   let seq = 0;
   return async (params) => {
@@ -44,7 +45,11 @@ const simpleLoader = (set, keys, fetch) => {
       if (current === seq) set({ [dataKey]: data, [statusKey]: 'succeeded' });
     } catch (error) {
       if (current === seq)
-        set({ [dataKey]: [], [statusKey]: 'failed', [errorKey]: toError(error) });
+        set({
+          ...(keepDataOnError ? {} : { [dataKey]: [] }),
+          [statusKey]: 'failed',
+          [errorKey]: toError(error),
+        });
     }
   };
 };
@@ -104,11 +109,13 @@ export const useExploreStore = create((set, get) => ({
     set,
     { data: 'summaryShops', status: 'summaryShopsStatus', error: 'summaryShopsError' },
     fetchShops,
+    { keepDataOnError: true },
   ),
   loadSaleShops: simpleLoader(
     set,
     { data: 'saleShops', status: 'saleShopsStatus', error: 'saleShopsError' },
     () => fetchShops({ priceTier: 'LAST_MINUTE' }),
+    { keepDataOnError: true },
   ),
   loadHomeShops: simpleLoader(
     set,

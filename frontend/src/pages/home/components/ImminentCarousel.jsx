@@ -184,7 +184,10 @@ export default function ImminentCarousel({
               <span
                 className={`${styles.urgency} ${current.urgency !== '초임박 특가' ? styles.isSoon : ''}`}
               >
-                ● {current.urgency}
+                <span className={styles.urgencyDot} aria-hidden="true">
+                  ●
+                </span>{' '}
+                {current.urgency}
               </span>
               <VacancyCountdown
                 className={styles.closes}
@@ -215,7 +218,13 @@ export default function ImminentCarousel({
                     <b>{money(current.price)}</b>
                   </div>
                 </div>
-                <Button as={Link} variant="primary" to={current.shopPath}>
+                {/* 이 링크가 카드 전체를 덮어, 카드 어디를 눌러도 같은 예약 화면으로 간다 */}
+                <Button
+                  as={Link}
+                  variant="primary"
+                  className={styles.cardLink}
+                  to={current.shopPath}
+                >
                   이 시간 예약하기
                 </Button>
               </div>
