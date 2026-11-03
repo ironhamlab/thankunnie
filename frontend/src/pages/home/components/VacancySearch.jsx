@@ -7,6 +7,8 @@ import { useExploreStore } from '@/store/useExploreStore';
 import { regionNameOf } from '@/constants/regions';
 import { TIME_OF_DAY, dayLabel, validDate } from '@/utils/exploreVacancy';
 import { addDays, todayKst } from '@/utils/scheduleDate';
+import { distanceKm, formatDistance } from '@/utils/distance';
+import { useMyLocation } from '@/hooks/useMyLocation';
 import FireIcon from '@/components/icons/FireIcon';
 import InfoIcon from '@/components/icons/InfoIcon';
 import ShopRow from '@/pages/home/components/ShopRow';
@@ -27,7 +29,9 @@ const SHOP_SORTS = {
   할인율순: (a, b) => b.maxDiscountRate - a.maxDiscountRate,
   '낮은 가격순': (a, b) => a.minSalePrice - b.minSalePrice,
 };
-const sorts = Object.keys(SHOP_SORTS);
+// 가까운순은 내 위치가 있어야 비교할 수 있어 따로 둔다
+const NEAREST = '가까운순';
+const sorts = [...Object.keys(SHOP_SORTS), NEAREST];
 // 한 페이지에 보여줄 매장 수. 펼친 매장의 시간 버튼까지 있으면 길어지므로 8곳씩 나눈다
 const PAGE_SIZE = 8;
 // 예약은 오늘 포함 60일까지 가능하다
@@ -111,6 +115,12 @@ export default function VacancySearch() {
   const findNextVacancyDate = useExploreStore((s) => s.findNextVacancyDate);
   const [time, setTime] = useState(ALL);
   const [sort, setSort] = useState(sorts[0]);
+  // 옆 지도의 내 위치 버튼과 같이 써서, 지도에서 위치를 확인해도 목록에 거리가 보이게 한다
+  const myLocation = useMyLocation();
+  const { position: myPosition, locating, message: locateMessage, locate } = myLocation;
+  // 가까운순을 골랐어도 위치를 아직 못 받았으면 기본 정렬로 보여준다. 위치를 못 얻으면 선택도 기본 정렬로 돌린다
+  const appliedSort = sort === NEAREST && !myPosition ? sorts[0] : sort;
+  const shownSort = sort === NEAREST && !myPosition && !locating ? sorts[0] : sort;
   const [keyword, setKeyword] = useState(search);
   const [paging, setPaging] = useState({ key: '', page: 0 });
   // 목록에서 매장을 고를 때마다 새 값을 넣어, 같은 매장을 다시 눌러도 지도를 다시 확대한다
@@ -198,16 +208,31 @@ export default function VacancySearch() {
 
   // 전체 날짜 보기는 빈자리가 있는 매장을 먼저 두고, 빈자리가 없는 매장을 뒤에 붙인다.
   // 시작 시간을 고르면 그 시간 빈자리를 찾는 것이므로 빈자리가 없는 매장은 빼고 본다
+  // 가까운순이면 빈자리가 없는 매장끼리도 가까운 순으로 둔다
   const sortedShops = useMemo(() => {
-    const withVacancy = [...shops].sort((a, b) => SHOP_SORTS[sort](a, b) || a.shopId - b.shopId);
+    const distanceOf = (shop) =>
+      distanceKm(myPosition, { lat: shop.latitude, lng: shop.longitude });
+    const compare =
+      appliedSort === NEAREST
+        ? (a, b) => distanceOf(a) - distanceOf(b)
+        : SHOP_SORTS[appliedSort];
+    const withVacancy = [...shops].sort((a, b) => compare(a, b) || a.shopId - b.shopId);
     if (!allDates || time !== ALL) return withVacancy;
     const vacancyIds = new Set(shops.map((shop) => shop.shopId));
     const noVacancyShops = allShops.filter(
       (shop) =>
         !vacancyIds.has(shop.shopId) && (!regionCode || shop.regionCode === regionCode),
     );
+    if (appliedSort === NEAREST) {
+      noVacancyShops.sort((a, b) => distanceOf(a) - distanceOf(b) || a.shopId - b.shopId);
+    }
     return [...withVacancy, ...noVacancyShops];
-  }, [shops, sort, allDates, time, allShops, regionCode]);
+  }, [shops, appliedSort, myPosition, allDates, time, allShops, regionCode]);
+  // 위치를 받은 뒤에는 정렬과 상관없이 매장마다 거리를 보여준다
+  const distanceLabelOf = (shop) =>
+    myPosition
+      ? formatDistance(distanceKm(myPosition, { lat: shop.latitude, lng: shop.longitude }))
+      : undefined;
   // 조건이 바뀌면 첫 페이지로 돌아간다. 주소로 고른 매장이 있으면 그 매장이 있는 페이지를 연다
   const pageOf = (shopId) => {
     const index = sortedShops.findIndex((shop) => String(shop.shopId) === String(shopId));
@@ -223,10 +248,12 @@ export default function VacancySearch() {
     setPaging({ key: pagingKey, page: next });
     document.getElementById('vacancy-results')?.scrollIntoView({ block: 'start' });
   };
-  // 펼친 매장이 있어도 그 매장 페이지로 가지 않고 첫 페이지를 보이게 새 키와 0페이지를 같이 둔다
+  // 펼친 매장이 있어도 그 매장 페이지로 가지 않고 첫 페이지를 보이게 새 키와 0페이지를 같이 둔다.
+  // 가까운순은 고를 때마다 위치를 다시 묻는다(1분 안에 얻은 위치는 다시 쓴다)
   const chooseSort = (sortName) => {
     setSort(sortName);
     setPaging({ key: pagingKeyOf(sortName), page: 0 });
+    if (sortName === NEAREST) locate();
   };
 
   const focusMap = (shop) => {
@@ -357,8 +384,13 @@ export default function VacancySearch() {
         )}
         <div className={`b-row ${styles.filterLine}`}>
           <Filter label="시작 시간" options={times} value={time} onChange={setTime} segmented />
-          <Filter label="정렬" options={sorts} value={sort} onChange={chooseSort} segmented />
+          <Filter label="정렬" options={sorts} value={shownSort} onChange={chooseSort} segmented />
         </div>
+        {(locating || locateMessage) && (
+          <p className={styles.locateMessage} role="status">
+            {locating ? '내 위치를 확인하는 중이에요…' : locateMessage}
+          </p>
+        )}
       </section>
       <div id="vacancy-results" className={`b-row ${styles.resultsHeading}`}>
         <h2>
@@ -395,6 +427,7 @@ export default function VacancySearch() {
                       model={modelOnly}
                       onLocate={locateShop}
                       located={String(shop.shopId) === mapShopId}
+                      distance={distanceLabelOf(shop)}
                     />
                   </div>
                 ))}
@@ -467,6 +500,7 @@ export default function VacancySearch() {
             expandedShopId={expandedId}
             pinnedShopId={pinnedId}
             focusPosition={mapFocus}
+            myLocation={myLocation}
             onPinShop={(id) => {
               // 지도에서 고른 매장이 다른 페이지에 있으면 그 페이지로 넘긴다
               setPaging({ key: pagingKey, page: pageOf(id) });

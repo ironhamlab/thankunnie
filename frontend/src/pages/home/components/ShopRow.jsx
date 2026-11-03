@@ -26,6 +26,7 @@ const SHOWN_DAYS = 2;
  * @param showTimes 시간 보기 버튼을 보일지
  * @param onLocate  있으면 '지도에서 보기' 버튼을 보이고, 누르면 옆 지도에서 이 매장을 가까이 보여준다
  * @param located   옆 지도에서 지금 이 매장을 보여주는 중인지
+ * @param distance  내 위치에서 매장까지 거리 ("1.2km"). 위치를 모르면 undefined 라 보이지 않는다
  * @param model    초보 시술 모집 목록이면 매장 대신 초보 시술 모집 상세로 보낸다. 초보 시술 빈자리만 있는 매장(shop.modelOnly)도 그렇다.
  *                 일반·초보 시술이 섞인 매장은 카드 아래에 초보 시술 모집 상세 링크를 따로 둔다
  */
@@ -39,7 +40,14 @@ export default function ShopRow({
   showTimes = true,
   onLocate,
   located = false,
+  distance,
 }) {
+  const area = (
+    <span className={styles.area}>
+      ⌖ {areaName(shop.address)}
+      {distance && ` · ${distance}`}
+    </span>
+  );
   const panelId = `shop-${shop.shopId}-vacancies`;
   // 여러 날짜의 빈자리가 섞이면 앞쪽 날짜만 날짜별로 묶고, 나머지는 매장 페이지에서 고르게 한다
   const vacancies = detail?.vacancies ?? [];
@@ -76,7 +84,7 @@ export default function ShopRow({
             <img className={styles.thumb} src={shopImage(shop.imageUrl)} alt="" />
             <span className={styles.info}>
               <strong>{shop.shopName}</strong>
-              <span className={styles.area}>⌖ {areaName(shop.address)}</span>
+              {area}
               <span className={styles.none}>지금은 빈자리가 없어요</span>
             </span>
           </Link>
@@ -100,9 +108,10 @@ export default function ShopRow({
           <img className={styles.thumb} src={shopImage(shop.imageUrl)} alt="" />
           <span className={styles.info}>
             <strong>{shop.shopName}</strong>
-            <span className={styles.area}>⌖ {areaName(shop.address)}</span>
+            {area}
             <span className={styles.time}>
-              ◷ {earliestLabel(shop)}부터 · 빈자리 {shop.vacancyCount}개
+              {/* 줄이 바뀌어도 "빈자리 N개"는 떨어지지 않게 붙는 공백(NBSP)을 쓴다 */}
+              ◷ {earliestLabel(shop)}부터 · 빈자리{' '}{shop.vacancyCount}개
             </span>
           </span>
           <span className={styles.price}>

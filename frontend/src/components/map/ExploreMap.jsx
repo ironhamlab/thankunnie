@@ -39,6 +39,8 @@ const CLUSTER_STYLE = {
 
 // 매장이 다 보이게 범위를 맞출 때 기본 여백(px)
 const DEFAULT_FIT_PADDING = { top: 40, right: 40, bottom: 40, left: 40 };
+// 매장이 서울·경기에 흩어져 있으면 다 보이게 맞춘 범위가 너무 넓다. 동네가 보이는 이 단계까지만 넓힌다
+const MAX_FIT_LEVEL = 7;
 
 const round = (value) => Number(value.toFixed(COORD_DIGITS));
 
@@ -57,8 +59,11 @@ const round = (value) => Number(value.toFixed(COORD_DIGITS));
  * @param focusPosition  { lat, lng, zoom } 가 들어오면 그 위치로 지도를 옮긴다 (새로고침 때 고른 매장 위치 복원).
  *                       zoom 이 true 면 묶음이 풀리도록 가까이 확대한다 (목록에서 고른 매장 보여주기)
  * @param fitToShops     true 면 받은 매장이 다 보이게 범위를 맞춘다 (검색 화면처럼 목록이 지도 범위와 상관없는 곳).
- *                       이때는 onBoundsChange 를 넘기지 않아 지도를 움직여도 다시 조회하지 않고, 내 위치 버튼도 숨긴다
+ *                       이때는 onBoundsChange 를 넘기지 않아 지도를 움직여도 다시 조회하지 않는다.
+ *                       매장이 넓게 흩어져 있으면 MAX_FIT_LEVEL 까지만 넓히고 매장들의 가운데를 보여준다
  * @param boundsPadding  fitToShops 로 범위를 맞출 때 띄울 여백(px). 지도 위에 패널이 겹치는 쪽을 넓게 준다
+ * @param myLocation     useMyLocation() 결과. 넘기면 내 위치를 화면과 같이 써서(목록 거리 표시 등) 내 위치 버튼을 보인다.
+ *                       넘기지 않으면 지도 혼자 위치를 확인하고, 다시 조회하지 않는 지도(fitToShops)에는 버튼을 숨긴다
  */
 export default function ExploreMap({
   shops,
@@ -70,6 +75,7 @@ export default function ExploreMap({
   focusPosition = null,
   fitToShops = false,
   boundsPadding = DEFAULT_FIT_PADDING,
+  myLocation,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -82,7 +88,14 @@ export default function ExploreMap({
   const callbacksRef = useRef({ onSelect, onBoundsChange, onUnavailable });
   const [status, setStatus] = useState(hasKakaoMapKey() ? 'loading' : 'error');
   const myLocationRef = useRef(null);
-  const { position: myPosition, locating, message: locateMessage, locate } = useMyLocation();
+  const ownLocation = useMyLocation();
+  const {
+    position: myPosition,
+    locating,
+    message: locateMessage,
+    locate,
+  } = myLocation ?? ownLocation;
+  const showLocate = Boolean(onBoundsChange || myLocation);
 
   useEffect(() => {
     callbacksRef.current = { onSelect, onBoundsChange, onUnavailable };
@@ -208,6 +221,7 @@ export default function ExploreMap({
       shops.forEach((shop) => bounds.extend(new maps.LatLng(shop.latitude, shop.longitude)));
       const { top, right, bottom, left } = boundsPadding;
       map.setBounds(bounds, top, right, bottom, left);
+      if (map.getLevel() > MAX_FIT_LEVEL) map.setLevel(MAX_FIT_LEVEL);
     } else if (fitToShops && map && shops.length === 1) {
       map.setCenter(new maps.LatLng(shops[0].latitude, shops[0].longitude));
     }
@@ -284,8 +298,8 @@ export default function ExploreMap({
           <Spinner />
         </div>
       )}
-      {/* 내 위치로 옮겨도 다시 조회하지 않는 지도(범위 맞추기 모드)에는 의미가 없어 숨긴다 */}
-      {status === 'ready' && onBoundsChange && (
+      {/* 다시 조회하지 않는 지도(범위 맞추기 모드)는 화면이 위치를 같이 쓸 때만 보인다 */}
+      {status === 'ready' && showLocate && (
         <button
           type="button"
           className={styles.locate}

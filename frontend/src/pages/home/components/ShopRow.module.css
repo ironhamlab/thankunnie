@@ -219,6 +219,12 @@
   .info strong {
     font-size: 15px;
   }
+  /* 지도 옆 패널은 스크롤바만큼 더 좁아져 빈자리 수가 잘리므로, 주소·시간은 어절 단위로 줄을 바꾼다 */
+  .area,
+  .time {
+    white-space: normal;
+    word-break: keep-all;
+  }
   .price b {
     font-size: 15px;
   }

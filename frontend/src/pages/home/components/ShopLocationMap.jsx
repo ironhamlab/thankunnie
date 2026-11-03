@@ -20,6 +20,7 @@ const MAP_BOUNDS_PADDING = { top: 60, right: 110, bottom: 150, left: 100 };
  * @param pinnedShopId  목록의 '지도에서 보기'로 고른 매장 ID (문자열)
  * @param onPinShop     지도에서 보기 상태에서 다른 핀을 누르면 그 매장 ID 를 받는다
  * @param focusPosition 목록에서 매장을 고를 때마다 새로 들어오는 { lat, lng, zoom }. 그 매장으로 지도를 확대해 옮긴다
+ * @param myLocation    목록과 같이 쓰는 useMyLocation() 결과. 넘기면 지도에 내 위치 버튼을 보인다
  */
 export default function ShopLocationMap({
   shops,
@@ -31,6 +32,7 @@ export default function ShopLocationMap({
   pinnedShopId,
   onPinShop,
   focusPosition,
+  myLocation,
 }) {
   const [pickedId, setPickedId] = useState(null);
   const [mapUnavailable, setMapUnavailable] = useState(false);
@@ -62,6 +64,7 @@ export default function ShopLocationMap({
           fitToShops
           boundsPadding={MAP_BOUNDS_PADDING}
           focusPosition={focusPosition}
+          myLocation={myLocation}
         />
       )}
       <span className={styles.count}>매장 {shops.length}곳</span>
