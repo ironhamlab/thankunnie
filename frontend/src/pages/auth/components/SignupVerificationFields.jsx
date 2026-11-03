@@ -22,18 +22,21 @@ export default function SignupVerificationFields({ verification, mode }) {
   }
   return (
     <div className="b-span-two">
-      <Button
-        type="button"
-        size="small"
-        disabled={verification.phoneBusy || verification.resendRemaining > 0}
-        onClick={verification.handleSendCode}
-      >
-        {verification.resendRemaining > 0
-          ? `${verification.resendRemaining}초 후 재발송`
-          : verification.challenge
-            ? '인증번호 재발송'
-            : '인증번호 발송'}
-      </Button>
+      {/* 인증을 마치면 재발송 안내가 필요 없으므로 버튼을 숨긴다. 번호를 바꾸면 인증이 풀려 다시 보인다 */}
+      {!verification.isPhoneVerified && (
+        <Button
+          type="button"
+          size="small"
+          disabled={verification.phoneBusy || verification.resendRemaining > 0}
+          onClick={verification.handleSendCode}
+        >
+          {verification.resendRemaining > 0
+            ? `${verification.resendRemaining}초 후 재발송`
+            : verification.challenge
+              ? '인증번호 재발송'
+              : '인증번호 발송'}
+        </Button>
+      )}
       {verification.challenge && !verification.isPhoneVerified && (
         <>
           <AuthField
