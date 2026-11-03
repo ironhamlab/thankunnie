@@ -129,7 +129,8 @@ export default function StatsSection() {
     summary.completedCount +
       summary.upcomingCount +
       summary.customerCancelCount +
-      summary.shopFaultCancelCount ===
+      summary.shopFaultCancelCount +
+      (summary.noShowCount ?? 0) ===
       0;
   // 전체 기간은 응답의 기간을 날짜 칸에 보여 준다. 날짜를 고치면 그 날짜로 직접 조회한다
   const shown = period.all
