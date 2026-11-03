@@ -12,4 +12,6 @@ public interface ShopAccountRepository extends JpaRepository<ShopAccount, Long> 
     Optional<ShopAccount> findByLoginId(String loginId);
 
     boolean existsByLoginId(String loginId);
+
+    boolean existsByBusinessNumber(String businessNumber);
 }
