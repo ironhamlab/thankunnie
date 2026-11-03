@@ -136,7 +136,7 @@ class CancelRequestServiceTest {
     }
 
     @Test
-    @DisplayName("사장님은 고객 직접 취소를 할 수 없다")
+    @DisplayName("매장은 고객 직접 취소를 할 수 없다")
     void accept_owner_forbidden() {
         givenPaidReservation(LocalDateTime.of(2026, 10, 30, 12, 0));
 
@@ -209,7 +209,7 @@ class CancelRequestServiceTest {
     }
 
     @Test
-    @DisplayName("다른 매장 사장님과 고객은 사장님 취소를 할 수 없다")
+    @DisplayName("다른 매장 계정과 고객은 매장 취소를 할 수 없다")
     void acceptOwner_otherOwnerOrCustomer_rejected() {
         givenPaidReservation(LocalDateTime.of(2026, 10, 30, 12, 0));
 

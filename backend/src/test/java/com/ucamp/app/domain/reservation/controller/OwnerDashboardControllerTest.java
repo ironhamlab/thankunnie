@@ -44,7 +44,7 @@ class OwnerDashboardControllerTest {
     private ReservationDashboardService reservationDashboardService;
 
     @Test
-    @DisplayName("사장님 대시보드는 오늘 지표와 이번 달 요약을 반환한다")
+    @DisplayName("매장 대시보드는 오늘 지표와 이번 달 요약을 반환한다")
     void getDashboard_owner_returnsDashboard() throws Exception {
         ReservationDashboardResponse response = new ReservationDashboardResponse(
                 LocalDate.of(2026, 11, 2),

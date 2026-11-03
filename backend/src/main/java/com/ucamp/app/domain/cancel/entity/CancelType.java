@@ -9,6 +9,6 @@ public enum CancelType {
     CUSTOMER,
     /** 매장 사유 취소. 납부 예약금 전액 환불 */
     SHOP_FAULT,
-    /** 고객 요청 대리 취소. 사장님이 정책 환불액 ~ 납부 예약금 사이에서 환불액 입력 */
+    /** 고객 요청 대리 취소. 매장이 정책 환불액 ~ 납부 예약금 사이에서 환불액 입력 */
     CUSTOMER_REQUEST
 }

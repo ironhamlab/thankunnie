@@ -320,7 +320,7 @@ class NotificationEventServiceTest {
     }
 
     @Test
-    @DisplayName("사장님이 취소하며 시간을 닫았으면 재공개 이벤트를 만들지 않는다")
+    @DisplayName("매장이 취소하며 시간을 닫았으면 재공개 이벤트를 만들지 않는다")
     void createReopenedEvent_closedByOwner_returnsFalse() {
         openSlot(1L, NOW.plusHours(10), NOW.plusHours(14));
         reservation(CANCELLED_RESERVATION, NORMAL_TREATMENT, "CANCELLED", NOW.plusHours(11), NOW.plusHours(12));

@@ -76,7 +76,7 @@ public class ExploreShopDetailService {
         return "%" + escaped + "%";
     }
 
-    // 사장님 영업시간 조회와 같이 월~일 7개를 돌려주고, 저장하지 않은 요일은 휴무로 본다
+    // 매장 영업시간 조회와 같이 월~일 7개를 돌려주고, 저장하지 않은 요일은 휴무로 본다
     private List<BusinessHourResponse> businessHours(Long shopId) {
         Map<BusinessDay, ShopBusinessHour> hours = shopBusinessHourRepository.findByShopId(shopId).stream()
                 .collect(Collectors.toMap(ShopBusinessHour::getDayOfWeek, Function.identity()));

@@ -43,7 +43,7 @@ public interface ShopScheduleExceptionRepository extends JpaRepository<ShopSched
             @Param("excludeId") Long excludeId);
 
     /**
-     * 사장님이 예약을 취소하며 그 시간을 닫았는지(예약 ID 가 있는 일정이 있는지). 취소 완료 시 재공개 이벤트 발행 여부를 정한다.
+     * 매장이 예약을 취소하며 그 시간을 닫았는지(예약 ID 가 있는 일정이 있는지). 취소 완료 시 재공개 이벤트 발행 여부를 정한다.
      */
     boolean existsByReservationId(Long reservationId);
 

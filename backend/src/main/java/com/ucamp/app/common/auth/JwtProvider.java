@@ -85,7 +85,7 @@ public class JwtProvider {
             Number shopId = claims.get(CLAIM_SHOP_ID, Number.class);
             return Optional.of(new AuthUser(userId, role, shopId == null ? null : shopId.longValue()));
         } catch (JwtException | IllegalArgumentException | NullPointerException e) {
-            // 서명·만료·형식 오류(JwtException), 숫자·역할 변환 실패, 클레임 누락, 사장님 매장 누락
+            // 서명·만료·형식 오류(JwtException), 숫자·역할 변환 실패, 클레임 누락, 매장 계정의 매장 ID 누락
             return Optional.empty();
         }
     }

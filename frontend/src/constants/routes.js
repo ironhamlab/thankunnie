@@ -1,7 +1,7 @@
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
-  // 고객 회원가입. 사장님은 매장 정보와 함께 가입한다
+  // 고객 회원가입. 매장은 매장 정보와 함께 가입한다
   SIGNUP: '/signup',
   SHOP_SIGNUP: '/signup/shop',
   // 이전 시술 상세 주소. 라우트는 없으며, 홈·지도·마이페이지 시연 링크가 매장 상세(SHOP_DETAIL)로 바뀌면 지운다
@@ -29,9 +29,9 @@ export const ROUTES = {
   // 빈자리 열기·닫기: 시간대를 열면 그 안에서 할 수 있는 시술이 고객 빈자리 목록에 노출되고, 닫으면 예약을 받지 않는다
   OWNER_VACANCIES: '/owner/vacancies',
   OWNER_BOOKINGS: '/owner/bookings',
-  // 사장님 예약 취소 화면 (E 담당). 예약 현황의 "취소하기"가 이 경로로 이동한다
+  // 매장 예약 취소 화면 (E 담당). 예약 현황의 "취소하기"가 이 경로로 이동한다
   OWNER_RESERVATION_CANCEL: '/owner/bookings/:reservationId/cancel',
-  // 사장님 취소 결과 (E 담당)
+  // 매장 취소 결과 (E 담당)
   OWNER_RESERVATION_CANCEL_RESULT: '/owner/bookings/:reservationId/cancel/result',
   // 관리자: 매장 가입 신청 승인·거절
   ADMIN: '/admin',

@@ -9,10 +9,10 @@
 |---|---|---|---|---|
 | 고객 (CUSTOMER) | `APP_USER` (ROLE=USER) | `POST /api/v1/auth/login` | USER_ID | null |
 | 관리자 (ADMIN) | `APP_USER` (ROLE=ADMIN) | `POST /api/v1/auth/login` | USER_ID | null |
-| 사장님 (OWNER) | `SHOP` (LOGIN_ID·PASSWORD_HASH) | `POST /api/v1/auth/shops/login` | SHOP_ID | SHOP_ID |
+| 매장 (OWNER) | `SHOP` (LOGIN_ID·PASSWORD_HASH) | `POST /api/v1/auth/shops/login` | SHOP_ID | SHOP_ID |
 
 - 회원과 매장은 테이블이 달라 아이디 중복도 각 테이블 안에서만 검사한다. 같은 문자열이 고객 아이디와 매장 아이디로 동시에 존재할 수 있다.
-- 사장님은 APP_USER 행이 없어 `userId` 자리에 매장 ID를 넣는다. 고객 전용 API는 `requireRole(CUSTOMER)`로 막혀 있어 고객 ID와 숫자가 겹쳐도 다른 고객 데이터에 접근하지 않는다.
+- 매장은 APP_USER 행이 없어 `userId` 자리에 매장 ID를 넣는다. 고객 전용 API는 `requireRole(CUSTOMER)`로 막혀 있어 고객 ID와 숫자가 겹쳐도 다른 고객 데이터에 접근하지 않는다.
 - 가입은 관리자 계정을 만들지 않는다. 관리자는 DB에 직접 넣는다.
 
 ## 토큰
@@ -72,7 +72,7 @@
 
 오류: 아이디 없음·비밀번호 불일치 `AUTH_002`(401), 비활성 회원 `AUTH_003`(403)
 
-## POST /api/v1/auth/shops/signup — 사장님(매장) 회원가입
+## POST /api/v1/auth/shops/signup — 매장 회원가입
 
 `SHOP`의 필수 컬럼을 한 번에 넣어야 해서 계정과 매장 정보를 함께 받는다. 매장 정보 검증은 매장 수정 API(`shops.md`)와 같다. 대표 이미지는 가입 후 이미지 API로 올린다. `201 Created`.
 
@@ -114,7 +114,7 @@
 오류: 형식 위반·없는 카테고리 `COMMON_400`, 아이디 중복 `AUTH_001`(409),
 사업자 정보 불일치·휴업·폐업 `AUTH_007`(400), 국세청 조회 실패 `AUTH_008`(503), 사업자등록번호 중복 `AUTH_009`(409)
 
-## POST /api/v1/auth/shops/login — 사장님(매장) 로그인
+## POST /api/v1/auth/shops/login — 매장 로그인
 
 요청 형식은 고객 로그인과 같다. 응답의 `role`은 `OWNER`, `userId`·`shopId`는 매장 ID.
 

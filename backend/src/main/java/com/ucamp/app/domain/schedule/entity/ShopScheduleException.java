@@ -39,7 +39,7 @@ public class ShopScheduleException extends BaseTimeEntity {
     @Column(name = "SHOP_ID", nullable = false)
     private Long shopId;
 
-    /** 사장님이 예약을 취소하며 그 시간을 닫은 경우에만 값이 있다 */
+    /** 매장이 예약을 취소하며 그 시간을 닫은 경우에만 값이 있다 */
     @Column(name = "RESERVATION_ID")
     private Long reservationId;
 

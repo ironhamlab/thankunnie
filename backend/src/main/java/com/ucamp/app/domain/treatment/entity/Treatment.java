@@ -30,7 +30,7 @@ import com.ucamp.app.domain.treatment.dto.request.TreatmentSaveRequest;
 import com.ucamp.app.domain.treatment.dto.request.TreatmentConditionsRequest;
 import com.ucamp.app.domain.vacancy.policy.SalePrices;
 
-/** 사장님 매장의 시술 메뉴. 기존 예약의 가격·시각 스냅샷은 변경하지 않는다. */
+/** 매장의 시술 메뉴. 기존 예약의 가격·시각 스냅샷은 변경하지 않는다. */
 @Entity
 @DynamicUpdate
 @Table(name = "TREATMENT")

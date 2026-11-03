@@ -13,9 +13,9 @@ import com.ucamp.app.common.util.TimeUtils;
  * @param accessToken 액세스 토큰
  * @param tokenType   항상 Bearer
  * @param expiresAt   토큰 만료 시각 (+09:00)
- * @param userId      회원 ID. 사장님은 매장 ID 와 같다
+ * @param userId      회원 ID. 매장은 매장 ID 와 같다
  * @param role        역할
- * @param shopId      사장님의 매장 ID, 사장님이 아니면 null
+ * @param shopId      매장 계정의 매장 ID, 매장 계정이 아니면 null
  */
 public record AuthTokenResponse(
         String accessToken,

@@ -5,7 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * 사장님 메인 대시보드. 날짜는 서버 시각(한국 시간) 기준이다.
+ * 매장 메인 대시보드. 날짜는 서버 시각(한국 시간) 기준이다.
  *
  * @param date  기준 날짜 (오늘)
  * @param today 오늘 지표
