@@ -45,13 +45,9 @@
 .table td.treatment {
   overflow-wrap: anywhere;
 }
-/* 행 전체가 상세를 여는 버튼이다 */
+/* 행 전체를 눌러 상세를 연다 */
 .table tbody tr {
   cursor: pointer;
-}
-.table tbody tr:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
 }
 /* 터치 화면에서는 누른 뒤에도 색이 남지 않게 마우스가 있을 때만 바꾼다 */
 @media (hover: hover) {
@@ -59,10 +55,16 @@
     background: var(--color-primary-faint);
   }
 }
-.table td.chevron {
+/* 눈에는 화살표만 보이고, 키보드와 화면 읽기 도구는 이 버튼으로 상세를 연다 */
+.table td.chevron button {
+  padding: 4px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
   color: var(--color-text-muted);
   font-size: 20px;
   line-height: 1;
+  cursor: pointer;
 }
 /* 창 안에서는 창 자체가 카드라 상세 패널의 테두리와 여백을 뺀다 */
 /* 창이 떠 있는 동안 뒤 목록이 함께 스크롤되지 않게 하고, 창을 닫으면 보던 자리로 돌아온다 */
