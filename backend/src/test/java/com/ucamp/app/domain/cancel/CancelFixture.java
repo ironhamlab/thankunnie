@@ -78,7 +78,12 @@ public final class CancelFixture {
     private static void insertUser(JdbcTemplate jdbcTemplate, long userId) {
         jdbcTemplate.update("""
                 INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
-                VALUES (?, ?, 'hash', '고객', '010', %s, %s)
-                """.formatted(CREATED, CREATED), userId, "customer" + userId);
+                VALUES (?, ?, 'hash', '고객', ?, %s, %s)
+                """.formatted(CREATED, CREATED), userId, "customer" + userId, phoneOf(userId));
+    }
+
+    /** APP_USER.PHONE 은 UNIQUE 라 회원마다 다른 번호를 쓴다. */
+    public static String phoneOf(long userId) {
+        return "010-" + userId;
     }
 }
