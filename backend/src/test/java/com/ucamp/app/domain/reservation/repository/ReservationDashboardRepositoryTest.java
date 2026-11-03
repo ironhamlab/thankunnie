@@ -20,8 +20,8 @@ import com.ucamp.app.config.TimeConfig;
 import com.ucamp.app.domain.cancel.entity.CancelType;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 
-// 초기 데이터 매장 1: 확정 1(11/2 14:00)·5(11/3 18:00), 취소 완료 3(11/5 11:00, 18,000 납부·18,000 환불), 만료 6
-// 매장 2: 취소 처리 중 4(11/7)
+// 초기 데이터 매장 1(가입 2026-10-01 09:00): 확정 1(고객 1, 11/2 14:00)·5(고객 2, 11/3 18:00),
+// 취소 완료 3(고객 1, 11/5 11:00, 18,000 납부·18,000 환불), 만료 6. 매장 2: 확정 2(10/10), 취소 처리 중 4(11/7)
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(TimeConfig.class)
@@ -39,13 +39,14 @@ class ReservationDashboardRepositoryTest {
     private EntityManager entityManager;
 
     @Test
-    @DisplayName("확정·취소 완료 예약만 시작 시각 순으로 담고, 취소 정보와 남은 예약금을 붙인다")
+    @DisplayName("확정·취소 완료 예약만 시작 시각 순으로 담고, 고객·취소 정보와 남은 예약금을 붙인다")
     void findRows_shop1_confirmedAndCancelledInStartOrder() {
         List<ReservationDashboardRow> rows = reservationDashboardRepository.findRows(1L, NOV_START, DEC_START);
 
         // 만료 6 은 빠진다
         assertThat(rows).extracting(ReservationDashboardRow::reservationId).containsExactly(1L, 5L, 3L);
         ReservationDashboardRow confirmed = rows.get(0);
+        assertThat(confirmed.userId()).isEqualTo(1L);
         assertThat(confirmed.status()).isEqualTo(ReservationStatus.CONFIRMED);
         assertThat(confirmed.treatmentName()).isEqualTo("젤네일 원컬러");
         assertThat(confirmed.endsAt()).isEqualTo(LocalDateTime.of(2026, 11, 2, 15, 0));
@@ -54,6 +55,7 @@ class ReservationDashboardRepositoryTest {
         assertThat(confirmed.appliedPrice()).isEqualTo(30000);
         assertThat(confirmed.cancelType()).isNull();
         assertThat(confirmed.retainedDeposit()).isZero();
+        assertThat(rows.get(1).userId()).isEqualTo(2L);
 
         ReservationDashboardRow cancelled = rows.get(2);
         assertThat(cancelled.status()).isEqualTo(ReservationStatus.CANCELLED);
@@ -85,6 +87,61 @@ class ReservationDashboardRepositoryTest {
         assertThat(reservationDashboardRepository.findRows(1L,
                 LocalDateTime.of(2026, 11, 2, 14, 0), LocalDateTime.of(2026, 11, 3, 18, 0)))
                 .extracting(ReservationDashboardRow::reservationId).containsExactly(1L);
+    }
+
+    @Test
+    @DisplayName("이용 추정은 이 매장 확정 예약 중 종료 시각이 기준 이하인 예약이다 (경계 포함)")
+    void findVisits_shop1_confirmedEndedUntil() {
+        List<ReservationDashboardRepository.Visit> visits =
+                reservationDashboardRepository.findVisits(1L, LocalDateTime.of(2026, 11, 2, 15, 0));
+
+        assertThat(visits).extracting(ReservationDashboardRepository.Visit::getUserId).containsExactly(1L);
+        assertThat(visits.get(0).getEndsAt()).isEqualTo(LocalDateTime.of(2026, 11, 2, 15, 0));
+        assertThat(reservationDashboardRepository.findVisits(1L, LocalDateTime.of(2026, 12, 1, 0, 0)))
+                .extracting(ReservationDashboardRepository.Visit::getUserId)
+                .containsExactlyInAnyOrder(1L, 2L);
+    }
+
+    @Test
+    @DisplayName("서비스 이용 시작은 매장 가입 시각과 첫 확정·취소 완료 예약 시작 시각을 함께 준다")
+    void findServiceStart_shop1() {
+        ReservationDashboardRepository.ServiceStart start =
+                reservationDashboardRepository.findServiceStart(1L).orElseThrow();
+
+        assertThat(start.getShopCreatedAt()).isEqualTo(LocalDateTime.of(2026, 10, 1, 9, 0));
+        assertThat(start.getFirstStartsAt()).isEqualTo(LocalDateTime.of(2026, 11, 2, 14, 0));
+        assertThat(reservationDashboardRepository.findServiceStart(999L)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("찜 고객 수는 이 매장의 사용 중인 업장 구독 고객만 한 번씩 센다")
+    void countFavoriteCustomers_activeStoreSubscriptionsOnly() {
+        insertSubscription(100, 1, 1L, "STORE", "ACTIVE");
+        // 같은 고객의 다른 희망 시간 구독은 한 명으로 센다
+        insertSubscription(101, 1, 1L, "STORE", "ACTIVE");
+        insertSubscription(102, 2, 1L, "STORE", "ACTIVE");
+        // 해지한 구독, 다른 매장 구독은 세지 않는다
+        insertSubscription(103, 21, 1L, "STORE", "INACTIVE");
+        insertSubscription(104, 21, 2L, "STORE", "ACTIVE");
+
+        assertThat(reservationDashboardRepository.countFavoriteCustomers(1L)).isEqualTo(2);
+        assertThat(reservationDashboardRepository.countFavoriteCustomers(999L)).isZero();
+    }
+
+    private void insertSubscription(long id, long userId, Long shopId, String type, String status) {
+        LocalDateTime createdAt = LocalDateTime.of(2026, 10, 25, 9, 0);
+        entityManager.createNativeQuery("""
+                INSERT INTO NOTIFICATION_SUBSCRIPTION (SUBSCRIPTION_ID, USER_ID, SHOP_ID, SUBSCRIPTION_TYPE,
+                                                       STATUS, CREATED_AT, UPDATED_AT)
+                VALUES (:id, :userId, :shopId, :type, :status, :createdAt, :createdAt)
+                """)
+                .setParameter("id", id)
+                .setParameter("userId", userId)
+                .setParameter("shopId", shopId)
+                .setParameter("type", type)
+                .setParameter("status", status)
+                .setParameter("createdAt", createdAt)
+                .executeUpdate();
     }
 
     private void insertCancelledWithClose() {

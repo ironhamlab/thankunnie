@@ -49,8 +49,11 @@ public class AuthVerificationController {
 
     @PostMapping("/phone/send")
     public ApiResponse<AuthPhoneResponse> send(@Valid @RequestBody AuthPhoneSendRequest request) {
-        // 이미 가입된 번호에는 문자를 보내지 않아 발송 비용과 가입 단계 낭비를 막는다.
-        authService.validatePhoneAvailable(request.phone());
+        // 이미 가입된 고객 번호에는 문자를 보내지 않아 발송 비용과 가입 단계 낭비를 막는다.
+        // 매장은 같은 번호로 여러 매장을 운영할 수 있어 중복을 검사하지 않는다.
+        if (!request.isForShop()) {
+            authService.validatePhoneAvailable(request.phone());
+        }
         return ApiResponse.success(verificationService.send(request.phone()));
     }
 

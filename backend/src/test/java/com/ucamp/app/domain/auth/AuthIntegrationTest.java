@@ -78,6 +78,7 @@ class AuthIntegrationTest {
     // 테스트 전용 더미 비밀번호
     private static final String PASSWORD = "CHANGE_ME-1234";
     private static final String REQUIRED_TERMS = "[\"AGE_14\",\"SERVICE\",\"PRIVACY\",\"THIRD_PARTY\"]";
+    private static final String SHOP_REQUIRED_TERMS = "[\"SHOP_SERVICE\",\"SHOP_PRIVACY\",\"SHOP_BUSINESS_CHECK\"]";
 
     @Autowired
     private MockMvc mvc;
@@ -106,6 +107,10 @@ class AuthIntegrationTest {
         insertTerms(9104, "THIRD_PARTY", 1, true);
         insertTerms(9105, "SMS_NOTIFICATION", 1, false);
         insertTerms(9106, "MODEL_PHOTO", 1, false);
+        insertTerms(9111, "SHOP_SERVICE", 1, true);
+        insertTerms(9112, "SHOP_PRIVACY", 1, true);
+        insertTerms(9113, "SHOP_BUSINESS_CHECK", 1, true);
+        insertTerms(9114, "SHOP_SMS_NOTIFICATION", 1, false);
     }
 
     @Test
@@ -236,6 +241,57 @@ class AuthIntegrationTest {
                 .andExpect(jsonPath("$.data.shopId").value(shopId));
         assertThat(jdbc.queryForObject("SELECT STATUS FROM SHOP WHERE SHOP_ID = ?", String.class, shopId))
                 .isEqualTo("ACTIVE");
+        assertThat(jdbc.queryForObject("SELECT PHONE FROM SHOP WHERE SHOP_ID = ?", String.class, shopId))
+                .isEqualTo("010-5555-6666");
+        // 동의는 saveAll 후 아직 쓰기 지연 상태라 JDBC 로 읽기 전에 내보낸다
+        entityManager.flush();
+        assertThat(jdbc.queryForList("SELECT TERMS_ID FROM SHOP_TERMS_AGREEMENT WHERE SHOP_ID = ? ORDER BY TERMS_ID",
+                Long.class, shopId)).containsExactly(9111L, 9112L, 9113L);
+    }
+
+    @Test
+    @DisplayName("매장 가입 시 선택 약관(문자 수신) 동의도 저장한다")
+    void signupShop_withOptionalTerms_savesAgreements() throws Exception {
+        JsonNode data = data(signupShop("smsshop",
+                "[\"SHOP_SERVICE\",\"SHOP_PRIVACY\",\"SHOP_BUSINESS_CHECK\",\"SHOP_SMS_NOTIFICATION\"]")
+                .andExpect(status().isCreated()));
+        entityManager.flush();
+
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM SHOP_TERMS_AGREEMENT WHERE SHOP_ID = ? AND TERMS_ID = 9114",
+                Integer.class, data.get("shopId").asLong())).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("매장 필수 약관이 빠지면 400 TERMS_002, 매장 미저장")
+    void signupShop_missingRequiredTerms_rejected() throws Exception {
+        signupShop("noterms", "[\"SHOP_SERVICE\",\"SHOP_PRIVACY\"]")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("TERMS_002"));
+
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM SHOP WHERE LOGIN_ID = 'noterms'", Integer.class))
+                .isZero();
+    }
+
+    @Test
+    @DisplayName("고객 약관 코드로는 매장 가입할 수 없고, 매장 약관 코드로는 고객 가입할 수 없다 (404 TERMS_001)")
+    void signup_otherTargetTerms_returnsNotFound() throws Exception {
+        signupShop("wrongterms", SHOP_REQUIRED_TERMS.replace("]", ",\"SERVICE\"]"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("TERMS_001"));
+        signupCustomer("unnie20", REQUIRED_TERMS.replace("]", ",\"SHOP_SERVICE\"]"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("TERMS_001"));
+    }
+
+    @Test
+    @DisplayName("target=SHOP 이면 매장 약관만 조회한다")
+    void getTerms_shopTarget_returnsShopTerms() throws Exception {
+        mvc.perform(get("/api/v1/terms").param("target", "SHOP"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(4))
+                .andExpect(jsonPath("$.data[0].code").value("SHOP_SERVICE"))
+                .andExpect(jsonPath("$.data[3].code").value("SHOP_SMS_NOTIFICATION"))
+                .andExpect(jsonPath("$.data[3].required").value(false));
     }
 
     @Test
@@ -319,7 +375,7 @@ class AuthIntegrationTest {
     }
 
     @Test
-    @DisplayName("약관 목록을 로그인 없이 코드 순으로 조회한다")
+    @DisplayName("약관 목록을 로그인 없이 코드 순으로 조회한다 (매장 약관 제외)")
     void getTerms_anonymous_returnsLatestTerms() throws Exception {
         mvc.perform(get("/api/v1/terms"))
                 .andExpect(status().isOk())
@@ -404,18 +460,27 @@ class AuthIntegrationTest {
     }
 
     private ResultActions signupShop(String loginId) throws Exception {
+        return signupShop(loginId, SHOP_REQUIRED_TERMS);
+    }
+
+    private ResultActions signupShop(String loginId, String agreedTermsJson) throws Exception {
         return mvc.perform(post("/api/v1/auth/shops/signup")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(shopSignupBody(loginId, CATEGORY_ID)));
+                .content(shopSignupBody(loginId, CATEGORY_ID, agreedTermsJson)));
     }
 
     private static String shopSignupBody(String loginId, long categoryId) {
+        return shopSignupBody(loginId, categoryId, SHOP_REQUIRED_TERMS);
+    }
+
+    private static String shopSignupBody(String loginId, long categoryId, String agreedTermsJson) {
         return """
                 {"loginId":"%s","password":"%s","categoryId":%d,"name":"언니네 네일","regionCode":"11680",
                  "address":"서울특별시 강남구 테헤란로 1","addressDetail":"2층",
-                 "latitude":37.4979,"longitude":127.0276,"phone":"02-111-1111",
-                 "businessNumber":"1234567891","representativeName":"테스트 대표","openedOn":"2020-01-01"}
-                """.formatted(loginId, PASSWORD, categoryId);
+                 "latitude":37.4979,"longitude":127.0276,"phone":"01055556666",
+                 "businessNumber":"1234567891","representativeName":"테스트 대표","openedOn":"2020-01-01",
+                 "agreedTerms":%s,"phoneVerificationId":"test-verification"}
+                """.formatted(loginId, PASSWORD, categoryId, agreedTermsJson);
     }
 
     private ResultActions login(String url, String loginId, String password) throws Exception {

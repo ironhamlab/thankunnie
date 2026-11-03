@@ -16,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import com.ucamp.app.domain.notification.NotificationFixture;
 import com.ucamp.app.domain.notification.repository.RecipientContactRepository.CancelSmsInfo;
+import com.ucamp.app.domain.notification.repository.RecipientContactRepository.OwnerReservationNotice;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -72,6 +73,24 @@ class RecipientContactRepositoryTest {
                 .contains(new CancelSmsInfo(1L, "010-1111-1111", "매장1", startsAt));
         assertThat(recipientContactRepository.findReservationSmsInfo(100L))
                 .contains(new CancelSmsInfo(1L, "010-1111-1111", "매장1", startsAt));
+    }
+
+    @Test
+    @DisplayName("예약 ID로 사장님 알림에 넣을 매장·고객 이름·시술 이름·시작 시각을 읽는다")
+    void findOwnerReservationNotice_existingReservation_returnsInfo() {
+        LocalDateTime startsAt = LocalDateTime.of(2026, 11, 2, 10, 0);
+        NotificationFixture.treatment(jdbcTemplate, 20L, 1L, "NORMAL");
+        NotificationFixture.reservation(jdbcTemplate, 100L, 1L, 20L, "CONFIRMED",
+                startsAt, startsAt.plusHours(1), startsAt.minusDays(1));
+
+        assertThat(recipientContactRepository.findOwnerReservationNotice(100L))
+                .contains(new OwnerReservationNotice(1L, "회원", "시술", startsAt));
+    }
+
+    @Test
+    @DisplayName("없는 예약이면 사장님 알림 정보가 없다")
+    void findOwnerReservationNotice_missingReservation_isEmpty() {
+        assertThat(recipientContactRepository.findOwnerReservationNotice(999L)).isEmpty();
     }
 
     @Test

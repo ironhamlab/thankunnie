@@ -40,15 +40,85 @@
   border: 1px solid color-mix(in srgb, var(--color-border-strong) 50%, transparent);
   border-radius: 24px;
   box-shadow: 0 4px 20px -2px color-mix(in srgb, var(--color-primary) 5%, transparent);
+  /* 장이 바뀔 때마다 카드가 새로 그려지므로, 넘긴 쪽에서 흐릿하게 미끄러져 들어온다 */
+  --enter-x: 28px;
+  animation: cardEnter 560ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.card.fromPrev {
+  --enter-x: -28px;
 }
 .photo {
   position: relative;
+  overflow: hidden;
   background: var(--color-primary-tint);
 }
 .photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  animation: photoEnter 1200ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.urgency,
+.closes {
+  animation: riseEnter 520ms cubic-bezier(0.22, 1, 0.36, 1) 160ms backwards;
+}
+/* 글은 위에서부터 차례로 떠오른다 */
+.body > * {
+  animation: riseEnter 520ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.body > :nth-child(1) {
+  animation-delay: 80ms;
+}
+.body > :nth-child(2) {
+  animation-delay: 130ms;
+}
+.body > :nth-child(3) {
+  animation-delay: 180ms;
+}
+.body > :nth-child(4) {
+  animation-delay: 230ms;
+}
+.body > :nth-child(5) {
+  animation-delay: 280ms;
+}
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateX(var(--enter-x)) scale(0.985);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes photoEnter {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes riseEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .photo img,
+  .urgency,
+  .closes,
+  .body > * {
+    animation: none;
+  }
 }
 .urgency {
   position: absolute;
@@ -176,6 +246,9 @@
   border: 0;
   border-radius: 50%;
   background: var(--color-border-strong);
+  transition:
+    width 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 360ms;
 }
 .dots button[aria-pressed='true'] {
   width: 22px;
