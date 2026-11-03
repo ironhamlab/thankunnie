@@ -11,7 +11,7 @@ import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
-/** 사장님 계정에 연결된 매장 정보 전체 저장 요청. */
+/** 매장 계정에 연결된 매장 정보 전체 저장 요청. */
 public record ShopUpdateRequest(
         @NotNull @Positive Long categoryId,
         @NotBlank @Size(max = 100) String name,

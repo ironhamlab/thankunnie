@@ -19,7 +19,7 @@ import com.ucamp.app.domain.shop.dto.request.ShopUpdateRequest;
 import com.ucamp.app.domain.shop.dto.response.ShopDetailResponse;
 import com.ucamp.app.domain.shop.service.ShopService;
 
-/** 사장님 본인 매장 관리 API. */
+/** 매장 본인 매장 관리 API. */
 @Tag(name = "Shop", description = "매장 관리")
 @RestController
 @RequestMapping("/api/v1/shops")

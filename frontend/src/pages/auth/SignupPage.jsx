@@ -169,7 +169,7 @@ export default function SignupPage() {
       <p className={styles.links}>
         이미 회원이신가요? <Link to={ROUTES.LOGIN}>로그인</Link>
         <span aria-hidden="true"> · </span>
-        사장님이신가요? <Link to={ROUTES.SHOP_SIGNUP}>매장 가입</Link>
+        매장을 운영하시나요? <Link to={ROUTES.SHOP_SIGNUP}>매장 가입</Link>
       </p>
     </AuthCard>
   );

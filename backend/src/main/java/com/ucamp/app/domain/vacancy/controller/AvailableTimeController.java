@@ -34,7 +34,7 @@ public class AvailableTimeController {
     @Operation(summary = "날짜별 시작 가능 시각",
             description = "30분 단위. durationMinutes 만큼 연속으로 비어 있는 시각만 반환한다. 생략하면 30분."
                     + " 시작 20분 전이 지난 시각은 빠진다. 날짜는 오늘부터 60일 이내."
-                    + " extendedStartTimes 는 그중 영업시간 밖 연장 영업(사장님이 연 시간) 덕분에 가능한 시각이다")
+                    + " extendedStartTimes 는 그중 영업시간 밖 연장 영업(매장이 연 시간) 덕분에 가능한 시각이다")
     @GetMapping
     public ResponseEntity<ApiResponse<AvailableTimesResponse>> getAvailableTimes(
             @RequestParam Long shopId,

@@ -157,7 +157,7 @@ class NotificationInboxQueryTest {
     }
 
     @Test
-    @DisplayName("사장님은 본인 매장 예약 알림만 보고 같은 숫자의 고객 알림은 보지 않는다")
+    @DisplayName("매장은 본인 매장 예약 알림만 보고 같은 숫자의 고객 알림은 보지 않는다")
     void getMyInbox_owner_returnsOwnShopOnly() {
         commitShops();
         notificationInboxService.saveForShop(OWNER.shopId(), NotificationInboxCategory.RESERVATION,

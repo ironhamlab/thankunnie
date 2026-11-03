@@ -69,7 +69,7 @@ class ShopScheduleExceptionServiceTest {
     }
 
     @Test
-    @DisplayName("사장님이 닫기를 등록하면 본인 매장으로 저장하고 +09:00 시각으로 응답한다")
+    @DisplayName("매장이 닫기를 등록하면 본인 매장으로 저장하고 +09:00 시각으로 응답한다")
     void createException_owner_savesWithOwnShop() {
         given(shopScheduleExceptionRepository.save(any(ShopScheduleException.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
@@ -97,7 +97,7 @@ class ShopScheduleExceptionServiceTest {
     }
 
     @Test
-    @DisplayName("사장님이 아니면 등록할 수 없다")
+    @DisplayName("매장이 아니면 등록할 수 없다")
     void createException_customer_throwsForbidden() {
         assertThatThrownBy(() -> service.createException(customer, closeRequest(12, 13)))
                 .isInstanceOf(BusinessException.class)
@@ -215,7 +215,7 @@ class ShopScheduleExceptionServiceTest {
     }
 
     @Test
-    @DisplayName("사장님이 아니면 삭제할 수 없고 매장을 잠그지 않는다")
+    @DisplayName("매장이 아니면 삭제할 수 없고 매장을 잠그지 않는다")
     void deleteException_customer_throwsForbidden() {
         assertThatThrownBy(() -> service.deleteException(customer, 1L))
                 .isInstanceOf(BusinessException.class)

@@ -230,7 +230,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    @DisplayName("사장님 스트림은 매장 연결로 안 읽은 수를 한 번 보낸다")
+    @DisplayName("매장 스트림은 매장 연결로 안 읽은 수를 한 번 보낸다")
     void stream_owner_sendsUnreadCount() throws Exception {
         given(notificationInboxService.countUnread(any(AuthUser.class))).willReturn(1L);
 
@@ -283,7 +283,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    @DisplayName("사장님은 본인 매장 알림을 조회한다")
+    @DisplayName("매장은 본인 매장 알림을 조회한다")
     void getInbox_owner_returnsList() throws Exception {
         given(notificationInboxService.getMyInbox(any(AuthUser.class), eq(null)))
                 .willReturn(List.of(inboxResponse()));

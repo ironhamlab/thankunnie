@@ -35,7 +35,7 @@ import com.ucamp.app.domain.vacancy.policy.SalePolicy;
 import com.ucamp.app.domain.vacancy.policy.TimeRange;
 
 /**
- * 요일별 영업시간 관리 (B-02). 사장님 본인 매장만 다룬다.
+ * 요일별 영업시간 관리 (B-02). 매장 본인 매장만 다룬다.
  * 영업시간을 줄여 기존 예약이 열린 시간 밖으로 밀려나면 차단한다.
  */
 @Service

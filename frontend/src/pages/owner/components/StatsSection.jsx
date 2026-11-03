@@ -68,7 +68,7 @@ const describeDay = (day) => [
 const daysBetween = (from, to) => (Date.parse(to) - Date.parse(from)) / 86400000 + 1;
 
 /**
- * 사장님 메인의 기간 통계 영역. 기간을 골라 확정 예약 금액·재판매·취소·초임박 판매 요약과 날짜별·시술별 그래프를 본다.
+ * 매장 메인의 기간 통계 영역. 기간을 골라 확정 예약 금액·재판매·취소·초임박 판매 요약과 날짜별·시술별 그래프를 본다.
  * 기본 기간은 이번 달이다.
  */
 export default function StatsSection() {

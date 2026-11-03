@@ -4,7 +4,7 @@ import Panel from '@/components/common/Panel';
 import { ROUTES } from '@/constants/routes';
 import styles from './BusinessHoursTips.module.css';
 
-// 영업시간과 빈자리 열기·닫기의 차이를 사장님이 자주 헷갈려 저장 화면 옆에서 알려준다
+// 영업시간과 빈자리 열기·닫기의 차이를 매장이 자주 헷갈려 저장 화면 옆에서 알려준다
 const TIPS = [
   '하루만 연장하거나 쉬는 날은 빈자리 열기·닫기에서 그날만 바꿔 주세요.',
   '예약이 있는 시간이 빠지도록 줄이면 저장되지 않아요.',

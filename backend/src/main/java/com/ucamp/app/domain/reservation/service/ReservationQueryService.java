@@ -25,7 +25,7 @@ import com.ucamp.app.domain.reservation.repository.ReservationView;
 import com.ucamp.app.domain.vacancy.policy.SalePolicy;
 
 /**
- * 역할별 예약 조회 (B-09 고객 내 예약, B-10 사장님 예약 현황). 관리자 조회(B-11)도 같은 조회를 범위만 바꿔 쓴다.
+ * 역할별 예약 조회 (B-09 고객 내 예약, B-10 매장 예약 현황). 관리자 조회(B-11)도 같은 조회를 범위만 바꿔 쓴다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -68,7 +68,7 @@ public class ReservationQueryService {
     }
 
     /**
-     * 고객 본인 예약 목록 (B-09). 여러 매장 예약을 시작 시각 순으로 모아 보여준다. 필터는 사장님 목록과 같다.
+     * 고객 본인 예약 목록 (B-09). 여러 매장 예약을 시작 시각 순으로 모아 보여준다. 필터는 매장 목록과 같다.
      */
     public PageResponse<ReservationSummaryResponse> getMyReservations(AuthUser loginUser, LocalDate from,
             LocalDate to, List<ReservationStatus> statuses, int page, int size) {

@@ -25,7 +25,7 @@ public final class PriceCalculator {
     }
 
     /**
-     * 모든 구간의 견적을 계산한다. 사장님 등록 화면의 구간별 미리보기(B-F4)에 사용한다.
+     * 모든 구간의 견적을 계산한다. 매장 등록 화면의 구간별 미리보기(B-F4)에 사용한다.
      */
     public static List<PriceQuote> preview(int regularPrice, SalePrices salePrices) {
         return Arrays.stream(PriceTier.values())

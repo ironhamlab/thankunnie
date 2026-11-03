@@ -14,7 +14,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 /**
- * 사장님(매장) 회원가입 요청. SHOP 의 필수 컬럼이 많아 계정과 매장 정보를 함께 받는다.
+ * 매장 회원가입 요청. SHOP 의 필수 컬럼이 많아 계정과 매장 정보를 함께 받는다.
  * 매장 정보 검증 규칙은 매장 수정(ShopUpdateRequest)과 같다. 대표 이미지는 가입 후 이미지 API 로 올린다.
  *
  * @param regionCode 시군구 지역코드 (구독 알림 매칭 기준)

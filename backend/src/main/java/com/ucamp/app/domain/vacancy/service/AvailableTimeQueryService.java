@@ -18,7 +18,7 @@ import com.ucamp.app.domain.vacancy.repository.ShopStatusQueryRepository;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService.DayAvailability;
 
 /**
- * 가용 시간 공용 조회 (B-06). 사장님 열기·닫기 캘린더(B-08)와 고객 상세 시간 선택(C)이 함께 쓴다.
+ * 가용 시간 공용 조회 (B-06). 매장 열기·닫기 캘린더(B-08)와 고객 상세 시간 선택(C)이 함께 쓴다.
  * 계산은 AvailabilityService 에 맡기고, 여기서는 매장·날짜·소요 시간 입력만 검사한다.
  */
 @Service

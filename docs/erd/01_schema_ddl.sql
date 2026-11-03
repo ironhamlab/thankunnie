@@ -76,7 +76,7 @@ CREATE TABLE USER_TERMS_AGREEMENT (
 CREATE SEQUENCE SEQ_USER_TERMS_AGREEMENT START WITH 1000 INCREMENT BY 1;
 
 -- ---------------------------------------------------------------------
--- 매장 (사장님 로그인 정보 포함, 계정당 매장 1개)
+-- 매장 (매장 로그인 정보 포함, 계정당 매장 1개)
 -- ---------------------------------------------------------------------
 CREATE TABLE SHOP (
     SHOP_ID         NUMBER(19)          NOT NULL,
@@ -257,7 +257,7 @@ CREATE TABLE GRACE_CANCEL_USAGE (
 CREATE TABLE SHOP_SCHEDULE_EXCEPTION (
     EXCEPTION_ID    NUMBER(19)          NOT NULL,
     SHOP_ID         NUMBER(19)          NOT NULL,
-    RESERVATION_ID  NUMBER(19),                     -- 사장님이 예약을 취소하며 닫은 경우만
+    RESERVATION_ID  NUMBER(19),                     -- 매장이 예약을 취소하며 닫은 경우만
     EXCEPTION_TYPE  VARCHAR2(10 CHAR)   NOT NULL,   -- OPEN, CLOSE (겹치면 CLOSE 우선)
     STARTS_AT       TIMESTAMP(0)        NOT NULL,   -- 30분 단위
     ENDS_AT         TIMESTAMP(0)        NOT NULL,   -- 30분 단위, 종료 미포함

@@ -66,7 +66,7 @@ class CancelSmsServiceTest {
     }
 
     @Test
-    @DisplayName("사장님이 매장 사유로 취소하면 매장 사정 문구로 보낸다")
+    @DisplayName("매장이 매장 사유로 취소하면 매장 사정 문구로 보낸다")
     void send_shopFault_sendsOwnerMessage() {
         given(recipientContactRepository.findCancelSmsInfo(RESERVATION_ID))
                 .willReturn(Optional.of(new CancelSmsInfo(USER_ID, "010-1234-5678", "예쁜네일", STARTS_AT)));
@@ -85,7 +85,7 @@ class CancelSmsServiceTest {
     }
 
     @Test
-    @DisplayName("사장님이 고객 요청으로 대리 취소하면 고객 요청 문구로 보낸다")
+    @DisplayName("매장이 고객 요청으로 대리 취소하면 고객 요청 문구로 보낸다")
     void send_customerRequest_sendsCustomerRequestMessage() {
         given(recipientContactRepository.findCancelSmsInfo(RESERVATION_ID))
                 .willReturn(Optional.of(new CancelSmsInfo(USER_ID, "010-1234-5678", "예쁜네일", STARTS_AT)));

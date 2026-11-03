@@ -39,6 +39,8 @@ const CLUSTER_STYLE = {
 
 // 매장이 다 보이게 범위를 맞출 때 기본 여백(px)
 const DEFAULT_FIT_PADDING = { top: 40, right: 40, bottom: 40, left: 40 };
+// 매장이 서울·경기에 흩어져 있으면 다 보이게 맞춘 범위가 너무 넓다. 동네가 보이는 이 단계까지만 넓힌다
+const MAX_FIT_LEVEL = 7;
 
 const round = (value) => Number(value.toFixed(COORD_DIGITS));
 
@@ -50,6 +52,7 @@ const round = (value) => Number(value.toFixed(COORD_DIGITS));
  *
  * @param shops          매장 요약(C-02) 목록. 빈자리가 없는 매장(최저가 없음)은 매장 이름 핀으로 찍는다
  * @param selectedId     선택한 매장 ID (문자열)
+ * @param autoSelected   true 면 selectedId 가 사용자가 고른 게 아니라 기본으로 정한 매장이다. 핀만 강조하고, 화면 밖이어도 옮기지 않는다
  * @param onSelect       핀을 누르면 매장 ID 를 받는다
  * @param onBoundsChange 지도 범위 { minLat, maxLat, minLng, maxLng } 를 받는다
  * @param onUnavailable  키가 없거나 SDK 를 불러오지 못했을 때 부른다
@@ -57,12 +60,16 @@ const round = (value) => Number(value.toFixed(COORD_DIGITS));
  * @param focusPosition  { lat, lng, zoom } 가 들어오면 그 위치로 지도를 옮긴다 (새로고침 때 고른 매장 위치 복원).
  *                       zoom 이 true 면 묶음이 풀리도록 가까이 확대한다 (목록에서 고른 매장 보여주기)
  * @param fitToShops     true 면 받은 매장이 다 보이게 범위를 맞춘다 (검색 화면처럼 목록이 지도 범위와 상관없는 곳).
- *                       이때는 onBoundsChange 를 넘기지 않아 지도를 움직여도 다시 조회하지 않고, 내 위치 버튼도 숨긴다
+ *                       이때는 onBoundsChange 를 넘기지 않아 지도를 움직여도 다시 조회하지 않는다.
+ *                       매장이 넓게 흩어져 있으면 MAX_FIT_LEVEL 까지만 넓히고 목록 맨 앞 매장 주변을 보여준다
  * @param boundsPadding  fitToShops 로 범위를 맞출 때 띄울 여백(px). 지도 위에 패널이 겹치는 쪽을 넓게 준다
+ * @param myLocation     useMyLocation() 결과. 넘기면 내 위치를 화면과 같이 써서(목록 거리 표시 등) 내 위치 버튼을 보인다.
+ *                       넘기지 않으면 지도 혼자 위치를 확인하고, 다시 조회하지 않는 지도(fitToShops)에는 버튼을 숨긴다
  */
 export default function ExploreMap({
   shops,
   selectedId,
+  autoSelected = false,
   onSelect,
   onBoundsChange,
   onUnavailable,
@@ -70,6 +77,7 @@ export default function ExploreMap({
   focusPosition = null,
   fitToShops = false,
   boundsPadding = DEFAULT_FIT_PADDING,
+  myLocation,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -82,7 +90,14 @@ export default function ExploreMap({
   const callbacksRef = useRef({ onSelect, onBoundsChange, onUnavailable });
   const [status, setStatus] = useState(hasKakaoMapKey() ? 'loading' : 'error');
   const myLocationRef = useRef(null);
-  const { position: myPosition, locating, message: locateMessage, locate } = useMyLocation();
+  const ownLocation = useMyLocation();
+  const {
+    position: myPosition,
+    locating,
+    message: locateMessage,
+    locate,
+  } = myLocation ?? ownLocation;
+  const showLocate = Boolean(onBoundsChange || myLocation);
 
   useEffect(() => {
     callbacksRef.current = { onSelect, onBoundsChange, onUnavailable };
@@ -208,6 +223,11 @@ export default function ExploreMap({
       shops.forEach((shop) => bounds.extend(new maps.LatLng(shop.latitude, shop.longitude)));
       const { top, right, bottom, left } = boundsPadding;
       map.setBounds(bounds, top, right, bottom, left);
+      // 줄인 범위로 매장들 가운데를 보면 핀이 하나도 없을 수 있어, 목록 맨 앞 매장을 가운데에 둔다
+      if (map.getLevel() > MAX_FIT_LEVEL) {
+        map.setLevel(MAX_FIT_LEVEL);
+        map.setCenter(new maps.LatLng(shops[0].latitude, shops[0].longitude));
+      }
     } else if (fitToShops && map && shops.length === 1) {
       map.setCenter(new maps.LatLng(shops[0].latitude, shops[0].longitude));
     }
@@ -223,7 +243,9 @@ export default function ExploreMap({
       overlaysRef.current.get(id)?.setZIndex(selected ? 2 : 0);
     });
     // 목록에서 고른 매장이 화면 밖에 있을 때만 옮긴다. 화면 안이면 그대로 둬야 다시 조회가 일어나지 않는다.
-    // 그 매장으로 확대해 옮기는 중(focusPosition.zoom)이면 천천히 옮기는 panTo 가 확대 이동을 덮어쓰므로 건너뛴다
+    // 그 매장으로 확대해 옮기는 중(focusPosition.zoom)이면 천천히 옮기는 panTo 가 확대 이동을 덮어쓰므로 건너뛴다.
+    // 기본으로 정한 매장은 범위를 MAX_FIT_LEVEL 로 줄였을 때 화면 밖일 수 있는데, 그때 옮기면 매장들 가운데를 보여줄 수 없다
+    if (autoSelected) return;
     const shop = shops.find((item) => String(item.shopId) === selectedId);
     const map = mapRef.current;
     const focusing =
@@ -234,7 +256,7 @@ export default function ExploreMap({
       const position = new window.kakao.maps.LatLng(shop.latitude, shop.longitude);
       if (!map.getBounds().contain(position)) map.panTo(position);
     }
-  }, [status, shops, selectedId, focusPosition]);
+  }, [status, shops, selectedId, autoSelected, focusPosition]);
 
   // 지도 초기화: 값이 바뀔 때마다 처음 위치·확대 단계로 돌린다. 옮기면 idle 로 그 범위를 다시 조회한다
   useEffect(() => {
@@ -284,8 +306,8 @@ export default function ExploreMap({
           <Spinner />
         </div>
       )}
-      {/* 내 위치로 옮겨도 다시 조회하지 않는 지도(범위 맞추기 모드)에는 의미가 없어 숨긴다 */}
-      {status === 'ready' && onBoundsChange && (
+      {/* 다시 조회하지 않는 지도(범위 맞추기 모드)는 화면이 위치를 같이 쓸 때만 보인다 */}
+      {status === 'ready' && showLocate && (
         <button
           type="button"
           className={styles.locate}

@@ -105,7 +105,7 @@ class ReservationQueryServiceTest {
     }
 
     @Test
-    @DisplayName("사장님 목록은 본인 매장·만료 제외·날짜 경계로 조회하고 페이지 정보를 채운다")
+    @DisplayName("매장 목록은 본인 매장·만료 제외·날짜 경계로 조회하고 페이지 정보를 채운다")
     void getOwnerReservations_defaultFilter_searchesOwnShop() {
         given(reservationQueryRepository.count(any())).willReturn(21L);
         given(reservationQueryRepository.search(any(), eq(20L), eq(20)))
@@ -143,7 +143,7 @@ class ReservationQueryServiceTest {
     }
 
     @Test
-    @DisplayName("사장님이 아니면 403 예외가 난다")
+    @DisplayName("매장이 아니면 403 예외가 난다")
     void getOwnerReservations_customer_throwsForbidden() {
         assertThatThrownBy(() -> reservationQueryService.getOwnerReservations(CUSTOMER, null, null, null, 0, 20))
                 .isInstanceOf(BusinessException.class)

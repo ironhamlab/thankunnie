@@ -22,9 +22,9 @@ import com.ucamp.app.domain.schedule.dto.response.BusinessHourResponse;
 import com.ucamp.app.domain.schedule.service.ShopBusinessHourService;
 
 /**
- * 사장님 요일별 영업시간 API. 매장은 로그인한 사장님의 매장으로 정해진다.
+ * 매장 요일별 영업시간 API. 매장은 로그인한 매장 계정으로 정해진다.
  */
-@Tag(name = "영업시간", description = "사장님 요일별 영업시간 (매주 반복)")
+@Tag(name = "영업시간", description = "매장 요일별 영업시간 (매주 반복)")
 @RestController
 @RequestMapping("/api/v1/business-hours")
 public class ShopBusinessHourController {

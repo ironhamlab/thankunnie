@@ -121,7 +121,7 @@ class CancelServiceTest {
     }
 
     @Test
-    @DisplayName("사장님 취소는 유형별 사유로 환불을 호출하고 닫기 여부·고객 연락처를 함께 응답한다")
+    @DisplayName("매장 취소는 유형별 사유로 환불을 호출하고 닫기 여부·고객 연락처를 함께 응답한다")
     void cancelByOwner_refundsWithReasonAndReturnsContact() {
         given(cancelRequestService.acceptOwnerCancel(any(), eq(100L), any(), any()))
                 .willReturn(new AcceptedCancel(7L, 100L, 5L, 20_000, true, "고객", "010-1234-5678"));
@@ -137,7 +137,7 @@ class CancelServiceTest {
     }
 
     @Test
-    @DisplayName("사장님이 사유를 비우면 유형별 고정 문구만 환불 사유로 보낸다")
+    @DisplayName("매장이 사유를 비우면 유형별 고정 문구만 환불 사유로 보낸다")
     void cancelByOwner_blankReason_usesTypeOnly() {
         given(cancelRequestService.acceptOwnerCancel(any(), eq(100L), any(), any()))
                 .willReturn(new AcceptedCancel(7L, 100L, 5L, 10_000, false, "고객", "010"));

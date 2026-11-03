@@ -32,12 +32,13 @@ public interface ExploreVacancyQueryRepository extends Repository<ShopScheduleEx
               and (:treatmentType is null or t.treatmentType = :treatmentType)
               and (:keyword is null
                    or upper(s.name) like :keyword escape '!'
+                   or upper(s.address) like :keyword escape '!'
                    or upper(t.name) like :keyword escape '!')
               and (:minLat is null
                    or (s.latitude between :minLat and :maxLat and s.longitude between :minLng and :maxLng))
             """;
 
-    // 임박 빈자리·타임세일은 사장님이 열지 않아도 영업시간 안 빈 시각을 보여주므로 OPEN 시간대 없이 매장 × 시술만 고른다
+    // 임박 빈자리·타임세일은 매장이 열지 않아도 영업시간 안 빈 시각을 보여주므로 OPEN 시간대 없이 매장 × 시술만 고른다
     String FIND_BUSINESS_HOUR_CANDIDATES = """
             select new com.ucamp.app.domain.explore.repository.ExploreVacancyCandidate(
                    s.shopId, s.name, s.regionCode, s.address, s.latitude, s.longitude, s.imageUrl,

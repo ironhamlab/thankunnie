@@ -33,7 +33,7 @@ public class UserController {
      * @param loginUser 로그인한 고객·관리자
      * @return 내 회원 정보
      */
-    @Operation(summary = "내 회원 정보 조회", description = "이름·휴대폰 번호·가입 시각을 반환한다. 사장님은 403")
+    @Operation(summary = "내 회원 정보 조회", description = "이름·휴대폰 번호·가입 시각을 반환한다. 매장은 403")
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getMyProfile(@LoginUser AuthUser loginUser) {
         return ResponseEntity.ok(ApiResponse.success(userService.getMyProfile(loginUser)));

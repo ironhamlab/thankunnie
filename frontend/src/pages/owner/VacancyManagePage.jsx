@@ -52,7 +52,7 @@ export default function VacancyManagePage() {
   const today = todayKst();
   const lastDate = addDays(today, P.BOOKING_MAX_DAYS - 1);
 
-  // 화면을 열 때마다 새로 받는다. 로그아웃 후 다른 사장님으로 들어와도 이전 매장 일정이 남지 않게 한다
+  // 화면을 열 때마다 새로 받는다. 로그아웃 후 다른 매장으로 들어와도 이전 매장 일정이 남지 않게 한다
   useEffect(() => {
     loadSchedule();
   }, [loadSchedule]);

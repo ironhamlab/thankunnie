@@ -14,7 +14,7 @@ import java.time.LocalDate;
  * @param customerCancelRate    고객 취소율(%). 고객 취소 ÷ (확정 + 고객 취소 + 매장 사유 취소), 소수 첫째 자리. 대상이 없으면 null
  * @param retainedDepositAmount 취소로 남은 예약금 (취소 완료 건의 납부 예약금 - 환불액 합계)
  * @param rebookedAmount        취소로 비었던 시간에 다시 들어온 확정 예약의 금액 합계
- * @param cancelledMinutes      취소로 비었던 시간(분). 사장님이 취소하며 닫은 시간은 뺀다
+ * @param cancelledMinutes      취소로 비었던 시간(분). 매장이 취소하며 닫은 시간은 뺀다
  * @param rebookedMinutes       그중 다시 채워진 시간(분)
  * @param rebookRate            회수율(%). 다시 채운 시간 ÷ 비었던 시간, 소수 첫째 자리. 비었던 시간이 없으면 null
  * @param lastMinuteCount       초임박(시작 3시간 이내)에 점유한 확정 예약
