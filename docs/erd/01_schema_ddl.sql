@@ -46,10 +46,11 @@ CREATE SEQUENCE SEQ_APP_USER START WITH 1000 INCREMENT BY 1;
 -- ---------------------------------------------------------------------
 CREATE TABLE TERMS (
     TERMS_ID        NUMBER(19)          NOT NULL,
-    CODE            VARCHAR2(30 CHAR)   NOT NULL,   -- AGE_14, SERVICE, PRIVACY, THIRD_PARTY, SMS_NOTIFICATION, MODEL_PHOTO
+    CODE            VARCHAR2(30 CHAR)   NOT NULL,   -- 고객: AGE_14, SERVICE, PRIVACY, THIRD_PARTY, SMS_NOTIFICATION, MODEL_PHOTO
+                                                    -- 매장: SHOP_SERVICE, SHOP_PRIVACY, SHOP_BUSINESS_CHECK, SHOP_SMS_NOTIFICATION
     VERSION         NUMBER(10)          NOT NULL,
     TITLE           VARCHAR2(100 CHAR)  NOT NULL,
-    IS_REQUIRED     CHAR(1)             NOT NULL,   -- Y, N (Y: 회원가입 필수 동의)
+    IS_REQUIRED     CHAR(1)             NOT NULL,   -- Y, N (Y: 고객·매장 가입 필수 동의)
     CREATED_AT      TIMESTAMP(3)        NOT NULL,
     UPDATED_AT      TIMESTAMP(3)        NOT NULL,
     CONSTRAINT PK_TERMS PRIMARY KEY (TERMS_ID),
@@ -104,6 +105,24 @@ CREATE TABLE SHOP (
     CONSTRAINT FK_SHOP_CATEGORY FOREIGN KEY (CATEGORY_ID) REFERENCES CATEGORY (CATEGORY_ID)
 );
 CREATE SEQUENCE SEQ_SHOP START WITH 1000 INCREMENT BY 1;
+
+-- ---------------------------------------------------------------------
+-- 매장 약관 동의 (매장·약관 버전당 1행. 매장 계정은 APP_USER 행이 없어 회원 약관 동의와 따로 둔다)
+-- ---------------------------------------------------------------------
+CREATE TABLE SHOP_TERMS_AGREEMENT (
+    AGREEMENT_ID    NUMBER(19)          NOT NULL,
+    SHOP_ID         NUMBER(19)          NOT NULL,
+    TERMS_ID        NUMBER(19)          NOT NULL,
+    AGREED_AT       TIMESTAMP(3)        NOT NULL,
+    WITHDRAWN_AT    TIMESTAMP(3),
+    CREATED_AT      TIMESTAMP(3)        NOT NULL,
+    UPDATED_AT      TIMESTAMP(3)        NOT NULL,
+    CONSTRAINT PK_SHOP_TERMS_AGREEMENT PRIMARY KEY (AGREEMENT_ID),
+    CONSTRAINT UK_SHOP_TERMS_AGREEMENT UNIQUE (SHOP_ID, TERMS_ID),
+    CONSTRAINT FK_SHOP_TERMS_AGREEMENT_SHOP FOREIGN KEY (SHOP_ID) REFERENCES SHOP (SHOP_ID),
+    CONSTRAINT FK_SHOP_TERMS_AGREEMENT_TERMS FOREIGN KEY (TERMS_ID) REFERENCES TERMS (TERMS_ID)
+);
+CREATE SEQUENCE SEQ_SHOP_TERMS_AGREEMENT START WITH 1000 INCREMENT BY 1;
 
 -- ---------------------------------------------------------------------
 -- 요일별영업시간 (매주 반복. 일회성 휴무·연장은 SHOP_SCHEDULE_EXCEPTION)
