@@ -21,6 +21,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.ucamp.app.common.lock.UserLock;
 import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.notification.NotificationFixture;
 import com.ucamp.app.domain.notification.client.FakeSolapiSmsClientConfig;
@@ -43,6 +44,7 @@ import com.ucamp.app.domain.notification.service.NotificationInboxConnections;
 import com.ucamp.app.domain.notification.service.NotificationInboxService;
 import com.ucamp.app.domain.notification.service.StoreSubscriptionTreatmentService;
 import com.ucamp.app.domain.notification.service.SubscriptionMatchService;
+import com.ucamp.app.domain.user.service.TermsAgreementService;
 import com.ucamp.app.domain.vacancy.repository.ShopStatusQueryRepository;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
@@ -53,7 +55,8 @@ import com.ucamp.app.domain.vacancy.service.AvailabilityService;
         SubscriptionMatchService.class, StoreSubscriptionTreatmentService.class,
         ShopCategoryRegionRepository.class, VacancySlotRepository.class, RecipientContactRepository.class,
         AvailabilityService.class, ShopStatusQueryRepository.class, FakeSolapiSmsClientConfig.class,
-        CategoryRegionPendingQueue.class, NotificationDispatchSchedulerTest.FixedClock.class})
+        CategoryRegionPendingQueue.class, TermsAgreementService.class, UserLock.class,
+        NotificationDispatchSchedulerTest.FixedClock.class})
 @ActiveProfiles("test")
 class NotificationDispatchSchedulerTest {
 

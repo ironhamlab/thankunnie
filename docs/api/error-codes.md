@@ -27,7 +27,7 @@
 | 코드 | HTTP 상태 | 메시지 | 발생 상황 |
 |---|---|---|---|
 | `TERMS_001` | 404 | 약관을 찾을 수 없습니다. | 가입·동의 요청에 등록되지 않은 약관 코드 |
-| `TERMS_002` | 400 | 필수 약관에 모두 동의해야 합니다. | 고객 가입 시 최신 필수 약관(`AGE_14`·`SERVICE`·`PRIVACY`·`THIRD_PARTY`) 중 하나라도 누락 |
+| `TERMS_002` | 400 | 필수 약관에 모두 동의해야 합니다. | 고객 가입 시 최신 필수 약관(`AGE_14`·`SERVICE`·`PRIVACY`·`THIRD_PARTY`) 중 하나라도 누락, 또는 필수 약관 동의 철회 요청 |
 | `TERMS_003` | 409 | 알림 문자 수신 동의가 필요합니다. | 문자 수신(`SMS_NOTIFICATION`)에 동의하지 않은 고객이 희망 시간이 있는 구독을 등록하거나, 찜에 희망 시간을 넣도록 수정. 희망 시간 없는 업장 찜은 해당 없음. 프론트는 동의 모달 → `PUT /api/v1/users/me/terms-agreements/SMS_NOTIFICATION` → 재요청 |
 | `TERMS_004` | 409 | 초보 시술 촬영 동의가 필요합니다. | 촬영(`MODEL_PHOTO`)에 동의하지 않은 고객이 초보 시술(`TREATMENT_TYPE = MODEL`) 예약 생성. 일반 시술은 검사하지 않음. 프론트는 동의 모달 → `PUT /api/v1/users/me/terms-agreements/MODEL_PHOTO` → 재요청 |
 
