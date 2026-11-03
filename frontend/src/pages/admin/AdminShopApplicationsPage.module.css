@@ -1,0 +1,118 @@
+/* 공통 .beauty-app table 의 최소 폭보다 우선하도록 클래스를 겹쳐 쓴다 */
+.table.table {
+  min-width: 640px;
+}
+/* 한 화면에서 신청을 더 많이 보도록 공통 표의 큰 칸 여백을 줄인다 */
+.table th,
+.table td {
+  padding: 10px 16px;
+}
+/* 짧은 값은 한 줄로 두고, 매장명의 긴 영문이 열을 밀어 표가 넓어지지 않게 한다 */
+.table td.date,
+.table td.phone,
+.table td.status,
+.table td.detail {
+  white-space: nowrap;
+}
+.table td.name {
+  overflow-wrap: anywhere;
+}
+.search {
+  display: flex;
+  gap: 8px;
+}
+.search input {
+  flex: 1;
+  min-width: 0;
+}
+.search button {
+  flex-shrink: 0;
+}
+/* 넓은 화면에서는 머리글과 10행 높이를 잡아 건수가 달라도 이전·다음 버튼이 움직이지 않게 한다 */
+@media (min-width: 641px) {
+  .list {
+    min-height: 588px;
+  }
+}
+/* 공용 페이지 이동을 이 화면에서만 오른쪽 아래에 둔다 */
+.pager > :global(.b-flex) {
+  justify-content: flex-end;
+}
+/* 폰에서는 신청 한 건을 카드로 바꿔 옆으로 밀지 않고 읽게 한다 */
+@media (max-width: 640px) {
+  .table.table {
+    min-width: 0;
+  }
+  /* 카드에는 열 이름이 보이지 않지만, 화면 읽기 도구가 읽도록 머리글은 눈에만 숨긴다 */
+  .table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .table tbody {
+    display: flex;
+    flex-direction: column;
+  }
+  .table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'name status'
+      'category detail'
+      'date detail';
+    align-items: center;
+    gap: 2px 12px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--color-border);
+  }
+  .table tr:first-child {
+    border-top: 0;
+  }
+  .table td.date,
+  .table td.name,
+  .table td.category,
+  .table td.phone,
+  .table td.status,
+  .table td.detail {
+    padding: 0;
+    border: 0;
+  }
+  .table td.name {
+    grid-area: name;
+    font-size: 15px;
+  }
+  .table td.status {
+    grid-area: status;
+    justify-self: end;
+  }
+  .table td.category {
+    grid-area: category;
+    font-size: 13px;
+  }
+  /* 카드 높이를 줄이려고 연락처는 상세 창에서만 보여준다 */
+  .table td.phone {
+    display: none;
+  }
+  .table td.date {
+    grid-area: date;
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+  .table td.detail {
+    grid-area: detail;
+    justify-self: end;
+    align-self: end;
+  }
+}
+@media (max-width: 540px) {
+  .tabs:global(.b-tabs) {
+    margin: 0;
+  }
+  .tabs:global(.b-tabs) button {
+    flex: 1;
+    padding: 10px 8px;
+  }
+}
