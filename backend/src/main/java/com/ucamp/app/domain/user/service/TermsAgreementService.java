@@ -38,6 +38,7 @@ import com.ucamp.app.domain.user.repository.UserTermsAgreementRepository;
  * 이전 버전에만 동의한 회원은 미동의로 판단되어 다시 동의를 받게 된다.
  * 고객 약관과 매장 약관은 코드의 대상({@link TermsTarget})으로 나누며, 서로의 가입·동의에 섞이지 않는다.
  * 다른 도메인은 {@link #requireAgreed(Long, TermsCode)} 로 선택 동의(문자 수신·초보 시술 촬영) 여부를 검사한다.
+ * 선택 약관은 철회할 수 있고, 알림 문자 발송은 {@link #hasAgreed(Long, TermsCode)} 로 동의한 회원에게만 보낸다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -138,6 +139,7 @@ public class TermsAgreementService {
 
     /**
      * 최신 버전 약관에 동의한다. 이미 동의했으면 기존 동의를 그대로 돌려준다 (반복 요청 안전).
+     * 철회했던 동의면 같은 행을 되살린다.
      * 같은 고객의 동시 요청이 둘 다 '없음'으로 보고 INSERT 해 UK 위반(500)이 나지 않도록 회원 잠금 안에서 조회·저장한다.
      * 고객만 동의할 수 있다.
      */
@@ -154,7 +156,28 @@ public class TermsAgreementService {
                 .findFirst()
                 .orElseGet(() -> agreementRepository.save(
                         newAgreement(loginUser.userId(), terms, LocalDateTime.now(clock))));
+        agreement.reagree(LocalDateTime.now(clock));
         return UserTermsAgreementResponse.of(terms, agreement);
+    }
+
+    /**
+     * 선택 약관 동의를 철회한다. 이전 버전에 남은 동의까지 모두 철회한다.
+     * 동의한 적이 없거나 이미 철회했으면 아무것도 하지 않는다 (반복 요청 안전).
+     * 필수 약관은 철회할 수 없다(400). 고객만 철회할 수 있다.
+     */
+    @Transactional
+    public void withdraw(AuthUser loginUser, TermsCode code) {
+        loginUser.requireRole(UserRole.CUSTOMER);
+        Terms latest = latestTerms(TermsTarget.CUSTOMER).get(code);
+        if (latest == null) {
+            throw new BusinessException(ErrorCode.TERMS_NOT_FOUND);
+        }
+        if (latest.isRequired()) {
+            throw new BusinessException(ErrorCode.TERMS_REQUIRED_NOT_AGREED);
+        }
+        userLock.lock(loginUser.userId());
+        LocalDateTime now = LocalDateTime.now(clock);
+        agreementsOf(loginUser.userId(), code).forEach(agreement -> agreement.withdraw(now));
     }
 
     /** 회원이 해당 약관의 최신 버전에 동의했는지. 약관이 등록되어 있지 않으면 false. */
@@ -191,6 +214,18 @@ public class TermsAgreementService {
             }
         }
         return latest;
+    }
+
+    // 회원이 해당 약관의 모든 버전에 남긴 동의
+    private List<UserTermsAgreement> agreementsOf(Long userId, TermsCode code) {
+        List<Long> termsIds = termsRepository.findAllByOrderByCodeAscVersionAsc().stream()
+                .filter(terms -> terms.getCode() == code)
+                .map(Terms::getTermsId)
+                .toList();
+        if (termsIds.isEmpty()) {
+            return List.of();
+        }
+        return agreementRepository.findByUserIdAndTermsIdIn(userId, termsIds);
     }
 
     private static Set<TermsCode> toSet(Collection<TermsCode> codes) {

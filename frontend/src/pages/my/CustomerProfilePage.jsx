@@ -15,6 +15,7 @@ import Panel from '@/components/common/Panel';
 import EmptyState from '@/components/common/EmptyState';
 import Alert from '@/components/common/Alert';
 import MyNotificationsPage from './MyNotificationsPage';
+import SmsAgreementSetting from './components/SmsAgreementSetting';
 import styles from './CustomerProfilePage.module.css';
 
 // 내 예약 '이용 예정' 탭과 같은 조건. 시작 시각 오름차순이라 첫 건이 가장 가까운 예약이다
@@ -105,6 +106,7 @@ export default function CustomerProfilePage() {
             </div>
           ))}
         </div>
+        <SmsAgreementSetting />
       </Panel>
       {listStatus === 'loading' && (
         <p role="status" className={styles.nearestState}>

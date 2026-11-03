@@ -59,7 +59,7 @@ CREATE TABLE TERMS (
 CREATE SEQUENCE SEQ_TERMS START WITH 1000 INCREMENT BY 1;
 
 -- ---------------------------------------------------------------------
--- 회원 약관 동의 (회원·약관 버전당 1행. WITHDRAWN_AT 은 철회 대비로 MVP 에서는 항상 NULL)
+-- 회원 약관 동의 (회원·약관 버전당 1행. WITHDRAWN_AT: 선택 약관 철회 시각, 다시 동의하면 NULL)
 -- ---------------------------------------------------------------------
 CREATE TABLE USER_TERMS_AGREEMENT (
     AGREEMENT_ID    NUMBER(19)          NOT NULL,
