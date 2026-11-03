@@ -188,6 +188,22 @@ class AuthIntegrationTest {
     }
 
     @Test
+    @DisplayName("탈퇴 회원의 휴대폰 번호로 새 아이디 가입을 하면 새 계정을 만들고 탈퇴 계정의 번호를 비운다")
+    void signupCustomer_withdrawnPhone_createsNewAccount() throws Exception {
+        signupCustomer("unnie08").andExpect(status().isCreated());
+        Long withdrawnId = jdbc.queryForObject("SELECT USER_ID FROM APP_USER WHERE LOGIN_ID = 'unnie08'", Long.class);
+        jdbc.update("UPDATE APP_USER SET STATUS = 'INACTIVE' WHERE USER_ID = ?", withdrawnId);
+        entityManager.clear();
+
+        signupCustomer("unnie09").andExpect(status().isCreated());
+
+        assertThat(jdbc.queryForObject("SELECT PHONE FROM APP_USER WHERE LOGIN_ID = 'unnie09'", String.class))
+                .isEqualTo("010-1234-5678");
+        assertThat(jdbc.queryForObject("SELECT PHONE FROM APP_USER WHERE USER_ID = ?", String.class, withdrawnId))
+                .isEqualTo("WD-" + withdrawnId);
+    }
+
+    @Test
     @DisplayName("매장 STATUS 는 노출 여부라 INACTIVE 매장도 로그인한다")
     void loginShop_inactiveShop_stillLogsIn() throws Exception {
         signupShop("closedshop").andExpect(status().isCreated());

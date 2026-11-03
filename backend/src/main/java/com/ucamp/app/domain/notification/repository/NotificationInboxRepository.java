@@ -3,6 +3,9 @@ package com.ucamp.app.domain.notification.repository;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.ucamp.app.domain.notification.entity.NotificationInbox;
 import com.ucamp.app.domain.notification.entity.NotificationInboxCategory;
@@ -45,4 +48,14 @@ public interface NotificationInboxRepository extends JpaRepository<NotificationI
      * @return 읽은 시각이 없는 알림
      */
     List<NotificationInbox> findByUserIdAndReadAtIsNull(Long userId);
+
+    /**
+     * 한 회원의 받은 알림을 모두 지운다. 회원 탈퇴 때 쓴다.
+     *
+     * @param userId 회원 ID
+     * @return 지운 알림 수
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM NotificationInbox i WHERE i.userId = :userId")
+    int deleteAllByUserId(@Param("userId") Long userId);
 }
