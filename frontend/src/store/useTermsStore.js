@@ -26,7 +26,7 @@ export const useTermsStore = create((set, get) => ({
     }
   },
 
-  // 열려 있는 동의 모달: { id, termsCode, resolve, saving, error }
+  // 열려 있는 동의 모달: { id, termsCode, smsRequestId, resolve, saving, error }
   pending: null,
   pendingId: 0,
 
@@ -36,7 +36,12 @@ export const useTermsStore = create((set, get) => ({
       // 이미 열린 모달이 있으면 먼저 닫힌 것으로 처리한다
       get().pending?.resolve(false);
       const id = get().pendingId + 1;
-      set({ pendingId: id, pending: { id, termsCode, resolve, saving: false, error: null } });
+      // 모달을 연 때의 문자 수신 조회 번호. 그 뒤 화면을 벗어났으면 동의 결과를 체크박스에 반영하지 않는다
+      const { smsRequestId } = get();
+      set({
+        pendingId: id,
+        pending: { id, termsCode, smsRequestId, resolve, saving: false, error: null },
+      });
     }),
 
   confirmAgreement: async () => {
@@ -48,7 +53,10 @@ export const useTermsStore = create((set, get) => ({
     try {
       await termsApi.agree(pending.termsCode);
       // 구독 등록 중에 동의해도 마이페이지 문자 수신 체크박스가 켜지게 한다
-      if (pending.termsCode === TERMS_CODE.SMS_NOTIFICATION) {
+      if (
+        pending.termsCode === TERMS_CODE.SMS_NOTIFICATION &&
+        get().smsRequestId === pending.smsRequestId
+      ) {
         set({ smsAgreement: { ...get().smsAgreement, agreed: true } });
       }
       if (!isCurrent()) return;
@@ -117,7 +125,12 @@ export const useTermsStore = create((set, get) => ({
     const isCurrent = () => get().smsRequestId === requestId;
     try {
       await termsApi.withdraw(TERMS_CODE.SMS_NOTIFICATION);
-      if (isCurrent()) set({ smsAgreement: { ...get().smsAgreement, agreed: false, saving: false } });
+      if (isCurrent()) {
+        set({ smsAgreement: { ...get().smsAgreement, agreed: false, saving: false } });
+      } else if (get().smsAgreement.status !== 'idle') {
+        // 철회 중에 화면을 벗어났다가 다시 열었으면, 새 조회가 철회보다 먼저 처리됐을 수 있어 한 번 더 불러온다
+        get().loadSmsAgreement();
+      }
       return { ok: true };
     } catch (error) {
       const failure = toError(error, '문자 수신을 철회하지 못했습니다.');
