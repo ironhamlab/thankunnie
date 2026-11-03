@@ -23,6 +23,8 @@ public interface ShopAccountRepository extends JpaRepository<ShopAccount, Long> 
 
     boolean existsByBusinessNumber(String businessNumber);
 
+    boolean existsByShopIdAndStatus(Long shopId, ShopAccountStatus status);
+
     Page<ShopAccount> findByStatus(ShopAccountStatus status, Pageable pageable);
 
     /**
