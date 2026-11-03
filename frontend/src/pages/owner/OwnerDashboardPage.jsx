@@ -7,9 +7,11 @@ import { useShopStore } from '@/store/useShopStore';
 import {
   describeChange,
   formatAmount,
+  formatCompareRange,
   formatMinutes,
   formatTimeRange,
 } from '@/utils/ownerDashboardFormat';
+import { formatMoney } from '@/utils/reservationFormat';
 import { timePart } from '@/utils/scheduleDate';
 import Alert from '@/components/common/Alert';
 import Badge from '@/components/common/Badge';
@@ -20,9 +22,6 @@ import RepresentativeImage from './components/RepresentativeImage';
 import StatCard from './components/StatCard';
 import StatsSection from './components/StatsSection';
 import styles from './OwnerDashboardPage.module.css';
-
-// 빈 시간대는 카드에 앞의 몇 개만 보여 준다
-const MAX_RANGES_ON_CARD = 3;
 
 const VIEWS = [
   { key: 'today', label: '오늘' },
@@ -96,6 +95,7 @@ function TodayView({ onOpenStats }) {
   const dashboardStatus = useOwnerDashboardStore((state) => state.dashboardStatus);
   const todayReservations = useOwnerDashboardStore((state) => state.todayReservations);
   const reservationsStatus = useOwnerDashboardStore((state) => state.reservationsStatus);
+  const monthSummary = useOwnerDashboardStore((state) => state.monthSummary);
   const loadDashboard = useOwnerDashboardStore((state) => state.loadDashboard);
   const loadToday = useOwnerDashboardStore((state) => state.loadToday);
   const loadTodayReservations = useOwnerDashboardStore((state) => state.loadTodayReservations);
@@ -112,7 +112,13 @@ function TodayView({ onOpenStats }) {
           <LoadError message="오늘 운영 현황을 불러오지 못했어요." onRetry={loadToday} />
         )}
         {dashboardStatus === 'loading' && <Spinner />}
-        {dashboardStatus === 'succeeded' && dashboard && <TodayCards dashboard={dashboard} />}
+        {dashboardStatus === 'succeeded' && dashboard && (
+          <TodayCards
+            dashboard={dashboard}
+            monthSummary={monthSummary}
+            todayReservations={reservationsStatus === 'succeeded' ? todayReservations : null}
+          />
+        )}
       </section>
 
       <TodayReservations
@@ -134,18 +140,46 @@ function TodayView({ onOpenStats }) {
   );
 }
 
-function TodayCards({ dashboard }) {
+// 오늘 예약 목록에서 아직 시작 전인 가장 빠른 확정 예약 (노쇼 표시 제외)
+function findNextReservation(reservations) {
+  const now = Date.now();
+  return reservations
+    .filter(
+      (item) => item.status === 'CONFIRMED' && !item.noShow && Date.parse(item.startsAt) > now,
+    )
+    .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))[0];
+}
+
+function TodayCards({ dashboard, monthSummary, todayReservations }) {
   const { today, monthToDate } = dashboard;
   const change = describeChange(monthToDate.completedAmount, monthToDate.previousCompletedAmount);
+  // 분석 탭과 같이 비교한 기간을 날짜로 적는다 (예: 10/1~10/4 대비)
+  // 오늘 예약 목록을 받았을 때만 다음 예약을 보여 준다
+  const next = todayReservations ? findNextReservation(todayReservations) : null;
+  const changeLabel = formatCompareRange(
+    { from: monthToDate.previousFrom, to: monthToDate.previousTo },
+    dashboard.date,
+  );
   return (
     <div className={`b-stat-grid ${styles.todayGrid}`}>
       <StatCard
         label="오늘 예약"
         values={[
           { label: '남은', value: today.upcomingCount, unit: '건' },
-          { label: '확정', value: today.confirmedCount, unit: '건' },
+          { label: '오늘 전체', value: today.confirmedCount, unit: '건' },
         ]}
-      />
+        notes={todayReservations && !next ? ['오늘 남은 예약이 없어요'] : []}
+      >
+        {/* 다음 예약: 첫 줄 시간·고객, 둘째 줄 시술명(길면 말줄임) */}
+        {next && (
+          <div className={styles.next}>
+            <p>
+              다음 {formatTimeRange(next)} <strong>{next.customerName}</strong>
+            </p>
+            <p className={styles.treatment}>{next.treatmentName}</p>
+          </div>
+        )}
+      </StatCard>
       <TodayAvailableCard today={today} />
       <StatCard
         label="내일 확정 예약"
@@ -154,18 +188,29 @@ function TodayCards({ dashboard }) {
         action={<Link to={ROUTES.OWNER_BOOKINGS}>예약 관리 →</Link>}
       />
       <StatCard
-        label="이번 달 이용 금액"
+        label="이번 달 시술 매출"
         value={formatAmount(monthToDate.completedAmount)}
         unit="원"
         change={change}
-        changeLabel="지난달 같은 기간 대비"
-        notes={change ? [] : ['지난달 같은 기간 이용 내역이 없어요']}
+        changeLabel={changeLabel}
+        notes={[
+          monthSummary &&
+            `시술 ${monthSummary.completedCount}건${
+              monthSummary.averageAmount
+                ? ` · 객단가 ${formatMoney(monthSummary.averageAmount)}`
+                : ''
+            }`,
+          change
+            ? `지난달 같은 기간 ${formatMoney(monthToDate.previousCompletedAmount)}`
+            : '지난달 같은 기간 이용 내역이 없어요',
+        ].filter(Boolean)}
       />
       <StatCard
         label="우리 매장 찜 고객"
         value={dashboard.favoriteCustomerCount}
         unit="명"
         notes={['빈자리를 열면 알림을 받아요']}
+        action={<Link to={ROUTES.OWNER_VACANCIES}>빈자리 열기 →</Link>}
       />
     </div>
   );
@@ -184,15 +229,21 @@ function TodayAvailableCard({ today }) {
     );
   }
   const ranges = today.availableRanges;
-  const shown = ranges.slice(0, MAX_RANGES_ON_CARD).map(formatTimeRange).join(' · ');
-  const more =
-    ranges.length > MAX_RANGES_ON_CARD ? ` 외 ${ranges.length - MAX_RANGES_ON_CARD}개` : '';
   return (
     <StatCard
       label="오늘 남은 빈 시간"
       value={formatMinutes(today.availableMinutes)}
-      notes={[ranges.length ? `${shown}${more}` : '남은 시간이 모두 찼어요']}
-    />
+      notes={ranges.length ? [] : ['남은 시간이 모두 찼어요']}
+    >
+      {/* 남은 시간대를 모두 칩으로 보여 준다. 바로가기(빈자리 열기)는 찜 고객 카드에 둔다 */}
+      {ranges.length > 0 && (
+        <ul className={styles.ranges}>
+          {ranges.map((range) => (
+            <li key={range.startsAt}>{formatTimeRange(range)}</li>
+          ))}
+        </ul>
+      )}
+    </StatCard>
   );
 }
 
@@ -241,12 +292,14 @@ function TodayReservationList({ reservations }) {
             <strong className={styles.time}>
               {timePart(item.startsAt)}~{timePart(item.endsAt)}
             </strong>
-            <span>{item.treatmentName}</span>
+            <span className={styles.treatment}>{item.treatmentName}</span>
             {/* 고객 관리에서 이 고객의 방문 이력·메모를 바로 연다 */}
-            <Link className="b-muted" to={customerPath(item)}>
+            <Link className={`b-muted ${styles.customer}`} to={customerPath(item)}>
               {item.customerName}
             </Link>
-            <Badge className={reservationStatus.tone}>{reservationStatus.label}</Badge>
+            <Badge className={`${reservationStatus.tone} ${styles.badge}`}>
+              {reservationStatus.label}
+            </Badge>
           </li>
         );
       })}

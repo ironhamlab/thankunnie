@@ -42,6 +42,44 @@ export const monthRange = (date) => {
   return { from: `${prefix}01`, to: `${prefix}${String(lastDay).padStart(2, '0')}` };
 };
 
+/**
+ * 비교 기간 라벨. 올해 안이면 "10/2~10/31", 해가 다르면 "25.11.7~26.11.6"
+ *
+ * @param {{ from: string, to: string }} period 비교한(직전) 기간
+ * @param {string} today 오늘 YYYY-MM-DD
+ */
+export const formatCompareRange = ({ from, to }, today) => {
+  const thisYear = today.slice(0, 4);
+  const short = (date) => {
+    const [year, month, day] = date.split('-');
+    return year === thisYear
+      ? `${Number(month)}/${Number(day)}`
+      : `${year.slice(2)}.${Number(month)}.${Number(day)}`;
+  };
+  return `${short(from)}~${short(to)} 대비`;
+};
+
+/** 기간 안에 요일마다 며칠이 있는지 { MONDAY: 5, ... } (둘 다 포함, YYYY-MM-DD) */
+export const countWeekdays = (from, to) => {
+  const counts = Object.fromEntries(WEEKDAYS.map((day) => [day, 0]));
+  const end = Date.parse(to);
+  for (let time = Date.parse(from); time <= end; time += 86400000) {
+    // Date.parse(YYYY-MM-DD) 는 UTC 자정이라 getUTCDay 로 요일을 센다. 0 = 일요일
+    counts[WEEKDAYS[(new Date(time).getUTCDay() + 6) % 7]] += 1;
+  }
+  return counts;
+};
+
+/** 하루 평균 값. 소수 첫째 자리까지, .0 은 뗀다 (3.2, 3) */
+export const perDay = (value, days) => (days ? Math.round((value / days) * 10) / 10 : 0);
+
+/**
+ * 시간대 점유율(%). 매장은 한 번에 한 예약만 받으므로 그 시간대 1시간 중 예약이 찬 비율의 평균이다.
+ * 휴무일도 날짜 수에 들어가 실제 영업일 기준보다 조금 낮게 나온다.
+ */
+export const occupancyRate = (bookedMinutes, days) =>
+  days ? Math.min(100, Math.round((bookedMinutes / (days * 60)) * 100)) : 0;
+
 /** YYYY-MM-DD 두 날짜 사이 일수 (둘 다 포함) */
 export const daysBetween = (from, to) => (Date.parse(to) - Date.parse(from)) / 86400000 + 1;
 
