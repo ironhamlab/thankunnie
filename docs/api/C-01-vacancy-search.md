@@ -67,7 +67,7 @@
 | `timeOfDay` | `MORNING`·`AFTERNOON`·`EVENING` | 전체 | 시작 시각 기준 09~12시 / 12~18시 / 18시 이후 |
 | `closingWithinHours` | number (1~72) | 없음 | 예약 마감(시작 20분 전)이 지금부터 N시간 안인 빈자리만. 메인 "마감 임박" 영역용 |
 | `priceTier` | `IMMINENT`·`LAST_MINUTE` | 전체 | 해당 가격 구간 이상만. 타임세일(`/?sale=1`·`/map?sale=1`·홈 지도 "타임세일만")은 `LAST_MINUTE`. `LAST_MINUTE`이면 OPEN 대신 영업시간 기준으로 찾고 초임박가가 판매가보다 싼 시술만 낸다 (2장 예외) |
-| `keyword` | string (최대 50자) | 없음 | 매장명·시술명 부분 일치 |
+| `keyword` | string (최대 50자) | 없음 | 매장명·주소(지역)·시술명 부분 일치. 예: `강서구`, `마곡` |
 | `minLat`, `maxLat`, `minLng`, `maxLng` | number | 없음 | 지도 화면 범위. 4개를 함께 보내야 하며 `min < max`. 매장 좌표가 범위 안인 빈자리만 |
 | `sort` | `START_ASC`·`DISCOUNT_DESC`·`PRICE_ASC` | `START_ASC` | 빠른 시작순 / 할인율 높은 순 / 판매가 낮은 순 |
 | `page` | number (0 이상) | 0 | |
@@ -239,7 +239,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 | 파라미터 | 값 | 기본 | 설명 |
 | --- | --- | --- | --- |
 | `categoryId` | 분야 ID | 전체 | 해당 분야 매장만 |
-| `keyword` | 50자 이하 | 없음 | 매장명·판매 중인 시술명 부분 일치. 대소문자 구분 없음. 50자를 넘으면 `COMMON_400` |
+| `keyword` | 50자 이하 | 없음 | 매장명·주소(지역)·판매 중인 시술명 부분 일치. 대소문자 구분 없음. 50자를 넘으면 `COMMON_400` |
 
 응답 필드는 `shopId`, `shopName`, `categoryId`, `categoryName`, `regionCode`, `address`, `latitude`, `longitude`, `imageUrl`(없으면 null)이다. 페이지로 나누지 않는다.
 
