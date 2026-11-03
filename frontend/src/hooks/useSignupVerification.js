@@ -69,7 +69,7 @@ export default function useSignupVerification(accountType, loginId, phone) {
     setChallenge(null);
     setCode('');
     try {
-      const result = await sendPhoneCode(phone);
+      const result = await sendPhoneCode(phone, accountType);
       if (version !== phoneVersion.current) return;
       setChallenge({ ...result, phone });
       setNow(Date.now());
