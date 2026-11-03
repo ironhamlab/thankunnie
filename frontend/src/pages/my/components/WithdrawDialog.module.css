@@ -25,33 +25,11 @@
   padding-inline: 8px;
 }
 
-/*
- * Dialog 의 stepKey 애니메이션은 transform 이 닫기(✕) 버튼의 위치 기준을 잠깐 바꿔, 끝날 때 버튼이 튄다.
- * 그래서 stepKey 를 쓰지 않고, 닫기 버튼이 없는 본문에만 같은 등장 효과를 준다
- */
 .root {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
-  animation: withdrawStep 320ms ease;
-}
-
-@keyframes withdrawStep {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .root {
-    animation: none;
-  }
 }
 
 .badge {

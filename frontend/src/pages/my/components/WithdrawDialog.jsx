@@ -47,6 +47,7 @@ export default function WithdrawDialog({ onClose }) {
       <Dialog
         className={styles.dialog}
         title="탈퇴가 완료됐어요"
+        stepKey="done"
         hideClose
         onClose={() => logout(ROUTES.HOME)}
       >
@@ -68,6 +69,7 @@ export default function WithdrawDialog({ onClose }) {
     <Dialog
       className={styles.dialog}
       title="정말 탈퇴하시겠어요?"
+      stepKey="confirm"
       plainClose
       hideClose={submitting}
       onClose={() => {
