@@ -7,6 +7,7 @@ import StoreIcon from '@/components/icons/StoreIcon';
 import ScissorsIcon from '@/components/icons/ScissorsIcon';
 import CalendarCheckIcon from '@/components/icons/CalendarCheckIcon';
 import CalendarIcon from '@/components/icons/CalendarIcon';
+import ProfileIcon from '@/components/icons/ProfileIcon';
 import styles from './OwnerSidebar.module.css';
 
 const NAVIGATION = [
@@ -14,6 +15,7 @@ const NAVIGATION = [
   [ROUTES.OWNER_MENUS, '시술 관리', ScissorsIcon],
   [ROUTES.OWNER_SCHEDULE, '영업시간', CalendarCheckIcon],
   [ROUTES.OWNER_BOOKINGS, '예약 관리', CalendarIcon],
+  [ROUTES.OWNER_CUSTOMERS, '고객 관리', ProfileIcon],
 ];
 
 /**

@@ -242,6 +242,6 @@ class ReservationQueryServiceTest {
                 null, NOW.minusDays(1), null, NOW.minusDays(1),
                 1L, "언니네 네일", 1L, "젤네일", 1L, "고객일", "010-0000-0001",
                 "PAID", 20000, 0, NOW.minusDays(1), null,
-                null, null, null, null, null, null);
+                null, null, null, null, null, null, false);
     }
 }

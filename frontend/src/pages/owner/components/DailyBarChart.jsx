@@ -36,14 +36,18 @@ const useWidth = () => {
 };
 
 /**
- * 날짜별 막대 그래프 (한 가지 지표). 막대에 마우스를 올리면 그날의 지표 전체를 보여 준다.
+ * 기간별 막대 그래프 (한 가지 지표). 막대에 마우스를 올리면 그 칸의 지표 전체를 보여 준다.
+ * 기본은 날짜(date) 칸이며, 월별처럼 다른 칸은 getKey·getLabel·getTitle 로 바꾼다.
  *
- * @param {object[]} days 날짜별 행 (date 포함)
+ * @param {object[]} days 칸별 행
  * @param {(day: object) => number} getValue 막대 높이로 쓸 값
  * @param {(value: number) => string} formatTick 세로축 눈금 표시
  * @param {(day: object) => string[]} describe 툴팁 내용 줄
  * @param {string} label 스크린 리더용 그래프 설명
  * @param {number} [minStep] 세로축 눈금 최소 간격. 건수처럼 정수만 의미 있는 지표는 1 을 넘긴다
+ * @param {(day: object) => string} [getKey] 칸 고유 키
+ * @param {(day: object) => string} [getLabel] 가로축 라벨
+ * @param {(day: object) => string} [getTitle] 툴팁 제목
  */
 export default function DailyBarChart({
   days,
@@ -52,6 +56,9 @@ export default function DailyBarChart({
   describe,
   label,
   minStep = 0,
+  getKey = (day) => day.date,
+  getLabel = (day) => formatShortDate(day.date),
+  getTitle = (day) => day.date,
 }) {
   const [containerRef, width] = useWidth();
   const [hovered, setHovered] = useState(null);
@@ -101,7 +108,7 @@ export default function DailyBarChart({
             const y = yOf(value);
             const dimmed = hovered !== null && hovered !== index;
             return (
-              <g key={day.date}>
+              <g key={getKey(day)}>
                 {value > 0 && (
                   <path
                     d={barPath(x, y, barWidth, PAD.top + plotHeight - y, 4)}
@@ -115,7 +122,7 @@ export default function DailyBarChart({
                     className={styles.tick}
                     textAnchor="middle"
                   >
-                    {formatShortDate(day.date)}
+                    {getLabel(day)}
                   </text>
                 )}
                 {/* 막대보다 넓은 마우스 영역 */}
@@ -140,7 +147,7 @@ export default function DailyBarChart({
           }}
           role="status"
         >
-          <strong>{hoveredDay.date}</strong>
+          <strong>{getTitle(hoveredDay)}</strong>
           {describe(hoveredDay).map((line) => (
             <span key={line}>{line}</span>
           ))}

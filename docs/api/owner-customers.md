@@ -3,7 +3,7 @@
 이 매장에 예약한 고객의 이용 횟수·금액·예약 이력과 매장 전용 메모. 매장은 로그인한 매장 계정으로 정해진다.
 
 - 권한: 매장(OWNER). 그 외 역할은 403, 비로그인은 401
-- **이용** = 확정 예약 중 종료 시각이 지난 예약(이용 추정). 횟수·금액은 저장하지 않고 조회할 때마다 예약에서 계산한다
+- **이용** = 확정 예약 중 종료 시각이 지났고 노쇼가 아닌 예약(이용 추정). 횟수·금액은 저장하지 않고 조회할 때마다 예약에서 계산한다
 - 금액은 예약 시점 적용가 기준이다
 - 분류(`segment`): 이 매장 누적 이용 0~1회 `NEW`(첫 방문 예정 포함), 2회 이상 `RETURNING`. 분석 화면의 신규·재방문과 같은 기준
 - 이 매장에 확정·취소 완료 예약이 없는 고객은 상세·메모 모두 404 (`COMMON_404`)
@@ -37,6 +37,7 @@
         "firstVisitAt": "2025-11-08T14:00:00+09:00",
         "lastVisitAt": "2026-11-06T10:00:00+09:00",
         "nextReservationAt": "2026-11-20T10:00:00+09:00",
+        "noShowCount": 0,
         "segment": "RETURNING", "hasMemo": true
       }
     ],
@@ -65,7 +66,7 @@
 ```
 
 - `memo`: 없으면 `null`
-- `reservations`: 이 매장 확정·취소 완료 예약을 최근 시작 순으로 최대 50건. `status` 는 `COMPLETED`(이용 추정)·`UPCOMING`(예정)·`CANCELLED`, `cancelType` 은 취소일 때만
+- `reservations`: 이 매장 확정·취소 완료 예약을 최근 시작 순으로 최대 50건. `status` 는 `COMPLETED`(이용 추정)·`UPCOMING`(예정)·`NO_SHOW`(노쇼)·`CANCELLED`, `cancelType` 은 취소일 때만
 
 ## PUT /api/v1/owner/customers/{userId}/memo
 

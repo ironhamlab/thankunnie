@@ -53,7 +53,7 @@ class ShopCustomerControllerTest {
     @DisplayName("고객 목록은 분류·정렬·검색어를 넘기고 페이지로 반환한다")
     void getCustomers_owner_returnsPage() throws Exception {
         ShopCustomerResponse customer = new ShopCustomerResponse(106L, "김하은", "010-6666-0106", 7, 238000,
-                AT.minusDays(30), AT, null, CustomerSegment.RETURNING, true);
+                AT.minusDays(30), AT, null, 0, CustomerSegment.RETURNING, true);
         given(shopCustomerService.getCustomers(any(AuthUser.class), eq(ShopCustomerSegmentFilter.RETURNING),
                 eq(ShopCustomerSort.VISITS), eq("하은"), eq(0), eq(20)))
                 .willReturn(PageResponse.of(List.of(customer), 0, 20, 1));

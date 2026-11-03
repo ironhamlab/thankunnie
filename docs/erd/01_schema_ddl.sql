@@ -200,6 +200,7 @@ CREATE TABLE RESERVATION (
     HOLD_EXPIRES_AT     TIMESTAMP(3)        NOT NULL,   -- 점유 만료 = 클릭 + 5분
     CONFIRMED_AT        TIMESTAMP(3),
     CUSTOMER_REQUEST    VARCHAR2(1000 CHAR),
+    NO_SHOW             CHAR(1)             DEFAULT 'N' NOT NULL,   -- Y, N. 매장이 종료 시각 이후 노쇼로 표시. 상태는 CONFIRMED 그대로
     CREATED_AT          TIMESTAMP(3)        NOT NULL,
     UPDATED_AT          TIMESTAMP(3)        NOT NULL,
     CONSTRAINT PK_RESERVATION PRIMARY KEY (RESERVATION_ID),

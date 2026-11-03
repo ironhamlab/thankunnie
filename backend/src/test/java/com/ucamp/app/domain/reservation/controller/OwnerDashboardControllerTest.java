@@ -136,7 +136,7 @@ class OwnerDashboardControllerTest {
 
     private static ReservationPeriodSummary summary(LocalDate from, LocalDate to) {
         return new ReservationPeriodSummary(from, to, 2, 60000L, 0, 0L, 30000L, 1, 1, 25.0, 20000L,
-                0L, 0L, null, 0L, 0, 0L, 2, 1, 1, 50.0);
+                0L, 0L, null, 0L, 0, 0L, 2, 1, 1, 50.0, 0, null);
     }
 
     private static OffsetDateTime at(int hour, int minute) {

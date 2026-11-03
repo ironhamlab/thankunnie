@@ -16,6 +16,7 @@ import com.ucamp.app.domain.reservation.entity.ReservationStatus;
  * @param cancelCompletedAt 결제 취소 완료 시각
  * @param retainedDeposit   취소 완료 건의 납부 예약금 - 환불액. 확정 예약은 0
  * @param closedAfterCancel 매장이 취소하며 그 시간을 닫았는지
+ * @param noShow            매장이 노쇼로 표시한 확정 예약인지
  */
 public record ReservationDashboardRow(
         Long reservationId,
@@ -31,7 +32,8 @@ public record ReservationDashboardRow(
         CancelType cancelType,
         LocalDateTime cancelCompletedAt,
         int retainedDeposit,
-        boolean closedAfterCancel) {
+        boolean closedAfterCancel,
+        boolean noShow) {
 
     public boolean confirmed() {
         return status == ReservationStatus.CONFIRMED;
@@ -41,9 +43,19 @@ public record ReservationDashboardRow(
         return status == ReservationStatus.CANCELLED;
     }
 
-    /** 이용 추정: 확정 예약 중 종료 시각이 지난 예약 */
+    /** 이용 추정: 확정 예약 중 종료 시각이 지났고 노쇼가 아닌 예약 */
     public boolean completed(LocalDateTime now) {
-        return confirmed() && !endsAt.isAfter(now);
+        return confirmed() && !noShow && !endsAt.isAfter(now);
+    }
+
+    /** 노쇼: 매장이 노쇼로 표시한 확정 예약 */
+    public boolean noShowed() {
+        return confirmed() && noShow;
+    }
+
+    /** 실제로 시간을 쓴(또는 쓸) 확정 예약. 노쇼는 빼고 피크·시술 비중을 센다 */
+    public boolean occupied() {
+        return confirmed() && !noShow;
     }
 
     /** 예정: 확정 예약 중 아직 끝나지 않은 예약 */
