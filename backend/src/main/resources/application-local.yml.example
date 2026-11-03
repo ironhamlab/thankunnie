@@ -68,3 +68,5 @@ solapi:
 # 실제 키는 Git 또는 프론트 환경변수에 넣지 않는다.
 nts:
   service-key: ${NTS_SERVICE_KEY:CHANGE_ME}
+  # true 면 국세청을 호출하지 않는 로컬 가짜 조회를 쓴다 (local 프로필 전용). 테스트 값은 docs/api/auth.md 참고
+  fake: false
