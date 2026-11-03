@@ -2,6 +2,7 @@ package com.ucamp.app.domain.reservation.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
@@ -12,7 +13,7 @@ import com.ucamp.app.domain.reservation.entity.Reservation;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 
 /**
- * 사장님 대시보드·통계 집계용 예약 조회. 시술·취소·결제·예외 일정은 각 담당 도메인 소유라 엔티티 연관 없이 네이티브 쿼리로 읽는다.
+ * 사장님 대시보드·통계 집계용 예약 조회. 시술·취소·결제·예외 일정·구독은 각 담당 도메인 소유라 엔티티 연관 없이 네이티브 쿼리로 읽는다.
  * 집계는 서비스에서 한다. 별칭은 대소문자를 지키도록 큰따옴표로 쓴다.
  */
 public interface ReservationDashboardRepository extends Repository<Reservation, Long> {
@@ -20,6 +21,7 @@ public interface ReservationDashboardRepository extends Repository<Reservation, 
     // 결제는 예약당 가장 최근 1건. 남은 예약금 = 납부 예약금 - 취소 환불액 (취소 완료 건만)
     @Query(value = """
             SELECT r.RESERVATION_ID AS "reservationId",
+                   r.USER_ID AS "userId",
                    r.TREATMENT_ID AS "treatmentId",
                    t.NAME AS "treatmentName",
                    r.STATUS AS "status",
@@ -58,6 +60,7 @@ public interface ReservationDashboardRepository extends Repository<Reservation, 
         return findRowsRaw(shopId, startsFrom, startsBefore).stream()
                 .map(row -> new ReservationDashboardRow(
                         row.getReservationId(),
+                        row.getUserId(),
                         row.getTreatmentId(),
                         row.getTreatmentName(),
                         ReservationStatus.valueOf(row.getStatus()),
@@ -73,6 +76,49 @@ public interface ReservationDashboardRepository extends Repository<Reservation, 
                 .toList();
     }
 
+    /**
+     * 종료 시각이 endsUntil 이하인 확정 예약(이용 추정)의 고객과 종료 시각. 신규·재방문을 전체 이력 기준으로 나눌 때 쓴다.
+     */
+    @Query(value = """
+            SELECT r.USER_ID AS "userId", r.ENDS_AT AS "endsAt"
+            FROM RESERVATION r
+            JOIN TREATMENT t ON t.TREATMENT_ID = r.TREATMENT_ID
+            WHERE t.SHOP_ID = :shopId
+              AND r.STATUS = 'CONFIRMED'
+              AND r.ENDS_AT <= :endsUntil
+            """, nativeQuery = true)
+    List<Visit> findVisits(@Param("shopId") Long shopId, @Param("endsUntil") LocalDateTime endsUntil);
+
+    /**
+     * 매장 가입 시각과 첫 확정·취소 완료 예약 시작 시각. "서비스 이용 이후 전체" 조회의 시작 날짜를 정한다.
+     */
+    @Query(value = """
+            SELECT s.CREATED_AT AS "shopCreatedAt",
+                   (SELECT MIN(r.STARTS_AT)
+                    FROM RESERVATION r
+                    JOIN TREATMENT t ON t.TREATMENT_ID = r.TREATMENT_ID
+                    WHERE t.SHOP_ID = s.SHOP_ID
+                      AND r.STATUS IN ('CONFIRMED', 'CANCELLED')) AS "firstStartsAt"
+            FROM SHOP s
+            WHERE s.SHOP_ID = :shopId
+            """, nativeQuery = true)
+    Optional<ServiceStart> findServiceStart(@Param("shopId") Long shopId);
+
+    /** 이 매장을 찜(업장 구독)한 고객 수. 지역·카테고리 구독은 특정 매장을 고른 것이 아니라 세지 않는다 */
+    @Query(value = """
+            SELECT COUNT(DISTINCT n.USER_ID)
+            FROM NOTIFICATION_SUBSCRIPTION n
+            WHERE n.SHOP_ID = :shopId
+              AND n.SUBSCRIPTION_TYPE = 'STORE'
+              AND n.STATUS = 'ACTIVE'
+            """, nativeQuery = true)
+    Number countFavoriteCustomersRaw(@Param("shopId") Long shopId);
+
+    default long countFavoriteCustomers(Long shopId) {
+        Number count = countFavoriteCustomersRaw(shopId);
+        return count == null ? 0 : count.longValue();
+    }
+
     private static int toInt(Number value) {
         return value == null ? 0 : value.intValue();
     }
@@ -81,6 +127,8 @@ public interface ReservationDashboardRepository extends Repository<Reservation, 
     interface Row {
 
         Long getReservationId();
+
+        Long getUserId();
 
         Long getTreatmentId();
 
@@ -105,5 +153,20 @@ public interface ReservationDashboardRepository extends Repository<Reservation, 
         Long getRetainedDeposit();
 
         Long getClosedAfterCancel();
+    }
+
+    /** 이용 추정 예약 한 건 */
+    interface Visit {
+
+        Long getUserId();
+
+        LocalDateTime getEndsAt();
+    }
+
+    interface ServiceStart {
+
+        LocalDateTime getShopCreatedAt();
+
+        LocalDateTime getFirstStartsAt();
     }
 }

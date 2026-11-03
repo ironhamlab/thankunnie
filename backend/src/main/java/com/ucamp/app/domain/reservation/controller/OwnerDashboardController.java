@@ -20,9 +20,9 @@ import com.ucamp.app.domain.reservation.dto.response.ReservationStatsResponse;
 import com.ucamp.app.domain.reservation.service.ReservationDashboardService;
 
 /**
- * 사장님 메인 대시보드 API. 매장은 로그인한 사장님의 매장으로 정해진다.
+ * 사장님 대시보드 API. 매장은 로그인한 사장님의 매장으로 정해진다.
  */
-@Tag(name = "사장님 대시보드", description = "메인 요약 지표와 기간 통계")
+@Tag(name = "사장님 대시보드", description = "오늘 운영 현황과 매출·예약 분석")
 @RestController
 @RequestMapping("/api/v1/owner/dashboard")
 public class OwnerDashboardController {
@@ -33,22 +33,24 @@ public class OwnerDashboardController {
         this.reservationDashboardService = reservationDashboardService;
     }
 
-    @Operation(summary = "사장님 메인 대시보드",
-            description = "오늘 확정·남은 예약, 휴무 여부, 남은 빈 시간대와 이번 달(시술일 기준) 요약: "
-                    + "확정 예약 금액, 고객·매장 사유 취소, 고객 취소율, 취소로 남은 예약금, 재판매 금액·회수율, 초임박 판매")
+    @Operation(summary = "사장님 홈 대시보드",
+            description = "오늘 확정·남은 예약, 휴무 여부, 남은 빈 시간대, 내일 확정 예약, "
+                    + "이번 달 1일~오늘 이용 금액과 지난달 같은 기간 비교, 찜 고객 수")
     @GetMapping
     public ResponseEntity<ApiResponse<ReservationDashboardResponse>> getDashboard(@LoginUser AuthUser loginUser) {
         return ResponseEntity.ok(ApiResponse.success(reservationDashboardService.getOwnerDashboard(loginUser)));
     }
 
-    @Operation(summary = "사장님 기간 통계",
-            description = "from~to 시술일(둘 다 포함, 최대 92일). 생략 시 이번 달 1일~말일. "
-                    + "기간 요약, 날짜별 추이, 시술별 성과")
+    @Operation(summary = "사장님 매출·예약 분석",
+            description = "from~to 시술일(둘 다 포함, 최대 3660일). 생략 시 이번 달 1일~말일, all=true 면 서비스 이용 시작일~오늘. "
+                    + "62일 이하는 날짜별, 넘으면 월별 추이. 기간 요약과 직전 같은 길이 기간 요약, 요일별·시간대별·시술별 지표")
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<ReservationStatsResponse>> getStats(
             @LoginUser AuthUser loginUser,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return ResponseEntity.ok(ApiResponse.success(reservationDashboardService.getOwnerStats(loginUser, from, to)));
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "false") boolean all) {
+        return ResponseEntity.ok(ApiResponse.success(
+                reservationDashboardService.getOwnerStats(loginUser, from, to, all)));
     }
 }

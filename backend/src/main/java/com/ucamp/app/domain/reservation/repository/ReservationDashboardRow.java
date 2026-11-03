@@ -8,6 +8,7 @@ import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 /**
  * 대시보드·통계 집계용 예약 행.
  *
+ * @param userId            예약한 고객
  * @param status            CONFIRMED 또는 CANCELLED
  * @param holdExpiresAt     점유 만료 시각 (점유 시작 = 이 값 - 점유 시간)
  * @param appliedPrice      점유 시점 적용가
@@ -18,6 +19,7 @@ import com.ucamp.app.domain.reservation.entity.ReservationStatus;
  */
 public record ReservationDashboardRow(
         Long reservationId,
+        Long userId,
         Long treatmentId,
         String treatmentName,
         ReservationStatus status,
@@ -37,5 +39,15 @@ public record ReservationDashboardRow(
 
     public boolean cancelled() {
         return status == ReservationStatus.CANCELLED;
+    }
+
+    /** 이용 추정: 확정 예약 중 종료 시각이 지난 예약 */
+    public boolean completed(LocalDateTime now) {
+        return confirmed() && !endsAt.isAfter(now);
+    }
+
+    /** 예정: 확정 예약 중 아직 끝나지 않은 예약 */
+    public boolean upcoming(LocalDateTime now) {
+        return confirmed() && endsAt.isAfter(now);
     }
 }
