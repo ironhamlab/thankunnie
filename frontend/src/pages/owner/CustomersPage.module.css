@@ -170,3 +170,19 @@
   border-radius: var(--radius-sm);
   padding: 6px 10px;
 }
+/* 배지 색: 기본 노란 배지 대신 신규(초록)처럼 옅은 바탕에 진한 글자. 재방문 분홍, 방문 예정 주황, 취소 빨강 */
+.pinkBadge.pinkBadge {
+  color: #b0245e;
+  background: #fff0f6;
+  border: 1px solid #f7c3d9;
+}
+.warmBadge.warmBadge {
+  color: #b84f00;
+  background: var(--color-primary-faint);
+  border: 1px solid var(--color-primary-line);
+}
+.redBadge.redBadge {
+  color: var(--color-danger-text);
+  background: var(--color-danger-bg);
+  border: 1px solid #f5c2cf;
+}

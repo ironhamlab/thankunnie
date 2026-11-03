@@ -29,8 +29,8 @@ const SORTS = [
 const SEGMENT_LABEL = { NEW: '신규', RETURNING: '재방문' };
 const HISTORY_STATUS = {
   COMPLETED: { label: '이용 완료', tone: 'success' },
-  UPCOMING: { label: '방문 예정' },
-  CANCELLED: { label: '취소', tone: 'neutral' },
+  UPCOMING: { label: '방문 예정', className: 'warmBadge' },
+  CANCELLED: { label: '취소', className: 'redBadge' },
 };
 const CANCEL_TYPE_LABEL = {
   CUSTOMER: '고객 취소',
@@ -242,7 +242,10 @@ function CustomerTable({ customers, total, selectedId, hasFilter, onSelect }) {
 
 function SegmentBadge({ segment }) {
   return (
-    <Badge tone={segment === 'NEW' ? 'success' : undefined}>
+    <Badge
+      tone={segment === 'NEW' ? 'success' : undefined}
+      className={segment === 'NEW' ? '' : styles.pinkBadge}
+    >
       {SEGMENT_LABEL[segment] ?? segment}
     </Badge>
   );
@@ -421,7 +424,10 @@ function History({ reservations }) {
               <li key={item.reservationId}>
                 <div className="b-row">
                   <strong>{formatReservationTime(item.startsAt, item.endsAt)}</strong>
-                  <Badge tone={status.tone}>
+                  <Badge
+                    tone={status.tone}
+                    className={status.className ? styles[status.className] : ''}
+                  >
                     {item.status === 'CANCELLED' && item.cancelType
                       ? (CANCEL_TYPE_LABEL[item.cancelType] ?? status.label)
                       : status.label}

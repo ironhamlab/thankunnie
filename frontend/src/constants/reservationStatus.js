@@ -1,9 +1,9 @@
-// 백엔드 예약·결제·취소 상태 값 → 화면 표시. 배지 색은 디자인 CSS 클래스(b-green, b-neutral)를 쓴다.
+// 백엔드 예약·결제·취소 상태 값 → 화면 표시. 배지 색은 디자인 CSS 클래스(b-green, b-red, b-neutral)를 쓴다.
 export const RESERVATION_STATUS = {
   HOLD: { label: '결제 대기', tone: '' },
   CONFIRMED: { label: '예약 확정', tone: 'b-green' },
   CANCEL_PENDING: { label: '취소 처리 중', tone: '' },
-  CANCELLED: { label: '취소 완료', tone: 'b-neutral' },
+  CANCELLED: { label: '취소 완료', tone: 'b-red' },
   EXPIRED: { label: '점유 만료', tone: 'b-neutral' },
 };
 
