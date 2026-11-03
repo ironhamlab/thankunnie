@@ -28,7 +28,7 @@ import com.ucamp.app.domain.treatment.dto.response.TreatmentDetailResponse;
 import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
 import com.ucamp.app.domain.treatment.service.TreatmentService;
 
-@Tag(name = "Treatment", description = "매장 본인 매장 시술 메뉴 관리")
+@Tag(name = "Treatment", description = "본인 매장 시술 메뉴 관리")
 @RestController
 @RequestMapping("/api/v1/shops/{shopId}/treatments")
 public class TreatmentController {
