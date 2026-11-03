@@ -292,7 +292,7 @@ public class ReservationDashboardService {
     /**
      * 취소로 비었던 시간과 그중 다시 채운 시간.
      * 비었던 시간: 기간 안 취소 완료 예약의 시간 합집합. 매장이 취소하며 닫은 시간은 다시 팔 수 없으므로 뺀다.
-     * 다시 채운 시간: 그 취소가 완료된 뒤 생성된 확정 예약과 겹치는 부분의 합집합.
+     * 다시 채운 시간: 그 취소가 완료된 뒤 생성된 확정 예약(노쇼 제외)과 겹치는 부분의 합집합.
      * 금액: 겹치는 부분이 있는 확정 예약의 적용가 합계 (한 예약은 한 번만 센다).
      * 예약은 날짜를 넘기지 않으므로 같은 날짜의 예약끼리만 비교한다.
      */
@@ -305,7 +305,8 @@ public class ReservationDashboardService {
         }
         Map<LocalDate, List<ReservationDashboardRow>> confirmedByDate = new HashMap<>();
         for (ReservationDashboardRow row : rows) {
-            if (row.confirmed()) {
+            // 노쇼 예약은 자리를 채웠다고 보지 않는다
+            if (row.occupied()) {
                 confirmedByDate.computeIfAbsent(row.startsAt().toLocalDate(), date -> new ArrayList<>()).add(row);
             }
         }

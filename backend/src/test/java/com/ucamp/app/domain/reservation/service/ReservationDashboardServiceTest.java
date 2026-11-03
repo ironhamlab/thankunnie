@@ -440,6 +440,27 @@ class ReservationDashboardServiceTest {
         assertThat(response.treatments().get(0).count()).isEqualTo(2);
     }
 
+    @Test
+    @DisplayName("취소 자리에 들어온 예약이 노쇼면 다시 채운 시간·재판매 금액에서 뺀다")
+    void summarize_rebook_excludesNoShow() {
+        LocalDateTime completedAt = LocalDateTime.of(2027, 2, 8, 9, 0);
+        LocalDateTime createdAt = LocalDateTime.of(2027, 2, 9, 9, 0);
+        ReservationDashboardRow noShowRebook = new ReservationDashboardRow(3L, 1L, 1L, "젤네일",
+                ReservationStatus.CONFIRMED, at(12, 14, 0), at(12, 15, 0), createdAt.plusMinutes(5), createdAt,
+                20000, null, null, 0, false, true);
+        given(reservationDashboardRepository.findRows(any(), any(), any())).willReturn(List.of(
+                cancelled(1L, at(12, 13, 0), 120, CancelType.CUSTOMER, 0, false, completedAt),
+                confirmed(2L, 1L, at(12, 13, 0), 60, 20000, createdAt),
+                noShowRebook));
+
+        ReservationPeriodSummary summary = stats(FEB_1, FEB_28).summary();
+
+        assertThat(summary.cancelledMinutes()).isEqualTo(120);
+        assertThat(summary.rebookedMinutes()).isEqualTo(60);
+        assertThat(summary.rebookRate()).isEqualTo(50.0);
+        assertThat(summary.rebookedBookingAmount()).isEqualTo(20000);
+    }
+
     private ReservationStatsResponse stats(LocalDate from, LocalDate to) {
         return reservationDashboardService.getOwnerStats(OWNER, from, to, false);
     }
