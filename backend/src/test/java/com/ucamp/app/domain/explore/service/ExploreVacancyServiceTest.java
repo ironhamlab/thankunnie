@@ -126,6 +126,7 @@ class ExploreVacancyServiceTest {
         assertThat(shopOne.minSalePrice()).isEqualTo(18000);
         assertThat(shopOne.maxDiscountRate()).isEqualTo(14);
         assertThat(shopOne.earliestStartsAt()).isEqualTo(kst(2026, 11, 6, 20, 0));
+        assertThat(shopOne.earliestPriceTier()).isEqualTo(PriceTier.NORMAL);
         assertThat(shopOne.latitude()).isEqualByComparingTo("37.4979");
         // 남성 커트 25,000(할인 없음) 21:00·21:30. 디지털 펌 120분은 22시 전에 끝나지 않아 빠진다
         ExploreShopResponse shopTwo = result.shops().get(1);
@@ -306,6 +307,8 @@ class ExploreVacancyServiceTest {
                 request().priceTier(PriceTier.LAST_MINUTE).build().filter());
 
         assertThat(result.shops()).extracting(ExploreShopResponse::shopId).containsExactly(1L, 2L);
+        assertThat(result.shops()).extracting(ExploreShopResponse::earliestPriceTier)
+                .containsOnly(PriceTier.LAST_MINUTE);
         assertThat(result.shops().get(0).modelVacancyCount()).isPositive();
         assertThat(saleSearch(request().treatmentType(TreatmentType.MODEL)).content())
                 .isNotEmpty()
