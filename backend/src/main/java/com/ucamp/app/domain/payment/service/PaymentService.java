@@ -46,15 +46,18 @@ public class PaymentService {
     private final PortOneClient portOneClient;
     private final PaymentRefundStateService refundStateService;
     private final PaymentConfirmService confirmService;
+    private final PaymentStartService startService;
     private final Clock clock;
 
     public PaymentService(PortOneClient portOneClient,
                           PaymentRefundStateService refundStateService,
                           PaymentConfirmService confirmService,
+                          PaymentStartService startService,
                           Clock clock) {
         this.portOneClient = portOneClient;
         this.refundStateService = refundStateService;
         this.confirmService = confirmService;
+        this.startService = startService;
         this.clock = clock;
     }
 
@@ -71,6 +74,16 @@ public class PaymentService {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public PaymentVerifyResponse verify(AuthUser loginUser, PaymentVerifyRequest request) {
         loginUser.requireRole(UserRole.CUSTOMER);
+        try {
+            return verifyAndConfirm(loginUser, request);
+        } finally {
+            // 확정됐든 실패했든 결제창 한 번이 끝났으므로 "결제 진행 중"을 푼다 (PaymentStartService).
+            // 확정된 예약은 다음 결제 시작에서 상태 검사로 막힌다
+            startService.finish(loginUser.userId(), request.reservationId());
+        }
+    }
+
+    private PaymentVerifyResponse verifyAndConfirm(AuthUser loginUser, PaymentVerifyRequest request) {
         Long reservationId = request.reservationId();
         PortOnePayment payment = portOneClient.getPayment(request.impUid());
         if (!PORTONE_PAID.equals(payment.status())) {

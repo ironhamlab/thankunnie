@@ -9,7 +9,7 @@ import com.ucamp.app.common.util.TimeUtils;
  * 예약 대기열의 내 순서. 대기 화면은 이 응답을 주기적으로 다시 받아 순서를 갱신한다.
  *
  * @param status        내 상태
- * @param aheadCount    내 앞에서 기다리는 사람 수. 결제 중인 사람은 세지 않는다
+ * @param aheadCount    내 앞에 있는 사람 수. 결제 중인 사람도 한 명으로 센다
  * @param paying        다른 사람이 이 빈자리를 점유하고 결제 중인지
  * @param turnExpiresAt 내 차례(MY_TURN)가 끝나는 일시. 그 밖의 상태에서는 null
  * @param reservationId 내 점유 예약 ID (HOLDING). 그 밖의 상태에서는 null

@@ -13,6 +13,24 @@ const toError = (error) => ({
 export const usePaymentStore = create((set) => ({
   verifying: false,
 
+  // 결제창을 열기 전에 이 탭이 결제를 맡는다. 실패(다른 탭 결제 중·만료 등)는 화면이 안내하도록 던진다
+  startPayment: async (body) => {
+    try {
+      return await paymentApi.start(body);
+    } catch (error) {
+      throw toError(error);
+    }
+  },
+
+  // 결제를 그만둔다. 실패해도 3분 뒤 서버가 저절로 풀어 주므로 화면 흐름은 막지 않는다
+  abortPayment: async (body) => {
+    try {
+      await paymentApi.cancelStart(body);
+    } catch {
+      // 무시한다
+    }
+  },
+
   verifyPayment: async (body) => {
     set({ verifying: true });
     try {
