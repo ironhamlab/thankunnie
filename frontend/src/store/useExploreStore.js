@@ -1,17 +1,18 @@
 import { create } from 'zustand';
 import { exploreApi } from '@/api/exploreApi';
 import { shopDetailApi } from '@/api/shopDetailApi';
+import { vacancyDetailApi } from '@/api/vacancyDetailApi';
 import { toVacancyCard } from '@/utils/exploreVacancy';
 
 // 매장 하나의 하루 빈자리는 많아야 수십 건이라 한 번에 받는다
 const SHOP_VACANCY_SIZE = 50;
-// 임박 빈자리 대신 보여줄 매장 수. 임박 빈자리 API 와 같게 둔다
+// 임박 빈자리 카드와 그 대신 보여줄 매장 수. 임박 빈자리 API 와 같게 둔다
 const UPCOMING_SHOP_COUNT = 10;
 
 const fetchVacancyCards = async (params) =>
   (await exploreApi.getVacancies(params)).content.map((item) => toVacancyCard(item));
 // 임박 빈자리가 없으면(영업이 끝난 밤 등) 다음으로 빠른 일반 시술 빈자리를 매장마다 1건씩 대신 보여준다
-const fetchImminentCards = async () => {
+const fetchBookableCards = async () => {
   const imminent = await exploreApi.getImminentVacancies();
   if (imminent.length) return imminent.map((item) => toVacancyCard(item));
   const cards = await fetchVacancyCards({ treatmentType: 'NORMAL', size: SHOP_VACANCY_SIZE });
@@ -20,6 +21,47 @@ const fetchImminentCards = async () => {
     .filter((card) => !shopIds.has(card.shopId) && shopIds.add(card.shopId))
     .slice(0, UPCOMING_SHOP_COUNT)
     .map((card) => ({ ...card, upcoming: true }));
+};
+// 목록은 지금 예약할 수 있는 빈자리만 주므로 다른 고객이 결제 중이어도 빠진다. 빠진 카드는 상세로 이유를 확인해
+// 결제 중이면 표시를 바꿔 남기고, 예약 확정·닫힘·접수 마감으로 끝났을 때만 imminentClosedIds 에 담아 마감으로 알린다.
+// 예약할 수 있는데 빠진 카드(더 빠른 빈자리에 밀려 10개 밖으로 나감)는 알리지 않고 뺀다.
+const fetchImminentCards = async () => {
+  const bookable = await fetchBookableCards();
+  const { imminentVacancies: previous, imminentClosedIds } = useExploreStore.getState();
+  const missing = previous.filter((card) => !bookable.some((next) => next.id === card.id));
+  const details = await Promise.all(
+    missing.map((card) =>
+      vacancyDetailApi.getDetail(card.treatmentId, card.startsAt.slice(0, 19)).catch(() => null),
+    ),
+  );
+  // 확인하지 못한 카드는 마감으로 단정하지 않고 다음 주기까지 그대로 둔다
+  const kept = missing.flatMap((card, index) => {
+    const detail = details[index];
+    if (!detail) return [card];
+    return detail.notBookableReason === 'HELD' ? [{ ...card, held: true }] : [];
+  });
+  const closedIds = missing
+    .filter((_, index) => details[index] && !details[index].bookable)
+    .filter((card) => !kept.some((keptCard) => keptCard.id === card.id))
+    .map((card) => card.id);
+  if (closedIds.length || imminentClosedIds.length) {
+    useExploreStore.setState({ imminentClosedIds: closedIds });
+  }
+  if (!kept.length) return bookable;
+  // 결제 중인 동안 같은 매장의 다음 시간이 목록에 올라와도 매장마다 1건만 보여준다
+  const keptShopIds = new Set(kept.map((card) => card.shopId));
+  const merged = bookable
+    .filter((card) => !keptShopIds.has(card.shopId))
+    .slice(0, UPCOMING_SHOP_COUNT - kept.length);
+  // 보던 카드의 순번이 튀지 않게 원래 자리에 넣는다
+  kept.forEach((card) => {
+    merged.splice(
+      previous.findIndex((item) => item.id === card.id),
+      0,
+      card,
+    );
+  });
+  return merged;
 };
 const fetchShops = async (params) => (await exploreApi.getShops(params)).shops;
 
@@ -74,6 +116,8 @@ export const useExploreStore = create((set, get) => ({
   imminentVacancies: [],
   imminentStatus: 'idle',
   imminentError: null,
+  // 이번 갱신에서 예약 확정·닫힘·접수 마감으로 끝나 목록에서 빠진 빈자리 ID
+  imminentClosedIds: [],
 
   // 매장 요약 (C-02). 홈 분야 탭 목록·홈 지도·검색 화면 목록과 지도
   // 빈자리 목록의 전체 날짜 보기에서 빈자리가 없는 매장까지 채울 전체 매장
