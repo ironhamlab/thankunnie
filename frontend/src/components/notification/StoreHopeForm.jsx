@@ -3,6 +3,8 @@ import { ERROR_MESSAGES } from '@/constants/errorMessages';
 import { selectableTreatments } from '@/utils/notificationRules';
 import { addDays, defaultHopePeriod, toKstDateTime, todayKst } from '@/utils/scheduleDate';
 import Button from '@/components/common/Button';
+import HopeDateField from './HopeDateField';
+import HopeTimeField from './HopeTimeField';
 import StoreTreatmentField from './StoreTreatmentField';
 import styles from './SubscriptionCreateForm.module.css';
 
@@ -14,7 +16,7 @@ const emptyTimeForm = () => defaultHopePeriod();
 /**
  * 업장 알림 희망 시간. 카테고리·지역 조건 추가와 같은 입력 칸을 쓴다.
  * 판매 중인 일반 시술을 고르기 전에는 등록할 수 없다.
- * 희망 날짜는 오늘부터 30일 안만, 시각은 기본 time 입력(30분 단위)으로 고른다.
+ * 희망 날짜는 오늘부터 30일 안만, 시각은 30분 단위 휠로 고른다.
  * 종료가 시작보다 같거나 이르거나 이미 지났으면 요청 전에 막는다.
  */
 export default function StoreHopeForm({
@@ -31,6 +33,9 @@ export default function StoreHopeForm({
 
   const change = (field) => (event) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }));
+  };
+  const changeTime = (field) => (time) => {
+    setForm((prev) => ({ ...prev, [field]: time }));
   };
 
   const startDateEmpty = !form.startDate;
@@ -74,17 +79,13 @@ export default function StoreHopeForm({
       <StoreTreatmentField treatments={treatments} value={treatmentId ?? ''} onChange={onTreatmentChange} />
       <div className={styles.timeRow}>
         <div className={styles.field}>
-          <label>
-            희망 시작일
-            <input
-              required
-              type="date"
-              min={minDate}
-              max={maxDate}
-              value={form.startDate}
-              onChange={change('startDate')}
-            />
-          </label>
+          <HopeDateField
+            label="희망 시작일"
+            min={minDate}
+            max={maxDate}
+            value={form.startDate}
+            onChange={change('startDate')}
+          />
           {startDateEmpty && (
             <p role="alert" className={styles.error}>
               희망 시작일을 선택해 주세요.
@@ -97,16 +98,7 @@ export default function StoreHopeForm({
           )}
         </div>
         <div className={styles.field}>
-          <label>
-            시작 시간
-            <input
-              required
-              type="time"
-              step="1800"
-              value={form.startTime}
-              onChange={change('startTime')}
-            />
-          </label>
+          <HopeTimeField label="시작 시간" value={form.startTime} onChange={changeTime('startTime')} />
           {startTimeEmpty && (
             <p role="alert" className={styles.error}>
               시작 시간을 선택해 주세요.
@@ -119,17 +111,13 @@ export default function StoreHopeForm({
           )}
         </div>
         <div className={styles.field}>
-          <label>
-            희망 종료일
-            <input
-              required
-              type="date"
-              min={minDate}
-              max={maxDate}
-              value={form.endDate}
-              onChange={change('endDate')}
-            />
-          </label>
+          <HopeDateField
+            label="희망 종료일"
+            min={minDate}
+            max={maxDate}
+            value={form.endDate}
+            onChange={change('endDate')}
+          />
           {endDateEmpty && (
             <p role="alert" className={styles.error}>
               희망 종료일을 선택해 주세요.
@@ -142,16 +130,7 @@ export default function StoreHopeForm({
           )}
         </div>
         <div className={styles.field}>
-          <label>
-            종료 시간
-            <input
-              required
-              type="time"
-              step="1800"
-              value={form.endTime}
-              onChange={change('endTime')}
-            />
-          </label>
+          <HopeTimeField label="종료 시간" value={form.endTime} onChange={changeTime('endTime')} />
           {endTimeEmpty && (
             <p role="alert" className={styles.error}>
               종료 시간을 선택해 주세요.
