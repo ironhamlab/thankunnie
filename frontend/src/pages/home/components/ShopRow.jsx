@@ -2,11 +2,12 @@ import { Link } from 'react-router-dom';
 import { formatMoney } from '@/utils/reservationFormat';
 import {
   areaName,
-  earliestLabel,
   groupByTreatment,
+  hasModelVacancy,
   pinKind,
   shopImage,
   shopPagePath,
+  vacancySummary,
 } from '@/utils/exploreVacancy';
 import { datePart } from '@/utils/scheduleDate';
 import SproutIcon from '@/components/icons/SproutIcon';
@@ -49,6 +50,7 @@ function Card({ to, onLocate, located, children }) {
  * @param onLocate  있으면 카드를 눌렀을 때 매장 페이지로 가지 않고 옆 지도에서 이 매장을 가까이 보여준다.
  *                  매장 페이지는 시간 버튼이나 옆 지도의 매장 보기로 간다
  * @param located   옆 지도에서 지금 이 매장을 보여주는 중인지
+ * @param weekly    조회 기간이 이번 주를 넘으면(전체 날짜) 빈자리 수 앞에 "이번 주"를 붙인다
  * @param distance  내 위치에서 매장까지 거리 ("1.2km"). 위치를 모르면 undefined 라 보이지 않는다
  * @param model    초보 시술 모집 목록이면 매장 대신 초보 시술 모집 상세로 보낸다. 초보 시술 빈자리만 있는 매장(shop.modelOnly)도 그렇다.
  *                 일반·초보 시술이 섞인 매장은 카드 아래에 초보 시술 모집 상세 링크를 따로 둔다
@@ -64,6 +66,7 @@ export default function ShopRow({
   onLocate,
   located = false,
   distance,
+  weekly = false,
 }) {
   const area = (
     <span className={styles.area}>
@@ -82,9 +85,8 @@ export default function ShopRow({
     shownDates.includes(datePart(vacancy.startsAt)),
   );
   const nextDate = dates[SHOWN_DAYS];
-  // 받은 빈자리가 개수 제한에 걸려 잘렸을 수도 있으므로 매장 전체 빈자리 수와도 비교한다.
-  // 하루치만 받았어도 잘렸을 수 있으므로 날짜 수와 상관없이 안내한다
-  const hasMore = Boolean(nextDate) || shop.vacancyCount > shownVacancies.length;
+  // 받은 빈자리가 개수 제한에 걸려 잘렸을 수도 있으므로(truncated) 날짜 수와 상관없이 안내한다
+  const hasMore = Boolean(nextDate) || Boolean(detail?.truncated);
   // 다음 날짜가 없으면 잘린 빈자리는 마지막으로 받은 날짜부터 이어진다
   const moreDate = nextDate ?? dates.at(-1);
   const dayOf = (date) => vacancies.find((vacancy) => datePart(vacancy.startsAt) === date).day;
@@ -124,11 +126,7 @@ export default function ShopRow({
           <span className={styles.info}>
             <strong>{shop.shopName}</strong>
             {area}
-            <span className={styles.time}>
-              {/* 줄이 바뀌어도 "빈자리 N개"는 떨어지지 않게 붙는 공백(NBSP)을 쓴다 */}◷{' '}
-              {earliestLabel(shop)}부터 · 빈자리{' '}
-              {shop.vacancyCount}개
-            </span>
+            <span className={styles.time}>◷ {vacancySummary(shop, { weekly })}</span>
           </span>
           <span className={styles.price}>
             {shop.maxDiscountRate > 0 && <em>최대 {shop.maxDiscountRate}%↓</em>}
@@ -150,14 +148,15 @@ export default function ShopRow({
         )}
       </div>
       {/* 일반·초보 시술이 섞인 매장은 위 카드가 매장 상세(일반 시술)로 가므로 초보 시술 빈자리는 초보 시술 모집 상세로 따로 보낸다 */}
-      {!model && !shop.modelOnly && shop.modelVacancyCount > 0 && (
+      {!model && !shop.modelOnly && hasModelVacancy(shop) && (
         <Link
           className={styles.modelLink}
           to={shopPagePath(shop.shopId, { date: datePart(shop.earliestStartsAt), model: true })}
         >
           <span className={styles.modelLinkLabel}>
             <SproutIcon size={16} />
-            초보 시술 모집 빈자리 {shop.modelVacancyCount}개
+            초보 시술 모집 빈자리
+            {shop.modelVacancyCount > 0 && ` ${shop.modelVacancyCount}개`}
           </span>
           <b>{formatMoney(shop.modelMinSalePrice)}~</b>
         </Link>

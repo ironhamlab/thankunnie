@@ -24,11 +24,8 @@ export default function HomeIntro() {
   // 빈자리는 예약과 시간 경과로 계속 줄어들므로 아래 임박 카드와 같은 주기로 다시 받는다
   useAutoRefresh(() => Promise.all([loadSummaryShops(), loadSaleShops()]));
 
-  const vacancyCount = shops.reduce(
-    // 초보 시술만 있는 매장은 vacancyCount 에 이미 초보 시술 빈자리가 담겨 있다
-    (sum, shop) => sum + shop.vacancyCount + (shop.modelOnly ? 0 : shop.modelVacancyCount),
-    0,
-  );
+  // 매장마다 일반·초보 시술을 합쳐 겹치지 않는 시작 시각을 이번 주 일요일까지 센 값(totalVacancyCount)을 더한다
+  const vacancyCount = shops.reduce((sum, shop) => sum + shop.totalVacancyCount, 0);
   const maxDiscount = Math.max(
     0,
     ...[...shops, ...saleShops].map((shop) => shop.maxDiscountRate),

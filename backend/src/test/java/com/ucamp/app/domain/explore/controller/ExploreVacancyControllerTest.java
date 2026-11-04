@@ -166,7 +166,7 @@ class ExploreVacancyControllerTest {
         ExploreShopResponse shop = new ExploreShopResponse(1L, "언니네 네일", "11680", "서울특별시 강남구 테헤란로 1",
                 new BigDecimal("37.4979"), new BigDecimal("127.0276"), null, 7, 18000, 14,
                 OffsetDateTime.of(2026, 11, 6, 20, 0, 0, 0, ZoneOffset.ofHours(9)), PriceTier.NORMAL, true, 7,
-                18000);
+                18000, 7);
         given(exploreVacancyService.searchShops(any())).willReturn(new ExploreShopMapResponse(List.of(shop), false));
 
         mockMvc.perform(get(SHOPS_URL).param("minLat", "37.48").param("maxLat", "37.52")
@@ -177,6 +177,7 @@ class ExploreVacancyControllerTest {
                 .andExpect(jsonPath("$.data.shops[0].earliestStartsAt").value("2026-11-06T20:00:00+09:00"))
                 .andExpect(jsonPath("$.data.shops[0].earliestPriceTier").value("NORMAL"))
                 .andExpect(jsonPath("$.data.shops[0].modelOnly").value(true))
+                .andExpect(jsonPath("$.data.shops[0].totalVacancyCount").value(7))
                 .andExpect(jsonPath("$.data.hasMore").value(false));
 
         ArgumentCaptor<ExploreVacancyFilter> captor = ArgumentCaptor.forClass(ExploreVacancyFilter.class);

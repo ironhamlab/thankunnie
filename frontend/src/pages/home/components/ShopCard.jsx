@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { formatMoney } from '@/utils/reservationFormat';
-import { areaName, earliestLabel, shopImage } from '@/utils/exploreVacancy';
+import { areaName, shopImage, vacancySummary } from '@/utils/exploreVacancy';
 import styles from './ShopCard.module.css';
 
 /**
@@ -18,9 +18,8 @@ export default function ShopCard({ shop, to }) {
       <div className={styles.body}>
         <strong className={styles.name}>{shop.shopName}</strong>
         <span className={styles.area}>⌖ {areaName(shop.address)}</span>
-        <span className={styles.time}>
-          ◷ {earliestLabel(shop)}부터 · 빈자리 {shop.vacancyCount}개
-        </span>
+        {/* 메인 매장 카드는 기본 7일을 조회하므로 빈자리 수가 이번 주 것임을 밝힌다 */}
+        <span className={styles.time}>◷ {vacancySummary(shop, { weekly: true })}</span>
         <span className={styles.price}>
           <b>{formatMoney(shop.minSalePrice)}</b>부터
         </span>
