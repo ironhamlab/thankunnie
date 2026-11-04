@@ -11,6 +11,8 @@ import EmptyState from '@/components/common/EmptyState';
 import Panel from '@/components/common/Panel';
 import Spinner from '@/components/common/Spinner';
 import ReservationPagination from '@/components/reservation/ReservationPagination';
+import RollingValue from '@/pages/home/components/RollingValue';
+import SlidingOptions from './components/SlidingOptions';
 import styles from './CustomersPage.module.css';
 
 // 한 화면에 목록이 다 들어오도록 10명씩 본다
@@ -121,19 +123,12 @@ export default function CustomersPage() {
       <div className={styles.layout}>
         <Panel as="section" padded className={`b-stack ${styles.list}`} aria-label="고객 목록">
           <div className={styles.toolbar}>
-            <div className="b-options" role="group" aria-label="고객 분류">
-              {SEGMENTS.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  className={segment === item.key ? 'is-selected' : ''}
-                  aria-pressed={segment === item.key}
-                  onClick={() => update({ segment: item.key === 'ALL' ? null : item.key })}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
+            <SlidingOptions
+              label="고객 분류"
+              options={SEGMENTS}
+              selectedKey={segment}
+              onSelect={(key) => update({ segment: key === 'ALL' ? null : key })}
+            />
             <form
               className={styles.search}
               role="search"
@@ -227,7 +222,9 @@ function CustomerTable({ customers, total, selectedId, hasFilter, onSelect }) {
   }
   return (
     <>
-      <p className={styles.count}>{total}명</p>
+      <p className={styles.count}>
+        <RollingValue value={`${total}명`} />
+      </p>
       <div className={styles.table}>
         {/* 예약 현황 표처럼 칸을 맞춘 머리글. 화면 읽기 도구는 각 줄의 내용을 그대로 읽는다 */}
         <div className={`${styles.row} ${styles.head}`} aria-hidden="true">

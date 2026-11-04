@@ -66,6 +66,23 @@
   line-height: 1;
   cursor: pointer;
 }
+/* 줄에 마우스를 올리면 끝의 화살표가 갈 방향으로 움직인다 */
+.table td.chevron button {
+  transition: transform 0.2s;
+}
+@media (hover: hover) {
+  .table tbody tr:hover td.chevron button {
+    transform: translateX(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .table td.chevron button {
+    transition: none;
+  }
+  .table tbody tr:hover td.chevron button {
+    transform: none;
+  }
+}
 /* 창 안에서는 창 자체가 카드라 상세 패널의 테두리와 여백을 뺀다 */
 /* 창이 떠 있는 동안 뒤 목록이 함께 스크롤되지 않게 하고, 창을 닫으면 보던 자리로 돌아온다 */
 html:has(.detailDialog[open]) {
