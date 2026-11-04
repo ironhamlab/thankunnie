@@ -38,7 +38,7 @@ export default function HomeIntro() {
   return (
     <section className={styles.root} aria-label="서비스 소개">
       <div>
-        <h1>
+        <h1 className={styles.title}>
           언니, <em>지금 이 자리</em> 놓치면 후회해
         </h1>
         <p>흩어진 뷰티샵의 빈자리와 할인을, 마감 전에 한곳에서.</p>

@@ -10,7 +10,6 @@ import HomeBeautyMap from '@/pages/home/components/HomeBeautyMap';
 import HomeIntro from '@/pages/home/components/HomeIntro';
 import ImminentCarousel from '@/pages/home/components/ImminentCarousel';
 import ShopCard from '@/pages/home/components/ShopCard';
-import '@/assets/styles/home-redesign.css';
 import styles from './HomePage.module.css';
 
 // 홈 분야 탭에는 가장 빨리 시작하는 매장을 4개씩 3줄까지만 보여주고 나머지는 전체보기(검색 화면)로 넘긴다
@@ -84,7 +83,7 @@ export default function HomePage() {
 
   if (searchMode) return <VacancySearch />;
   return (
-    <div className="b-container home-redesign">
+    <div className={`b-container ${styles.page}`}>
       <div className={styles.riseIn}>
         <HomeIntro />
       </div>
@@ -106,7 +105,7 @@ export default function HomePage() {
           onLocated={() => setMapAtMyLocation(true)}
         />
       </section>
-      <section id="home-deals" className={`home-deals ${styles.riseIn} ${styles.later}`}>
+      <section id="home-deals" className={`${styles.deals} ${styles.riseIn} ${styles.later}`}>
         <div className={styles.sectionHeading}>
           <div>
             <h2>

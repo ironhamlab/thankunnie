@@ -3,7 +3,6 @@
 import '@seed-design/css/base.css';
 import '@/assets/styles/global.css';
 import '@/assets/styles/design.css';
-import '@/assets/styles/remaining-screens.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from '@/App';

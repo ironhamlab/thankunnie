@@ -122,9 +122,26 @@
     gap: 12px;
   }
 }
-:global(.home-redesign) .demoNote {
+.page .demoNote {
   margin: 24px 0 36px;
   color: var(--color-text-muted);
   font-size: 12px;
   text-align: center;
+}
+.page {
+  font-family: var(--font-display);
+  padding-top: 24px;
+  padding-bottom: 0;
+}
+.page button {
+  color: inherit;
+}
+.deals {
+  padding-top: 12px;
+  scroll-margin-top: 100px;
+}
+@media (max-width: 767px) {
+  .page {
+    padding: 20px 16px 0;
+  }
 }
