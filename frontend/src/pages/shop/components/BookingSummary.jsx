@@ -15,7 +15,7 @@ import styles from '../ShopDetailPage.module.css';
 const TIER_LABELS = { IMMINENT: '임박', LAST_MINUTE: '초임박 특가' };
 
 /** 고른 시술·시각의 가격과 예약 가능 여부를 빈자리 상세(C-03)로 다시 조회해 보여준다 */
-export default function BookingSummary({ treatment, date, time }) {
+export default function BookingSummary({ treatment, date, time, held = false }) {
   const detail = useVacancyDetailStore((state) => state.detail);
   const status = useVacancyDetailStore((state) => state.status);
   const error = useVacancyDetailStore((state) => state.error);
@@ -37,7 +37,8 @@ export default function BookingSummary({ treatment, date, time }) {
   useEffect(() => {
     if (treatmentId && startsAt) loadDetail(treatmentId, startsAt);
     return clearDetail;
-  }, [treatmentId, startsAt, loadDetail, clearDetail]);
+    // held: 시간 칸 갱신으로 결제 중 여부가 바뀌면 예약하기·대기하기 버튼이 맞도록 다시 조회한다
+  }, [treatmentId, startsAt, held, loadDetail, clearDetail]);
 
   const current =
     status === 'succeeded' &&

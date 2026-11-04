@@ -33,23 +33,38 @@ let shopVacancySeq = 0;
 
 // 결과를 dataKey 하나에 담는 조회. 실패하면 빈 목록으로 두고 statusKey·errorKey 로 알린다.
 // 조건을 빠르게 바꾸면 이전 응답이 늦게 와서 현재 결과를 덮을 수 있어 요청 번호로 마지막 요청만 반영한다
-// keepDataOnError: 주기적으로 다시 받는 값은 한 번 실패해도 마지막으로 받은 값을 지우지 않는다
-const simpleLoader = (set, keys, fetch, { keepDataOnError = false } = {}) => {
+// refreshable: 주기적으로 다시 받는 값. 한 번 받은 뒤에는 로딩·실패로 바꾸지 않아 화면이 깜빡이지 않고,
+// 내용이 같으면 기존 값을 그대로 둬 이 값을 보는 화면이 다시 그려지거나 자동 넘김 타이머가 새로 시작하지 않게 한다
+const simpleLoader = (set, keys, fetch, { refreshable = false } = {}) => {
   const { data: dataKey, status: statusKey, error: errorKey } = keys;
   let seq = 0;
+  const isLoaded = (state) => refreshable && state[statusKey] === 'succeeded';
   return async (params) => {
     const current = ++seq;
-    set({ [statusKey]: 'loading', [errorKey]: null });
+    set((state) => (isLoaded(state) ? {} : { [statusKey]: 'loading', [errorKey]: null }));
     try {
       const data = await fetch(params);
-      if (current === seq) set({ [dataKey]: data, [statusKey]: 'succeeded' });
+      if (current === seq) {
+        set((state) => ({
+          [dataKey]:
+            refreshable && JSON.stringify(state[dataKey]) === JSON.stringify(data)
+              ? state[dataKey]
+              : data,
+          [statusKey]: 'succeeded',
+        }));
+      }
     } catch (error) {
-      if (current === seq)
-        set({
-          ...(keepDataOnError ? {} : { [dataKey]: [] }),
-          [statusKey]: 'failed',
-          [errorKey]: toError(error),
-        });
+      if (current === seq) {
+        set((state) =>
+          isLoaded(state)
+            ? {}
+            : {
+                ...(refreshable ? {} : { [dataKey]: [] }),
+                [statusKey]: 'failed',
+                [errorKey]: toError(error),
+              },
+        );
+      }
     }
   };
 };
@@ -96,6 +111,7 @@ export const useExploreStore = create((set, get) => ({
     set,
     { data: 'imminentVacancies', status: 'imminentStatus', error: 'imminentError' },
     fetchImminentCards,
+    { refreshable: true },
   ),
   loadAllShops: simpleLoader(
     set,
@@ -106,13 +122,13 @@ export const useExploreStore = create((set, get) => ({
     set,
     { data: 'summaryShops', status: 'summaryShopsStatus', error: 'summaryShopsError' },
     fetchShops,
-    { keepDataOnError: true },
+    { refreshable: true },
   ),
   loadSaleShops: simpleLoader(
     set,
     { data: 'saleShops', status: 'saleShopsStatus', error: 'saleShopsError' },
     () => fetchShops({ priceTier: 'LAST_MINUTE' }),
-    { keepDataOnError: true },
+    { refreshable: true },
   ),
   loadHomeShops: simpleLoader(
     set,

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
+import useAutoRefresh from '@/hooks/useAutoRefresh';
 import { useShopDetailStore } from '@/store/useShopDetailStore';
 import { addDays, todayKst } from '@/utils/scheduleDate';
 import Alert from '@/components/common/Alert';
@@ -64,6 +65,7 @@ export default function ShopDetailPage({ model = false }) {
   const times = useShopDetailStore((state) => state.times);
   const loadShop = useShopDetailStore((state) => state.loadShop);
   const loadAvailableTimes = useShopDetailStore((state) => state.loadAvailableTimes);
+  const refreshAvailableTimes = useShopDetailStore((state) => state.refreshAvailableTimes);
   const clearShop = useShopDetailStore((state) => state.clearShop);
   const validShopId = /^[1-9]\d*$/.test(shopId ?? '');
 
@@ -125,6 +127,11 @@ export default function ShopDetailPage({ model = false }) {
   useEffect(() => {
     if (loaded && durationMinutes) loadAvailableTimes(shopId, selectedDate, durationMinutes);
   }, [loaded, shopId, selectedDate, durationMinutes, loadAvailableTimes]);
+  // 시간을 고르는 단계를 보는 동안 다른 고객의 예약이 시간 칸에 반영되게 한다
+  useAutoRefresh(
+    () => refreshAvailableTimes(shopId, selectedDate, durationMinutes),
+    Boolean(loaded && durationMinutes && view === 'reserve' && step === dateStep),
+  );
 
   const updateParams = (changes) => {
     const next = { ...current };
@@ -134,6 +141,51 @@ export default function ShopDetailPage({ model = false }) {
     });
     setSelection(next);
   };
+
+  const currentTimes =
+    times.key === timesKey
+      ? times
+      : {
+          status: 'loading',
+          startTimes: [],
+          extendedStartTimes: [],
+          heldStartTimes: [],
+          error: null,
+        };
+  // 서버가 시작 가능하거나 결제 중이라 대기할 수 있다고 알려준 시각만 선택된 것으로 본다
+  const heldTimes = currentTimes.heldStartTimes ?? [];
+  const isOffered = (startTime) => startTime.slice(11, 16) === selectedTime;
+  const time =
+    currentTimes.status === 'succeeded' &&
+    (currentTimes.startTimes.some(isOffered) || heldTimes.some(isOffered))
+      ? selectedTime
+      : null;
+  // 결제 중으로 바뀌거나 풀리면 요약의 예약 가능 여부를 다시 확인한다
+  const timeHeld = Boolean(time) && heldTimes.some(isOffered);
+
+  // 고른 시간이 갱신으로 사라지면 선택을 풀고 알린다. 처음부터 없던 시간(주소로 들어온 값)은 알리지 않는다
+  const [offeredSlot, setOfferedSlot] = useState(null);
+  const [goneSlot, setGoneSlot] = useState(null);
+  const slotId = time ? `${timesKey}-${time}` : null;
+  if (slotId && slotId !== offeredSlot) {
+    setOfferedSlot(slotId);
+    setGoneSlot(null);
+  } else if (
+    !time &&
+    selectedTime &&
+    currentTimes.status === 'succeeded' &&
+    offeredSlot === `${timesKey}-${selectedTime}`
+  ) {
+    setOfferedSlot(null);
+    setGoneSlot({ key: timesKey, time: selectedTime });
+    updateParams({ time: null });
+  }
+  // 그 시간이 취소 등으로 다시 열리면 마감 안내를 내린다
+  const isReoffered =
+    goneSlot &&
+    [...currentTimes.startTimes, ...heldTimes].some(
+      (startTime) => startTime.slice(11, 16) === goneSlot.time,
+    );
 
   if (!validShopId || status === 'failed') {
     const isMissing = !validShopId || error?.status === 404;
@@ -163,18 +215,6 @@ export default function ShopDetailPage({ model = false }) {
   const businessHour = shop.businessHours.find(
     (item) => item.dayOfWeek === businessDay(selectedDate),
   );
-  const currentTimes =
-    times.key === timesKey
-      ? times
-      : { status: 'loading', startTimes: [], extendedStartTimes: [], heldStartTimes: [], error: null };
-  // 서버가 시작 가능하거나 결제 중이라 대기할 수 있다고 알려준 시각만 선택된 것으로 본다
-  const time =
-    currentTimes.status === 'succeeded' &&
-    [...currentTimes.startTimes, ...(currentTimes.heldStartTimes ?? [])].some(
-      (startTime) => startTime.slice(11, 16) === selectedTime,
-    )
-      ? selectedTime
-      : null;
 
   return (
     <div className={`b-container b-page ${styles.root}`}>
@@ -249,6 +289,11 @@ export default function ShopDetailPage({ model = false }) {
               )}
               {step === dateStep && (
                 <>
+                  {goneSlot?.key === timesKey && !time && !isReoffered && (
+                    <Alert tone="error" role="alert">
+                      {goneSlot.time} 시간은 방금 마감됐어요. 다른 시간을 선택해 주세요.
+                    </Alert>
+                  )}
                   <SlotPicker
                     firstDate={today}
                     lastDate={lastDate}
@@ -272,6 +317,7 @@ export default function ShopDetailPage({ model = false }) {
             treatment={treatment}
             date={selectedDate}
             time={!model || agreed ? time : null}
+            held={timeHeld}
           />
         </aside>
       </div>

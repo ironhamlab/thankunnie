@@ -25,7 +25,11 @@ export const useShopDetailStore = create((set, get) => ({
       if (get().requestId === requestId) set({ shop, status: 'succeeded' });
     } catch (error) {
       if (get().requestId === requestId) {
-        set({ shop: null, status: 'failed', error: toError(error, '매장 정보를 불러오지 못했습니다.') });
+        set({
+          shop: null,
+          status: 'failed',
+          error: toError(error, '매장 정보를 불러오지 못했습니다.'),
+        });
       }
     }
   },
@@ -64,6 +68,30 @@ export const useShopDetailStore = create((set, get) => ({
           },
         });
       }
+    }
+  },
+  // 고른 날짜의 시각을 화면을 보는 동안 다시 받는다. 받아 둔 칸을 그대로 두고, 바뀐 내용이 있을 때만 교체한다.
+  // 실패해도 다음 주기에 다시 받으므로 받아 둔 칸을 지우지 않는다
+  refreshAvailableTimes: async (shopId, date, durationMinutes) => {
+    const key = `${shopId}-${date}-${durationMinutes}`;
+    const { times, timesRequestId: lastRequestId } = get();
+    if (times.key !== key || times.status !== 'succeeded') return;
+    const timesRequestId = lastRequestId + 1;
+    set({ timesRequestId });
+    try {
+      const response = await shopDetailApi.getAvailableTimes(shopId, date, durationMinutes);
+      if (get().timesRequestId !== timesRequestId) return;
+      const next = {
+        key,
+        status: 'succeeded',
+        startTimes: response?.startTimes ?? [],
+        extendedStartTimes: response?.extendedStartTimes ?? [],
+        heldStartTimes: response?.heldStartTimes ?? [],
+        error: null,
+      };
+      if (JSON.stringify(get().times) !== JSON.stringify(next)) set({ times: next });
+    } catch {
+      // 다음 주기에 다시 받는다
     }
   },
   clearShop: () =>

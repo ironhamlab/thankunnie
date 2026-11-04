@@ -111,6 +111,8 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
             }}
             onUnavailable={handleUnavailable}
             fitToShops
+            // 임박 목록을 주기적으로 다시 받으므로 그때마다 보던 범위가 돌아가지 않게 한다
+            fitOnce
             centerOnSelect
             boundsPadding={MAP_BOUNDS_PADDING}
             focusPosition={focusPosition}
