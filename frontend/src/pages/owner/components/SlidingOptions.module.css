@@ -1,0 +1,38 @@
+/* 선택 표시가 뒤에서 미끄러져 오므로 고른 항목의 배경은 비운다 */
+.root {
+  position: relative;
+  isolation: isolate;
+}
+.root.root button:global(.is-selected) {
+  background: none;
+}
+.root button {
+  transition:
+    color 0.2s,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.root button:active {
+  transform: scale(0.95);
+}
+.chipIndicator {
+  border-radius: 6px;
+  background: var(--color-primary-soft);
+}
+.tabIndicator {
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+}
+@media (hover: hover) {
+  .root button:hover {
+    transform: translateY(-2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .root button {
+    transition: none;
+  }
+  .root button:hover,
+  .root button:active {
+    transform: none;
+  }
+}

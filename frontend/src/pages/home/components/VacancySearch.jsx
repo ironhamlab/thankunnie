@@ -472,7 +472,10 @@ export default function VacancySearch() {
             </EmptyState>
           ) : sortedShops.length ? (
             <>
+              {/* 정렬·페이지만 바꾸면 남아 있는 카드는 새로 그려지지 않아 새로 들어온 카드만 움직인다.
+                  전부 같이 움직이도록 목록을 새로 그린다. 조회 조건을 바꾸면 불러오는 동안 이미 새로 그려진다 */}
               <div
+                key={`${appliedSort}|${page}`}
                 className={`${styles.rows} ${styles.rowsEnter} ${saleOnly ? styles.saleRows : ''}`}
               >
                 {visibleShops.map((shop) => (
