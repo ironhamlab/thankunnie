@@ -1,6 +1,7 @@
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useSlidingIndicator } from '@/hooks/useSlidingIndicator';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useShopStore } from '@/store/useShopStore';
 import RepresentativeImage from '@/pages/owner/components/RepresentativeImage';
 import Button from '@/components/common/Button';
@@ -28,6 +29,8 @@ const NAVIGATION = [
  */
 export default function OwnerSidebar() {
   const shop = useShopStore((s) => s.shop);
+  const shopStatus = useShopStore((s) => s.status);
+  const token = useAuthStore((s) => s.token);
   const { pathname } = useLocation();
   // 취소 화면처럼 메뉴 아래 주소에서도 그 메뉴를 고른 것으로 본다
   const activePath = NAVIGATION.find(
@@ -48,6 +51,10 @@ export default function OwnerSidebar() {
             <strong>{shop.name}</strong>
           </div>
         </div>
+      )}
+      {/* 첫 접속에 카드가 늦게 와도 아래 메뉴가 밀려 내려가지 않게 자리를 잡아 둔다 */}
+      {!shop && shopStatus !== 'failed' && (token || shopStatus === 'loading') && (
+        <div className={`${styles.shop} ${styles.shopPlaceholder}`} aria-hidden="true" />
       )}
       <Button as={Link} variant="primary" wide to={ROUTES.OWNER_VACANCIES}>
         <span className={styles.plus} aria-hidden="true">

@@ -39,41 +39,41 @@
  * 창(dialog)은 자기 움직임이 있어 뺀다.
  */
 .main > :global(.b-stack) > :not(dialog) {
-  animation: contentRise 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation: contentRise 0.25s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 .main > :global(.b-stack) > :nth-child(2):not(dialog) {
-  animation-delay: 0.06s;
+  animation-delay: 0.02s;
 }
 .main > :global(.b-stack) > :nth-child(3):not(dialog) {
-  animation-delay: 0.12s;
+  animation-delay: 0.04s;
 }
 .main > :global(.b-stack) > :nth-child(n + 4):not(dialog) {
-  animation-delay: 0.18s;
+  animation-delay: 0.06s;
 }
 @keyframes contentRise {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(8px);
   }
 }
 .main :global(.b-table-scroll) tbody tr {
-  animation: rowEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation: rowEnter 0.22s cubic-bezier(0.22, 1, 0.36, 1) backwards;
   transition: background-color 0.2s;
 }
 .main :global(.b-table-scroll) tbody tr:nth-child(2) {
-  animation-delay: 0.03s;
+  animation-delay: 0.01s;
 }
 .main :global(.b-table-scroll) tbody tr:nth-child(3) {
-  animation-delay: 0.06s;
+  animation-delay: 0.02s;
 }
 .main :global(.b-table-scroll) tbody tr:nth-child(4) {
-  animation-delay: 0.09s;
+  animation-delay: 0.03s;
 }
 .main :global(.b-table-scroll) tbody tr:nth-child(5) {
-  animation-delay: 0.12s;
+  animation-delay: 0.04s;
 }
 .main :global(.b-table-scroll) tbody tr:nth-child(n + 6) {
-  animation-delay: 0.15s;
+  animation-delay: 0.05s;
 }
 /* 표는 가로 스크롤 영역 안에 있어, 아래로 내려 두면 세로 스크롤바가 깜박인다. 왼쪽에서 들어오게 한다 */
 @keyframes rowEnter {
