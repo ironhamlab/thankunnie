@@ -1,4 +1,6 @@
 import { useMemo } from 'react';
+import { generatePath, Link } from 'react-router-dom';
+import { ROUTES } from '@/constants/routes';
 import { useShopDetailStore } from '@/store/useShopDetailStore';
 import KakaoMap from '@/components/map/KakaoMap';
 import styles from './VisitShopLocation.module.css';
@@ -9,7 +11,7 @@ const START_LEVEL = 6;
 const SHOP_LEVEL = 3;
 
 /**
- * 예약 상세 창의 방문 매장 안내. 지도와 주소·전화·길찾기를 보여준다.
+ * 예약 상세 창의 방문 매장 안내. 지도와 주소·전화·길찾기, 매장 상세로 가는 링크를 보여준다.
  * 승인이 취소되는 등 매장 정보를 받지 못하면 아무것도 그리지 않고, 예약 상세는 그대로 볼 수 있게 한다.
  */
 export default function VisitShopLocation() {
@@ -60,6 +62,10 @@ export default function VisitShopLocation() {
         <a href={`${KAKAO_MAP_LINK}/to/${destination}`} target="_blank" rel="noopener noreferrer">
           길찾기 ↗
         </a>
+        {/* 다시 예약하거나 시술·후기를 볼 수 있게 매장 상세로 보낸다 */}
+        <Link to={generatePath(ROUTES.SHOP_DETAIL, { shopId: String(shop.shopId) })}>
+          매장 보러 가기 ›
+        </Link>
       </div>
     </section>
   );

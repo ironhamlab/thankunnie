@@ -22,6 +22,7 @@ import com.ucamp.app.domain.auth.dto.response.AuthShopSignupResponse;
 import com.ucamp.app.domain.auth.dto.response.AuthTokenResponse;
 import com.ucamp.app.domain.auth.entity.ShopAccount;
 import com.ucamp.app.domain.auth.repository.ShopAccountRepository;
+import com.ucamp.app.domain.auth.service.LoginAttemptLimiter.LoginAccountType;
 import com.ucamp.app.domain.shop.repository.ShopCategoryRepository;
 import com.ucamp.app.domain.user.entity.AppUser;
 import com.ucamp.app.domain.user.entity.AppUserRole;
@@ -51,6 +52,7 @@ public class AuthService {
     private final TermsAgreementService termsAgreementService;
     private final AuthPhoneVerificationService phoneVerificationService;
     private final AuthBusinessVerificationService businessVerificationService;
+    private final LoginAttemptLimiter loginAttemptLimiter;
     // 없는 아이디로 로그인할 때 비교할 해시. 같은 인코더로 만들어 실제 계정과 비교 비용이 같다
     private final String dummyPasswordHash;
 
@@ -58,7 +60,8 @@ public class AuthService {
             ShopCategoryRepository shopCategoryRepository, PasswordEncoder passwordEncoder,
             JwtProvider jwtProvider, TermsAgreementService termsAgreementService,
             AuthPhoneVerificationService phoneVerificationService,
-            AuthBusinessVerificationService businessVerificationService) {
+            AuthBusinessVerificationService businessVerificationService,
+            LoginAttemptLimiter loginAttemptLimiter) {
         this.appUserRepository = appUserRepository;
         this.shopAccountRepository = shopAccountRepository;
         this.shopCategoryRepository = shopCategoryRepository;
@@ -67,6 +70,7 @@ public class AuthService {
         this.termsAgreementService = termsAgreementService;
         this.phoneVerificationService = phoneVerificationService;
         this.businessVerificationService = businessVerificationService;
+        this.loginAttemptLimiter = loginAttemptLimiter;
         this.dummyPasswordHash = passwordEncoder.encode(DUMMY_PASSWORD);
     }
 
@@ -129,12 +133,18 @@ public class AuthService {
         return AuthShopSignupResponse.from(saved);
     }
 
-    /** 고객·관리자 로그인. 아이디가 없을 때와 비밀번호가 틀릴 때를 구분하지 않는다. */
+    /**
+     * 고객·관리자 로그인. 아이디가 없을 때와 비밀번호가 틀릴 때를 구분하지 않는다.
+     * 연속으로 실패하면 잠시 로그인을 막는다 ({@link LoginAttemptLimiter}).
+     */
     public AuthTokenResponse loginCustomer(AuthLoginRequest request) {
+        loginAttemptLimiter.checkAllowed(LoginAccountType.CUSTOMER, request.loginId());
         AppUser user = appUserRepository.findByLoginId(request.loginId()).orElse(null);
         if (!matchesPassword(request.password(), user == null ? null : user.getPasswordHash())) {
+            loginAttemptLimiter.recordFailure(LoginAccountType.CUSTOMER, request.loginId());
             throw new BusinessException(ErrorCode.AUTH_LOGIN_FAILED);
         }
+        loginAttemptLimiter.recordSuccess(LoginAccountType.CUSTOMER, request.loginId());
         // 비밀번호가 맞은 뒤에만 비활성 여부를 알려 계정 존재 여부가 드러나지 않게 한다
         if (!user.isActive()) {
             throw new BusinessException(ErrorCode.AUTH_INACTIVE_ACCOUNT);
@@ -145,12 +155,16 @@ public class AuthService {
     /**
      * 매장 계정 로그인. 관리자 승인 전(PENDING)·거절(REJECTED) 매장은 로그인할 수 없다.
      * INACTIVE 는 노출 중지일 뿐이라 로그인해서 매장을 관리할 수 있어야 한다.
+     * 연속으로 실패하면 잠시 로그인을 막는다 ({@link LoginAttemptLimiter}).
      */
     public AuthTokenResponse loginShop(AuthLoginRequest request) {
+        loginAttemptLimiter.checkAllowed(LoginAccountType.SHOP, request.loginId());
         ShopAccount account = shopAccountRepository.findByLoginId(request.loginId()).orElse(null);
         if (!matchesPassword(request.password(), account == null ? null : account.getPasswordHash())) {
+            loginAttemptLimiter.recordFailure(LoginAccountType.SHOP, request.loginId());
             throw new BusinessException(ErrorCode.AUTH_LOGIN_FAILED);
         }
+        loginAttemptLimiter.recordSuccess(LoginAccountType.SHOP, request.loginId());
         // 비밀번호가 맞은 뒤에만 승인 상태를 알려 계정 존재 여부가 드러나지 않게 한다
         switch (account.getStatus()) {
             case PENDING -> throw new BusinessException(ErrorCode.AUTH_SHOP_PENDING);
