@@ -28,8 +28,8 @@ const SHOP_SORTS = {
   할인율순: (a, b) => b.maxDiscountRate - a.maxDiscountRate,
   '낮은 가격순': (a, b) => a.minSalePrice - b.minSalePrice,
 };
-// 가까운순은 내 위치가 있어야 비교할 수 있어 따로 둔다
-const NEAREST = '가까운순';
+// 거리순은 내 위치가 있어야 비교할 수 있어 따로 둔다
+const NEAREST = '거리순';
 const sorts = [...Object.keys(SHOP_SORTS), NEAREST];
 // 휴대폰에서 날짜와 정렬을 한 줄에 둘 때 쓰는 짧은 정렬 이름
 const SHORT_SORTS = { '빠른 시작순': '빠른순', '낮은 가격순': '가격순' };
@@ -144,7 +144,7 @@ export default function VacancySearch() {
   // 옆 지도의 내 위치 버튼과 같이 써서, 지도에서 위치를 확인해도 목록에 거리가 보이게 한다
   const myLocation = useMyLocation();
   const { position: myPosition, locating, message: locateMessage, locate } = myLocation;
-  // 가까운순을 골랐어도 위치를 받기 전에는 기본 정렬 순서로 둔다
+  // 거리순을 골랐어도 위치를 받기 전에는 기본 정렬 순서로 둔다
   const appliedSort = sort === NEAREST && !myPosition ? sorts[0] : sort;
   const [keyword, setKeyword] = useState(search);
   const [paging, setPaging] = useState({ key: '', page: 0 });
@@ -232,7 +232,7 @@ export default function VacancySearch() {
   }, [expandedId, status]);
 
   // 전체 날짜 보기는 빈자리가 있는 매장을 먼저 두고, 빈자리가 없는 매장을 뒤에 붙인다.
-  // 가까운순이면 빈자리가 없는 매장끼리도 가까운 순으로 둔다
+  // 거리순이면 빈자리가 없는 매장끼리도 가까운 순으로 둔다
   const sortedShops = useMemo(() => {
     const distanceOf = (shop) =>
       distanceKm(myPosition, { lat: shop.latitude, lng: shop.longitude });
@@ -270,9 +270,9 @@ export default function VacancySearch() {
     document.getElementById('vacancy-results')?.scrollIntoView({ block: 'start' });
   };
   // 펼친 매장이 있어도 그 매장 페이지로 가지 않고 첫 페이지를 보이게 새 키와 0페이지를 같이 둔다.
-  // 가까운순은 고를 때마다 위치를 다시 묻는다(1분 안에 얻은 위치는 다시 쓴다).
-  // 처음 묻다 실패하면 정렬도 기본으로 돌린다. 그러지 않으면 나중에 지도에서 위치를 얻을 때 저절로 가까운순이 된다.
-  // 전에 얻은 위치가 있으면 그 위치로 계속 가까운순을 보여준다
+  // 거리순은 고를 때마다 위치를 다시 묻는다(1분 안에 얻은 위치는 다시 쓴다).
+  // 처음 묻다 실패하면 정렬도 기본으로 돌린다. 그러지 않으면 나중에 지도에서 위치를 얻을 때 저절로 거리순이 된다.
+  // 전에 얻은 위치가 있으면 그 위치로 계속 거리순을 보여준다
   const chooseSort = (sortName) => {
     setSort(sortName);
     setPaging({ key: pagingKeyOf(sortName), page: 0 });

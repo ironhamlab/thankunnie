@@ -246,7 +246,7 @@
     flex-wrap: wrap;
   }
 }
-/* 가까운순을 고를 때 위치 확인 중·실패 안내 */
+/* 거리순을 고를 때 위치 확인 중·실패 안내 */
 .locateMessage {
   color: var(--color-text-muted);
   font-size: 13px;
