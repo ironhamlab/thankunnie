@@ -40,8 +40,8 @@ import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService.AvailabilitySnapshot;
 
 /**
- * 고객 빈자리 탐색 (C-01 목록, C-02 지도 매장 요약). 매장이 연 시간대(OPEN) 안에서 지금 예약할 수 있는 시술 × 시작 시각을 구한다.
- * 타임세일(가격 구간 초임박)과 메인 임박 빈자리는 OPEN 없이 영업시간 안 빈 시각에서 구한다.
+ * 고객 빈자리 탐색 (C-01 목록, C-02 지도 매장 요약, 메인 임박 빈자리). 지금 예약할 수 있는 시술 × 시작 시각을 구한다.
+ * 매장 상세와 같이 영업시간 기준이라, 매장이 따로 열지(OPEN) 않아도 영업시간 안 빈 시각이면 빈자리로 본다.
  * 예약 가능 판단과 가격은 B 의 AvailabilityService·PriceCalculator 를 그대로 쓴다.
  * 시작 시각을 계산한 뒤 거르고 정렬하므로 페이지 처리·매장 묶기는 메모리에서 한다.
  */
@@ -167,18 +167,19 @@ public class ExploreVacancyService {
                 .toList();
     }
 
-    // 타임세일(초임박)은 메인 임박 빈자리처럼 OPEN 없이 영업시간 안 빈 시각에서 찾고, 초임박가가 일반 판매가보다 싼 시술만 남긴다.
-    // 3시간 범위는 뒤의 가격 구간 조건이 자르므로 여기서는 8시간까지만 본다. 그 밖의 조회는 OPEN 시간대 기준이다
+    // 영업시간 안 빈 시각에서 찾는다. 지난 시각은 볼 필요가 없어 지금부터 본다.
+    // 타임세일(초임박)은 초임박가가 일반 판매가보다 싼 시술만 남기고, 3시간 범위는 뒤의 가격 구간 조건이 자르므로 여기서는 8시간까지만 본다
     private Stream<Item> candidateItems(PriceTier priceTier, ExploreVacancyCondition condition, LocalDateTime now) {
+        List<ExploreVacancyCandidate> candidates = exploreVacancyQueryRepository.findBusinessHourCandidates(condition);
+        LocalDateTime from = max(condition.from(), now);
         if (priceTier != PriceTier.LAST_MINUTE) {
-            return findItems(exploreVacancyQueryRepository.findCandidates(condition), condition, now);
+            return findBusinessHourItems(candidates, from, condition.to(), now);
         }
-        List<ExploreVacancyCandidate> discounted = exploreVacancyQueryRepository.findBusinessHourCandidates(condition)
-                .stream()
+        List<ExploreVacancyCandidate> discounted = candidates.stream()
                 .filter(candidate -> candidate.lastMinutePrice() < candidate.price())
                 .toList();
-        return findBusinessHourItems(discounted, max(condition.from(), now),
-                min(condition.to(), now.plus(BookingPolicy.IMMINENT_FROM)), now);
+        return findBusinessHourItems(discounted, from, min(condition.to(), now.plus(BookingPolicy.IMMINENT_FROM)),
+                now);
     }
 
     // 영업시간 기준: B 의 가용 시간 계산(영업시간 + 열기 − 닫기 − 예약, 예약 클릭 마감 반영)을 통과한 시각 중 [from, to) 만 남긴다.
@@ -204,33 +205,6 @@ public class ExploreVacancyService {
             }
         }
         return items.stream();
-    }
-
-    // OPEN 시간대 안에서 시작하고 B 의 가용 시간 계산을 통과한 시각만 남긴다. 겹치는 OPEN 이 있어도 시술·시각당 한 번만 낸다
-    private Stream<Item> findItems(List<ExploreVacancyCandidate> candidates, ExploreVacancyCondition condition,
-            LocalDateTime now) {
-        if (candidates.isEmpty()) {
-            return Stream.empty();
-        }
-        AvailabilitySnapshot snapshot = loadSnapshot(candidates, condition.from(), condition.to());
-        Map<AvailabilityKey, List<LocalDateTime>> availableTimes = new HashMap<>();
-        Map<String, Item> items = new LinkedHashMap<>();
-        for (ExploreVacancyCandidate candidate : candidates) {
-            LocalDateTime from = max(candidate.openStartsAt(), condition.from());
-            LocalDateTime to = min(candidate.openEndsAt(), condition.to());
-            for (LocalDate date = from.toLocalDate(); date.atStartOfDay().isBefore(to); date = date.plusDays(1)) {
-                AvailabilityKey key = new AvailabilityKey(candidate.shopId(), date, candidate.durationMinutes());
-                List<LocalDateTime> startTimes = availableTimes.computeIfAbsent(key,
-                        k -> snapshot.startTimes(k.shopId(), k.date(), k.durationMinutes()));
-                for (LocalDateTime startsAt : startTimes) {
-                    if (!startsAt.isBefore(from) && startsAt.isBefore(to)) {
-                        items.putIfAbsent(candidate.treatmentId() + "-" + startsAt,
-                                new Item(candidate, startsAt, quote(candidate, startsAt, now)));
-                    }
-                }
-            }
-        }
-        return items.values().stream();
     }
 
     // 조회 기간 전체의 일정을 한 번에 읽어, 매장·날짜·소요 시간마다 쿼리를 보내지 않게 한다
