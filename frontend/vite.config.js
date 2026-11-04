@@ -8,6 +8,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // seed-design CLI 스니펫 import (`seed-design/ui/...`)를 frontend/seed-design 으로 연결한다.
+      'seed-design': fileURLToPath(new URL('./seed-design', import.meta.url)),
     },
   },
   server: {

@@ -1,4 +1,6 @@
+// Seed 토큰을 먼저 불러온 뒤 프로젝트 전역 스타일을 적용한다.
 // 전역 스타일은 컴포넌트의 모듈 CSS보다 먼저 불러온다. 나중에 불러오면 같은 우선순위의 전역 규칙이 모듈 규칙을 덮어쓴다.
+import '@seed-design/css/base.css';
 import '@/assets/styles/global.css';
 import '@/assets/styles/design.css';
 import '@/assets/styles/remaining-screens.css';

@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { GRACE_CANCEL_MESSAGE } from '@/constants/cancelPolicy';
 import { useSearchStore } from '@/store/useSearchStore';
 import { useExploreStore } from '@/store/useExploreStore';
 import { regionNameOf } from '@/constants/regions';
-import { TIME_OF_DAY, dayLabel, validDate } from '@/utils/exploreVacancy';
+import { dayLabel, validDate } from '@/utils/exploreVacancy';
 import { addDays, todayKst } from '@/utils/scheduleDate';
 import { distanceKm, formatDistance } from '@/utils/distance';
 import { useMyLocation } from '@/hooks/useMyLocation';
-import FireIcon from '@/components/icons/FireIcon';
 import InfoIcon from '@/components/icons/InfoIcon';
 import ShopRow from '@/pages/home/components/ShopRow';
 import RollingValue from '@/pages/home/components/RollingValue';
@@ -24,16 +22,17 @@ import styles from './VacancySearch.module.css';
 
 const ALL = '전체';
 const ALL_DATES = 'all';
-const times = [ALL, ...Object.keys(TIME_OF_DAY)];
 // 매장 정렬. 같은 값이면 매장 ID 순으로 둔다
 const SHOP_SORTS = {
   '빠른 시작순': (a, b) => a.earliestStartsAt.localeCompare(b.earliestStartsAt),
   할인율순: (a, b) => b.maxDiscountRate - a.maxDiscountRate,
   '낮은 가격순': (a, b) => a.minSalePrice - b.minSalePrice,
 };
-// 가까운순은 내 위치가 있어야 비교할 수 있어 따로 둔다
-const NEAREST = '가까운순';
+// 거리순은 내 위치가 있어야 비교할 수 있어 따로 둔다
+const NEAREST = '거리순';
 const sorts = [...Object.keys(SHOP_SORTS), NEAREST];
+// 휴대폰에서 날짜와 정렬을 한 줄에 둘 때 쓰는 짧은 정렬 이름
+const SHORT_SORTS = { '빠른 시작순': '빠른순', '낮은 가격순': '가격순' };
 // 한 페이지에 보여줄 매장 수. 펼친 매장의 시간 버튼까지 있으면 길어지므로 8곳씩 나눈다
 const PAGE_SIZE = 8;
 // 예약은 오늘 포함 60일까지 가능하다
@@ -48,12 +47,22 @@ const MAP_SCROLL_GAP = 12;
 const SIDE_MAP_MIN_WIDTH = 901;
 const MODEL = 'MODEL';
 
-function Filter({ label, options, value, onChange, segmented = false }) {
+// label 을 hideLabel 로 숨기면 화면에는 버튼만 두고 화면 낭독기에만 이름을 알린다.
+// shortLabels 는 휴대폰에서 한 줄에 넣으려고 버튼 글자를 줄일 때 쓰는 짧은 이름이다
+function Filter({
+  label,
+  options,
+  value,
+  onChange,
+  segmented = false,
+  hideLabel = false,
+  shortLabels,
+}) {
   const indicator = useSlidingIndicator(value);
   return (
     <div className={`${styles.filterGroup} ` + (segmented ? styles.segmented : '')}>
-      <span className={styles.filterLabel}>{label}</span>
-      <div className="b-options">
+      {!hideLabel && <span className={styles.filterLabel}>{label}</span>}
+      <div className="b-options" role="group" aria-label={label}>
         {segmented && (
           <SlidingIndicator indicator={indicator} className={styles.segmentIndicator} />
         )}
@@ -65,24 +74,18 @@ function Filter({ label, options, value, onChange, segmented = false }) {
             className={value === option ? 'is-selected' : ''}
             onClick={() => onChange(option)}
           >
-            <OptionLabel option={option} />
+            {shortLabels?.[option] ? (
+              <>
+                <span className={styles.longLabel}>{option}</span>
+                <span className={styles.shortLabel}>{shortLabels[option]}</span>
+              </>
+            ) : (
+              option
+            )}
           </button>
         ))}
       </div>
     </div>
-  );
-}
-
-// '오전 (12시 이전)' 처럼 괄호 설명이 붙은 선택지는 이름과 설명을 나눠 휴대폰에서도 한 줄에 들어가게 한다
-function OptionLabel({ option }) {
-  const [, name, hint] = option.match(/^(.+?) \((.+)\)$/) ?? [null, option, null];
-  return hint ? (
-    <>
-      <span>{name}</span>
-      <small className={styles.optionHint}>{hint}</small>
-    </>
-  ) : (
-    option
   );
 }
 
@@ -137,12 +140,11 @@ export default function VacancySearch() {
   const loadCategories = useExploreStore((s) => s.loadCategories);
   const nextVacancyDate = useExploreStore((s) => s.nextVacancyDate);
   const findNextVacancyDate = useExploreStore((s) => s.findNextVacancyDate);
-  const [time, setTime] = useState(ALL);
   const [sort, setSort] = useState(sorts[0]);
   // 옆 지도의 내 위치 버튼과 같이 써서, 지도에서 위치를 확인해도 목록에 거리가 보이게 한다
   const myLocation = useMyLocation();
   const { position: myPosition, locating, message: locateMessage, locate } = myLocation;
-  // 가까운순을 골랐어도 위치를 받기 전에는 기본 정렬 순서로 둔다
+  // 거리순을 골랐어도 위치를 받기 전에는 기본 정렬 순서로 둔다
   const appliedSort = sort === NEAREST && !myPosition ? sorts[0] : sort;
   const [keyword, setKeyword] = useState(search);
   const [paging, setPaging] = useState({ key: '', page: 0 });
@@ -180,12 +182,11 @@ export default function VacancySearch() {
       endDate: saleOnly ? undefined : allDates ? lastDay : date,
       categoryId: categoryId ?? undefined,
       regionCode,
-      timeOfDay: TIME_OF_DAY[time],
       priceTier: saleOnly ? 'LAST_MINUTE' : undefined,
       treatmentType: modelOnly ? MODEL : undefined,
       keyword: keyword || undefined,
     }),
-    [allDates, today, lastDay, date, categoryId, regionCode, time, saleOnly, modelOnly, keyword],
+    [allDates, today, lastDay, date, categoryId, regionCode, saleOnly, modelOnly, keyword],
   );
   const filterKey = JSON.stringify(filter);
   // 정렬은 조회 조건이 아니지만 목록 순서를 바꾸므로, 정렬이 바뀌어도 첫 페이지로 돌아가게 키에 넣는다
@@ -231,15 +232,14 @@ export default function VacancySearch() {
   }, [expandedId, status]);
 
   // 전체 날짜 보기는 빈자리가 있는 매장을 먼저 두고, 빈자리가 없는 매장을 뒤에 붙인다.
-  // 시작 시간을 고르면 그 시간 빈자리를 찾는 것이므로 빈자리가 없는 매장은 빼고 본다
-  // 가까운순이면 빈자리가 없는 매장끼리도 가까운 순으로 둔다
+  // 거리순이면 빈자리가 없는 매장끼리도 가까운 순으로 둔다
   const sortedShops = useMemo(() => {
     const distanceOf = (shop) =>
       distanceKm(myPosition, { lat: shop.latitude, lng: shop.longitude });
     const compare =
       appliedSort === NEAREST ? (a, b) => distanceOf(a) - distanceOf(b) : SHOP_SORTS[appliedSort];
     const withVacancy = [...shops].sort((a, b) => compare(a, b) || a.shopId - b.shopId);
-    if (!allDates || time !== ALL) return withVacancy;
+    if (!allDates) return withVacancy;
     const vacancyIds = new Set(shops.map((shop) => shop.shopId));
     const noVacancyShops = allShops.filter(
       (shop) => !vacancyIds.has(shop.shopId) && (!regionCode || shop.regionCode === regionCode),
@@ -248,7 +248,7 @@ export default function VacancySearch() {
       noVacancyShops.sort((a, b) => distanceOf(a) - distanceOf(b) || a.shopId - b.shopId);
     }
     return [...withVacancy, ...noVacancyShops];
-  }, [shops, appliedSort, myPosition, allDates, time, allShops, regionCode]);
+  }, [shops, appliedSort, myPosition, allDates, allShops, regionCode]);
   // 위치를 받은 뒤에는 정렬과 상관없이 매장마다 거리를 보여준다
   const distanceLabelOf = (shop) =>
     myPosition
@@ -270,9 +270,9 @@ export default function VacancySearch() {
     document.getElementById('vacancy-results')?.scrollIntoView({ block: 'start' });
   };
   // 펼친 매장이 있어도 그 매장 페이지로 가지 않고 첫 페이지를 보이게 새 키와 0페이지를 같이 둔다.
-  // 가까운순은 고를 때마다 위치를 다시 묻는다(1분 안에 얻은 위치는 다시 쓴다).
-  // 처음 묻다 실패하면 정렬도 기본으로 돌린다. 그러지 않으면 나중에 지도에서 위치를 얻을 때 저절로 가까운순이 된다.
-  // 전에 얻은 위치가 있으면 그 위치로 계속 가까운순을 보여준다
+  // 거리순은 고를 때마다 위치를 다시 묻는다(1분 안에 얻은 위치는 다시 쓴다).
+  // 처음 묻다 실패하면 정렬도 기본으로 돌린다. 그러지 않으면 나중에 지도에서 위치를 얻을 때 저절로 거리순이 된다.
+  // 전에 얻은 위치가 있으면 그 위치로 계속 거리순을 보여준다
   const chooseSort = (sortName) => {
     setSort(sortName);
     setPaging({ key: pagingKeyOf(sortName), page: 0 });
@@ -334,7 +334,6 @@ export default function VacancySearch() {
     );
   };
   const reset = () => {
-    setTime(ALL);
     chooseSort(sorts[0]);
     setParams(
       modelOnly
@@ -349,32 +348,40 @@ export default function VacancySearch() {
   const menu = modelOnly ? 'model' : saleOnly ? 'sale' : 'search';
   return (
     <div className={`b-container ${styles.home}`}>
-      <section key={menu} className={`b-hero ${styles.hero} ${styles.heroEnter}`}>
+      <section key={menu} className={`${styles.hero} ${styles.heroEnter}`}>
         <div className={styles.heroText}>
-          <div className={`b-eyebrow ${styles.eyebrow}`}>
-            <span className={styles.liveDot} aria-hidden="true" />
-            <FireIcon size={13} />
-            {modelOnly ? 'MODEL RECRUITING' : 'REAL-TIME BEAUTY FLASH SALE'}
-          </div>
           {modelOnly ? (
             <h1>
               <em>초보 시술</em>을 받을 수 있는 빈자리
             </h1>
+          ) : saleOnly ? (
+            <h1>
+              시작 <em>3시간 안</em> 초임박 특가 빈자리
+            </h1>
           ) : (
             <h1>
-              지금 예약 가능한 <em>뷰티 빈자리</em>를 찾아보세요
+              지금 예약 가능한 <em>뷰티 빈자리</em>
             </h1>
           )}
+          {/* 휴대폰에서도 제목·설명이 한 줄씩 들어가게 짧게 쓴다 */}
           <p>
             {modelOnly
-              ? '포트폴리오 촬영·실습을 위한 초보 시술을 제공하는 매장의 빈자리예요.'
-              : '분야와 날짜를 고르면 빈자리가 있는 매장과 위치를 함께 보여드려요.'}
+              ? '포트폴리오·실습용 초보 시술 빈자리를 모았어요.'
+              : saleOnly
+                ? '곧 시작하는 빈자리를 매장이 할인해 내놓았어요.'
+                : '분야와 날짜를 고르면 매장과 위치를 함께 보여드려요.'}
           </p>
         </div>
-        <span className={styles.demoNote}>
-          <InfoIcon size={20} className={styles.noteIcon} />
-          가격은 조회 시점 기준이며, 예약할 때 <strong>다시 확인</strong>해 드려요
-        </span>
+        {/* 타임세일은 무료 취소가 안 되는 점을 놓치면 안 되므로 제목 옆에 띄운다 */}
+        {saleOnly && (
+          <span className={styles.saleNote}>
+            <InfoIcon size={14} className={styles.noteIcon} />
+            {/* 한 줄에 들어가게 취소 정책(constants/cancelPolicy 의 LAST_MINUTE_HOLD)을 줄여 쓴다 */}
+            <span>
+              시작 3시간 이내 예약은 <strong>무료 취소가 안 돼요</strong>
+            </span>
+          </span>
+        )}
       </section>
       <section
         className={`${styles.filters} b-panel ${styles.filtersEnter}`}
@@ -394,42 +401,44 @@ export default function VacancySearch() {
             </button>
           ))}
         </div>
-        <div className={styles.dateRow}>
-          {!saleOnly && !modelOnly && (
-            <Filter
-              label="날짜"
-              options={[ALL, '날짜 선택']}
-              value={allDates ? ALL : '날짜 선택'}
-              onChange={(value) => updateOption('date', value === ALL ? ALL_DATES : '')}
-              segmented
-            />
-          )}
-          {!allDates && (
-            <DateCalendar
-              value={date}
-              min={today}
-              max={lastDay}
-              disabled={saleOnly}
-              onChange={(value) => updateOption('date', value === today ? '' : value)}
-            />
-          )}
+        {/* 날짜와 정렬을 한 줄에 둔다. 폭이 모자라면 정렬이 다음 줄로 내려가고 날짜 쪽이 줄을 채운다 */}
+        <div className={`${styles.dateRow} ${saleOnly || modelOnly ? styles.compactRow : ''}`}>
+          <div className={styles.dateControls}>
+            {!saleOnly && !modelOnly && (
+              <Filter
+                label="날짜"
+                options={[ALL, '날짜 선택']}
+                value={allDates ? ALL : '날짜 선택'}
+                onChange={(value) => updateOption('date', value === ALL ? ALL_DATES : '')}
+                segmented
+              />
+            )}
+            {/* 타임세일은 오늘만 보므로 고를 수 없는 달력 대신 오늘 날짜만 작게 보여준다 */}
+            {saleOnly ? (
+              <span className={styles.todayChip}>
+                <span className={styles.liveDot} aria-hidden="true" />
+                오늘 <b>{today.slice(5).replace('-', '.')}</b>
+              </span>
+            ) : (
+              !allDates && (
+                <DateCalendar
+                  value={date}
+                  min={today}
+                  max={lastDay}
+                  onChange={(value) => updateOption('date', value === today ? '' : value)}
+                />
+              )
+            )}
+          </div>
           <Filter
-            label="예약 종류"
-            options={[ALL, '타임세일']}
-            value={saleOnly ? '타임세일' : ALL}
-            onChange={(value) => updateOption('sale', value === '타임세일' ? '1' : '')}
+            label="정렬"
+            options={sorts}
+            value={sort}
+            onChange={chooseSort}
             segmented
+            hideLabel
+            shortLabels={SHORT_SORTS}
           />
-        </div>
-        {saleOnly && (
-          <p className={styles.description}>
-            시작 3시간 안에 할인 중인 초임박 특가 빈자리만 보여드려요.{' '}
-            {GRACE_CANCEL_MESSAGE.LAST_MINUTE_HOLD}
-          </p>
-        )}
-        <div className={`b-row ${styles.filterLine}`}>
-          <Filter label="시작 시간" options={times} value={time} onChange={setTime} segmented />
-          <Filter label="정렬" options={sorts} value={sort} onChange={chooseSort} segmented />
         </div>
         {(locating || locateMessage) && (
           <p className={styles.locateMessage} role="status">
