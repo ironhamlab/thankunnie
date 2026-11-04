@@ -18,6 +18,7 @@ import com.ucamp.app.common.response.PageResponse;
 import com.ucamp.app.domain.reservation.dto.response.ReservationDetailResponse;
 import com.ucamp.app.domain.reservation.dto.response.ReservationSummaryResponse;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
+import com.ucamp.app.domain.reservation.entity.ReservationTiming;
 import com.ucamp.app.domain.reservation.repository.ReservationQueryRepository;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.reservation.repository.ReservationSearch;
@@ -69,11 +70,13 @@ public class ReservationQueryService {
 
     /**
      * 고객 본인 예약 목록 (B-09). 여러 매장 예약을 시작 시각 순으로 모아 보여준다. 필터는 매장 목록과 같다.
+     *
+     * @param timing 시술 종료 시각 기준으로 나눈다. null 이면 나누지 않는다
      */
     public PageResponse<ReservationSummaryResponse> getMyReservations(AuthUser loginUser, LocalDate from,
-            LocalDate to, List<ReservationStatus> statuses, int page, int size) {
+            LocalDate to, List<ReservationStatus> statuses, ReservationTiming timing, int page, int size) {
         loginUser.requireRole(UserRole.CUSTOMER);
-        ReservationSearch search = toSearch(null, loginUser.userId(), from, to, statuses);
+        ReservationSearch search = withTiming(toSearch(null, loginUser.userId(), from, to, statuses), timing);
         return findPage(search, page, size);
     }
 
@@ -113,9 +116,10 @@ public class ReservationQueryService {
         long total = reservationQueryRepository.count(search);
         // 큰 page 에서 int 곱셈이 넘쳐 음수 offset 이 되면 Oracle 이 0 으로 보고 첫 페이지를 돌려준다
         long offset = (long) page * size;
+        LocalDateTime now = LocalDateTime.now(clock);
         List<ReservationSummaryResponse> content = reservationQueryRepository.search(search, offset, size)
                 .stream()
-                .map(view -> ReservationSummaryResponse.from(view, isCancellable(view)))
+                .map(view -> ReservationSummaryResponse.from(view, isCancellable(view), now))
                 .toList();
         return PageResponse.of(content, page, size, total);
     }
@@ -131,6 +135,17 @@ public class ReservationQueryService {
         return new ReservationSearch(shopId, userId, statusSet,
                 from == null ? null : from.atStartOfDay(),
                 to == null ? null : to.plusDays(1).atStartOfDay());
+    }
+
+    private ReservationSearch withTiming(ReservationSearch search, ReservationTiming timing) {
+        if (timing == null) {
+            return search;
+        }
+        LocalDateTime now = LocalDateTime.now(clock);
+        return new ReservationSearch(search.shopId(), search.userId(), search.statuses(), search.startsFrom(),
+                search.startsBefore(),
+                timing == ReservationTiming.UPCOMING ? now : null,
+                timing == ReservationTiming.PAST ? now : null);
     }
 
     // 취소 버튼 표시용. 확정 상태이고 시작 전이면 보여준다. 실제 취소 가능 판단은 취소 API(E)가 한다

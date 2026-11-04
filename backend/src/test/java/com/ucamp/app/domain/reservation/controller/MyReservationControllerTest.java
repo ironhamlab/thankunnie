@@ -35,7 +35,9 @@ import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.response.PageResponse;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.domain.reservation.dto.response.ReservationSummaryResponse;
+import com.ucamp.app.domain.reservation.entity.ReservationDisplayStatus;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
+import com.ucamp.app.domain.reservation.entity.ReservationTiming;
 import com.ucamp.app.domain.reservation.service.ReservationQueryService;
 import com.ucamp.app.domain.reservation.service.ReservationService;
 
@@ -61,15 +63,17 @@ class MyReservationControllerTest {
         OffsetDateTime startsAt = OffsetDateTime.of(2026, 11, 2, 14, 0, 0, 0, ZoneOffset.ofHours(9));
         ReservationSummaryResponse item = new ReservationSummaryResponse(1L, ReservationStatus.CONFIRMED,
                 startsAt, startsAt.plusHours(1), 1L, "언니네 네일", 1L, "젤네일", "고객일",
-                30000, 20000, 10000, "PAID", null, true, 1L, false);
+                30000, 20000, 10000, "PAID", null, true, 1L, false, ReservationDisplayStatus.COMPLETED);
         given(reservationQueryService.getMyReservations(any(AuthUser.class), eq(LocalDate.of(2026, 11, 1)),
-                isNull(), isNull(), anyInt(), anyInt()))
+                isNull(), isNull(), eq(ReservationTiming.PAST), anyInt(), anyInt()))
                 .willReturn(PageResponse.of(List.of(item), 0, 20, 1));
 
-        mockMvc.perform(get(URL).header(StubAuthFilter.HEADER_NAME, "CUSTOMER_1").param("from", "2026-11-01"))
+        mockMvc.perform(get(URL).header(StubAuthFilter.HEADER_NAME, "CUSTOMER_1").param("from", "2026-11-01")
+                        .param("timing", "PAST"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content[0].shopName").value("언니네 네일"))
                 .andExpect(jsonPath("$.data.content[0].cancellable").value(true))
+                .andExpect(jsonPath("$.data.content[0].displayStatus").value("COMPLETED"))
                 .andExpect(jsonPath("$.data.totalElements").value(1));
     }
 

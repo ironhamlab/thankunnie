@@ -1,8 +1,10 @@
 package com.ucamp.app.domain.reservation.dto.response;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 import com.ucamp.app.common.util.TimeUtils;
+import com.ucamp.app.domain.reservation.entity.ReservationDisplayStatus;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationView;
 
@@ -15,6 +17,7 @@ import com.ucamp.app.domain.reservation.repository.ReservationView;
  * @param cancellable   취소 버튼 표시 여부. 확정 상태이고 시작 전이면 true (실제 취소 가능 판단은 취소 API 가 한다)
  * @param customerId    예약한 고객 ID. 매장 화면에서 고객 관리 상세로 이동할 때 쓴다
  * @param noShow        매장이 노쇼로 표시한 확정 예약인지
+ * @param displayStatus 화면에 보여줄 상태. status 와 시술 종료 시각·노쇼로 계산하며 저장하지 않는다
  */
 public record ReservationSummaryResponse(
         Long reservationId,
@@ -33,9 +36,10 @@ public record ReservationSummaryResponse(
         String cancelStatus,
         boolean cancellable,
         Long customerId,
-        boolean noShow) {
+        boolean noShow,
+        ReservationDisplayStatus displayStatus) {
 
-    public static ReservationSummaryResponse from(ReservationView view, boolean cancellable) {
+    public static ReservationSummaryResponse from(ReservationView view, boolean cancellable, LocalDateTime now) {
         return new ReservationSummaryResponse(
                 view.reservationId(),
                 view.status(),
@@ -53,6 +57,7 @@ public record ReservationSummaryResponse(
                 view.cancelStatus(),
                 cancellable,
                 view.userId(),
-                view.noShow());
+                view.noShow(),
+                ReservationDisplayStatus.of(view.status(), view.endsAt(), view.noShow(), now));
     }
 }
