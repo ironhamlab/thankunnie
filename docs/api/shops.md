@@ -41,7 +41,7 @@
 - 누락·빈 파일·크기 초과·형식 불일치·실제 이미지 디코딩 실패는 `400 / COMMON_400`이다. 파일 이름과 MIME 타입뿐 아니라 실제 이미지 형식과 내용을 확인한다.
 - PUT·DELETE는 비로그인 401, 고객·관리자 403, 존재하지 않는 본인 매장 404다. 이미지가 없는 매장에 DELETE를 반복해도 204다.
 - 업로드 성공 예시: `data: {"shopId": 1, "imageUrl": "/api/v1/shops/1/images/{서버에서 생성한 파일명}.png"}`. 프론트는 API 서버 기준 상대 경로를 사용한다. GET 매장 정보의 imageUrl도 같은 경로를 반환한다.
-- 조회 API는 현재 DB에 연결된 이미지만 제공한다. 교체·삭제된 URL이나 잘못된 파일명은 404다. 응답에 `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`를 설정한다.
+- 조회 API는 현재 DB에 연결된 이미지만 제공한다. 교체·삭제된 URL이나 잘못된 파일명은 404다. 응답에 `Cache-Control: max-age=31536000, public, immutable`, `X-Content-Type-Options: nosniff`를 설정한다. 파일명은 업로드마다 새 UUID라 같은 URL의 내용은 바뀌지 않는다. 교체·삭제 후에도 이미 받은 브라우저는 옛 URL을 캐시에서 열 수 있다(최대 1년). 화면은 새 URL을 쓰므로 새 이미지가 보인다.
 
 ### 실패 시 유지 및 동시 수정
 

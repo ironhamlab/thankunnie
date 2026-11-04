@@ -206,6 +206,11 @@
   line-height: 1.15;
   letter-spacing: -0.5px;
 }
+/* 날짜까지 붙는 시작 시각은 남은 시간보다 길어 조금 작게 쓴다 */
+.closes .upcomingStart {
+  font-size: 20px;
+  white-space: nowrap;
+}
 .body {
   display: flex;
   flex-direction: column;

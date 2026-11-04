@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.schedule.repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,6 +25,18 @@ public interface ShopScheduleExceptionRepository extends JpaRepository<ShopSched
             ORDER BY e.startsAt
             """)
     List<ShopScheduleException> findOverlapping(@Param("shopId") Long shopId,
+            @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /**
+     * findOverlapping 의 여러 매장용. 빈자리 탐색이 매장·날짜마다 쿼리를 보내지 않도록 기간 전체를 한 번에 읽는다.
+     */
+    @Query("""
+            SELECT e FROM ShopScheduleException e
+            WHERE e.shopId IN :shopIds
+              AND e.startsAt < :to
+              AND e.endsAt > :from
+            """)
+    List<ShopScheduleException> findOverlappingByShopIds(@Param("shopIds") Collection<Long> shopIds,
             @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     /**

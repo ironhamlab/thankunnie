@@ -13,11 +13,20 @@ import com.ucamp.app.domain.reservation.entity.ReservationStatus;
  * @param statuses     포함할 예약 상태. 비어 있으면 안 된다
  * @param startsFrom   시작 시각 하한 (포함)
  * @param startsBefore 시작 시각 상한 (미포함)
+ * @param endsAfter    종료 시각 하한 (미포함)
+ * @param endsUntil    종료 시각 상한 (포함)
  */
 public record ReservationSearch(
         Long shopId,
         Long userId,
         Set<ReservationStatus> statuses,
         LocalDateTime startsFrom,
-        LocalDateTime startsBefore) {
+        LocalDateTime startsBefore,
+        LocalDateTime endsAfter,
+        LocalDateTime endsUntil) {
+
+    public ReservationSearch(Long shopId, Long userId, Set<ReservationStatus> statuses, LocalDateTime startsFrom,
+            LocalDateTime startsBefore) {
+        this(shopId, userId, statuses, startsFrom, startsBefore, null, null);
+    }
 }

@@ -2,49 +2,16 @@
   padding-top: 24px;
   padding-bottom: 64px;
 }
-/* 위쪽 안내 띠. 공통 b-hero 보다 낮고 촘촘하게, 오른쪽 위에 은은한 빛을 둔다 */
+/* 위쪽 제목. 메인 소개(HomeIntro)처럼 상자 없이 큰 제목과 한 줄 설명만 둔다 */
 .hero {
-  position: relative;
-  overflow: hidden;
-  min-height: 0;
-  gap: 16px;
-  padding: 16px 20px;
-  border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
-  background:
-    radial-gradient(
-      120% 140% at 100% 0,
-      color-mix(in srgb, var(--color-primary-soft) 70%, transparent),
-      transparent 45%
-    ),
-    linear-gradient(
-      100deg,
-      color-mix(in srgb, var(--color-primary-soft) 35%, var(--color-white)),
-      var(--color-white) 60%
-    );
-}
-.hero::after {
-  content: '';
-  position: absolute;
-  right: -40px;
-  top: -60px;
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  filter: blur(30px);
-  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 4px 0;
 }
 .heroText {
-  position: relative;
   min-width: 0;
-}
-.eyebrow {
-  width: fit-content;
-  padding: 3px 9px 3px 7px;
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-white));
-  font-size: 10px;
-  letter-spacing: 0.6px;
 }
 /* 실시간으로 찾는 중이라는 느낌을 주는 작은 점 */
 .liveDot {
@@ -68,42 +35,61 @@
   }
 }
 .hero h1 {
-  margin: 8px 0 2px;
-  font-size: 21px;
+  margin: 0;
+  color: var(--color-text);
+  font-size: 28px;
+  font-weight: 800;
   line-height: 1.35;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.7px;
+}
+.hero h1 em {
+  color: var(--color-primary-text);
+  font-style: normal;
 }
 .hero p {
-  font-size: 12px;
-}
-.demoNote {
-  position: relative;
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  white-space: nowrap;
-  background: color-mix(in srgb, var(--color-white) 80%, transparent);
-  padding: 7px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
-  font-size: 11px;
+  margin-top: 4px;
   color: var(--color-text-secondary);
+  font-size: 14px;
+}
+/* 메인 소개와 같은 폭에서 타임세일 안내를 제목 아래로 내린다 */
+@media (max-width: 767px) {
+  .hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 0;
+  }
+  .saleNote {
+    align-self: flex-start;
+  }
+}
+/* 타임세일 취소 안내. 메인 소개처럼 상자 없이 글자만 두고, 놓치면 안 되는 내용이라 주황빛으로 쓴다 */
+.saleNote {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-primary-text);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.saleNote svg {
+  flex-shrink: 0;
+}
+.saleNote strong {
+  font-weight: 800;
 }
 .noteIcon,
 .previewIcon {
   color: var(--color-primary-text);
 }
-.demoNote strong {
-  color: var(--color-primary-text);
-}
+/* 필터 상자는 내용만큼만 높이를 갖게 해 위아래가 비지 않게 한다 */
 .filters {
-  padding: 20px;
+  padding: 18px 20px;
   margin: 24px 0;
-  min-height: 182px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 8px;
+  gap: 14px;
 }
 .filterGroup {
   display: flex;
@@ -118,14 +104,22 @@
   color: var(--color-text-secondary);
   font-weight: 600;
 }
-.filterLine {
-  padding: 8px 0;
-  gap: 18px;
+.dateControls {
+  display: flex;
+  align-items: center;
   flex-wrap: wrap;
+  gap: 8px 12px;
 }
-.filterLine:last-child {
-  border-top: 1px solid var(--color-border);
-  padding-bottom: 0;
+/* 웹에서는 '날짜' 이름을 숨겨 날짜 버튼이 위 분야 버튼과 같은 왼쪽 선에서 시작하게 한다.
+   버튼 묶음의 aria-label 로 화면 낭독기에는 그대로 알린다 */
+@media (min-width: 541px) {
+  .dateControls .filterLabel {
+    display: none;
+  }
+}
+/* 짧은 정렬 이름은 휴대폰에서 날짜와 한 줄에 둘 때만 쓴다 */
+.shortLabel {
+  display: none;
 }
 .segmented :global(.b-options) {
   position: relative;
@@ -147,13 +141,6 @@
   border-radius: 6px;
   background: white;
 }
-/* 시간대 설명. 넓은 화면은 이름 옆에, 좁은 화면은 이름 아래에 작게 둔다 */
-.optionHint {
-  margin-left: 4px;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-}
 .resultsHeading {
   padding: 4px;
   margin: 26px 0 20px;
@@ -170,11 +157,6 @@
   justify-content: space-between;
   gap: 12px;
 }
-@media (max-width: 1200px) {
-  .demoNote {
-    white-space: normal;
-  }
-}
 @media (max-width: 900px) {
   .filterGroup {
     flex-wrap: wrap;
@@ -187,81 +169,113 @@
   .filterGroup {
     gap: 10px;
   }
-  .hero {
-    gap: 10px;
-    padding: 14px 16px;
+  /* 제목·설명은 한 줄씩. 아주 좁은 폰에서는 글자를 화면 폭에 맞춰 조금 줄이고, 그래도 넘치면 말줄임한다 */
+  .hero h1,
+  .hero p {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .hero h1 {
-    font-size: 18px;
+    font-size: clamp(18px, 5.8vw, 22px);
+    letter-spacing: -0.5px;
   }
   .hero p {
+    font-size: clamp(11px, 3.5vw, 13px);
+  }
+  /* 휴대폰에서는 목록이 바로 보이게 필터를 낮게 줄인다. 날짜와 정렬이 한 줄에 다 안 들어가면
+     정렬이 다음 줄로 내려가고, 두 줄 모두 버튼이 줄 끝까지 늘어나 오른쪽이 비지 않게 한다 */
+  .filters {
+    min-height: 0;
+    margin: 16px 0;
+    padding: 14px;
+    gap: 8px;
+  }
+  .filters .dateRow {
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 0;
+  }
+  .filters .dateControls {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+  .filters .dateControls > .filterGroup,
+  .filters .dateRow > .filterGroup {
+    flex: 1 1 auto;
+  }
+  .filters .dateControls > .filterGroup :global(.b-options) button {
+    padding: 5px 9px;
+  }
+  /* 초보 시술·타임세일은 날짜를 고를 조건이 없어 날짜와 정렬을 한 줄에 둔다.
+     자리를 만들려고 전날·다음날 화살표는 숨기고(달력으로 고른다) 정렬 이름을 줄인다 */
+  .compactRow .dateControls {
+    flex: 0 0 auto;
+  }
+  .compactRow button[aria-label='전날'],
+  .compactRow button[aria-label='다음날'] {
     display: none;
   }
-  .demoNote {
-    padding: 5px 10px;
-    font-size: 10px;
+  .compactRow .longLabel {
+    display: none;
   }
-  .demoNote svg {
-    width: 14px;
-    height: 14px;
+  .compactRow .shortLabel {
+    display: inline;
   }
-  /* 시작 시간·정렬은 한 줄에 같은 폭으로 나눠 넣고, 시간대 설명은 이름 아래로 내린다 */
+  .filterGroup {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+  .filterLabel {
+    min-width: 0;
+    flex-shrink: 0;
+    font-size: 11px;
+  }
   .segmented {
-    width: 100%;
+    min-width: 0;
   }
   .segmented :global(.b-options) {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
   }
   .segmented :global(.b-options) button {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1px;
-    padding: 6px 2px;
+    padding: 5px 2px;
     line-height: 1.2;
     white-space: nowrap;
-  }
-  .optionHint {
-    margin-left: 0;
-    font-size: 9px;
   }
   .resultsHeading {
     flex-wrap: wrap;
   }
 }
-.description {
-  color: var(--color-text-muted);
-  font-size: 13px;
-  margin: 10px 0 22px;
-}
-/* 가까운순을 고를 때 위치 확인 중·실패 안내 */
+/* 거리순을 고를 때 위치 확인 중·실패 안내 */
 .locateMessage {
   color: var(--color-text-muted);
   font-size: 13px;
   margin: 8px 0 0;
 }
-/* 시술 분야는 가장 먼저 고르는 조건이라 크게 보여준다 */
+/* 시술 분야는 가장 먼저 고르는 조건이라 맨 위에 두되, 필터 상자 안에서 튀지 않게 알약 크기로 둔다 */
 .categoryRow {
   position: relative;
   isolation: isolate;
   display: flex;
-  gap: 10px;
+  gap: 8px;
   overflow-x: auto;
   padding-bottom: 4px;
 }
 .categoryRow button {
   flex-shrink: 0;
-  min-width: 96px;
-  padding: 12px 24px;
-  border: 1px solid var(--color-border-strong);
+  min-width: 72px;
+  padding: 8px 18px;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   background: white;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--color-text-secondary);
   transition:
     color 0.2s,
@@ -280,13 +294,29 @@
   border-radius: var(--radius-pill);
   background: var(--color-primary);
 }
+/* 타임세일의 오늘 날짜 표시. 고르는 버튼이 아니라 알림처럼 보이게 작은 알약으로 둔다 */
+.todayChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-white));
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary-text);
+  white-space: nowrap;
+}
+.todayChip b {
+  font-variant-numeric: tabular-nums;
+}
 .dateRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  padding: 12px 0 4px;
 }
 /* 목록 옆에 지도를 붙여 두고 스크롤해도 지도는 따라오게 한다 */
 .layout {
@@ -322,11 +352,22 @@
     min-height: 300px;
   }
 }
+/* 휴대폰에서는 분야 버튼을 작은 알약 모양으로 줄여 한 화면에 더 많이 보이게 한다 */
 @media (max-width: 540px) {
+  .categoryRow {
+    gap: 6px;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .categoryRow::-webkit-scrollbar {
+    display: none;
+  }
   .categoryRow button {
-    min-width: 80px;
-    padding: 10px 18px;
-    font-size: 15px;
+    min-width: 0;
+    padding: 6px 14px;
+    border-color: var(--color-border);
+    font-size: 13px;
+    font-weight: 600;
   }
 }
 .rows {

@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { addDays } from '@/utils/scheduleDate';
 import { dayLabel } from '@/utils/exploreVacancy';
 import styles from './DateCalendar.module.css';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+// 달력이 화면 가장자리에 붙지 않게 띄울 간격(px)
+const POPOVER_MARGIN = 8;
 
 // YYYY-MM 의 1일 요일과 날짜 수
 function monthInfo(month) {
@@ -32,6 +34,18 @@ export default function DateCalendar({ value, min, max, onChange, disabled = fal
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(value.slice(0, 7));
   const rootRef = useRef(null);
+  const popoverRef = useRef(null);
+
+  // 휴대폰에서 날짜가 오른쪽에 있으면 달력이 화면 밖으로 나가므로, 열 때 넘친 만큼 왼쪽으로 당긴다
+  useLayoutEffect(() => {
+    const popover = popoverRef.current;
+    if (!open || !popover) return;
+    const rect = popover.getBoundingClientRect();
+    const overflow = rect.right - (document.documentElement.clientWidth - POPOVER_MARGIN);
+    if (overflow > 0) {
+      popover.style.transform = `translateX(-${Math.min(overflow, rect.left - POPOVER_MARGIN)}px)`;
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -106,7 +120,7 @@ export default function DateCalendar({ value, min, max, onChange, disabled = fal
         </button>
       </div>
       {open && (
-        <div className={styles.popover} role="dialog" aria-label="날짜 선택">
+        <div className={styles.popover} role="dialog" aria-label="날짜 선택" ref={popoverRef}>
           <div className={styles.monthBar}>
             <button
               type="button"

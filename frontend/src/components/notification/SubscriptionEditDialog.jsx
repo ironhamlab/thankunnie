@@ -6,6 +6,8 @@ import { addDays, datePart, timePart, toKstDateTime, todayKst } from '@/utils/sc
 import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
+import HopeDateField from './HopeDateField';
+import HopeTimeField from './HopeTimeField';
 import StoreTreatmentField from './StoreTreatmentField';
 import styles from './SubscriptionList.module.css';
 
@@ -17,7 +19,7 @@ const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)')
 /**
  * 구독 조건 수정. 구독 유형은 그대로 둔다.
  * 업장 구독은 매장을 바꾸지 않고 시술과 희망 시간을, 카테고리·지역 구독은 시술·지역과 희망 시간을 바꾼다.
- * 희망 날짜는 오늘부터 30일 안만, 시각은 기본 time 입력(30분 단위)으로 고른다.
+ * 희망 날짜는 오늘부터 30일 안만, 시각은 30분 단위 휠로 고른다.
  */
 export default function SubscriptionEditDialog({ subscription, categories, onClose, onSaved }) {
   const updateSubscription = useNotificationStore((state) => state.updateSubscription);
@@ -59,6 +61,7 @@ export default function SubscriptionEditDialog({ subscription, categories, onClo
   };
 
   const change = (field) => (event) => setForm((prev) => ({ ...prev, [field]: event.target.value }));
+  const changeTime = (field) => (time) => setForm((prev) => ({ ...prev, [field]: time }));
   const startDateEmpty = !form.startDate;
   const endDateEmpty = !form.endDate;
   const startTimeEmpty = !form.startTime;
@@ -192,17 +195,13 @@ export default function SubscriptionEditDialog({ subscription, categories, onClo
         )}
         <div className={styles.timeRow}>
           <div className={styles.field}>
-            <label>
-              희망 시작일
-              <input
-                required
-                type="date"
-                min={minDate}
-                max={maxDate}
-                value={form.startDate}
-                onChange={change('startDate')}
-              />
-            </label>
+            <HopeDateField
+              label="희망 시작일"
+              min={minDate}
+              max={maxDate}
+              value={form.startDate}
+              onChange={change('startDate')}
+            />
             {startDateEmpty && (
               <p role="alert" className={styles.error}>
                 희망 시작일을 선택해 주세요.
@@ -216,16 +215,11 @@ export default function SubscriptionEditDialog({ subscription, categories, onClo
               )}
           </div>
           <div className={styles.field}>
-            <label>
-              시작 시간
-              <input
-                required
-                type="time"
-                step="1800"
-                value={form.startTime}
-                onChange={change('startTime')}
-              />
-            </label>
+            <HopeTimeField
+              label="시작 시간"
+              value={form.startTime}
+              onChange={changeTime('startTime')}
+            />
             {startTimeEmpty && (
               <p role="alert" className={styles.error}>
                 시작 시간을 선택해 주세요.
@@ -238,17 +232,13 @@ export default function SubscriptionEditDialog({ subscription, categories, onClo
             )}
           </div>
           <div className={styles.field}>
-            <label>
-              희망 종료일
-              <input
-                required
-                type="date"
-                min={minDate}
-                max={maxDate}
-                value={form.endDate}
-                onChange={change('endDate')}
-              />
-            </label>
+            <HopeDateField
+              label="희망 종료일"
+              min={minDate}
+              max={maxDate}
+              value={form.endDate}
+              onChange={change('endDate')}
+            />
             {endDateEmpty && (
               <p role="alert" className={styles.error}>
                 희망 종료일을 선택해 주세요.
@@ -261,16 +251,7 @@ export default function SubscriptionEditDialog({ subscription, categories, onClo
             )}
           </div>
           <div className={styles.field}>
-            <label>
-              종료 시간
-              <input
-                required
-                type="time"
-                step="1800"
-                value={form.endTime}
-                onChange={change('endTime')}
-              />
-            </label>
+            <HopeTimeField label="종료 시간" value={form.endTime} onChange={changeTime('endTime')} />
             {endTimeEmpty && (
               <p role="alert" className={styles.error}>
                 종료 시간을 선택해 주세요.

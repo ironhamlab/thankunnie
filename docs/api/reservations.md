@@ -131,6 +131,7 @@
 |---|---|---|
 | `from`, `to` | 없음 | 시작 날짜(YYYY-MM-DD) 범위, 양 끝 포함 |
 | `status` | 없음 | 여러 개는 `status=HOLD&status=CONFIRMED`처럼 반복해서 보낸다. 생략하면 EXPIRED를 뺀 전체 |
+| `timing` | 없음 | 내 예약 목록만. `UPCOMING`은 시술 종료 전, `PAST`는 시술 종료 후. 생략하면 나누지 않는다 |
 | `page`, `size` | 0, 20 | `page`는 0 이상, `size`는 1~100 |
 
 - 정렬은 시작 시각 순이다.
@@ -165,7 +166,8 @@
     "cancelStatus": null,
     "cancellable": false,
     "customerId": 1,
-    "noShow": false
+    "noShow": false,
+    "displayStatus": "HOLD"
   },
   "customerPhone": "010-1111-1111",
   "customerRequest": null,
@@ -185,6 +187,7 @@
 | `summary.cancellable` | 취소 버튼 표시 여부. 확정 상태이고 시작 전이면 true. 실제 취소 가능 판단은 취소 API가 한다 |
 | `summary.customerId` | 예약한 고객 ID. 매장 화면에서 고객 관리 상세(`/owner/customers?customer={id}`)로 이동할 때 쓴다 |
 | `summary.noShow` | 매장이 노쇼로 표시한 확정 예약인지. 상태는 `CONFIRMED` 그대로다 |
+| `summary.displayStatus` | 화면에 보여줄 상태. 저장하지 않고 조회할 때 계산한다. `CONFIRMED`는 종료 전, `COMPLETED`는 종료 후(종료 시각 포함), `NO_SHOW`는 노쇼 표시. 나머지는 `status`와 같다 |
 | `payment` | 최근 예약금 결제. `status`(READY, PAID, FAILED, UNKNOWN, REFUND_PENDING, PART_REFUNDED, REFUNDED), `amount`, `refundedAmount`, `approvedAt`, `refundedAt`. 결제 전이면 null |
 | `cancel` | 취소. `cancelType`(CUSTOMER, SHOP_FAULT, CUSTOMER_REQUEST), `status`, `policyRefundAmount`, `refundAmount`, `requestedAt`, `completedAt`. 취소 전이면 null |
 | `serverTime` | 응답을 만든 서버 시각. 화면은 기기 시각과의 차이를 보정해 `holdExpiresAt`까지 남은 시간을 센다 |
