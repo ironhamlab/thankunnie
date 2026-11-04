@@ -17,7 +17,7 @@ import {
 import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
 import AccountFields from './components/AccountFields';
-import AuthCard from './components/AuthCard';
+import AuthCard from '@/components/auth/AuthCard';
 import AuthField from './components/AuthField';
 import ShopAddressFields from './components/ShopAddressFields';
 import ShopApprovalDialog from './components/ShopApprovalDialog';

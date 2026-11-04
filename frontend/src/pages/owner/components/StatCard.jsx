@@ -1,5 +1,5 @@
 import Panel from '@/components/common/Panel';
-import RollingValue from '@/pages/home/components/RollingValue';
+import RollingValue from '@/components/common/RollingValue';
 import styles from './StatCard.module.css';
 
 /**

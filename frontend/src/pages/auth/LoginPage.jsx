@@ -8,7 +8,7 @@ import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
 import Notice from '@/components/common/Notice';
-import AuthCard from './components/AuthCard';
+import AuthCard from '@/components/auth/AuthCard';
 import AuthField from './components/AuthField';
 import ShopApprovalDialog from './components/ShopApprovalDialog';
 import styles from './LoginPage.module.css';

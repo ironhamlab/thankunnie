@@ -1,5 +1,5 @@
 import Panel from '@/components/common/Panel';
-import RepresentativeImage from '@/pages/owner/components/RepresentativeImage';
+import RepresentativeImage from '@/components/common/RepresentativeImage';
 import FavoriteButton from './FavoriteButton';
 import styles from '../ShopDetailPage.module.css';
 

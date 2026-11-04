@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTreatmentStore } from '@/store/useTreatmentStore';
 import { formatMoney } from '@/utils/reservationFormat';
-import RollingValue from '@/pages/home/components/RollingValue';
+import RollingValue from '@/components/common/RollingValue';
 import TreatmentForm from '@/pages/owner/components/TreatmentForm';
 import TreatmentThumbnail from './components/TreatmentThumbnail';
 import Badge from '@/components/common/Badge';

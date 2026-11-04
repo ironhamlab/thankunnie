@@ -13,7 +13,7 @@ import Dialog from '@/components/common/Dialog';
 import Panel from '@/components/common/Panel';
 import EmptyState from '@/components/common/EmptyState';
 import styles from './OwnerBookingsPage.module.css';
-import RollingValue from '@/pages/home/components/RollingValue';
+import RollingValue from '@/components/common/RollingValue';
 import SlidingOptions from './components/SlidingOptions';
 import motion from './components/OwnerMotion.module.css';
 

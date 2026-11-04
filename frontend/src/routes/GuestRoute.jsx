@@ -6,7 +6,7 @@ import { useLogout } from '@/hooks/useLogout';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getHomePathByRole } from '@/utils/authRedirect';
 import { getDevTestUser } from '@/utils/devTestUser';
-import AuthCard from '@/pages/auth/components/AuthCard';
+import AuthCard from '@/components/auth/AuthCard';
 import Button from '@/components/common/Button';
 import styles from './RoleRoute.module.css';
 

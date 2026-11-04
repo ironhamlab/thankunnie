@@ -20,7 +20,7 @@ import { loadPortOne, requestPay } from '@/utils/portoneLoader';
 import { useReservationStore } from '@/store/useReservationStore';
 import { usePaymentStore } from '@/store/usePaymentStore';
 import { useShopDetailStore } from '@/store/useShopDetailStore';
-import RepresentativeImage from '@/pages/owner/components/RepresentativeImage';
+import RepresentativeImage from '@/components/common/RepresentativeImage';
 import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
 import Panel from '@/components/common/Panel';

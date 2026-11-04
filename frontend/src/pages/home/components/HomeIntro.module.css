@@ -5,7 +5,7 @@
   gap: 32px;
   padding: 4px 0;
 }
-:global(.home-redesign) .root h1 {
+.root .title {
   color: var(--color-text);
   font-size: 28px;
   font-weight: 800;
@@ -55,7 +55,7 @@
     gap: 14px;
     padding: 0;
   }
-  :global(.home-redesign) .root h1 {
+  .root .title {
     font-size: 22px;
     letter-spacing: -0.5px;
   }
