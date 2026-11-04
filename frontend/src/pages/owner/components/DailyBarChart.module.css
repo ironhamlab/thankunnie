@@ -16,11 +16,10 @@
 }
 .bar {
   fill: var(--color-primary);
-  transition: opacity 0.15s;
-  /* 기준선에서 위로 자란다. 칸마다 시작 시각은 그래프 코드가 정한다 */
+  /* 기준선에서 위로 자란다. 칸마다 시작 시각(--bar-delay)은 그래프 코드가 정한다 */
   transform-box: fill-box;
   transform-origin: bottom;
-  animation: barGrow 1.2s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  animation: barGrow 1.2s cubic-bezier(0.4, 0, 0.2, 1) var(--bar-delay, 0s) backwards;
   transition:
     opacity 0.15s,
     transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -40,8 +39,8 @@
 /* 가장 높은 막대는 다 자란 뒤 두 번 빛난다 */
 .peak {
   animation:
-    barGrow 1.2s cubic-bezier(0.4, 0, 0.2, 1) backwards,
-    peakGlow 1.2s ease 2s 2;
+    barGrow 1.2s cubic-bezier(0.4, 0, 0.2, 1) var(--bar-delay, 0s) backwards,
+    peakGlow 1.2s ease calc(var(--bar-delay, 0s) + 1.2s) 2;
 }
 @keyframes peakGlow {
   50% {

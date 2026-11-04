@@ -153,7 +153,7 @@ export default function DailyBarChart({
                       className={barClass}
                       style={{
                         fill: `url(#${gradientId})`,
-                        animationDelay: `${(index / days.length) * BAR_WAVE_MS}ms`,
+                        '--bar-delay': `${(index / days.length) * BAR_WAVE_MS}ms`,
                       }}
                     />
                   )}

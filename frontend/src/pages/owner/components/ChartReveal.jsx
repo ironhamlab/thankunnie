@@ -3,6 +3,10 @@ import styles from './ChartReveal.module.css';
 
 // 차트를 담은 패널이 올라오는 데 걸리는 시간(ms). StatsSection.module.css 의 패널 효과와 맞춘다
 const PANEL_SETTLE_MS = 650;
+// 보이는 비율이 바뀔 때마다 판단하도록 5% 단위로 알림을 받는다
+const OBSERVER_STEPS = Array.from({ length: 21 }, (_, index) => index / 20);
+// 차트가 화면보다 커서 비율을 채울 수 없어도, 화면의 이만큼을 차지하면 시작한다
+const VIEWPORT_FILL_RATIO = 0.5;
 
 /**
  * 차트가 화면에 들어오면 안쪽 애니메이션을 시작한다.
@@ -22,7 +26,11 @@ export default function ChartReveal({ children, threshold = 0.1, className = '' 
     let timer;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting) return;
+        const fillsViewport =
+          entry.intersectionRect.height >= window.innerHeight * VIEWPORT_FILL_RATIO;
+        if (!entry.isIntersecting || (entry.intersectionRatio < threshold && !fillsViewport)) {
+          return;
+        }
         observer.disconnect();
         const remaining = PANEL_SETTLE_MS - (performance.now() - mountedAt);
         if (remaining > 0) {
@@ -31,7 +39,7 @@ export default function ChartReveal({ children, threshold = 0.1, className = '' 
           setIsRevealed(true);
         }
       },
-      { threshold },
+      { threshold: OBSERVER_STEPS },
     );
     observer.observe(ref.current);
     return () => {
