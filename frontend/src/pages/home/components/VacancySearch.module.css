@@ -205,29 +205,68 @@
     width: 14px;
     height: 14px;
   }
-  /* 시작 시간·정렬은 한 줄에 같은 폭으로 나눠 넣고, 시간대 설명은 이름 아래로 내린다 */
+  /* 휴대폰에서는 목록이 바로 보이게 필터를 낮게 줄인다. 이름은 버튼 왼쪽에 붙이고 한 줄에 한 조건씩 둔다 */
+  .filters {
+    min-height: 0;
+    margin: 16px 0;
+    padding: 14px;
+    gap: 6px;
+  }
+  .filterGroup {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+  .filterLabel {
+    min-width: 0;
+    flex-shrink: 0;
+    font-size: 11px;
+  }
+  /* 날짜·예약 종류는 버튼이 둘뿐이라 한 줄에 나란히 두고, 고른 날짜 달력은 그 아래 한 줄을 다 쓴다.
+     아래 .dateRow 기본값보다 앞에 있어 한 단계 좁혀 쓴다 */
+  .filters .dateRow {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 8px 0 0;
+  }
+  .dateRow > :not(.filterGroup) {
+    grid-column: 1 / -1;
+    order: 1;
+  }
+  /* 타임세일·초보 시술 모집처럼 날짜 조건이 빠지면 예약 종류가 한 줄을 다 쓴다 */
+  .dateRow:not(:has(> .filterGroup ~ .filterGroup)) > .filterGroup {
+    grid-column: 1 / -1;
+  }
+  .filterLine {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 6px 0 0;
+  }
   .segmented {
     width: 100%;
+    min-width: 0;
   }
   .segmented :global(.b-options) {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
   }
   .segmented :global(.b-options) button {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1px;
-    padding: 6px 2px;
+    padding: 5px 2px;
     line-height: 1.2;
     white-space: nowrap;
   }
+  /* 시간대 설명(12시 이전 등)은 자리를 많이 차지해 휴대폰에서는 이름만 보여준다 */
   .optionHint {
-    margin-left: 0;
-    font-size: 9px;
+    display: none;
+  }
+  /* 아래 .description 기본값보다 나중에 오지 않아 한 단계 좁혀 쓴다 */
+  .filters .description {
+    margin: 6px 0 0;
+    font-size: 12px;
   }
   .resultsHeading {
     flex-wrap: wrap;
