@@ -252,6 +252,8 @@ public class ExploreVacancyService {
         List<Item> linked = modelOnly
                 ? items
                 : items.stream().filter(item -> item.candidate().treatmentType() != TreatmentType.MODEL).toList();
+        // 핀 구분은 카드의 시작 시각·가격과 맞아야 하므로 같은 빈자리(가장 빠른 것)의 가격 구간을 쓴다
+        Item earliest = linked.stream().min(Comparator.comparing(Item::startsAt)).orElseThrow();
         return new ExploreShopResponse(
                 shop.shopId(),
                 shop.shopName(),
@@ -263,7 +265,8 @@ public class ExploreVacancyService {
                 linked.size(),
                 minSalePrice(linked),
                 linked.stream().mapToInt(item -> item.quote().discountRate()).max().orElseThrow(),
-                TimeUtils.toOffset(linked.stream().map(Item::startsAt).min(LocalDateTime::compareTo).orElseThrow()),
+                TimeUtils.toOffset(earliest.startsAt()),
+                earliest.quote().tier(),
                 modelOnly,
                 modelItems.size(),
                 modelItems.isEmpty() ? null : minSalePrice(modelItems));
