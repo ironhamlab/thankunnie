@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { formatMoney } from '@/utils/reservationFormat';
+import useAutoRefresh from '@/hooks/useAutoRefresh';
 import { useExploreStore } from '@/store/useExploreStore';
 import Button from '@/components/common/Button';
 import VacancyCountdown from './VacancyCountdown';
@@ -20,6 +21,8 @@ const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion:
 const SWIPE_MIN_PX = 40;
 // 화면에 이 비율 이상 보일 때만 저절로 넘긴다. 휴대폰에서 아래 지도를 보는 동안 지도가 바뀌지 않게 한다
 const VISIBLE_RATIO = 0.5;
+// 보던 카드가 팔렸다는 안내를 보여주는 시간
+const GONE_NOTICE_MS = 4000;
 
 /**
  * 홈 임박 빈자리 캐러셀. 지금부터 8시간 안에 시작하는 일반 시술 빈자리를 매장마다 1건씩, 빠른 시작순으로
@@ -27,6 +30,8 @@ const VISIBLE_RATIO = 0.5;
  * 저절로 넘기되, 마우스를 올리거나 키보드로 안의 버튼에 초점이 있으면 누르려던 카드가 바뀌지 않게 멈춘다.
  * 휴대폰에서는 옆으로 밀어 넘기고, 손을 대고 있는 동안만 멈춘다. 끝에서 넘기면 처음으로 돌아간다.
  * 기기에서 동작 줄이기를 켰으면 자동으로 넘기지 않는다.
+ * 탭을 보는 동안 목록을 주기적으로 다시 받는다. 순번이 아니라 빈자리 ID 로 보던 카드를 유지해, 앞 카드가 팔려도
+ * 누르려던 카드가 바뀌지 않게 한다. 보던 카드가 팔렸을 때만 그 자리의 다음 카드로 넘어가며 안내한다.
  * 장이 바뀔 때마다(저절로 넘길 때도) onShowShop 으로 알려 지도가 지금 카드의 매장을 따라오게 한다.
  * 옆 지도를 보는 중(paused)이면 지도가 옮겨 가지 않게 자동 넘김을 멈춘다.
  * 캐러셀이 화면에서 거의 벗어나면(휴대폰에서 아래 지도로 내려 보는 중) 지도가 바뀌지 않게 자동 넘김을 멈춘다.
@@ -45,7 +50,11 @@ export default function ImminentCarousel({
   const vacancies = useExploreStore((s) => s.imminentVacancies);
   const status = useExploreStore((s) => s.imminentStatus);
   const loadImminentVacancies = useExploreStore((s) => s.loadImminentVacancies);
-  const [index, setIndex] = useState(0);
+  // 보고 있는 카드. 그 카드가 목록에서 사라지면 마지막 순번 자리의 카드를 보여준다
+  const [shownCard, setShownCard] = useState(null);
+  const [lastIndex, setLastIndex] = useState(0);
+  // 보던 카드가 사라졌을 때 안내할 내용과 대신 보여줄 카드
+  const [gone, setGone] = useState(null);
   // 넘긴 방향. 다음 장은 오른쪽에서, 이전 장은 왼쪽에서 들어오게 한다
   const [direction, setDirection] = useState(1);
   const [hovered, setHovered] = useState(false);
@@ -68,13 +77,32 @@ export default function ImminentCarousel({
     loadImminentVacancies();
   }, [loadImminentVacancies]);
 
+  // 옆 지도도 이 목록으로 핀을 찍으므로 캐러셀이 화면 밖이어도 다시 받는다
+  useAutoRefresh(loadImminentVacancies);
+
   const count = vacancies.length;
+  const foundIndex = vacancies.findIndex((card) => card.id === shownCard?.id);
   // 목록이 다시 와서 개수가 줄어도 범위를 넘지 않게 한다
-  const current = count ? vacancies[Math.min(index, count - 1)] : null;
-  const currentIndex = current ? vacancies.indexOf(current) : 0;
+  const currentIndex = foundIndex >= 0 ? foundIndex : Math.min(lastIndex, Math.max(count - 1, 0));
+  const current = vacancies[currentIndex] ?? null;
+  // 보던 카드와 순번을 기억한다. 렌더 중에 맞춰 효과로 한 번 더 그리지 않게 한다
+  if (current !== shownCard || currentIndex !== lastIndex) {
+    // 대신 보여주던 빈자리가 새 임박 빈자리로 바뀐 것은 마감이 아니므로 알리지 않는다
+    if (shownCard && foundIndex < 0 && Boolean(shownCard.upcoming) === Boolean(current?.upcoming)) {
+      setGone({
+        label: `${shownCard.shop} ${shownCard.day} ${shownCard.time}`,
+        next: current,
+        // 지도를 보는 중이면 보던 지도를 옮기지 않는다
+        moveMap: !paused && inView,
+      });
+    }
+    setShownCard(current);
+    setLastIndex(currentIndex);
+  }
   const goTo = (next, step) => {
     setDirection(step);
-    setIndex(next);
+    setShownCard(vacancies[next]);
+    setGone(null);
     setAdvanceNow(false);
     onShowShop?.(vacancies[next], { manual: true });
   };
@@ -94,10 +122,18 @@ export default function ImminentCarousel({
     );
     if (target >= 0 && target !== currentIndex) {
       setDirection(target < currentIndex ? -1 : 1);
-      setIndex(target);
+      setShownCard(vacancies[target]);
       setAdvanceNow(false);
     }
   }
+
+  // 사라진 카드 대신 보이는 카드로 지도도 옮기고, 안내는 잠시 뒤 내린다
+  useEffect(() => {
+    if (!gone) return undefined;
+    if (gone.next && gone.moveMap) onShowShopRef.current?.(gone.next);
+    const timer = window.setTimeout(() => setGone(null), GONE_NOTICE_MS);
+    return () => window.clearTimeout(timer);
+  }, [gone]);
 
   // 위에 고정된 헤더에 가린 부분은 빼고 세려고 헤더 높이를 잰다. 화면 폭이 바뀌면 헤더 높이도 바뀌어 다시 잰다
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -126,16 +162,17 @@ export default function ImminentCarousel({
     if (!autoPlay) return undefined;
     const timer = window.setTimeout(
       () => {
-        const next = (Math.min(index, count - 1) + 1) % count;
+        const next = (currentIndex + 1) % count;
         setDirection(1);
-        setIndex(next);
+        setShownCard(vacancies[next]);
+        setGone(null);
         setAdvanceNow(false);
         onShowShopRef.current?.(vacancies[next]);
       },
       advanceNow ? 0 : autoPlayDelay(),
     );
     return () => window.clearTimeout(timer);
-  }, [autoPlay, advanceNow, count, index, vacancies]);
+  }, [autoPlay, advanceNow, count, currentIndex, vacancies]);
 
   // 임박 빈자리가 없으면 스토어가 다음으로 빠른 빈자리를 대신 담아 준다
   const heading = current?.upcoming ? '다음으로 빠른 빈자리' : '임박 빈자리';
@@ -179,6 +216,11 @@ export default function ImminentCarousel({
           }}
           onTouchCancel={() => setTouching(false)}
         >
+          {gone && (
+            <p className={styles.goneNotice} role="status">
+              {gone.label} 빈자리는 방금 마감됐어요
+            </p>
+          )}
           {/* 저절로 넘어가는 동안 화면 낭독기가 매번 읽지 않도록 멈췄을 때만 알린다 */}
           <article
             className={`${styles.card} ${direction < 0 ? styles.fromPrev : ''}`}

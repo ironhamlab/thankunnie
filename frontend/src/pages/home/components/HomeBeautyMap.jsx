@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
+import { useMyLocation } from '@/hooks/useMyLocation';
 import { useExploreStore } from '@/store/useExploreStore';
 import ExploreMap from '@/components/map/ExploreMap';
 import Button from '@/components/common/Button';
@@ -35,15 +36,15 @@ function toPinShop(card) {
  * @param onHover     마우스를 올리면 true, 내리면 false 를 받는다
  * @param onExplore   지도를 끌거나 누르거나 확대하는 등 직접 만지면 불린다. 끄는 동안에는 계속 불린다
  * @param onPickShop  핀을 누르면 그 매장 ID(문자열)를 받는다. 캐러셀을 그 매장 카드로 넘길 때 쓴다
+ * @param onLocated   내 위치로 옮기면 불린다. 저절로 넘어가는 캐러셀이 지도를 다시 옮기지 않게 할 때 쓴다
  */
-export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickShop }) {
+export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickShop, onLocated }) {
   const vacancies = useExploreStore((s) => s.imminentVacancies);
   const status = useExploreStore((s) => s.imminentStatus);
   const [selectedId, setSelectedId] = useState(null);
   const [mapUnavailable, setMapUnavailable] = useState(false);
-  // 지도 초기화를 누를 때마다 바뀌어 지도를 새로 그린다
-  const [fitVersion, setFitVersion] = useState(0);
-  // 지금 지도로 옮겨 간 캐러셀 카드. 지도 초기화를 누르면 비운다
+  const location = useMyLocation();
+  // 지금 지도로 옮겨 간 캐러셀 카드. 내 위치로 옮기면 비운다
   const [imminent, setImminent] = useState(null);
   const [seenFocus, setSeenFocus] = useState(focusCard);
   // 캐러셀 카드가 바뀔 때마다 그 매장을 고른다. 렌더 중에 맞춰 효과로 한 번 더 그리지 않게 한다
@@ -65,6 +66,16 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
   const selected = vacancies.find((card) => String(card.shopId) === selectedId) ?? vacancies[0];
 
   const handleUnavailable = useCallback(() => setMapUnavailable(true), []);
+  // 내 위치로 옮기면 고른 매장을 풀어, 그 매장으로 지도가 되돌아가지 않게 한다
+  const locate = async () => {
+    const found = await location.locate();
+    if (found) {
+      setSelectedId(null);
+      setImminent(null);
+      onLocated?.();
+    }
+    return found;
+  };
   return (
     <div
       className={styles.section}
@@ -81,15 +92,6 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
         <span>
           ● {listName} 매장 {vacancies.length}곳
         </span>
-        <button
-          onClick={() => {
-            setSelectedId(null);
-            setImminent(null);
-            setFitVersion((value) => value + 1);
-          }}
-        >
-          ⌖ 지도 초기화
-        </button>
         <Link className={styles.mapLink} to={ROUTES.MAP}>
           지도 크게 보기 ›
         </Link>
@@ -101,9 +103,8 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
           </small>
         ) : (
           <ExploreMap
-            // 지도 초기화는 지도를 새로 그려 핀이 다 보이는 처음 범위로 돌린다
-            key={fitVersion}
             shops={mapShops}
+            myLocation={{ ...location, locate }}
             selectedId={selectedId}
             onSelect={(shopId) => {
               setSelectedId(shopId);
@@ -111,6 +112,8 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
             }}
             onUnavailable={handleUnavailable}
             fitToShops
+            // 임박 목록을 주기적으로 다시 받으므로 그때마다 보던 범위가 돌아가지 않게 한다
+            fitOnce
             centerOnSelect
             boundsPadding={MAP_BOUNDS_PADDING}
             focusPosition={focusPosition}

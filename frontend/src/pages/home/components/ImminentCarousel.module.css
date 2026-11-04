@@ -29,6 +29,27 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: relative;
+}
+/* 카드 위에 잠시 띄워 안내가 나타나고 사라져도 카드 높이가 움직이지 않게 한다 */
+.goneNotice {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  /* 매장 이름이 길어도 "마감됐어요"가 잘리지 않게 줄을 바꾼다 */
+  width: max-content;
+  max-width: calc(100% - 24px);
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 16px;
+  text-align: center;
+  background: var(--color-text);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
 }
 .card {
   position: relative;
