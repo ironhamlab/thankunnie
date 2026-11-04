@@ -82,9 +82,7 @@ export default function CustomerProfilePage() {
                   </p>
                 </>
               )}
-              {profileStatus === 'loading' && (
-                <p role="status">회원 정보를 불러오는 중입니다.</p>
-              )}
+              {profileStatus === 'loading' && <p role="status">회원 정보를 불러오는 중입니다.</p>}
               {profileStatus === 'failed' && (
                 <Alert as="p" tone="error">
                   {profileError.message}
@@ -108,7 +106,6 @@ export default function CustomerProfilePage() {
             </div>
           ))}
         </div>
-        <SmsAgreementSetting />
       </Panel>
       {listStatus === 'loading' && (
         <p role="status" className={styles.nearestState}>
@@ -172,6 +169,7 @@ export default function CustomerProfilePage() {
           </div>
         </Panel>
       )}
+      <SmsAgreementSetting />
       {listStatus === 'succeeded' && !nearest && (
         <EmptyState className={`b-panel ${styles.nearestState}`}>
           <h2>다가오는 예약이 없어요</h2>
