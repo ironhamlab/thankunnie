@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ACCOUNT_TYPE, ACCOUNT_TYPE_OPTIONS } from '@/constants/accountType';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/store/useAuthStore';
-import { getHomePathByRole, getRedirectPath, isFromOwnerArea } from '@/utils/authRedirect';
+import { getRedirectPath, isFromOwnerArea } from '@/utils/authRedirect';
 import Alert from '@/components/common/Alert';
 import Button from '@/components/common/Button';
 import Dialog from '@/components/common/Dialog';
@@ -33,12 +33,9 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from;
-  const token = useAuthStore((state) => state.token);
-  const user = useAuthStore((state) => state.data);
   const status = useAuthStore((state) => state.status);
   const error = useAuthStore((state) => state.error);
   const login = useAuthStore((state) => state.login);
-  const clearSession = useAuthStore((state) => state.clearSession);
   const clearError = useAuthStore((state) => state.clearError);
   const [accountType, setAccountType] = useState(
     isFromOwnerArea(from) ? ACCOUNT_TYPE.SHOP : ACCOUNT_TYPE.CUSTOMER,
@@ -78,24 +75,6 @@ export default function LoginPage() {
   };
 
   const approvalNotice = error && SHOP_APPROVAL_NOTICE[error.code]?.(error.message);
-
-  if (token) {
-    return (
-      <AuthCard title="로그인">
-        <Notice>
-          <p>이미 로그인되어 있어요.</p>
-        </Notice>
-        <div className={styles.actions}>
-          <Button type="button" onClick={clearSession}>
-            로그아웃
-          </Button>
-          <Button as={Link} variant="primary" to={getHomePathByRole(user?.role)}>
-            {user?.role === 'OWNER' ? '매장 센터로' : '홈으로'}
-          </Button>
-        </div>
-      </AuthCard>
-    );
-  }
 
   return (
     <AuthCard title="로그인" description="땡잡은 언니에서 빈자리 예약을 이어가세요.">
@@ -143,7 +122,11 @@ export default function LoginPage() {
 
       <p className={styles.signup}>
         {isShop ? '매장을 처음 등록하시나요?' : '아직 회원이 아니신가요?'}{' '}
-        <Link to={isShop ? ROUTES.SHOP_SIGNUP : ROUTES.SIGNUP}>
+        {/* 고객 가입은 가입 후 바로 로그인되므로, 로그인 전에 보려던 화면을 가입 화면에도 넘긴다 */}
+        <Link
+          to={isShop ? ROUTES.SHOP_SIGNUP : ROUTES.SIGNUP}
+          state={isShop ? undefined : { from }}
+        >
           {isShop ? '매장 가입' : '회원가입'}
         </Link>
       </p>
@@ -164,7 +147,7 @@ export default function LoginPage() {
             <Button type="button" onClick={clearError}>
               닫기
             </Button>
-            <Button as={Link} variant="primary" to={ROUTES.SIGNUP}>
+            <Button as={Link} variant="primary" to={ROUTES.SIGNUP} state={{ from }}>
               회원가입
             </Button>
           </div>

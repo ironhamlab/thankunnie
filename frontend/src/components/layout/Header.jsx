@@ -83,6 +83,9 @@ export default function Header() {
   const [isClearing, setIsClearing] = useState(false);
   // 개발 서버의 테스트 계정 스위치도 로그인으로 본다. API 토큰과 같은 기준이다.
   const hasSession = Boolean(token) || Boolean(getDevTestUser());
+  // 로그인하면 지금 보던 화면으로 돌아오게 한다. 로그인·가입 화면에서는 이미 넘겨받은 화면을 그대로 이어 준다
+  const isAuthPage = [ROUTES.LOGIN, ROUTES.SIGNUP, ROUTES.SHOP_SIGNUP].includes(location.pathname);
+  const loginState = isAuthPage ? location.state : { from: location };
   const isCustomer = hasSession && role === USER_ROLE.CUSTOMER;
   const unreadCount = useInboxStore((state) => state.unreadCount);
   const items = useInboxStore((state) => state.items);
@@ -274,7 +277,7 @@ export default function Header() {
                 로그아웃
               </button>
             ) : (
-              <Link to={ROUTES.LOGIN} className={styles.loginLink}>
+              <Link to={ROUTES.LOGIN} state={loginState} className={styles.loginLink}>
                 로그인
               </Link>
             )}

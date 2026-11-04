@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { generatePath, Link, useBlocker, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  generatePath,
+  Link,
+  useBlocker,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { formatMoney } from '@/utils/reservationFormat';
 import { datePart, timePart } from '@/utils/scheduleDate';
@@ -34,6 +41,7 @@ const formatRemaining = (seconds) =>
  * 다시 불러오기 대신 갈 곳을 보여준다.
  */
 function LoadFailed({ error, onRetry }) {
+  const location = useLocation();
   if (error.code === 'COMMON_404' || error.code === 'COMMON_403') {
     return (
       <EmptyState className="b-container">
@@ -55,7 +63,8 @@ function LoadFailed({ error, onRetry }) {
       <EmptyState className="b-container">
         <h1>로그인이 필요합니다</h1>
         <p>예약 정보는 예약한 고객 계정으로 로그인해야 볼 수 있어요.</p>
-        <Button as={Link} variant="primary" to={ROUTES.LOGIN}>
+        {/* 로그인하면 이 결제 화면으로 돌아온다 */}
+        <Button as={Link} variant="primary" to={ROUTES.LOGIN} state={{ from: location }}>
           로그인
         </Button>
       </EmptyState>

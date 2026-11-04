@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ACCOUNT_TYPE } from '@/constants/accountType';
 import { ROUTES } from '@/constants/routes';
 import { SIGNUP_HIDDEN_TERMS } from '@/constants/terms';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTermsStore } from '@/store/useTermsStore';
+import { getRedirectPath } from '@/utils/authRedirect';
 import {
   collectErrors,
   validateLoginId,
@@ -26,13 +27,15 @@ import SignupVerificationFields from './components/SignupVerificationFields';
 const EMPTY_FORM = { loginId: '', password: '', passwordConfirm: '', name: '', phone: '' };
 
 /**
- * 고객 회원가입 (REQ-003). 가입하면 바로 로그인되어 홈으로 이동한다.
+ * 고객 회원가입 (REQ-003). 가입하면 바로 로그인되어, 로그인 화면에서 넘어왔으면 원래 보려던 화면으로, 아니면 홈으로 이동한다.
  * 휴대폰 번호는 관심 매장·조건 구독의 문자 알림 수신 번호로 쓰인다.
  * 필수 약관은 모두 동의해야 하고, 선택 약관(문자 수신)은 동의한 경우에만 보낸다.
  * 초보 시술 촬영 동의는 가입 화면에 보이지 않고 첫 초보 시술 예약 때 받는다.
  */
 export default function SignupPage() {
   const navigate = useNavigate();
+  // 로그인 화면이 넘긴 '로그인 전에 보려던 화면'. 가입 후 그 화면으로 돌려보낸다
+  const from = useLocation().state?.from;
   const status = useAuthStore((state) => state.status);
   const error = useAuthStore((state) => state.error);
   const signup = useAuthStore((state) => state.signup);
@@ -90,7 +93,7 @@ export default function SignupPage() {
       return;
     }
     try {
-      await signup(ACCOUNT_TYPE.CUSTOMER, {
+      const signedUp = await signup(ACCOUNT_TYPE.CUSTOMER, {
         loginId: form.loginId,
         password: form.password,
         name: form.name.trim(),
@@ -98,7 +101,7 @@ export default function SignupPage() {
         agreedTerms,
         phoneVerificationId: verification.phoneVerificationId,
       });
-      navigate(ROUTES.HOME, { replace: true });
+      navigate(getRedirectPath(from, signedUp.role), { replace: true });
     } catch {
       // 오류 문구는 store 의 error 로 화면에 표시한다
     }
@@ -167,7 +170,10 @@ export default function SignupPage() {
       </form>
 
       <p className={styles.links}>
-        이미 회원이신가요? <Link to={ROUTES.LOGIN}>로그인</Link>
+        이미 회원이신가요?{' '}
+        <Link to={ROUTES.LOGIN} state={{ from }}>
+          로그인
+        </Link>
         <span aria-hidden="true"> · </span>
         매장을 운영하시나요? <Link to={ROUTES.SHOP_SIGNUP}>매장 가입</Link>
       </p>
