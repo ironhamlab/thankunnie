@@ -145,3 +145,26 @@ export function toVacancyCard(item, today = todayKst()) {
     }),
   };
 }
+
+/** 지도 핀 종류. 범례·목록 카드 색과 같이 쓴다 */
+export const PIN_KIND = {
+  LAST_MINUTE: 'lastMinute',
+  TODAY: 'today',
+  LATER: 'later',
+  MODEL: 'model',
+  NONE: 'none',
+};
+
+/**
+ * 매장 요약(C-02)을 지도 핀 종류로 나눈다.
+ * 초임박은 시작 3시간 안(earliestPriceTier=LAST_MINUTE)이면서 할인이 있을 때만이다.
+ * 매장이 타임세일 할인을 걸지 않아도 3시간 안이면 LAST_MINUTE 로 오므로, 할인 없는 빈자리를 특가처럼 보이지 않게 한다.
+ */
+export function pinKind(shop, today = todayKst()) {
+  if (shop.earliestStartsAt == null || shop.minSalePrice == null) return PIN_KIND.NONE;
+  if (shop.modelOnly) return PIN_KIND.MODEL;
+  if (shop.earliestPriceTier === 'LAST_MINUTE' && shop.maxDiscountRate > 0) {
+    return PIN_KIND.LAST_MINUTE;
+  }
+  return datePart(shop.earliestStartsAt) === today ? PIN_KIND.TODAY : PIN_KIND.LATER;
+}

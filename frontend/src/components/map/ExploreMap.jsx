@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import Spinner from '@/components/common/Spinner';
 import { useMyLocation } from '@/hooks/useMyLocation';
 import { formatMoney } from '@/utils/reservationFormat';
+import { PIN_KIND, pinKind } from '@/utils/exploreVacancy';
+import { datePart, timePart, todayKst } from '@/utils/scheduleDate';
 import { hasKakaoMapKey, loadKakaoMap } from '@/utils/kakaoMapLoader';
 import { logger } from '@/utils/logger';
 import styles from './ExploreMap.module.css';
@@ -44,9 +46,77 @@ const MAX_FIT_LEVEL = 7;
 
 const round = (value) => Number(value.toFixed(COORD_DIGITS));
 
+// 핀 아이콘. 이모지는 주황 배경에서 잘 안 보이고 기기마다 모양이 달라 글자색을 따르는 SVG 로 그린다
+const PIN_ICONS = {
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="currentColor"/>',
+  sprout:
+    '<path d="M12 21v-8m0 0C12 8.5 9 6 4 6c0 4.5 3 7 8 7Zm0 0c0-3.5 2.5-6 7-6 0 3.5-2.5 6-7 6Z" ' +
+    'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+};
+
+function pinIcon(name) {
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('class', styles.pinIcon);
+  icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = PIN_ICONS[name];
+  return icon;
+}
+
+// 핀 안의 글자 조각. 화면 낭독기는 버튼의 aria-label 로 읽으므로 조각은 숨긴다
+function pinPart(className, text) {
+  const part = document.createElement('span');
+  if (className) part.className = className;
+  part.textContent = text;
+  part.setAttribute('aria-hidden', 'true');
+  return part;
+}
+
+/**
+ * 핀 종류별 글자. 초임박은 시작 시각·할인율, 다른 날은 날짜·최저가, 그 밖에는 최저가를 보여준다.
+ * 빈자리가 없는 매장은 가격 없이 매장 이름만 보여준다
+ */
+function pinContent(shop, today) {
+  const kind = pinKind(shop, today);
+  const price = shop.minSalePrice != null ? `${formatMoney(shop.minSalePrice)}~` : '';
+  const time = shop.earliestStartsAt ? timePart(shop.earliestStartsAt) : '';
+  switch (kind) {
+    case PIN_KIND.NONE:
+      return { kind, label: shop.shopName, ariaLabel: `${shop.shopName} 빈자리 없음` };
+    case PIN_KIND.LAST_MINUTE:
+      return {
+        kind,
+        icon: 'bolt',
+        label: `${time} · ${shop.maxDiscountRate}%`,
+        ariaLabel: `${shop.shopName} 초임박 특가, 오늘 ${time} 시작, 최대 ${shop.maxDiscountRate}% 할인`,
+      };
+    case PIN_KIND.LATER: {
+      const date = datePart(shop.earliestStartsAt).slice(5).replace('-', '.');
+      return {
+        kind,
+        label: `${date} · ${price}`,
+        ariaLabel: `${shop.shopName} ${date} 빈자리, ${formatMoney(shop.minSalePrice)}부터`,
+      };
+    }
+    case PIN_KIND.MODEL:
+      return {
+        kind,
+        icon: 'sprout',
+        label: price,
+        ariaLabel: `${shop.shopName} 초보 시술 빈자리, ${formatMoney(shop.minSalePrice)}부터`,
+      };
+    default:
+      return {
+        kind,
+        label: price,
+        ariaLabel: `${shop.shopName} 오늘 빈자리, ${formatMoney(shop.minSalePrice)}부터`,
+      };
+  }
+}
+
 /**
  * 지도 범위로 조회하는 지도 (홈 지도, 지도 화면 /map). 지도 범위가 바뀌면 그 범위를 알려 다시 조회하게 하고,
- * 받은 매장을 "최저가~" 핀으로 찍는다. 축소하면 가까운 핀을 "N곳 · 최저가~" 묶음으로 합치고, 묶음을 누르면 확대한다.
+ * 받은 매장을 종류별 핀(초임박 번개·시각·할인율 / 오늘 최저가 / 다른 날 날짜·최저가 / 초보 시술 새싹·최저가)으로 찍는다. 축소하면 가까운 핀을 "N곳 · 최저가~" 묶음으로 합치고, 묶음을 누르면 확대한다.
  * 범위 조회 결과로 지도 범위를 다시 맞추지 않는다(맞추면 다시 조회가 일어나 지도가 계속 움직인다).
  * "내 위치"를 누르면 브라우저 위치로 지도를 옮기고 점을 찍는다. 위치는 서버로 보내지 않고 지도 범위만 보낸다.
  *
@@ -193,17 +263,20 @@ export default function ExploreMap({
     elements.clear();
     overlaysById.clear();
     prices.clear();
+    const today = todayKst();
     const overlays = shops.map((shop) => {
       const element = document.createElement('button');
       element.type = 'button';
-      const hasVacancy = shop.minSalePrice != null;
-      element.className = hasVacancy ? styles.pin : `${styles.pin} ${styles.pinNoVacancy}`;
-      element.textContent = hasVacancy ? `${formatMoney(shop.minSalePrice)}~` : shop.shopName;
+      const { kind, icon, label, ariaLabel } = pinContent(shop, today);
+      element.className = `${styles.pin} ${styles[kind]}`;
+      if (icon) element.append(pinIcon(icon));
+      element.append(pinPart(null, label));
+      // 일반·초보 시술이 섞인 매장은 초보 시술 빈자리도 있다는 걸 초록 점으로 알린다
+      const mixed = kind !== PIN_KIND.NONE && !shop.modelOnly && shop.modelVacancyCount > 0;
+      if (mixed) element.append(pinPart(styles.modelDot, ''));
       element.setAttribute(
         'aria-label',
-        hasVacancy
-          ? `${shop.shopName} ${formatMoney(shop.minSalePrice)}부터`
-          : `${shop.shopName} 빈자리 없음`,
+        mixed ? `${ariaLabel}, 초보 시술 빈자리도 있음` : ariaLabel,
       );
       element.addEventListener('click', () => callbacksRef.current.onSelect?.(String(shop.shopId)));
       elements.set(String(shop.shopId), element);
