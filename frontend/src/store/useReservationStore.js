@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { reservationApi } from '@/api/reservationApi';
 import { withTermsAgreement } from '@/store/useTermsStore';
-import { currentSessionKey } from '@/utils/sessionKey';
+import { onSessionChange } from '@/utils/sessionChange';
 
 // 매장 예약 현황(owner)과 고객 내 예약(my)이 같은 응답 모양을 쓰므로 조회 범위만 바꿔 호출한다.
 const API_BY_SCOPE = {
@@ -16,8 +16,7 @@ const toError = (error) => ({
   message: error?.message ?? '예약 정보를 불러오지 못했습니다.',
 });
 
-export const reservationListKey = (scope, filters) =>
-  JSON.stringify([currentSessionKey(), scope, filters]);
+export const reservationListKey = (scope, filters) => JSON.stringify([scope, filters]);
 
 export const useReservationStore = create((set, get) => ({
   reservations: [],
@@ -25,7 +24,7 @@ export const useReservationStore = create((set, get) => ({
   listStatus: 'idle',
   listError: null,
   listRequestId: 0,
-  // 지금 들고 있는 목록이 어떤 계정·조건의 결과인지. 화면을 다시 열 때 그대로 보여 줘도 되는지 판단한다
+  // 지금 들고 있는 목록이 어떤 조건의 결과인지. 화면을 다시 열 때 그대로 보여 줘도 되는지 판단한다
   listKey: null,
   detail: null,
   detailStatus: 'idle',
@@ -57,6 +56,7 @@ export const useReservationStore = create((set, get) => ({
         set({
           reservations: [],
           pageInfo: EMPTY_PAGE,
+          listKey: null,
           listStatus: 'failed',
           listError: toError(error),
         });
@@ -171,3 +171,15 @@ export const useReservationStore = create((set, get) => ({
       detailClockOffset: 0,
     })),
 }));
+
+onSessionChange(() => {
+  useReservationStore.setState((state) => ({
+    reservations: [],
+    pageInfo: EMPTY_PAGE,
+    listStatus: 'idle',
+    listError: null,
+    listKey: null,
+    listRequestId: state.listRequestId + 1,
+  }));
+  useReservationStore.getState().clearDetail();
+});

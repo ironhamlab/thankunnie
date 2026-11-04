@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { ownerDashboardApi } from '@/api/ownerDashboardApi';
 import { reservationApi } from '@/api/reservationApi';
 import { todayKst } from '@/utils/scheduleDate';
-import { currentSessionKey } from '@/utils/sessionKey';
+import { onSessionChange } from '@/utils/sessionChange';
 
 // 오늘 일정에는 시간을 잡고 있는 확정·취소 처리 중 예약만 보여 준다
 const TODAY_STATUSES = ['CONFIRMED', 'CANCEL_PENDING'];
@@ -19,7 +19,6 @@ const toError = (error, fallback) => ({
  * 예약 현황 화면의 목록 상태와 섞이지 않도록 예약 스토어와 따로 둔다.
  */
 export const useOwnerDashboardStore = create((set, get) => ({
-  sessionKey: null,
   dashboard: null,
   dashboardStatus: 'idle',
   dashboardError: null,
@@ -32,13 +31,8 @@ export const useOwnerDashboardStore = create((set, get) => ({
   monthSummary: null,
   monthSummaryRequestId: 0,
 
-  // 같은 계정이면 다시 받는 동안 받아 둔 숫자·목록을 보여 준다. 로그아웃 후 다른 매장이 로그인하면
-  // 이전 매장 숫자가 남지 않게 먼저 비운다
+  // 다시 받는 동안 받아 둔 숫자·목록을 보여 준다. 계정이 바뀌면 아래 onSessionChange 가 비운다
   loadDashboard: () => {
-    const sessionKey = currentSessionKey();
-    if (get().sessionKey !== sessionKey) {
-      set({ sessionKey, dashboard: null, todayReservations: [], monthSummary: null });
-    }
     get().loadToday();
     get().loadTodayReservations();
     get().loadMonthSummary();
@@ -108,3 +102,18 @@ export const useOwnerDashboardStore = create((set, get) => ({
     }
   },
 }));
+
+onSessionChange(() =>
+  useOwnerDashboardStore.setState((state) => ({
+    dashboard: null,
+    dashboardStatus: 'idle',
+    dashboardError: null,
+    dashboardRequestId: state.dashboardRequestId + 1,
+    todayReservations: [],
+    reservationsStatus: 'idle',
+    reservationsError: null,
+    reservationsRequestId: state.reservationsRequestId + 1,
+    monthSummary: null,
+    monthSummaryRequestId: state.monthSummaryRequestId + 1,
+  })),
+);

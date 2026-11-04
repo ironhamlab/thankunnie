@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { treatmentApi } from '@/api/treatmentApi';
-import { currentSessionKey } from '@/utils/sessionKey';
+import { onSessionChange } from '@/utils/sessionChange';
 
 const toError = (error) => ({
   code: error?.code ?? 'UNKNOWN_ERROR',
@@ -9,8 +9,8 @@ const toError = (error) => ({
 
 export const useTreatmentStore = create((set, get) => ({
   shopId: null,
-  sessionKey: null,
   treatments: [],
+  loadRequestId: 0,
   status: 'idle',
   mutationStatus: 'idle',
   error: null,
@@ -57,26 +57,23 @@ export const useTreatmentStore = create((set, get) => ({
     }
   },
 
-  // 같은 계정이면 다시 받는 동안 받아 둔 목록을 보여 준다. 계정이 바뀌면 이전 매장 목록이 남지 않게 비운다
+  // 다시 받는 동안 받아 둔 목록을 보여 준다. 계정이 바뀌면 아래 onSessionChange 가 비운다.
+  // 마지막 요청의 응답만 반영해 늦게 온 응답이 새 목록을 덮지 않게 한다
   loadTreatments: async () => {
-    const sessionKey = currentSessionKey();
-    set({
-      status: 'loading',
-      error: null,
-      mutationError: null,
-      sessionKey,
-      ...(get().sessionKey === sessionKey ? {} : { treatments: [], shopId: null }),
-    });
+    const requestId = get().loadRequestId + 1;
+    const isCurrent = () => get().loadRequestId === requestId;
+    set({ loadRequestId: requestId, status: 'loading', error: null, mutationError: null });
     try {
       // 매장 ID·역할은 인증 공통 API에서 받아 사용한다.
       const user = await treatmentApi.getCurrentUser();
+      if (!isCurrent()) return;
       if (user?.role !== 'OWNER' || !user.shopId) {
         throw { code: 'COMMON_403', message: '매장 계정으로 로그인해 주세요.' };
       }
       const treatments = await treatmentApi.getTreatments(user.shopId);
-      set({ shopId: user.shopId, treatments, status: 'succeeded' });
+      if (isCurrent()) set({ shopId: user.shopId, treatments, status: 'succeeded' });
     } catch (error) {
-      set({ status: 'failed', error: toError(error) });
+      if (isCurrent()) set({ status: 'failed', error: toError(error) });
     }
   },
 
@@ -126,3 +123,16 @@ export const useTreatmentStore = create((set, get) => ({
     }
   },
 }));
+
+onSessionChange(() =>
+  useTreatmentStore.setState((state) => ({
+    shopId: null,
+    treatments: [],
+    activeTreatments: [],
+    status: 'idle',
+    selectionStatus: 'idle',
+    error: null,
+    selectionError: null,
+    loadRequestId: state.loadRequestId + 1,
+  })),
+);

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { ownerCustomerApi } from '@/api/ownerCustomerApi';
-import { currentSessionKey } from '@/utils/sessionKey';
+import { onSessionChange } from '@/utils/sessionChange';
 
 const toError = (error, fallback) => ({
   code: error?.code ?? 'UNKNOWN_ERROR',
@@ -34,8 +34,8 @@ export const useOwnerCustomerStore = create((set, get) => ({
 
   loadCustomers: async (query) => {
     const requestId = get().listRequestId + 1;
-    // 같은 계정·같은 조건이면 다시 받는 동안 받아 둔 목록을 보여 준다. 조건이나 계정이 바뀌면 비운다
-    const listKey = JSON.stringify([currentSessionKey(), query]);
+    // 같은 조건이면 다시 받는 동안 받아 둔 목록을 보여 준다. 조건이 바뀌면 비운다
+    const listKey = JSON.stringify(query);
     set({
       listRequestId: requestId,
       listKey,
@@ -154,3 +154,15 @@ export const useOwnerCustomerStore = create((set, get) => ({
     }
   },
 }));
+
+onSessionChange(() => {
+  useOwnerCustomerStore.setState((state) => ({
+    customers: [],
+    pageInfo: { totalElements: 0, totalPages: 0, hasNext: false },
+    listStatus: 'idle',
+    listError: null,
+    listKey: null,
+    listRequestId: state.listRequestId + 1,
+  }));
+  useOwnerCustomerStore.getState().clearCustomer();
+});
