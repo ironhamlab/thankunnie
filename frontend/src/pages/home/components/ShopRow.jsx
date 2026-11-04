@@ -178,14 +178,13 @@ export default function ShopRow({
           ) : (
             <>
               {groupByTreatment(shownVacancies).map((treatment) => (
-                // 초보 시술은 일반 예약 목록과 같은 초록 칸으로 보여준다.
-                // 초보 시술 모집 목록은 전부 초보 시술이라 초보 시술 표시만 뺀다
+                // 초보 시술은 일반 예약 목록과 같은 초록 칸과 초보 시술 표시로 보여준다
                 <div
                   className={`${styles.treatment} ${treatment.isModel || model ? styles.modelTreatment : ''}`}
                   key={treatment.treatmentId}
                 >
                   <div className={styles.treatmentInfo}>
-                    {treatment.isModel && !model && (
+                    {(treatment.isModel || model) && (
                       <span className={styles.modelBadge}>
                         <SproutIcon size={16} />
                         초보 시술
