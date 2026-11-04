@@ -128,10 +128,6 @@ export const useExploreStore = create((set, get) => ({
   summaryShops: [],
   summaryShopsStatus: 'idle',
   summaryShopsError: null,
-  // 홈 소개의 최대 할인에 더할 타임세일 매장. 매장이 열지 않아도 나와 위 요약에는 없다
-  saleShops: [],
-  saleShopsStatus: 'idle',
-  saleShopsError: null,
   homeShops: [],
   homeShopsStatus: 'idle',
   homeShopsError: null,
@@ -166,12 +162,6 @@ export const useExploreStore = create((set, get) => ({
     set,
     { data: 'summaryShops', status: 'summaryShopsStatus', error: 'summaryShopsError' },
     fetchShops,
-    { refreshable: true },
-  ),
-  loadSaleShops: simpleLoader(
-    set,
-    { data: 'saleShops', status: 'saleShopsStatus', error: 'saleShopsError' },
-    () => fetchShops({ priceTier: 'LAST_MINUTE' }),
     { refreshable: true },
   ),
   loadHomeShops: simpleLoader(
