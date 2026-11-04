@@ -161,14 +161,14 @@ class ExploreVacancyServiceTest {
                 .extracting(ExploreVacancyResponse::treatmentId).containsOnly(2L);
         assertThat(exploreVacancyService.search(request().treatmentType(TreatmentType.NORMAL).build()).content())
                 .extracting(ExploreVacancyResponse::treatmentId).doesNotContain(2L);
-        // 지정하지 않으면 기존처럼 두 유형이 모두 나온다
-        assertThat(exploreVacancyService.search(request().shopId(1L).build()).totalElements()).isEqualTo(7);
+        // 지정하지 않으면 두 유형이 모두 나온다. 젤네일(일반)은 열린 시간 3건, 손 케어(초보 시술)는 영업시간 + 열린 시간 23건
+        assertThat(exploreVacancyService.search(request().shopId(1L).build()).totalElements()).isEqualTo(26);
 
         List<ExploreShopResponse> modelShops = exploreVacancyService.searchShops(
                 request().treatmentType(TreatmentType.MODEL).build().filter()).shops();
         assertThat(modelShops).extracting(ExploreShopResponse::shopId).containsExactly(1L);
         assertThat(modelShops.get(0).modelOnly()).isTrue();
-        assertThat(modelShops.get(0).modelVacancyCount()).isEqualTo(4);
+        assertThat(modelShops.get(0).modelVacancyCount()).isEqualTo(23);
         // 매장 1 은 일반·초보 시술이 섞여 있고, 매장 2 는 일반 시술만 있다
         assertThat(exploreVacancyService.searchShops(request().build().filter()).shops())
                 .extracting(ExploreShopResponse::modelOnly).containsExactly(false, false);
@@ -177,7 +177,8 @@ class ExploreVacancyServiceTest {
     @Test
     @DisplayName("일반·초보 시술이 섞인 매장 요약은 매장 상세에 보이는 일반 빈자리로 계산하고 초보 시술 빈자리는 따로 담는다")
     void searchShops_mixedShop_summarizesNormalAndModelSeparately() {
-        // 젤네일(일반) 30,000원·14% 3건, 손 케어(초보 시술) 18,000원·10% 4건
+        // 젤네일(일반) 30,000원·14% 열린 시간 3건, 손 케어(초보 시술)는 영업시간 + 열린 시간 23건이고
+        // 3시간 안 시각은 초임박가 15,000원이다
         jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건',"
                 + " PHOTO_NOTICE = '안내' WHERE TREATMENT_ID = 2");
 
@@ -187,8 +188,32 @@ class ExploreVacancyServiceTest {
         assertThat(shop.vacancyCount()).isEqualTo(3);
         assertThat(shop.minSalePrice()).isEqualTo(30000);
         assertThat(shop.maxDiscountRate()).isEqualTo(14);
-        assertThat(shop.modelVacancyCount()).isEqualTo(4);
-        assertThat(shop.modelMinSalePrice()).isEqualTo(18000);
+        assertThat(shop.modelVacancyCount()).isEqualTo(23);
+        assertThat(shop.modelMinSalePrice()).isEqualTo(15000);
+    }
+
+    @Test
+    @DisplayName("초보 시술은 연장 영업 시간대뿐 아니라 영업시간 안 빈 시각도 내고, 열지 않은 매장의 초보 시술도 낸다")
+    void search_modelTreatment_usesBusinessHoursAndOpen() {
+        // 매장 1 손 케어: 영업시간(금 10~20시) 10:30 부터 열린 시간(20~22시) 21:30 까지
+        // 매장 2 남성 커트: 열린 시간이 없어도 영업시간(금 11~21시) 11:00 부터 20:30 까지
+        jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건',"
+                + " PHOTO_NOTICE = '안내' WHERE TREATMENT_ID IN (2, 3)");
+
+        List<ExploreVacancyResponse> content = exploreVacancyService.search(
+                request().treatmentType(TreatmentType.MODEL).page(0, 50).build()).content();
+
+        assertThat(content).extracting(ExploreVacancyResponse::vacancyId)
+                .contains("2-202611061030", "2-202611061930", "2-202611062130",
+                        "3-202611061100", "3-202611062030")
+                .doesNotContain("2-202611061000", "3-202611062100");
+        assertThat(exploreVacancyService.searchShops(
+                request().treatmentType(TreatmentType.MODEL).build().filter()).shops())
+                .extracting(ExploreShopResponse::shopId).containsExactlyInAnyOrder(1L, 2L);
+        // 일반 시술은 그대로 열린 시간대 기준이다
+        assertThat(exploreVacancyService.search(request().treatmentType(TreatmentType.NORMAL).build()).content())
+                .extracting(ExploreVacancyResponse::vacancyId)
+                .containsExactly("1-202611062000", "1-202611062030", "1-202611062100");
     }
 
     @Test
