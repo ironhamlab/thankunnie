@@ -49,6 +49,7 @@ export default function ShopLocationMap({
   focusPosition,
   myLocation,
   pageShopIds,
+  weekly = false,
 }) {
   const [pickedId, setPickedId] = useState(null);
   const [kindFilter, setKindFilter] = useState(null);
@@ -144,7 +145,7 @@ export default function ShopLocationMap({
             <div>
               <strong>{selected.shopName}</strong>
               {hasVacancy ? (
-                <p>{vacancySummary(selected)}</p>
+                <p>{vacancySummary(selected, { weekly })}</p>
               ) : (
                 <p className={styles.noVacancy}>지금은 빈자리가 없어요</p>
               )}

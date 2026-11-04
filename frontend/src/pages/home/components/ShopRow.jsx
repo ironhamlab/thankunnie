@@ -50,6 +50,7 @@ function Card({ to, onLocate, located, children }) {
  * @param onLocate  있으면 카드를 눌렀을 때 매장 페이지로 가지 않고 옆 지도에서 이 매장을 가까이 보여준다.
  *                  매장 페이지는 시간 버튼이나 옆 지도의 매장 보기로 간다
  * @param located   옆 지도에서 지금 이 매장을 보여주는 중인지
+ * @param weekly    조회 기간이 이번 주를 넘으면(전체 날짜) 빈자리 수 앞에 "이번 주"를 붙인다
  * @param distance  내 위치에서 매장까지 거리 ("1.2km"). 위치를 모르면 undefined 라 보이지 않는다
  * @param model    초보 시술 모집 목록이면 매장 대신 초보 시술 모집 상세로 보낸다. 초보 시술 빈자리만 있는 매장(shop.modelOnly)도 그렇다.
  *                 일반·초보 시술이 섞인 매장은 카드 아래에 초보 시술 모집 상세 링크를 따로 둔다
@@ -65,6 +66,7 @@ export default function ShopRow({
   onLocate,
   located = false,
   distance,
+  weekly = false,
 }) {
   const area = (
     <span className={styles.area}>
@@ -124,7 +126,7 @@ export default function ShopRow({
           <span className={styles.info}>
             <strong>{shop.shopName}</strong>
             {area}
-            <span className={styles.time}>◷ {vacancySummary(shop)}</span>
+            <span className={styles.time}>◷ {vacancySummary(shop, { weekly })}</span>
           </span>
           <span className={styles.price}>
             {shop.maxDiscountRate > 0 && <em>최대 {shop.maxDiscountRate}%↓</em>}
