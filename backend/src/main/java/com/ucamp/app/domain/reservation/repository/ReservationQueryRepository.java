@@ -92,6 +92,14 @@ public class ReservationQueryRepository {
             conditions.add("r.STARTS_AT < :startsBefore");
             params.addValue("startsBefore", search.startsBefore());
         }
+        if (search.endsAfter() != null) {
+            conditions.add("r.ENDS_AT > :endsAfter");
+            params.addValue("endsAfter", search.endsAfter());
+        }
+        if (search.endsUntil() != null) {
+            conditions.add("r.ENDS_AT <= :endsUntil");
+            params.addValue("endsUntil", search.endsUntil());
+        }
         return " WHERE " + String.join(" AND ", conditions);
     }
 

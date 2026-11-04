@@ -28,6 +28,7 @@ import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.domain.reservation.dto.response.ReservationDetailResponse;
 import com.ucamp.app.domain.reservation.dto.response.ReservationSummaryResponse;
+import com.ucamp.app.domain.reservation.entity.ReservationDisplayStatus;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.service.ReservationNoShowService;
 import com.ucamp.app.domain.reservation.service.ReservationQueryService;
@@ -92,7 +93,8 @@ class OwnerReservationNoShowControllerTest {
     private static ReservationDetailResponse detail(boolean noShow) {
         ReservationSummaryResponse summary = new ReservationSummaryResponse(1L, ReservationStatus.CONFIRMED,
                 AT, AT.plusHours(1), 1L, "언니네 네일", 1L, "젤네일", "고객일",
-                30000, 20000, 10000, "PAID", null, false, 1L, noShow);
+                30000, 20000, 10000, "PAID", null, false, 1L, noShow,
+                noShow ? ReservationDisplayStatus.NO_SHOW : ReservationDisplayStatus.COMPLETED);
         return new ReservationDetailResponse(summary, "010-1111-1111", null, AT.minusDays(3), AT.minusDays(3),
                 AT.minusDays(3), null, null, AT.plusHours(2));
     }
