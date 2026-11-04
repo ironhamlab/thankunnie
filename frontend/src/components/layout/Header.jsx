@@ -241,19 +241,19 @@ export default function Header() {
 
           <nav aria-label="고객 메뉴">
             <Link to={`${ROUTES.HOME}?view=list&date=all`} aria-current={current('search')}>
-              <StoreIcon size={16} />
+              <StoreIcon size={16} className={styles.iconShop} />
               일반 예약하기
             </Link>
             <Link to={`${ROUTES.HOME}?view=list&type=MODEL`} aria-current={current('model')}>
-              <SproutIcon size={16} />
+              <SproutIcon size={16} className={styles.iconModel} />
               초보 시술 모집
             </Link>
             <Link to={`${ROUTES.HOME}?sale=1`} aria-current={current('sale')}>
-              <TimerIcon size={16} />
+              <TimerIcon size={16} className={styles.iconSale} />
               타임세일
             </Link>
             <Link to={ROUTES.MY_RESERVATIONS} aria-current={current('reservations')}>
-              <CalendarIcon size={16} /> 내 예약
+              <CalendarIcon size={16} className={styles.iconMine} /> 내 예약
             </Link>
           </nav>
 
@@ -413,19 +413,19 @@ export default function Header() {
 
       <nav className={styles.mobileNav} aria-label="모바일 고객 메뉴">
         <Link to={`${ROUTES.HOME}?view=list&date=all`} aria-current={current('search')}>
-          <StoreIcon size={20} />
+          <StoreIcon size={20} className={styles.iconShop} />
           일반 예약하기
         </Link>
         <Link to={`${ROUTES.HOME}?view=list&type=MODEL`} aria-current={current('model')}>
-          <SproutIcon size={20} />
+          <SproutIcon size={20} className={styles.iconModel} />
           초보 시술 모집
         </Link>
         <Link to={`${ROUTES.HOME}?sale=1`} aria-current={current('sale')}>
-          <BoltIcon size={20} />
+          <BoltIcon size={20} className={styles.iconSale} />
           타임세일
         </Link>
         <Link to={ROUTES.MY_RESERVATIONS} aria-current={current('reservations')}>
-          <CalendarIcon size={20} />내 예약
+          <CalendarIcon size={20} className={styles.iconMine} />내 예약
         </Link>
       </nav>
     </>
