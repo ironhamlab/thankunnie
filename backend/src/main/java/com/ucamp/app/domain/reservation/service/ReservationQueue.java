@@ -87,7 +87,9 @@ final class ReservationQueue {
         if (held) {
             // 앞사람이 결제 중이면 아무도 차례가 아니다. 점유가 풀리면 맨 앞 사람의 차례가 새로 시작된다
             turnUserId = null;
-            return Position.waiting(aheadCount, true);
+            // 결제 중인 사람은 점유하며 줄에서 빠졌지만 실제로는 내 앞에 있으므로 한 명으로 함께 센다.
+            // 기다릴 수 있는 점유는 정확히 같은 시간의 한 건뿐이라(ReservationQueueService.view) 결제 중인 사람은 항상 한 명이다
+            return Position.waiting(aheadCount + 1, true);
         }
         if (aheadCount > 0) {
             return Position.waiting(aheadCount, false);
@@ -171,7 +173,7 @@ final class ReservationQueue {
     }
 
     /**
-     * @param aheadCount    내 앞에서 기다리는 사람 수
+     * @param aheadCount    내 앞에 있는 사람 수 (결제 중인 사람 포함)
      * @param paying        다른 사람이 결제 중인지
      * @param turnExpiresAt 내 차례가 끝나는 시각, 내 차례가 아니면 null
      */

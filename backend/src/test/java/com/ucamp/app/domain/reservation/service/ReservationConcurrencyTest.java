@@ -775,6 +775,7 @@ class ReservationConcurrencyTest {
      * 작업들을 최대한 같은 순간에 시작한다. 업무 오류는 결과로 모으고, 그 밖의 오류(잠금 대기 시간 초과 등)는 그대로 던진다.
      */
     private <T> List<Outcome> runAtOnce(List<? extends Callable<? extends T>> tasks) throws Exception {
+        trace.startRound();
         ExecutorService pool = Executors.newFixedThreadPool(tasks.size());
         CountDownLatch ready = new CountDownLatch(tasks.size());
         CountDownLatch start = new CountDownLatch(1);
@@ -844,13 +845,26 @@ class ReservationConcurrencyTest {
      */
     private static final class LockTrace {
 
+        /** 매장 잠금을 잡은 뒤 쥐고 있는 시간. 뒤따르는 요청이 잠금 앞에 줄 서 있음을 보이기에 충분하면 된다 */
         private static final long SHOP_HOLD_MILLIS = 30;
+        /**
+         * 테스트마다 매장 잠금을 처음 잡은 요청은 더 오래 쥔다. 동시에 보낸 나머지 요청이 모두 잠금 앞에 도착할 시간을 줘,
+         * PC가 바쁠 때(빌드·다른 서버 실행 중) 늦게 출발한 요청 때문에 "모두 다퉜다" 확인이 흔들리지 않게 한다
+         */
+        private static final long FIRST_SHOP_HOLD_MILLIS = 500;
 
         private final AtomicLong sequence = new AtomicLong();
         private final List<Event> events = java.util.Collections.synchronizedList(new ArrayList<>());
+        private final java.util.Set<Long> heldShops = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
         void clear() {
             events.clear();
+            heldShops.clear();
+        }
+
+        /** 동시에 보내는 묶음을 시작한다. 이 묶음에서 매장 잠금을 처음 잡는 요청이 다시 오래 쥔다 */
+        void startRound() {
+            heldShops.clear();
         }
 
         Object around(LockKind kind, Long key, RealCall realCall) throws Throwable {
@@ -865,7 +879,7 @@ class ReservationConcurrencyTest {
                 }
             });
             if (kind == LockKind.SHOP) {
-                Thread.sleep(SHOP_HOLD_MILLIS);
+                Thread.sleep(heldShops.add(key) ? FIRST_SHOP_HOLD_MILLIS : SHOP_HOLD_MILLIS);
             }
             return result;
         }

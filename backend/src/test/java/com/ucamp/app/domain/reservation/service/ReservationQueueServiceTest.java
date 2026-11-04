@@ -174,9 +174,23 @@ class ReservationQueueServiceTest {
 
         assertThat(second.status()).isEqualTo(ReservationQueueStatus.WAITING);
         assertThat(second.paying()).isTrue();
-        assertThat(second.aheadCount()).isZero();
+        // 결제 중인 사람도 내 앞에 있는 한 명으로 센다
+        assertThat(second.aheadCount()).isEqualTo(1);
         assertThat(first.status()).isEqualTo(ReservationQueueStatus.HOLDING);
         assertThat(first.reservationId()).isEqualTo(100L);
+    }
+
+    @Test
+    @DisplayName("한 명이 결제 중이고 두 명이 기다리면, 두 번째로 기다리는 사람의 앞 사람 수는 결제 중인 사람을 포함해 2명이다")
+    void hold_secondWaiterCountsPayerAhead() {
+        queueService.joinOrRefresh(FIRST, queueRequest());
+        queueService.joinOrRefresh(SECOND, queueRequest());
+        queueService.joinOrRefresh(THIRD, queueRequest());
+        queueService.createInTurn(FIRST, createRequest(),
+                () -> activeReservations.add(hold(FIRST, 100L, NOW.plusMinutes(5))));
+
+        assertThat(queueService.joinOrRefresh(SECOND, queueRequest()).aheadCount()).isEqualTo(1);
+        assertThat(queueService.joinOrRefresh(THIRD, queueRequest()).aheadCount()).isEqualTo(2);
     }
 
     @Test
@@ -243,7 +257,8 @@ class ReservationQueueServiceTest {
             queueService.joinOrRefresh(THIRD, queueRequest());
         }
 
-        assertThat(queueService.joinOrRefresh(THIRD, queueRequest()).aheadCount()).isEqualTo(1);
+        // 떠난 두 번째 사람은 빠지고, 결제 중인 사람과 첫 번째 사람만 앞에 남는다
+        assertThat(queueService.joinOrRefresh(THIRD, queueRequest()).aheadCount()).isEqualTo(2);
     }
 
     @Test
