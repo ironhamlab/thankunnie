@@ -35,6 +35,8 @@
 
 사장님 예약 알림의 `linkPath`는 `/owner/bookings?reservationId={예약ID}`다. 예약 현황은 이 번호의 상세를 연다. 번호가 없는 `/owner/bookings`는 목록의 첫 예약을 연다.
 
+고객 취소 알림의 `linkPath`는 `/my-reservations?tab=cancelled&reservationId={예약ID}`다. 내 예약의 취소 탭에서 그 예약 상세가 열린다. 고객 예약 확정 알림의 `linkPath`는 `/my-reservations?tab=upcoming&reservationId={예약ID}`다. 내 예약의 이용 예정 탭에서 그 예약 상세가 열린다. 이미 저장된 알림의 `linkPath`는 바꾸지 않는다.
+
 | 상황 | 응답 |
 |---|---|
 | 비로그인 | 401 `COMMON_401` |

@@ -58,13 +58,20 @@ public class CancelSmsService {
                     NotificationInboxCategory.RESERVATION,
                     CANCELLED_TITLE,
                     messageBody,
-                    NotificationInboxService.MY_RESERVATIONS_PATH);
+                    cancelledReservationPath(reservationId));
             log.info("취소 문자 발송 성공 reservationId={}, providerMessageId={}",
                     reservationId, result.providerMessageId());
         } else {
             log.warn("취소 문자 발송 {} reservationId={}, reason={}",
                     result.status(), reservationId, result.failReason());
         }
+    }
+
+    // 내 예약 취소 탭에서 이 예약 상세가 열린다.
+    // 예: /my-reservations?tab=cancelled&reservationId=100
+    private static String cancelledReservationPath(Long reservationId) {
+        return NotificationInboxService.MY_RESERVATIONS_PATH
+                + "?tab=cancelled&reservationId=" + reservationId;
     }
 
     // 고객 직접 취소: [땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 취소되었습니다.
