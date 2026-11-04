@@ -8,13 +8,13 @@ import styles from './QueueWaitingDialog.module.css';
  * 같은 빈자리를 먼저 누른 사람이 있을 때 띄우는 대기 화면 (docs/api/reservations.md 예약 대기열).
  * 순서는 서버가 알려준 값을 그대로 보여주고, 차례가 오면 이 창이 닫히며 바로 결제 화면으로 간다.
  *
- * @param aheadCount 내 앞에서 기다리는 사람 수 (결제 중인 사람 제외)
+ * @param aheadCount 내 앞에 있는 사람 수. 서버가 결제 중인 사람도 한 명으로 세어 준다
  * @param paying     다른 사람이 이 시간을 잡고 결제 중인지
  * @param onCancel   대기 취소 (줄에서 나간다)
  */
 export default function QueueWaitingDialog({ aheadCount, paying, onCancel }) {
   return (
-    <Dialog title="예약 대기 중이에요" onClose={onCancel}>
+    <Dialog title="예약 대기 중이에요" closeOnBackdrop={false} onClose={onCancel}>
       <Spinner />
       <p className={styles.position} aria-live="polite">
         {aheadCount > 0 ? (
@@ -22,7 +22,7 @@ export default function QueueWaitingDialog({ aheadCount, paying, onCancel }) {
             내 앞에 <strong>{aheadCount}명</strong>
           </>
         ) : (
-          <strong>{paying ? '다음 차례예요' : '곧 내 차례예요'}</strong>
+          <strong>곧 내 차례예요</strong>
         )}
       </p>
       <Notice>

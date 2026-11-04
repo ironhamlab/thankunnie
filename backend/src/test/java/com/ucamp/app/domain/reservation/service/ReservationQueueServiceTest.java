@@ -30,6 +30,9 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.beans.BeanUtils;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
 
 import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.UserRole;
@@ -77,7 +80,7 @@ class ReservationQueueServiceTest {
     void setUp() {
         clock = new MutableClock(NOW.atZone(BookingPolicy.ZONE).toInstant());
         queueService = new ReservationQueueService(reservationRepository, treatmentRepository, availabilityService,
-                clock);
+                clock, new NoOpTransactionManager());
         given(treatmentRepository.findById(TREATMENT_ID)).willReturn(Optional.of(treatment()));
         given(reservationRepository.findActiveOverlapping(anyLong(), any(), any()))
                 .willAnswer(invocation -> List.copyOf(activeReservations));
@@ -171,9 +174,23 @@ class ReservationQueueServiceTest {
 
         assertThat(second.status()).isEqualTo(ReservationQueueStatus.WAITING);
         assertThat(second.paying()).isTrue();
-        assertThat(second.aheadCount()).isZero();
+        // 결제 중인 사람도 내 앞에 있는 한 명으로 센다
+        assertThat(second.aheadCount()).isEqualTo(1);
         assertThat(first.status()).isEqualTo(ReservationQueueStatus.HOLDING);
         assertThat(first.reservationId()).isEqualTo(100L);
+    }
+
+    @Test
+    @DisplayName("한 명이 결제 중이고 두 명이 기다리면, 두 번째로 기다리는 사람의 앞 사람 수는 결제 중인 사람을 포함해 2명이다")
+    void hold_secondWaiterCountsPayerAhead() {
+        queueService.joinOrRefresh(FIRST, queueRequest());
+        queueService.joinOrRefresh(SECOND, queueRequest());
+        queueService.joinOrRefresh(THIRD, queueRequest());
+        queueService.createInTurn(FIRST, createRequest(),
+                () -> activeReservations.add(hold(FIRST, 100L, NOW.plusMinutes(5))));
+
+        assertThat(queueService.joinOrRefresh(SECOND, queueRequest()).aheadCount()).isEqualTo(1);
+        assertThat(queueService.joinOrRefresh(THIRD, queueRequest()).aheadCount()).isEqualTo(2);
     }
 
     @Test
@@ -240,7 +257,8 @@ class ReservationQueueServiceTest {
             queueService.joinOrRefresh(THIRD, queueRequest());
         }
 
-        assertThat(queueService.joinOrRefresh(THIRD, queueRequest()).aheadCount()).isEqualTo(1);
+        // 떠난 두 번째 사람은 빠지고, 결제 중인 사람과 첫 번째 사람만 앞에 남는다
+        assertThat(queueService.joinOrRefresh(THIRD, queueRequest()).aheadCount()).isEqualTo(2);
     }
 
     @Test
@@ -360,6 +378,27 @@ class ReservationQueueServiceTest {
         Reservation reservation = hold(user, 101L, NOW.plusMinutes(5));
         reservation.confirm(20_000, NOW, null);
         return reservation;
+    }
+
+    /** 저장소를 모의 객체로 바꿨으므로 트랜잭션은 열고 닫는 흉내만 낸다 */
+    private static final class NoOpTransactionManager extends AbstractPlatformTransactionManager {
+
+        @Override
+        protected Object doGetTransaction() {
+            return new Object();
+        }
+
+        @Override
+        protected void doBegin(Object transaction, TransactionDefinition definition) {
+        }
+
+        @Override
+        protected void doCommit(DefaultTransactionStatus status) {
+        }
+
+        @Override
+        protected void doRollback(DefaultTransactionStatus status) {
+        }
     }
 
     /** 줄의 시간 제한을 확인하려고 테스트 안에서 시각을 앞으로 보낸다 */

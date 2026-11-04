@@ -66,6 +66,9 @@ export default function BookingResultPage() {
   const status = useReservationStore((s) => s.detailStatus);
   const loadError = useReservationStore((s) => s.detailError);
   const verifyPayment = usePaymentStore((s) => s.verifyPayment);
+  const abortPayment = usePaymentStore((s) => s.abortPayment);
+  // 모바일 결제창으로 떠났던 결제 화면(탭)의 값. 결제가 실패해 돌아오면 그 결제 시작을 풀어 다시 결제할 수 있게 한다
+  const tabId = params.get('tabId');
   const [verifyError, setVerifyError] = useState('');
   // 개발 모드(StrictMode)에서 effect 가 두 번 돌아도 같은 결제를 한 번만 확인한다. 서버도 중복 확인을 같은 결과로 돌려준다
   const verifiedImpUid = useRef(null);
@@ -87,6 +90,14 @@ export default function BookingResultPage() {
       .then(() => setParams({ reservationId }, { replace: true }))
       .catch((err) => setVerifyError(verifyErrorMessage(err)));
   }, [pendingVerify, impUid, reservationId, verifyPayment, setParams]);
+
+  // 모바일 결제창에서 결제가 실패해 돌아왔다. 결제 확인을 하지 않으므로 서버의 "결제 진행 중"을 직접 푼다.
+  // 결제에 성공해 돌아온 경우는 결제 확인이 끝나며 서버가 푼다
+  useEffect(() => {
+    if (impFailed && reservationId && tabId) {
+      abortPayment({ reservationId: Number(reservationId), tabId });
+    }
+  }, [impFailed, reservationId, tabId, abortPayment]);
 
   useEffect(() => {
     if (reservationId && !impUid) {

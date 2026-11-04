@@ -4,6 +4,7 @@ import {
   areaName,
   earliestLabel,
   groupByTreatment,
+  pinKind,
   shopImage,
   shopPagePath,
 } from '@/utils/exploreVacancy';
@@ -107,6 +108,8 @@ export default function ShopRow({
   return (
     <article
       className={`${styles.root} ${expanded ? styles.expanded : ''} ${located ? styles.located : ''}`}
+      // 지도 핀과 같은 색 띠를 왼쪽에 둬 목록 카드와 핀을 짝지어 보게 한다
+      data-pin={pinKind(shop)}
     >
       <div className={styles.summary}>
         <Card

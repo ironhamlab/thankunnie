@@ -23,12 +23,28 @@
 .heading {
   padding-right: 28px;
 }
+/* 내용이 길어 스크롤해도 제목과 닫기 버튼은 창 위에 남는다. 지도 조작 버튼보다 위에 오도록 쌓임을 높인다 */
+.stickyHeading {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin-top: -12px;
+  padding-top: 12px;
+  background: var(--color-white);
+}
+/* 테두리 없는 ✕ 를 놓을 자리. 높이 없이 스크롤을 따라와 제목 위에 겹친다 */
+.closeDock {
+  position: sticky;
+  top: 6px;
+  z-index: 21;
+  display: flex;
+  justify-content: flex-end;
+  height: 0;
+  margin: -18px -16px 18px 0;
+}
 /* .beauty-app button { font: inherit } 보다 구체적이어야 크기가 먹는다 */
 .body .close {
-  position: absolute;
-  top: 6px;
-  right: 8px;
-  z-index: 1;
+  flex-shrink: 0;
   display: grid;
   place-items: center;
   width: 44px;

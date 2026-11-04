@@ -166,6 +166,7 @@ export default function FavoriteButton({ shopId, shopName }) {
           }
           stepKey={step}
           plainClose
+          closeOnBackdrop={false}
           hideClose={step !== 'form'}
           onClose={closeDialog}
         >
