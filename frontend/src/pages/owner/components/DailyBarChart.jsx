@@ -1,12 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { formatShortDate } from '@/utils/ownerDashboardFormat';
 import styles from './DailyBarChart.module.css';
 
 const HEIGHT = 220;
-const PAD = { top: 12, right: 8, bottom: 28, left: 52 };
+// 위 여백은 가장 높은 막대 위의 값 글자가 잘리지 않을 만큼 둔다
+const PAD = { top: 22, right: 8, bottom: 28, left: 52 };
 const TICK_COUNT = 4;
 // 날짜 라벨 하나에 필요한 가로 폭(px). 좁은 화면에서는 라벨을 더 띄엄띄엄 단다
 const X_LABEL_WIDTH = 48;
+// 막대가 왼쪽부터 차례로 자라는 데 걸리는 시간(ms). 칸 수와 상관없이 같은 시간 안에 끝난다
+const BAR_WAVE_MS = 900;
 
 // 1·2·5 × 10^n 중 가장 작은 눈금 간격으로 축 최댓값을 정한다
 const niceStep = (rough) => {
@@ -20,6 +23,17 @@ const niceStep = (rough) => {
 const barPath = (x, y, width, height, radius) => {
   const r = Math.min(radius, width / 2, height);
   return `M${x},${y + height} V${y + r} Q${x},${y} ${x + r},${y} H${x + width - r} Q${x + width},${y} ${x + width},${y + r} V${y + height} Z`;
+};
+
+// 점들을 부드럽게 잇는 선. 이웃한 점의 가운데를 지나므로 점보다 위아래로 튀어나가지 않는다
+const smoothLine = (points) => {
+  const [first, ...rest] = points;
+  const segments = rest.map((point, index) => {
+    const previous = points[index];
+    return `Q${previous.x},${previous.y} ${(previous.x + point.x) / 2},${(previous.y + point.y) / 2}`;
+  });
+  const last = points[points.length - 1];
+  return `M${first.x},${first.y} ${segments.join(' ')} L${last.x},${last.y}`;
 };
 
 const useWidth = () => {
@@ -62,6 +76,8 @@ export default function DailyBarChart({
 }) {
   const [containerRef, width] = useWidth();
   const [hovered, setHovered] = useState(null);
+  // 한 화면에 그래프가 여러 개여도 그라데이션이 섞이지 않게 한다. url(#...) 에 쓸 수 없는 글자는 뺀다
+  const gradientId = `bar${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
 
   const values = days.map(getValue);
   const step = Math.max(niceStep(Math.max(...values, 0) / TICK_COUNT), minStep);
@@ -76,6 +92,12 @@ export default function DailyBarChart({
     index % labelEvery === 0 ||
     (index === days.length - 1 && index % labelEvery >= Math.ceil(labelEvery / 2));
   const yOf = (value) => PAD.top + plotHeight - (value / top) * plotHeight;
+  const maxValue = Math.max(...values, 0);
+  const peakIndex = maxValue > 0 ? values.indexOf(maxValue) : -1;
+  const trendPoints = values.map((value, index) => ({
+    x: PAD.left + slot * (index + 0.5),
+    y: yOf(value),
+  }));
 
   const hoveredDay = hovered === null ? null : days[hovered];
   const tooltipLeft = hovered === null ? 0 : PAD.left + slot * (hovered + 0.5);
@@ -84,6 +106,12 @@ export default function DailyBarChart({
     <div ref={containerRef} className={styles.root} onMouseLeave={() => setHovered(null)}>
       {width > 0 && (
         <svg width={width} height={HEIGHT} role="img" aria-label={label}>
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--color-primary)" />
+              <stop offset="100%" stopColor="var(--color-primary-light)" />
+            </linearGradient>
+          </defs>
           {Array.from({ length: TICK_COUNT + 1 }, (_, index) => {
             const value = step * index;
             const y = yOf(value);
@@ -102,41 +130,70 @@ export default function DailyBarChart({
               </g>
             );
           })}
-          {days.map((day, index) => {
-            const value = values[index];
-            const x = PAD.left + slot * index + (slot - barWidth) / 2;
-            const y = yOf(value);
-            const dimmed = hovered !== null && hovered !== index;
-            return (
-              <g key={getKey(day)}>
-                {value > 0 && (
-                  <path
-                    d={barPath(x, y, barWidth, PAD.top + plotHeight - y, 4)}
-                    className={dimmed ? `${styles.bar} ${styles.dimmed}` : styles.bar}
+          {/* 지표나 기간이 바뀌면 막대를 새로 그려 왼쪽부터 다시 자라게 한다 */}
+          <g key={label}>
+            {days.map((day, index) => {
+              const value = values[index];
+              const x = PAD.left + slot * index + (slot - barWidth) / 2;
+              const y = yOf(value);
+              const dimmed = hovered !== null && hovered !== index;
+              const barClass = [
+                styles.bar,
+                dimmed && styles.dimmed,
+                hovered === index && styles.active,
+                index === peakIndex && styles.peak,
+              ]
+                .filter(Boolean)
+                .join(' ');
+              return (
+                <g key={getKey(day)}>
+                  {value > 0 && (
+                    <path
+                      d={barPath(x, y, barWidth, PAD.top + plotHeight - y, 4)}
+                      className={barClass}
+                      style={{
+                        fill: `url(#${gradientId})`,
+                        animationDelay: `${(index / days.length) * BAR_WAVE_MS}ms`,
+                      }}
+                    />
+                  )}
+                  {showLabel(index) && (
+                    <text
+                      x={PAD.left + slot * (index + 0.5)}
+                      y={HEIGHT - 8}
+                      className={styles.tick}
+                      textAnchor="middle"
+                    >
+                      {getLabel(day)}
+                    </text>
+                  )}
+                  {/* 막대보다 넓은 마우스 영역 */}
+                  <rect
+                    x={PAD.left + slot * index}
+                    y={PAD.top}
+                    width={slot}
+                    height={plotHeight}
+                    fill="transparent"
+                    onMouseEnter={() => setHovered(index)}
                   />
-                )}
-                {showLabel(index) && (
-                  <text
-                    x={PAD.left + slot * (index + 0.5)}
-                    y={HEIGHT - 8}
-                    className={styles.tick}
-                    textAnchor="middle"
-                  >
-                    {getLabel(day)}
-                  </text>
-                )}
-                {/* 막대보다 넓은 마우스 영역 */}
-                <rect
-                  x={PAD.left + slot * index}
-                  y={PAD.top}
-                  width={slot}
-                  height={plotHeight}
-                  fill="transparent"
-                  onMouseEnter={() => setHovered(index)}
-                />
-              </g>
-            );
-          })}
+                </g>
+              );
+            })}
+            {/* 막대가 자란 뒤 추세선이 왼쪽부터 그려지고, 가장 높은 막대 위에 값이 나타난다 */}
+            {days.length > 1 && (
+              <path d={smoothLine(trendPoints)} pathLength="1" className={styles.trend} />
+            )}
+            {peakIndex >= 0 && (
+              <text
+                x={trendPoints[peakIndex].x}
+                y={trendPoints[peakIndex].y - 7}
+                className={styles.peakLabel}
+                textAnchor="middle"
+              >
+                {formatTick(maxValue)}
+              </text>
+            )}
+          </g>
         </svg>
       )}
       {hoveredDay && (

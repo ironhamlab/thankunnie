@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTreatmentStore } from '@/store/useTreatmentStore';
 import { formatMoney } from '@/utils/reservationFormat';
+import RollingValue from '@/pages/home/components/RollingValue';
 import TreatmentForm from '@/pages/owner/components/TreatmentForm';
 import TreatmentThumbnail from './components/TreatmentThumbnail';
 import Badge from '@/components/common/Badge';
@@ -78,7 +79,10 @@ export default function MenusPage() {
       <div className="b-row b-title-row">
         <div>
           <h1>
-            시술 메뉴 관리 <Badge>{treatments.length}개 등록됨</Badge>
+            시술 메뉴 관리{' '}
+            <Badge>
+              <RollingValue value={`${treatments.length}개 등록됨`} />
+            </Badge>
           </h1>
           <p className="b-muted">시술명, 설명, 정상가와 소요 시간을 관리합니다.</p>
         </div>

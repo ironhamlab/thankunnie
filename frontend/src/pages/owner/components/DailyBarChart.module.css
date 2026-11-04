@@ -17,6 +17,109 @@
 .bar {
   fill: var(--color-primary);
   transition: opacity 0.15s;
+  /* 기준선에서 위로 자란다. 칸마다 시작 시각은 그래프 코드가 정한다 */
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: barGrow 1.2s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  transition:
+    opacity 0.15s,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter 0.2s;
+}
+@keyframes barGrow {
+  from {
+    transform: scaleY(0);
+  }
+}
+/* 마우스를 올린 막대는 살짝 커지며 빛난다 */
+.active {
+  transform: scaleY(1.03);
+  filter: brightness(1.08)
+    drop-shadow(0 4px 8px color-mix(in srgb, var(--color-primary) 45%, transparent));
+}
+/* 가장 높은 막대는 다 자란 뒤 두 번 빛난다 */
+.peak {
+  animation:
+    barGrow 1.2s cubic-bezier(0.4, 0, 0.2, 1) backwards,
+    peakGlow 1.2s ease 2s 2;
+}
+@keyframes peakGlow {
+  50% {
+    filter: brightness(1.15)
+      drop-shadow(0 0 9px color-mix(in srgb, var(--color-primary) 70%, transparent));
+  }
+}
+.trend {
+  fill: none;
+  stroke: var(--color-primary-text);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-opacity: 0.45;
+  stroke-dasharray: 1;
+  pointer-events: none;
+  animation: trendDraw 1.5s ease-in-out 0.8s backwards;
+}
+@keyframes trendDraw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.peakLabel {
+  fill: var(--color-primary-text);
+  font-size: 11px;
+  font-weight: 800;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: labelPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.9s backwards;
+}
+@keyframes labelPop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.6);
+  }
+}
+/* 눈금은 막대보다 먼저 살며시 나타난다 */
+.grid,
+.baseline,
+.tick {
+  animation: chartFade 0.5s ease backwards;
+}
+@keyframes chartFade {
+  from {
+    opacity: 0;
+  }
+}
+.tooltip {
+  animation: tooltipPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes tooltipPop {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px) scale(0.96);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar,
+  .peak,
+  .trend,
+  .peakLabel,
+  .grid,
+  .baseline,
+  .tick,
+  .tooltip {
+    animation: none;
+  }
+  .bar {
+    transition: none;
+  }
+  .active {
+    transform: none;
+  }
 }
 .dimmed {
   opacity: 0.35;

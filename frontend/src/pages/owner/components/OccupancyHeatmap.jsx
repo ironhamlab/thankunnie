@@ -8,6 +8,8 @@ import {
   occupancyRate,
 } from '@/utils/ownerDashboardFormat';
 import Button from '@/components/common/Button';
+import ChartReveal from './ChartReveal';
+import NudgeArrow from './NudgeArrow';
 import styles from './OccupancyHeatmap.module.css';
 
 // 진하기 단계는 가장 바쁜 칸과 비교하지 않고 점유율(%) 구간으로 고정한다.
@@ -22,6 +24,10 @@ const levelOf = (rate) =>
   LEVEL_RANGES.reduce((level, range) => (rate >= range.min ? range.level : level), 0);
 // 1위 뒤에 함께 보여 줄 후보 수
 const MORE_COUNT = 2;
+// 칸이 대각선으로 퍼지며 나타나는 간격(ms)
+const CELL_WAVE_MS = 45;
+// 표가 이만큼 보이면 시작한다. 윗줄만 걸쳤을 때 시작하면 아래 칸이 화면 밖에서 끝나 버린다
+const GRID_REVEAL_THRESHOLD = 0.4;
 
 const keyOf = (day, hour) => `${day}-${hour}`;
 const shortName = (cell) => `${WEEKDAY_LABEL[cell.dayOfWeek]} ${cell.hour}시`;
@@ -135,7 +141,7 @@ export default function OccupancyHeatmap({ cells, from, to }) {
               className={styles.cta}
               to={ROUTES.OWNER_VACANCIES}
             >
-              이 시간에 할인 빈자리 열기 →
+              이 시간에 할인 빈자리 열기 <NudgeArrow />
             </Button>
           </div>
         )}
@@ -148,46 +154,51 @@ export default function OccupancyHeatmap({ cells, from, to }) {
           : '칸을 누르면 그 시간이 얼마나 찼는지 볼 수 있어요.'}
       </p>
 
-      <div className={styles.scroll}>
-        <div className={styles.grid} role="group" aria-label="요일·시간대별 평균 점유율">
-          <span aria-hidden="true" />
-          {WEEKDAYS.map((day) => (
-            <span key={day} className={styles.head} aria-hidden="true">
-              {WEEKDAY_LABEL[day]}
-            </span>
-          ))}
-          {rows.map((hour) => [
-            <span key={`h-${hour}`} className={styles.hour} aria-hidden="true">
-              {hour}시
-            </span>,
-            ...WEEKDAYS.map((day) => {
-              const key = keyOf(day, hour);
-              const rate = byKey.get(key)?.rate ?? 0;
-              const level = levelOf(rate);
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className={`${styles.cell} ${styles[`level${level}`]}`}
-                  aria-pressed={selectedKey === key}
-                  aria-label={describe(day, hour, rate)}
-                  onClick={() => setSelectedKey(key)}
-                  onMouseEnter={() => setSelectedKey(key)}
-                  onFocus={() => setSelectedKey(key)}
-                />
-              );
-            }),
-          ])}
+      {/* 위 요약 카드와 따로, 표가 눈에 들어올 때 칸이 차오르기 시작한다 */}
+      <ChartReveal threshold={GRID_REVEAL_THRESHOLD} className="b-stack">
+        <div className={styles.scroll}>
+          <div className={styles.grid} role="group" aria-label="요일·시간대별 평균 점유율">
+            <span aria-hidden="true" />
+            {WEEKDAYS.map((day) => (
+              <span key={day} className={styles.head} aria-hidden="true">
+                {WEEKDAY_LABEL[day]}
+              </span>
+            ))}
+            {rows.map((hour, rowIndex) => [
+              <span key={`h-${hour}`} className={styles.hour} aria-hidden="true">
+                {hour}시
+              </span>,
+              ...WEEKDAYS.map((day, dayIndex) => {
+                const key = keyOf(day, hour);
+                const rate = byKey.get(key)?.rate ?? 0;
+                const level = levelOf(rate);
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`${styles.cell} ${styles[`level${level}`]}`}
+                    // 왼쪽 위 칸부터 대각선으로 퍼지듯 나타난다
+                    style={{ '--wave-delay': `${(rowIndex + dayIndex) * CELL_WAVE_MS}ms` }}
+                    aria-pressed={selectedKey === key}
+                    aria-label={describe(day, hour, rate)}
+                    onClick={() => setSelectedKey(key)}
+                    onMouseEnter={() => setSelectedKey(key)}
+                    onFocus={() => setSelectedKey(key)}
+                  />
+                );
+              }),
+            ])}
+          </div>
         </div>
-      </div>
-      <ul className={styles.legend} aria-label="색 구분">
-        {LEVEL_RANGES.map((range) => (
-          <li key={range.level}>
-            <i className={styles[`level${range.level}`]} aria-hidden="true" />
-            {range.label}
-          </li>
-        ))}
-      </ul>
+        <ul className={styles.legend} aria-label="색 구분">
+          {LEVEL_RANGES.map((range) => (
+            <li key={range.level}>
+              <i className={styles[`level${range.level}`]} aria-hidden="true" />
+              {range.label}
+            </li>
+          ))}
+        </ul>
+      </ChartReveal>
     </div>
   );
 }

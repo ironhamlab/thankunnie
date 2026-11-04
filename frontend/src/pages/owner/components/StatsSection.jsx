@@ -21,8 +21,11 @@ import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
 import Panel from '@/components/common/Panel';
 import Spinner from '@/components/common/Spinner';
+import ChartReveal from './ChartReveal';
 import DailyBarChart from './DailyBarChart';
+import NudgeArrow from './NudgeArrow';
 import OccupancyHeatmap from './OccupancyHeatmap';
+import SlidingOptions from './SlidingOptions';
 import StatCard from './StatCard';
 import TreatmentBars from './TreatmentBars';
 import WeekdayBars from './WeekdayBars';
@@ -150,21 +153,14 @@ export default function StatsSection() {
     : null;
 
   return (
-    <section className="b-stack">
+    <section className={`b-stack ${styles.section}`}>
       <Panel padded className={`b-flex ${styles.filters}`}>
-        <div className="b-options" role="group" aria-label="기간 빠른 선택">
-          {PRESETS.map((preset) => (
-            <button
-              key={preset.key}
-              type="button"
-              className={activePreset === preset.key ? 'is-selected' : ''}
-              aria-pressed={activePreset === preset.key}
-              onClick={() => setPeriod(preset.range(today))}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
+        <SlidingOptions
+          label="기간 빠른 선택"
+          options={PRESETS}
+          selectedKey={activePreset}
+          onSelect={(key) => setPeriod(PRESETS.find((preset) => preset.key === key).range(today))}
+        />
         <label>
           시작{' '}
           <input
@@ -287,7 +283,11 @@ export default function StatsSection() {
               notes={[
                 `이용 고객 ${summary.customerCount}명 · 신규 ${summary.newCustomerCount} · 재방문 ${summary.returningCustomerCount}`,
               ]}
-              action={<Link to={ROUTES.OWNER_CUSTOMERS}>고객 관리 →</Link>}
+              action={
+                <Link to={ROUTES.OWNER_CUSTOMERS}>
+                  고객 관리 <NudgeArrow />
+                </Link>
+              }
             />
             <StatCard
               label="초임박 예약 매출"
@@ -298,42 +298,41 @@ export default function StatsSection() {
               notes={[
                 `시술 시작 3시간 내 예약 ${summary.lastMinuteCount}건 · 전체의 ${formatRate(lastMinuteShare)}`,
               ]}
-              action={<Link to={ROUTES.OWNER_MENUS}>초임박가 설정 →</Link>}
+              action={
+                <Link to={ROUTES.OWNER_MENUS}>
+                  초임박가 설정 <NudgeArrow />
+                </Link>
+              }
             />
           </div>
 
           <Panel as="section" padded className="b-stack">
             <div className={`b-row ${styles.chartHeader}`}>
               <h2>{monthly ? '월별 추이' : '날짜별 추이'}</h2>
-              <div className="b-options" role="group" aria-label="그래프 지표">
-                {METRICS.map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className={metricKey === item.key ? 'is-selected' : ''}
-                    aria-pressed={metricKey === item.key}
-                    onClick={() => setMetricKey(item.key)}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+              <SlidingOptions
+                label="그래프 지표"
+                options={METRICS}
+                selectedKey={metricKey}
+                onSelect={setMetricKey}
+              />
             </div>
-            <DailyBarChart
-              days={current.trend}
-              getValue={metric.getValue}
-              formatTick={metric.formatTick}
-              minStep={metric.minStep}
-              describe={describeRow}
-              getKey={(row) => row.periodStart}
-              getLabel={(row) =>
-                monthly ? formatShortMonth(row.periodStart) : formatShortDate(row.periodStart)
-              }
-              getTitle={(row) =>
-                monthly ? `${row.periodStart} ~ ${row.periodEnd}` : row.periodStart
-              }
-              label={`${summary.from}부터 ${summary.to}까지 ${monthly ? '월별' : '날짜별'} ${metric.label}`}
-            />
+            <ChartReveal>
+              <DailyBarChart
+                days={current.trend}
+                getValue={metric.getValue}
+                formatTick={metric.formatTick}
+                minStep={metric.minStep}
+                describe={describeRow}
+                getKey={(row) => row.periodStart}
+                getLabel={(row) =>
+                  monthly ? formatShortMonth(row.periodStart) : formatShortDate(row.periodStart)
+                }
+                getTitle={(row) =>
+                  monthly ? `${row.periodStart} ~ ${row.periodEnd}` : row.periodStart
+                }
+                label={`${summary.from}부터 ${summary.to}까지 ${monthly ? '월별' : '날짜별'} ${metric.label}`}
+              />
+            </ChartReveal>
             {monthly && <p className={styles.hint}>62일이 넘는 기간은 월별로 묶어 보여 드려요.</p>}
             <details className={styles.table}>
               <summary>표로 보기</summary>
@@ -371,12 +370,16 @@ export default function StatsSection() {
           <div className={styles.twoColumns}>
             <Panel as="section" padded className="b-stack">
               <h2>요일별 예약</h2>
-              <WeekdayBars weekdays={current.byWeekday} from={summary.from} to={summary.to} />
+              <ChartReveal>
+                <WeekdayBars weekdays={current.byWeekday} from={summary.from} to={summary.to} />
+              </ChartReveal>
             </Panel>
             <Panel as="section" padded className="b-stack">
               <h2>시술별 비중</h2>
               {current.treatments.length ? (
-                <TreatmentBars treatments={current.treatments} />
+                <ChartReveal>
+                  <TreatmentBars treatments={current.treatments} />
+                </ChartReveal>
               ) : (
                 <EmptyState as="p">이 기간에 확정된 예약이 없습니다.</EmptyState>
               )}
@@ -386,13 +389,15 @@ export default function StatsSection() {
           <Panel as="section" padded className="b-stack">
             <h2>예약이 차 있는 시간</h2>
             {current.heatmap.length ? (
-              <OccupancyHeatmap
-                // 기간을 바꾸면 고른 칸을 그 기간의 가장 바쁜 시간으로 다시 잡는다
-                key={`${summary.from}-${summary.to}`}
-                cells={current.heatmap}
-                from={summary.from}
-                to={summary.to}
-              />
+              <ChartReveal>
+                <OccupancyHeatmap
+                  // 기간을 바꾸면 고른 칸을 그 기간의 가장 바쁜 시간으로 다시 잡는다
+                  key={`${summary.from}-${summary.to}`}
+                  cells={current.heatmap}
+                  from={summary.from}
+                  to={summary.to}
+                />
+              </ChartReveal>
             ) : (
               <EmptyState as="p">이 기간에 확정된 예약이 없습니다.</EmptyState>
             )}

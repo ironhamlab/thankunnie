@@ -13,6 +13,8 @@ import Dialog from '@/components/common/Dialog';
 import Panel from '@/components/common/Panel';
 import EmptyState from '@/components/common/EmptyState';
 import styles from './OwnerBookingsPage.module.css';
+import RollingValue from '@/pages/home/components/RollingValue';
+import SlidingOptions from './components/SlidingOptions';
 import motion from './components/OwnerMotion.module.css';
 
 // 상태를 고르지 않으면 서버가 점유 만료(EXPIRED)를 뺀 전체를 준다
@@ -224,25 +226,21 @@ export default function OwnerBookingsPage() {
             필터 초기화
           </Button>
         </div>
-        <div className="b-options" role="group" aria-label="예약 상태">
-          {STATUS_FILTERS.map((filter) => (
-            <button
-              key={filter.key}
-              type="button"
-              className={filterKey === filter.key ? 'is-selected' : ''}
-              onClick={() => changeFilter(() => setFilterKey(filter.key))}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
+        <SlidingOptions
+          label="예약 상태"
+          options={STATUS_FILTERS}
+          selectedKey={filterKey}
+          onSelect={(key) => changeFilter(() => setFilterKey(key))}
+        />
       </Panel>
 
       <div className={styles.grid}>
         <Panel as="section" className="b-table-panel" ref={listRef}>
           <div className="b-row b-pad">
             <h2>예약 목록</h2>
-            <small>{pageInfo.totalElements}건</small>
+            <small>
+              <RollingValue value={`${pageInfo.totalElements}건`} />
+            </small>
           </div>
           {listStatus === 'loading' && !hasLoadedList && (
             <p role="status">예약을 불러오는 중입니다.</p>

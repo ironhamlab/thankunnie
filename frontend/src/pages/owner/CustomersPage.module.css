@@ -85,6 +85,57 @@
 .selected {
   background: var(--color-primary-tint);
 }
+/* 고객 줄이 위에서부터 이어서 나타난다 */
+.rows > li {
+  animation: rowEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.rows > li:nth-child(2) {
+  animation-delay: 0.03s;
+}
+.rows > li:nth-child(3) {
+  animation-delay: 0.06s;
+}
+.rows > li:nth-child(4) {
+  animation-delay: 0.09s;
+}
+.rows > li:nth-child(5) {
+  animation-delay: 0.12s;
+}
+.rows > li:nth-child(n + 6) {
+  animation-delay: 0.15s;
+}
+@keyframes rowEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.rows .row {
+  transition:
+    background-color 0.2s,
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.rows .row:active {
+  transform: scale(0.99);
+}
+@media (hover: hover) {
+  .rows .row:hover {
+    transform: translateX(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rows > li,
+  .rows > li:nth-child(n) {
+    animation: none;
+  }
+  .rows .row {
+    transition: none;
+  }
+  .rows .row:hover,
+  .rows .row:active {
+    transform: none;
+  }
+}
 .head.head {
   min-height: 0;
   padding-top: 0;

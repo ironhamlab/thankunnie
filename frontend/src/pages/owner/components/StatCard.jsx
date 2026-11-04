@@ -1,4 +1,5 @@
 import Panel from '@/components/common/Panel';
+import RollingValue from '@/pages/home/components/RollingValue';
 import styles from './StatCard.module.css';
 
 /**
@@ -60,7 +61,7 @@ export default function StatCard({
 function BigNumber({ value, unit }) {
   return (
     <h2 className="b-pink">
-      {value}
+      <RollingValue value={String(value)} />
       {unit && <small>{unit}</small>}
     </h2>
   );
