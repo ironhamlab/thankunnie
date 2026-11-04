@@ -9,6 +9,12 @@ import styles from './ImminentCarousel.module.css';
 
 // 자동으로 넘기는 간격. 매장·시간·가격을 읽을 시간을 주려고 3초보다 조금 길게 둔다
 const AUTO_PLAY_MS = 3500;
+// 휴대폰은 카드가 세로로 길어 읽는 데 오래 걸리고, 아래 지도까지 내려 보려면 시간이 더 필요해 길게 둔다
+const MOBILE_AUTO_PLAY_MS = 6000;
+// 카드가 한 줄로 쌓이는 화면 폭 (ImminentCarousel.module.css 와 같은 기준)
+const MOBILE_QUERY = '(max-width: 767px)';
+const autoPlayDelay = () =>
+  window.matchMedia?.(MOBILE_QUERY).matches ? MOBILE_AUTO_PLAY_MS : AUTO_PLAY_MS;
 const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 // 이 거리(px) 이상 옆으로 밀면 넘긴다. 세로 스크롤하다 살짝 흔들린 것은 넘기지 않는다
 const SWIPE_MIN_PX = 40;
@@ -126,7 +132,7 @@ export default function ImminentCarousel({
         setAdvanceNow(false);
         onShowShopRef.current?.(vacancies[next]);
       },
-      advanceNow ? 0 : AUTO_PLAY_MS,
+      advanceNow ? 0 : autoPlayDelay(),
     );
     return () => window.clearTimeout(timer);
   }, [autoPlay, advanceNow, count, index, vacancies]);

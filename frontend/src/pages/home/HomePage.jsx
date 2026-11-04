@@ -17,6 +17,10 @@ import styles from './HomePage.module.css';
 const HOME_SHOP_COUNT = 12;
 // 지도를 이만큼(ms) 만지지 않으면 멈췄던 캐러셀을 다시 넘긴다
 const MAP_IDLE_MS = 3000;
+// 휴대폰은 지도를 손가락으로 끌고 확대하느라 손을 뗐다 대는 틈이 길어 더 기다린다
+const MOBILE_MAP_IDLE_MS = 5000;
+const mapIdleDelay = () =>
+  window.matchMedia?.('(max-width: 767px)').matches ? MOBILE_MAP_IDLE_MS : MAP_IDLE_MS;
 
 // 검색 화면은 하루씩 보므로, 홈에서 보던 매장의 가장 빠른 빈자리 날짜로 넘겨야 같은 빈자리가 이어서 보인다
 function categoryListPath(categoryId, shop) {
@@ -38,7 +42,7 @@ export default function HomePage() {
   // 지도에서 누른 핀의 매장. 새 객체로 넣어 같은 핀을 다시 눌러도 캐러셀이 그 카드로 간다
   const [carouselRequest, setCarouselRequest] = useState(null);
   // 지도에 마우스를 올렸거나 지도를 직접 만졌으면 캐러셀이 넘어가 지도를 옮기지 않게 멈춘다.
-  // 만진 뒤 MAP_IDLE_MS 동안 더 만지지 않으면 바로 다음 장으로 넘기고, 캐러셀을 직접 넘겨도 다시 넘긴다
+  // 만진 뒤 MAP_IDLE_MS(휴대폰은 MOBILE_MAP_IDLE_MS) 동안 더 만지지 않으면 바로 다음 장으로 넘기고, 캐러셀을 직접 넘겨도 다시 넘긴다
   const [mapHovered, setMapHovered] = useState(false);
   const [mapExplored, setMapExplored] = useState(false);
   const [advanceSignal, setAdvanceSignal] = useState(0);
@@ -51,7 +55,7 @@ export default function HomePage() {
     exploreTimerRef.current = window.setTimeout(() => {
       setMapExplored(false);
       setAdvanceSignal((value) => value + 1);
-    }, MAP_IDLE_MS);
+    }, mapIdleDelay());
   };
   const showImminent = (card, { manual = false } = {}) => {
     setImminentFocus(card);
