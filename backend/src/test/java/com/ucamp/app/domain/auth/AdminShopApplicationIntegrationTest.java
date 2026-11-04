@@ -87,15 +87,15 @@ class AdminShopApplicationIntegrationTest {
     }
 
     @Test
-    @DisplayName("승인 대기 신청을 신청 순으로 조회한다")
-    void getApplications_defaultsToPendingOldestFirst() throws Exception {
+    @DisplayName("승인 대기 신청을 최신 신청 순으로 조회한다")
+    void getApplications_defaultsToPendingNewestFirst() throws Exception {
         mvc.perform(get(URL).header(HttpHeaders.AUTHORIZATION, ADMIN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.totalElements").value(2))
-                .andExpect(jsonPath("$.data.content[0].shopId").value(PENDING_ID))
+                .andExpect(jsonPath("$.data.content[0].shopId").value(LATER_PENDING_ID))
                 .andExpect(jsonPath("$.data.content[0].categoryName").value("네일"))
-                .andExpect(jsonPath("$.data.content[0].appliedAt").value("2026-11-01T10:00:00+09:00"))
-                .andExpect(jsonPath("$.data.content[1].shopId").value(LATER_PENDING_ID));
+                .andExpect(jsonPath("$.data.content[0].appliedAt").value("2026-11-02T10:00:00+09:00"))
+                .andExpect(jsonPath("$.data.content[1].shopId").value(PENDING_ID));
     }
 
     @Test
@@ -105,8 +105,8 @@ class AdminShopApplicationIntegrationTest {
 
         mvc.perform(get(URL).header(HttpHeaders.AUTHORIZATION, ADMIN))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.content[0].businessNumber").value("1234567891"))
-                .andExpect(jsonPath("$.data.content[1].businessNumber").value(nullValue()));
+                .andExpect(jsonPath("$.data.content[0].businessNumber").value(nullValue()))
+                .andExpect(jsonPath("$.data.content[1].businessNumber").value("1234567891"));
     }
 
     @Test

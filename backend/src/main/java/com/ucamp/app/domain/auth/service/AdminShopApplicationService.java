@@ -42,8 +42,8 @@ public class AdminShopApplicationService {
 
     private static final int MAX_PAGE_SIZE = 100;
     private static final int MAX_KEYWORD_LENGTH = 50;
-    // 먼저 신청한 매장부터 처리한다. 신청 시각이 같아도 페이지 사이 순서가 바뀌지 않게 ID 를 함께 본다
-    private static final Sort OLDEST_FIRST = Sort.by("createdAt", "shopId");
+    // 최근 신청부터 본다. 신청 시각이 같아도 페이지 사이 순서가 바뀌지 않게 ID 를 함께 본다
+    private static final Sort NEWEST_FIRST = Sort.by(Sort.Direction.DESC, "createdAt", "shopId");
 
     private final ShopAccountRepository shopAccountRepository;
     private final ShopCategoryRepository shopCategoryRepository;
@@ -62,7 +62,7 @@ public class AdminShopApplicationService {
     }
 
     /**
-     * 상태별 가입 신청 목록을 신청 순으로 조회한다. 검색어가 있으면 매장명·아이디·연락처로 거른다.
+     * 상태별 가입 신청 목록을 최신 신청 순으로 조회한다. 검색어가 있으면 매장명·아이디·연락처로 거른다.
      *
      * @param keyword 검색어. 없거나 비어 있으면 전체
      * @throws BusinessException 관리자가 아니면 FORBIDDEN, 페이지 범위나 검색어 길이가 틀리면 INVALID_INPUT
@@ -73,7 +73,7 @@ public class AdminShopApplicationService {
         if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "page 는 0 이상, size 는 1~100 이어야 합니다.");
         }
-        Page<ShopAccount> shops = findShops(status, keyword, PageRequest.of(page, size, OLDEST_FIRST));
+        Page<ShopAccount> shops = findShops(status, keyword, PageRequest.of(page, size, NEWEST_FIRST));
         Map<Long, String> categoryNames = shopCategoryRepository.findAll().stream()
                 .collect(Collectors.toMap(ShopCategory::getCategoryId, ShopCategory::getName));
         List<ShopApplicationResponse> content = shops.getContent().stream()

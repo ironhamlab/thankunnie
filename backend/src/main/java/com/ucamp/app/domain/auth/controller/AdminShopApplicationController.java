@@ -34,7 +34,7 @@ public class AdminShopApplicationController {
         this.adminShopApplicationService = adminShopApplicationService;
     }
 
-    @Operation(summary = "가입 신청 목록", description = "상태별 신청 목록. 신청 순, 기본은 승인 대기. keyword 로 매장명·아이디·연락처를 찾는다")
+    @Operation(summary = "가입 신청 목록", description = "상태별 신청 목록. 최신 신청 순, 기본은 승인 대기. keyword 로 매장명·아이디·연락처를 찾는다")
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ShopApplicationResponse>>> getApplications(
             @LoginUser AuthUser loginUser,

@@ -17,7 +17,7 @@
 
 ## GET /api/v1/admin/shop-applications
 
-쿼리: `status`(기본 `PENDING`), `keyword`(선택, 50자까지), `page`(기본 0), `size`(기본 20, 1~100). 신청 순으로 반환한다.
+쿼리: `status`(기본 `PENDING`), `keyword`(선택, 50자까지), `page`(기본 0), `size`(기본 20, 1~100). 최신 신청 순으로 반환한다.
 
 `keyword` 는 매장명·아이디·연락처에서 일부 일치로 찾는다. 대소문자를 구분하지 않고, 연락처는 하이픈 없이 입력해도 찾는다.
 
