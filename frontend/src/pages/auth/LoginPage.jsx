@@ -33,6 +33,8 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from;
+  // 로그인이 필요한 동작(예약하기 등)에서 넘어왔을 때 그 이유를 안내한다
+  const notice = location.state?.notice;
   const status = useAuthStore((state) => state.status);
   const error = useAuthStore((state) => state.error);
   const login = useAuthStore((state) => state.login);
@@ -78,6 +80,11 @@ export default function LoginPage() {
 
   return (
     <AuthCard title="로그인" description="땡잡은 언니에서 빈자리 예약을 이어가세요.">
+      {notice && (
+        <Notice role="status">
+          <p>{notice}</p>
+        </Notice>
+      )}
       <div className={styles.tabs} role="tablist" aria-label="계정 종류">
         {ACCOUNT_TYPE_OPTIONS.map((option) => (
           <button
