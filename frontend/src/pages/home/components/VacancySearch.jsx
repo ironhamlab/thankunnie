@@ -497,6 +497,7 @@ export default function VacancySearch() {
                       onLocate={locateShop}
                       located={String(shop.shopId) === mapShopId}
                       distance={distanceLabelOf(shop)}
+                      weekly={allDates}
                     />
                   </div>
                 ))}
@@ -571,6 +572,7 @@ export default function VacancySearch() {
             focusPosition={mapFocus}
             myLocation={myLocation}
             pageShopIds={pageShopIds}
+            weekly={allDates}
             onPinShop={(id) => {
               // 지도에서 고른 매장이 다른 페이지에 있으면 그 페이지로 넘긴다
               setPaging({ key: pagingKey, page: pageOf(id) });

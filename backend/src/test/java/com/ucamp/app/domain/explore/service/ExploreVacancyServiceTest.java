@@ -41,8 +41,10 @@ import com.ucamp.app.domain.treatment.entity.TreatmentType;
 import com.ucamp.app.domain.vacancy.policy.PriceTier;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
-// 초기 데이터: 매장 1(강남구, 영업 10~20시)이 2026-11-06(금) 20~22시를 열었다. 시술 1 젤네일 60분, 시술 2 손 케어 30분.
-// 열린 시간 안 시작 시각은 젤네일 20:00·20:30·21:00, 손 케어 20:00·20:30·21:00·21:30 으로 모두 7건이다.
+// 초기 데이터: 매장 1(강남구, 월~토 10~20시)이 2026-11-06(금) 20~22시를 더 열었다. 시술 1 젤네일 60분, 시술 2 손 케어 30분.
+// 매장 2(서초구, 화~일 11~21시)는 시술 3 남성 커트 30분, 시술 4 디지털 펌 120분이다. 시작 시각은 30분 단위다.
+// 빈자리는 영업시간 + 연 시간 − 닫은 시간 − 예약 기준이다. 지금(11-06 10:00)은 예약 클릭 마감(20분 전) 때문에 10:30 부터 고를 수 있어,
+// 11-06 매장 1 은 젤네일 10:30~21:00 22건 + 손 케어 10:30~21:30 23건 = 45건, 매장 2 는 남성 커트 11:00~20:30 20건 + 디지털 펌 11:00~19:00 17건 = 37건이다.
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({ExploreVacancyService.class, AvailabilityService.class,
@@ -53,6 +55,14 @@ class ExploreVacancyServiceTest {
 
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 11, 6, 10, 0);
     private static final LocalDate OPEN_DAY = LocalDate.of(2026, 11, 6);
+    // 다음 날(토)은 모든 시각이 8시간보다 많이 남아 일반 구간 가격이다. 매장 1 은 젤네일 10:00~19:00 19건 + 손 케어 10:00~19:30 20건
+    private static final LocalDate NEXT_DAY = OPEN_DAY.plusDays(1);
+    private static final int SHOP_ONE_COUNT = 45;
+    private static final int SHOP_TWO_COUNT = 37;
+    // 지도 매장 요약의 빈자리 수는 시술과 상관없이 겹치지 않는 시작 시각 수다.
+    // 11-06 매장 1 은 10:30~21:30 23개(젤네일 시각은 손 케어 시각에 모두 들어간다), 매장 2 는 11:00~20:30 20개
+    private static final int SHOP_ONE_TIMES = 23;
+    private static final int SHOP_TWO_TIMES = 20;
 
     @Autowired
     private ExploreVacancyService exploreVacancyService;
@@ -61,30 +71,32 @@ class ExploreVacancyServiceTest {
     private JdbcTemplate jdbcTemplate;
 
     @Test
-    @DisplayName("열린 시간대 안에서 시작하는 시술 × 시각만 빠른 시작순으로 나오고 영업시간 안 시각은 빠진다")
-    void search_openDay_returnsOnlyOpenSlotsInStartOrder() {
-        PageResponse<ExploreVacancyResponse> result = exploreVacancyService.search(request().build());
+    @DisplayName("매장이 열지 않은 영업시간도 빈자리이며, 연 시간까지 이어서 클릭 마감 이후 시각을 빠른 시작순으로 낸다")
+    void search_businessHoursAndOpen_returnsSlotsInStartOrder() {
+        PageResponse<ExploreVacancyResponse> result = exploreVacancyService.search(
+                request().shopId(1L).page(0, 50).build());
 
-        assertThat(result.totalElements()).isEqualTo(7);
-        assertThat(result.content()).extracting(ExploreVacancyResponse::vacancyId).containsExactly(
-                "1-202611062000", "2-202611062000", "1-202611062030", "2-202611062030",
-                "1-202611062100", "2-202611062100", "2-202611062130");
+        assertThat(result.totalElements()).isEqualTo(SHOP_ONE_COUNT);
+        assertThat(result.content()).extracting(ExploreVacancyResponse::vacancyId)
+                .startsWith("1-202611061030", "2-202611061030", "1-202611061100", "2-202611061100")
+                .endsWith("1-202611062100", "2-202611062100", "2-202611062130")
+                .doesNotContain("1-202611061000", "2-202611061000");
     }
 
     @Test
     @DisplayName("응답에 매장 좌표·시각(+09:00)·조회 시점 가격이 담긴다")
     void search_firstItem_hasShopLocationTimesAndPrice() {
-        ExploreVacancyResponse first = exploreVacancyService.search(request().build()).content().get(0);
+        ExploreVacancyResponse first = exploreVacancyService.search(nextDay().shopId(1L).build()).content().get(0);
 
         assertThat(first.shopName()).isEqualTo("언니네 네일");
         assertThat(first.regionCode()).isEqualTo("11680");
         assertThat(first.latitude()).isEqualByComparingTo("37.4979");
         assertThat(first.longitude()).isEqualByComparingTo("127.0276");
         assertThat(first.categoryName()).isEqualTo("네일");
-        assertThat(first.startsAt()).isEqualTo(kst(2026, 11, 6, 20, 0));
-        assertThat(first.endsAt()).isEqualTo(kst(2026, 11, 6, 21, 0));
-        assertThat(first.bookingClosesAt()).isEqualTo(kst(2026, 11, 6, 19, 40));
-        // 10시간 남아 일반 구간: 정가 35,000 → 판매가 30,000, 할인율 14%(버림), 예약금 20,000
+        assertThat(first.startsAt()).isEqualTo(kst(2026, 11, 7, 10, 0));
+        assertThat(first.endsAt()).isEqualTo(kst(2026, 11, 7, 11, 0));
+        assertThat(first.bookingClosesAt()).isEqualTo(kst(2026, 11, 7, 9, 40));
+        // 24시간 남아 일반 구간: 정가 35,000 → 판매가 30,000, 할인율 14%(버림), 예약금 20,000
         assertThat(first.priceTier()).isEqualTo(PriceTier.NORMAL);
         assertThat(first.regularPrice()).isEqualTo(35000);
         assertThat(first.salePrice()).isEqualTo(30000);
@@ -95,65 +107,88 @@ class ExploreVacancyServiceTest {
     @Test
     @DisplayName("날짜를 생략하면 오늘부터 7일을 조회한다")
     void search_noDates_searchesSevenDaysFromToday() {
-        ExploreVacancySearchRequest request = new RequestBuilder().build();
+        LocalDate today = NOW.toLocalDate();
+        long sevenDays = exploreVacancyService.search(
+                new RequestBuilder().dates(today, today.plusDays(6)).build()).totalElements();
+        long eightDays = exploreVacancyService.search(
+                new RequestBuilder().dates(today, today.plusDays(7)).build()).totalElements();
 
-        assertThat(exploreVacancyService.search(request).totalElements()).isEqualTo(7);
+        assertThat(exploreVacancyService.search(new RequestBuilder().build()).totalElements())
+                .isEqualTo(sevenDays)
+                .isLessThan(eightDays);
     }
 
     @Test
     @DisplayName("매장을 지정하면 그 매장 빈자리만 나온다")
     void search_shopId_returnsOnlyThatShop() {
-        openShopTwo();
+        PageResponse<ExploreVacancyResponse> shopTwo = exploreVacancyService.search(
+                request().shopId(2L).page(0, 50).build());
 
-        assertThat(exploreVacancyService.search(request().shopId(2L).build()).content())
-                .extracting(ExploreVacancyResponse::vacancyId)
-                .containsExactly("3-202611062100", "3-202611062130");
-        assertThat(exploreVacancyService.search(request().shopId(1L).build()).totalElements()).isEqualTo(7);
+        assertThat(shopTwo.totalElements()).isEqualTo(SHOP_TWO_COUNT);
+        assertThat(shopTwo.content()).extracting(ExploreVacancyResponse::shopId).containsOnly(2L);
+        assertThat(exploreVacancyService.search(request().shopId(1L).build()).totalElements())
+                .isEqualTo(SHOP_ONE_COUNT);
     }
 
     @Test
     @DisplayName("지도 매장 요약은 매장마다 한 건이며 최저가·최대 할인율·빈자리 수·가장 빠른 시작을 담는다")
     void searchShops_groupsVacanciesByShop() {
-        openShopTwo();
-
         ExploreShopMapResponse result = exploreVacancyService.searchShops(request().build().filter());
 
         assertThat(result.hasMore()).isFalse();
         assertThat(result.shops()).extracting(ExploreShopResponse::shopId).containsExactly(1L, 2L);
+        // 10:30 시작은 3시간 안이라 초임박가: 손 케어 20,000 → 15,000(25%)
         ExploreShopResponse shopOne = result.shops().get(0);
-        // 젤네일 30,000(14%) 3건 + 손 케어 18,000(10%) 4건
-        assertThat(shopOne.vacancyCount()).isEqualTo(7);
-        assertThat(shopOne.minSalePrice()).isEqualTo(18000);
-        assertThat(shopOne.maxDiscountRate()).isEqualTo(14);
-        assertThat(shopOne.earliestStartsAt()).isEqualTo(kst(2026, 11, 6, 20, 0));
-        assertThat(shopOne.earliestPriceTier()).isEqualTo(PriceTier.NORMAL);
+        assertThat(shopOne.vacancyCount()).isEqualTo(SHOP_ONE_TIMES);
+        assertThat(shopOne.totalVacancyCount()).isEqualTo(SHOP_ONE_TIMES);
+        assertThat(shopOne.minSalePrice()).isEqualTo(15000);
+        assertThat(shopOne.maxDiscountRate()).isEqualTo(25);
+        assertThat(shopOne.earliestStartsAt()).isEqualTo(kst(2026, 11, 6, 10, 30));
+        assertThat(shopOne.earliestPriceTier()).isEqualTo(PriceTier.LAST_MINUTE);
         assertThat(shopOne.latitude()).isEqualByComparingTo("37.4979");
-        // 남성 커트 25,000(할인 없음) 21:00·21:30. 디지털 펌 120분은 22시 전에 끝나지 않아 빠진다
+        // 남성 커트 25,000(할인 없음), 디지털 펌 초임박가 90,000 → 70,000(22%). 펌 120분은 21시 전에 끝나야 해 19:00 이 마지막이다
         ExploreShopResponse shopTwo = result.shops().get(1);
-        assertThat(shopTwo.vacancyCount()).isEqualTo(2);
+        assertThat(shopTwo.vacancyCount()).isEqualTo(SHOP_TWO_TIMES);
         assertThat(shopTwo.minSalePrice()).isEqualTo(25000);
-        assertThat(shopTwo.maxDiscountRate()).isZero();
-        assertThat(shopTwo.earliestStartsAt()).isEqualTo(kst(2026, 11, 6, 21, 0));
+        assertThat(shopTwo.maxDiscountRate()).isEqualTo(22);
+        assertThat(shopTwo.earliestStartsAt()).isEqualTo(kst(2026, 11, 6, 11, 0));
     }
 
     @Test
-    @DisplayName("지도 매장 요약도 지도 범위·필터를 적용하고, 빈자리가 없는 매장은 빠진다")
-    void searchShops_appliesFilters() {
+    @DisplayName("매장이 연 시간은 영업시간 뒤로 빈자리를 늘린다")
+    void searchShops_openAfterBusinessHours_addsSlots() {
         openShopTwo();
 
+        ExploreShopResponse shopTwo = exploreVacancyService.searchShops(request().shopId(2L).build().filter())
+                .shops().get(0);
+
+        // 21~22시를 열면 남성 커트 21:00·21:30 이 늘어난다. 디지털 펌 19:30·20:00 은 커트 시각과 겹쳐 한 번만 센다
+        assertThat(shopTwo.vacancyCount()).isEqualTo(SHOP_TWO_TIMES + 2);
+    }
+
+    @Test
+    @DisplayName("지도 매장 요약도 지도 범위·필터를 적용한다")
+    void searchShops_appliesFilters() {
         assertThat(exploreVacancyService.searchShops(request()
                 .bounds("37.49", "37.50", "127.02", "127.03").build().filter()).shops())
                 .extracting(ExploreShopResponse::shopId).containsExactly(1L);
         assertThat(exploreVacancyService.searchShops(request().categoryId(2L).build().filter()).shops())
                 .extracting(ExploreShopResponse::shopId).containsExactly(2L);
-        assertThat(exploreVacancyService.searchShops(request().timeOfDay(ExploreTimeOfDay.MORNING).build().filter())
-                .shops()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("쉬는 날이라 빈자리가 없는 매장은 지도 매장 요약에서 빠진다")
+    void searchShops_closedDay_excludesShop() {
+        jdbcTemplate.update("UPDATE SHOP_BUSINESS_HOUR SET IS_CLOSED = 'Y', OPEN_TIME = NULL, CLOSE_TIME = NULL"
+                + " WHERE SHOP_ID = 2 AND DAY_OF_WEEK = 'FRI'");
+
+        assertThat(exploreVacancyService.searchShops(request().build().filter()).shops())
+                .extracting(ExploreShopResponse::shopId).containsExactly(1L);
     }
 
     @Test
     @DisplayName("시술 유형을 지정하면 그 유형의 빈자리만 나오고, 매장 요약은 초보 시술만 있는지 알려준다")
     void search_treatmentType_returnsOnlyThatType() {
-        openShopTwo();
         jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건',"
                 + " PHOTO_NOTICE = '안내' WHERE TREATMENT_ID = 2");
 
@@ -161,8 +196,9 @@ class ExploreVacancyServiceTest {
                 .extracting(ExploreVacancyResponse::treatmentId).containsOnly(2L);
         assertThat(exploreVacancyService.search(request().treatmentType(TreatmentType.NORMAL).build()).content())
                 .extracting(ExploreVacancyResponse::treatmentId).doesNotContain(2L);
-        // 지정하지 않으면 두 유형이 모두 나온다. 젤네일(일반)은 열린 시간 3건, 손 케어(초보 시술)는 영업시간 + 열린 시간 23건
-        assertThat(exploreVacancyService.search(request().shopId(1L).build()).totalElements()).isEqualTo(26);
+        // 지정하지 않으면 기존처럼 두 유형이 모두 나온다
+        assertThat(exploreVacancyService.search(request().shopId(1L).build()).totalElements())
+                .isEqualTo(SHOP_ONE_COUNT);
 
         List<ExploreShopResponse> modelShops = exploreVacancyService.searchShops(
                 request().treatmentType(TreatmentType.MODEL).build().filter()).shops();
@@ -174,24 +210,7 @@ class ExploreVacancyServiceTest {
                 .extracting(ExploreShopResponse::modelOnly).containsExactly(false, false);
     }
 
-    @Test
-    @DisplayName("일반·초보 시술이 섞인 매장 요약은 매장 상세에 보이는 일반 빈자리로 계산하고 초보 시술 빈자리는 따로 담는다")
-    void searchShops_mixedShop_summarizesNormalAndModelSeparately() {
-        // 젤네일(일반) 30,000원·14% 열린 시간 3건, 손 케어(초보 시술)는 영업시간 + 열린 시간 23건이고
-        // 3시간 안 시각은 초임박가 15,000원이다
-        jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건',"
-                + " PHOTO_NOTICE = '안내' WHERE TREATMENT_ID = 2");
-
-        ExploreShopResponse shop = exploreVacancyService.searchShops(request().build().filter()).shops().get(0);
-
-        assertThat(shop.modelOnly()).isFalse();
-        assertThat(shop.vacancyCount()).isEqualTo(3);
-        assertThat(shop.minSalePrice()).isEqualTo(30000);
-        assertThat(shop.maxDiscountRate()).isEqualTo(14);
-        assertThat(shop.modelVacancyCount()).isEqualTo(23);
-        assertThat(shop.modelMinSalePrice()).isEqualTo(15000);
-    }
-
+    // UNNIE-195 에서 넣은 초보 시술 확인을, 일반 시술도 영업시간 기준이 된 UNNIE-220 에 맞게 옮겼다
     @Test
     @DisplayName("초보 시술은 연장 영업 시간대뿐 아니라 영업시간 안 빈 시각도 내고, 열지 않은 매장의 초보 시술도 낸다")
     void search_modelTreatment_usesBusinessHoursAndOpen() {
@@ -210,10 +229,47 @@ class ExploreVacancyServiceTest {
         assertThat(exploreVacancyService.searchShops(
                 request().treatmentType(TreatmentType.MODEL).build().filter()).shops())
                 .extracting(ExploreShopResponse::shopId).containsExactlyInAnyOrder(1L, 2L);
-        // 일반 시술은 그대로 열린 시간대 기준이다
-        assertThat(exploreVacancyService.search(request().treatmentType(TreatmentType.NORMAL).build()).content())
-                .extracting(ExploreVacancyResponse::vacancyId)
-                .containsExactly("1-202611062000", "1-202611062030", "1-202611062100");
+        // 일반 시술도 같은 영업시간 기준이다: 젤네일 10:30~21:00, 디지털 펌 11:00~19:00
+        assertThat(exploreVacancyService.search(request().treatmentType(TreatmentType.NORMAL).page(0, 50).build())
+                .content()).extracting(ExploreVacancyResponse::vacancyId)
+                .hasSize(22 + 17)
+                .contains("1-202611061030", "1-202611062100", "4-202611061100", "4-202611061900");
+    }
+
+    @Test
+    @DisplayName("일반·초보 시술이 섞인 매장 요약은 매장 상세에 보이는 일반 빈자리로 계산하고 초보 시술 빈자리는 따로 담는다")
+    void searchShops_mixedShop_summarizesNormalAndModelSeparately() {
+        // 다음 날 매장 1: 젤네일(일반) 30,000원·14% 19건, 손 케어(초보 시술) 18,000원·10% 20건
+        jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건',"
+                + " PHOTO_NOTICE = '안내' WHERE TREATMENT_ID = 2");
+
+        ExploreShopResponse shop = exploreVacancyService.searchShops(nextDay().shopId(1L).build().filter())
+                .shops().get(0);
+
+        assertThat(shop.modelOnly()).isFalse();
+        assertThat(shop.vacancyCount()).isEqualTo(19);
+        assertThat(shop.minSalePrice()).isEqualTo(30000);
+        assertThat(shop.maxDiscountRate()).isEqualTo(14);
+        assertThat(shop.modelVacancyCount()).isEqualTo(20);
+        assertThat(shop.modelMinSalePrice()).isEqualTo(18000);
+        // 젤네일 시각은 손 케어 시각에 모두 들어가므로 합쳐도 20개다
+        assertThat(shop.totalVacancyCount()).isEqualTo(20);
+    }
+
+    @Test
+    @DisplayName("지도 매장 요약의 빈자리 수는 조회 시작일부터 그 주 일요일까지만 센다")
+    void searchShops_vacancyCount_countsUntilSunday() {
+        // 금(11-06)~다음 주 목(11-12)을 조회해도 금 23개 + 토 10:00~19:30 20개만 센다 (일요일은 매장 1 휴무)
+        ExploreShopResponse thisWeek = exploreVacancyService.searchShops(
+                new RequestBuilder().dates(OPEN_DAY, OPEN_DAY.plusDays(6)).shopId(1L).build().filter()).shops().get(0);
+        assertThat(thisWeek.vacancyCount()).isEqualTo(SHOP_ONE_TIMES + 20);
+
+        // 다음 주 월(11-09)부터 조회하면 그 주 일요일(11-15)까지 센다: 월~토 10:00~19:30 20개씩
+        LocalDate nextMonday = LocalDate.of(2026, 11, 9);
+        ExploreShopResponse nextWeek = exploreVacancyService.searchShops(
+                new RequestBuilder().dates(nextMonday, nextMonday.plusDays(13)).shopId(1L).build().filter())
+                .shops().get(0);
+        assertThat(nextWeek.vacancyCount()).isEqualTo(20 * 6);
     }
 
     @Test
@@ -225,24 +281,31 @@ class ExploreVacancyServiceTest {
                 VALUES (900, 1, 1, 'CONFIRMED', ?, ?, 30000, 20000, ?, ?, ?)
                 """, NOW.withHour(20), NOW.withHour(21), NOW, NOW, NOW);
 
-        List<String> ids = exploreVacancyService.search(request().build()).content().stream()
-                .map(ExploreVacancyResponse::vacancyId).toList();
+        List<String> ids = exploreVacancyService.search(request().shopId(1L).page(0, 50).build()).content()
+                .stream().map(ExploreVacancyResponse::vacancyId).toList();
 
-        assertThat(ids).containsExactly("1-202611062100", "2-202611062100", "2-202611062130");
+        // 20~21시와 겹치는 젤네일 19:30·20:00·20:30, 손 케어 20:00·20:30 이 빠진다
+        assertThat(ids).hasSize(SHOP_ONE_COUNT - 5)
+                .doesNotContain("1-202611061930", "1-202611062000", "1-202611062030",
+                        "2-202611062000", "2-202611062030")
+                .contains("1-202611061900", "2-202611061930", "1-202611062100", "2-202611062100");
     }
 
     @Test
     @DisplayName("지역·카테고리·검색어·지도 범위 조건이 매장과 시술에 적용된다")
     void search_shopAndTreatmentFilters_applied() {
         assertThat(exploreVacancyService.search(request().regionCodes(List.of("11680")).build())
-                .totalElements()).isEqualTo(7);
+                .totalElements()).isEqualTo(SHOP_ONE_COUNT);
         assertThat(exploreVacancyService.search(request().regionCodes(List.of("11650")).build())
+                .totalElements()).isEqualTo(SHOP_TWO_COUNT);
+        assertThat(exploreVacancyService.search(request().regionCodes(List.of("11110")).build())
                 .totalElements()).isZero();
-        assertThat(exploreVacancyService.search(request().categoryId(2L).build()).totalElements()).isZero();
-        assertThat(exploreVacancyService.search(request().keyword("케어").build()).content())
-                .allMatch(item -> item.treatmentId() == 2L).hasSize(4);
+        assertThat(exploreVacancyService.search(request().categoryId(2L).build()).totalElements())
+                .isEqualTo(SHOP_TWO_COUNT);
+        assertThat(exploreVacancyService.search(request().keyword("케어").page(0, 50).build()).content())
+                .allMatch(item -> item.treatmentId() == 2L).hasSize(23);
         assertThat(exploreVacancyService.search(request()
-                .bounds("37.49", "37.50", "127.02", "127.03").build()).totalElements()).isEqualTo(7);
+                .bounds("37.49", "37.50", "127.02", "127.03").build()).totalElements()).isEqualTo(SHOP_ONE_COUNT);
         assertThat(exploreVacancyService.search(request()
                 .bounds("37.50", "37.60", "127.02", "127.03").build()).totalElements()).isZero();
     }
@@ -251,8 +314,9 @@ class ExploreVacancyServiceTest {
     @DisplayName("검색어로 매장 주소(지역)도 찾는다")
     void search_keyword_matchesShopAddress() {
         assertThat(exploreVacancyService.search(request().keyword("테헤란로").build()).totalElements())
-                .isEqualTo(7);
-        assertThat(exploreVacancyService.search(request().keyword("서초구").build()).totalElements()).isZero();
+                .isEqualTo(SHOP_ONE_COUNT);
+        assertThat(exploreVacancyService.search(request().keyword("서초구").page(0, 50).build()).content())
+                .extracting(ExploreVacancyResponse::shopId).containsOnly(2L);
     }
 
     @Test
@@ -265,27 +329,36 @@ class ExploreVacancyServiceTest {
     @DisplayName("판매 중지한 시술과 노출 중지한 매장은 빠진다")
     void search_inactiveTreatmentOrShop_excluded() {
         jdbcTemplate.update("UPDATE TREATMENT SET STATUS = 'INACTIVE' WHERE TREATMENT_ID = 2");
-        assertThat(exploreVacancyService.search(request().build()).content())
-                .allMatch(item -> item.treatmentId() == 1L).hasSize(3);
+        assertThat(exploreVacancyService.search(request().shopId(1L).page(0, 50).build()).content())
+                .allMatch(item -> item.treatmentId() == 1L).hasSize(22);
 
         jdbcTemplate.update("UPDATE SHOP SET STATUS = 'INACTIVE' WHERE SHOP_ID = 1");
-        assertThat(exploreVacancyService.search(request().build()).totalElements()).isZero();
+        assertThat(exploreVacancyService.search(request().shopId(1L).build()).totalElements()).isZero();
     }
 
     @Test
     @DisplayName("시간대·마감 임박·가격 구간 조건은 시작 시각 기준으로 거른다")
     void search_timeFilters_applied() {
-        assertThat(exploreVacancyService.search(request().timeOfDay(ExploreTimeOfDay.EVENING).build())
-                .totalElements()).isEqualTo(7);
-        assertThat(exploreVacancyService.search(request().timeOfDay(ExploreTimeOfDay.MORNING).build())
-                .totalElements()).isZero();
-        // 10시간 안에 마감(19:40 이하)되는 것은 20:00 시작 두 건뿐이다
-        assertThat(exploreVacancyService.search(request().closingWithinHours(10).build()).content())
+        // 18시 이후: 젤네일 18:00~21:00 7건 + 손 케어 18:00~21:30 8건
+        assertThat(exploreVacancyService.search(request().shopId(1L).timeOfDay(ExploreTimeOfDay.EVENING).build())
+                .totalElements()).isEqualTo(15);
+        // 12시 전: 10:30·11:00·11:30 시술 둘씩
+        assertThat(exploreVacancyService.search(request().shopId(1L).timeOfDay(ExploreTimeOfDay.MORNING).build())
+                .totalElements()).isEqualTo(6);
+        // 10시간 안에 마감(20:00 이하)되는 것은 20:00 시작까지다
+        assertThat(exploreVacancyService.search(request().shopId(1L).closingWithinHours(10).page(0, 50).build())
+                .content()).extracting(ExploreVacancyResponse::vacancyId)
+                .hasSize(40)
+                .contains("1-202611062000", "2-202611062000")
+                .doesNotContain("2-202611062030");
+        // 임박 이상(8시간 이내, 정확히 8시간 포함)은 18:00 시작까지다
+        assertThat(exploreVacancyService.search(request().shopId(1L).priceTier(PriceTier.IMMINENT).page(0, 50)
+                .build()).content())
+                .hasSize(32)
+                .allSatisfy(item -> assertThat(item.priceTier()).isNotEqualTo(PriceTier.NORMAL))
                 .extracting(ExploreVacancyResponse::vacancyId)
-                .containsExactly("1-202611062000", "2-202611062000");
-        // 임박(IMMINENT) 조건은 OPEN 기준 그대로라, 열어 둔 20~22시는 모두 8시간보다 많이 남아 일반 구간이다
-        assertThat(exploreVacancyService.search(request().priceTier(PriceTier.IMMINENT).build())
-                .totalElements()).isZero();
+                .contains("1-202611061800")
+                .doesNotContain("1-202611061830");
     }
 
     // 타임세일(초임박): 지금(10:00)부터 13:00 까지 영업시간 안 빈 시각. 매장 1(금 10~20시)은 클릭 마감 20분 뒤 10:30,
@@ -345,23 +418,26 @@ class ExploreVacancyServiceTest {
     @Test
     @DisplayName("판매가 낮은 순으로 정렬하면 같은 가격은 시작 시각 순이다")
     void search_priceAsc_sortsByPriceThenStart() {
-        List<String> ids = exploreVacancyService.search(request().sort(ExploreVacancySort.PRICE_ASC).build())
-                .content().stream().map(ExploreVacancyResponse::vacancyId).toList();
+        // 다음 날 매장 1: 손 케어 18,000 20건 다음 젤네일 30,000 19건
+        List<String> ids = exploreVacancyService.search(nextDay().shopId(1L).sort(ExploreVacancySort.PRICE_ASC)
+                .page(0, 50).build()).content().stream().map(ExploreVacancyResponse::vacancyId).toList();
 
-        assertThat(ids).containsExactly(
-                "2-202611062000", "2-202611062030", "2-202611062100", "2-202611062130",
-                "1-202611062000", "1-202611062030", "1-202611062100");
+        assertThat(ids).hasSize(39)
+                .startsWith("2-202611071000", "2-202611071030")
+                .endsWith("1-202611071830", "1-202611071900");
+        assertThat(ids.get(20)).isEqualTo("1-202611071000");
     }
 
     @Test
     @DisplayName("페이지를 나누면 전체 개수는 유지하고 해당 페이지만 돌려준다")
     void search_paging_returnsRequestedPage() {
-        PageResponse<ExploreVacancyResponse> page = exploreVacancyService.search(request().page(1, 3).build());
+        PageResponse<ExploreVacancyResponse> page = exploreVacancyService.search(
+                request().shopId(1L).page(1, 3).build());
 
         assertThat(page.content()).extracting(ExploreVacancyResponse::vacancyId)
-                .containsExactly("2-202611062030", "1-202611062100", "2-202611062100");
-        assertThat(page.totalElements()).isEqualTo(7);
-        assertThat(page.totalPages()).isEqualTo(3);
+                .containsExactly("2-202611061100", "1-202611061130", "2-202611061130");
+        assertThat(page.totalElements()).isEqualTo(SHOP_ONE_COUNT);
+        assertThat(page.totalPages()).isEqualTo(15);
         assertThat(page.hasNext()).isTrue();
     }
 
@@ -474,6 +550,10 @@ class ExploreVacancyServiceTest {
 
     private static RequestBuilder request() {
         return new RequestBuilder().dates(OPEN_DAY, OPEN_DAY);
+    }
+
+    private static RequestBuilder nextDay() {
+        return new RequestBuilder().dates(NEXT_DAY, NEXT_DAY);
     }
 
     private static OffsetDateTime kst(int year, int month, int day, int hour, int minute) {

@@ -9,13 +9,18 @@ import com.ucamp.app.domain.vacancy.policy.PriceTier;
  * 지도 마커용 매장 요약 한 건 (C-02). 조건에 맞는 그 매장 빈자리들의 최저가·최대 할인율·가장 빠른 시작 시각을 담는다.
  * 매장 상세는 일반 시술만, 초보 시술 모집 상세는 초보 시술만 보여주므로, 빈자리 수·가격·시작 시각은 카드가 연결되는 쪽
  * (일반 빈자리가 있으면 일반, 없으면 초보 시술) 빈자리로 계산한다.
+ * 빈자리 수는 시술과 상관없이 겹치지 않는 시작 시각 수다. 한 시각에 예약이 잡히면 그 매장의 다른 시술도 그 시각엔 못 잡기 때문이다.
+ * 또 조회 시작일(오늘 이전이면 오늘)부터 그 주 일요일까지만 센다. 가격·시작 시각은 조회 기간 전체로 계산한다.
  *
  * @param imageUrl          매장 이미지, 없으면 null
+ * @param vacancyCount      그 주 일요일까지의 빈 시작 시각 수. 가장 빠른 빈자리가 다음 주 이후면 0 일 수 있다
  * @param minSalePrice      마커 라벨 "18,000원~" 에 쓰는 최저 판매가
  * @param earliestPriceTier 가장 빠른 빈자리(earliestStartsAt)의 가격 구간. 지도 핀을 초임박·임박·일반으로 나눠 보여줄 때 쓴다
  * @param modelOnly         조건에 맞는 빈자리가 모두 초보 시술이면 true. 화면은 매장 상세 대신 초보 시술 모집 상세로 연결한다
- * @param modelVacancyCount 조건에 맞는 초보 시술 빈자리 수. 일반·초보 시술이 섞인 매장은 초보 시술 모집 상세 링크를 따로 보여준다
- * @param modelMinSalePrice 초보 시술 빈자리 최저 판매가. 초보 시술 빈자리가 없으면 null
+ * @param modelVacancyCount 그 주 일요일까지의 초보 시술 빈 시작 시각 수
+ * @param modelMinSalePrice 초보 시술 빈자리 최저 판매가(조회 기간 전체). 초보 시술 빈자리가 없으면 null 이라,
+ *                          일반·초보 시술이 섞인 매장에 초보 시술 모집 상세 링크를 보일지는 이 값으로 정한다
+ * @param totalVacancyCount 일반·초보 시술을 합친 그 주 일요일까지의 빈 시작 시각 수. 같은 시각을 두 번 세지 않는다
  */
 public record ExploreShopResponse(
         Long shopId,
@@ -32,5 +37,6 @@ public record ExploreShopResponse(
         PriceTier earliestPriceTier,
         boolean modelOnly,
         int modelVacancyCount,
-        Integer modelMinSalePrice) {
+        Integer modelMinSalePrice,
+        int totalVacancyCount) {
 }

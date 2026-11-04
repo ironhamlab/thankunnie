@@ -96,16 +96,25 @@
   --pin-color: var(--color-success);
   color: var(--color-success-text);
 }
-/* 일반·초보 시술이 섞인 매장의 초록 점 */
-.modelDot {
+/* 일반·초보 시술이 섞인 매장은 오른쪽 위에 작은 새싹 배지를 붙인다 (초보 시술 핀과 같은 새싹) */
+.modelBadge {
   position: absolute;
-  top: -3px;
-  right: -3px;
-  width: 9px;
-  height: 9px;
-  border: 2px solid white;
+  top: -7px;
+  right: -7px;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  /* 지도 위에서도 눈에 띄게 초록 바탕에 흰 새싹, 흰 테두리로 핀과 떼어 보이게 한다 */
+  border: 1.5px solid white;
   border-radius: 50%;
   background: var(--color-success);
+  color: white;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-shadow) 25%, transparent);
+}
+.modelBadge .pinIcon {
+  width: 11px;
+  height: 11px;
 }
 /* 빈자리가 없는 매장은 가격 없이 이름만 보여준다. 흐리면 지도에서 있는지도 모르므로 흰 바탕에 진한 회색 점선 테두리로
    또렷하게 두고, 다른 날 핀(실선 테두리)과는 점선으로 구분한다 */

@@ -1,7 +1,13 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatMoney } from '@/utils/reservationFormat';
-import { PIN_KIND, earliestLabel, pinKind, shopPagePath } from '@/utils/exploreVacancy';
+import {
+  PIN_KIND,
+  hasModelVacancy,
+  pinKind,
+  shopPagePath,
+  vacancySummary,
+} from '@/utils/exploreVacancy';
 import { datePart } from '@/utils/scheduleDate';
 import ExploreMap from '@/components/map/ExploreMap';
 import Button from '@/components/common/Button';
@@ -43,6 +49,7 @@ export default function ShopLocationMap({
   focusPosition,
   myLocation,
   pageShopIds,
+  weekly = false,
 }) {
   const [pickedId, setPickedId] = useState(null);
   const [kindFilter, setKindFilter] = useState(null);
@@ -118,19 +125,19 @@ export default function ShopLocationMap({
         >
           매장 {shops.length}곳
         </button>
-        {legend.length > 1 &&
-          legend.map(([kind, label]) => (
-            <button
-              key={kind}
-              type="button"
-              className={styles.legendChip}
-              aria-pressed={activeKind === kind}
-              onClick={() => setKindFilter(activeKind === kind ? null : kind)}
-            >
-              <span className={`${styles.legendDot} ${styles[kind]}`} aria-hidden="true" />
-              {label} {kindCounts[kind]}
-            </button>
-          ))}
+        {/* 영업시간 기준이라 낮에는 모든 매장이 초임박 한 종류일 때가 많다. 한 종류여도 핀 색의 뜻을 알 수 있게 늘 보여준다 */}
+        {legend.map(([kind, label]) => (
+          <button
+            key={kind}
+            type="button"
+            className={styles.legendChip}
+            aria-pressed={activeKind === kind}
+            onClick={() => setKindFilter(activeKind === kind ? null : kind)}
+          >
+            <span className={`${styles.legendDot} ${styles[kind]}`} aria-hidden="true" />
+            {label} {kindCounts[kind]}
+          </button>
+        ))}
       </div>
       <div className={styles.panel}>
         {selected ? (
@@ -138,15 +145,13 @@ export default function ShopLocationMap({
             <div>
               <strong>{selected.shopName}</strong>
               {hasVacancy ? (
-                <p>
-                  {earliestLabel(selected)}부터 · 빈자리 {selected.vacancyCount}개
-                </p>
+                <p>{vacancySummary(selected, { weekly })}</p>
               ) : (
                 <p className={styles.noVacancy}>지금은 빈자리가 없어요</p>
               )}
               <small>{selected.address}</small>
               {/* 일반·초보 시술이 섞인 매장은 매장 보기가 일반 시술로 가므로 초보 시술 빈자리는 따로 연결한다 */}
-              {hasVacancy && !model && !selected.modelOnly && selected.modelVacancyCount > 0 && (
+              {hasVacancy && !model && !selected.modelOnly && hasModelVacancy(selected) && (
                 <Link
                   className={styles.modelLink}
                   to={shopPagePath(selected.shopId, {
@@ -154,7 +159,8 @@ export default function ShopLocationMap({
                     model: true,
                   })}
                 >
-                  ✦ 초보 시술 모집 {selected.modelVacancyCount}개 ·{' '}
+                  ✦ 초보 시술 모집
+                  {selected.modelVacancyCount > 0 && ` ${selected.modelVacancyCount}개`} ·{' '}
                   {formatMoney(selected.modelMinSalePrice)}~
                 </Link>
               )}

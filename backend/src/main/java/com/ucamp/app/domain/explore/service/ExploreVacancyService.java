@@ -1,8 +1,10 @@
 package com.ucamp.app.domain.explore.service;
 
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -40,8 +42,8 @@ import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService.AvailabilitySnapshot;
 
 /**
- * 고객 빈자리 탐색 (C-01 목록, C-02 지도 매장 요약). 매장이 연 시간대(OPEN) 안에서 지금 예약할 수 있는 시술 × 시작 시각을 구한다.
- * 초보 시술, 타임세일(가격 구간 초임박), 메인 임박 빈자리는 OPEN 없이 영업시간 안 빈 시각에서 구한다.
+ * 고객 빈자리 탐색 (C-01 목록, C-02 지도 매장 요약, 메인 임박 빈자리). 지금 예약할 수 있는 시술 × 시작 시각을 구한다.
+ * 매장 상세와 같이 영업시간 기준이라, 매장이 따로 열지(OPEN) 않아도 영업시간 안 빈 시각이면 빈자리로 본다.
  * 예약 가능 판단과 가격은 B 의 AvailabilityService·PriceCalculator 를 그대로 쓴다.
  * 시작 시각을 계산한 뒤 거르고 정렬하므로 페이지 처리·매장 묶기는 메모리에서 한다.
  */
@@ -100,11 +102,15 @@ public class ExploreVacancyService {
      * 지도 마커용 매장 요약 (C-02). 빈자리가 있는 매장만 가장 빠른 시작 시각, 매장 ID 순으로 최대 200개 돌려준다.
      */
     public ExploreShopMapResponse searchShops(ExploreVacancyFilter filter) {
-        Map<Long, List<Item>> itemsByShop = filteredItems(filter, LocalDateTime.now(clock)).stream()
+        LocalDateTime now = LocalDateTime.now(clock);
+        Map<Long, List<Item>> itemsByShop = filteredItems(filter, now).stream()
                 .collect(Collectors.groupingBy(item -> item.candidate().shopId(), LinkedHashMap::new,
                         Collectors.toList()));
+        // 빈자리 수는 조회 시작일부터 그 주 일요일까지만 센다 (월~일 한 주)
+        LocalDateTime countUntil = searchFromDate(filter, now.toLocalDate())
+                .with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)).plusDays(1).atStartOfDay();
         List<ExploreShopResponse> shops = itemsByShop.values().stream()
-                .map(ExploreVacancyService::toShop)
+                .map(items -> toShop(items, countUntil))
                 .sorted(Comparator.comparing(ExploreShopResponse::earliestStartsAt)
                         .thenComparing(ExploreShopResponse::shopId))
                 .toList();
@@ -147,8 +153,7 @@ public class ExploreVacancyService {
         List<String> regionCodes = regionCodes(filter.regionCodes());
         String keyword = keyword(filter.keyword());
         MapBounds bounds = bounds(filter);
-        // 지난 날짜는 어차피 예약할 수 없으므로 오늘부터 본다
-        LocalDate fromDate = startDate.isBefore(today) ? today : startDate;
+        LocalDate fromDate = searchFromDate(filter, today);
         if (fromDate.isAfter(endDate)) {
             return List.of();
         }
@@ -167,20 +172,25 @@ public class ExploreVacancyService {
                 .toList();
     }
 
-    // 타임세일(초임박)은 메인 임박 빈자리처럼 OPEN 없이 영업시간 안 빈 시각에서 찾고, 초임박가가 일반 판매가보다 싼 시술만 남긴다.
-    // 3시간 범위는 뒤의 가격 구간 조건이 자르므로 여기서는 8시간까지만 본다.
-    // 그 밖의 조회에서 일반 시술은 OPEN 시간대 기준이고, 초보 시술은 모집 상세의 시간 선택과 같게 영업시간 + 연 시간 기준이다.
-    // 초보 시술을 OPEN 기준으로만 보면 연장 영업을 연 매장은 연장 시간대만, 열지 않은 매장은 아무 시각도 나오지 않는다
+    // 조회 시작일. 생략하면 오늘이고, 지난 날짜는 어차피 예약할 수 없으므로 오늘부터 본다
+    private static LocalDate searchFromDate(ExploreVacancyFilter filter, LocalDate today) {
+        LocalDate startDate = filter.startDate() != null ? filter.startDate() : today;
+        return startDate.isBefore(today) ? today : startDate;
+    }
+
+    // 영업시간 안 빈 시각에서 찾는다. 지난 시각은 볼 필요가 없어 지금부터 본다.
+    // 타임세일(초임박)은 초임박가가 일반 판매가보다 싼 시술만 남기고, 3시간 범위는 뒤의 가격 구간 조건이 자르므로 여기서는 8시간까지만 본다
     private Stream<Item> candidateItems(PriceTier priceTier, ExploreVacancyCondition condition, LocalDateTime now) {
+        List<ExploreVacancyCandidate> candidates = exploreVacancyQueryRepository.findBusinessHourCandidates(condition);
+        LocalDateTime from = max(condition.from(), now);
         if (priceTier != PriceTier.LAST_MINUTE) {
-            return findItems(exploreVacancyQueryRepository.findCandidates(condition), condition, now);
+            return findBusinessHourItems(candidates, from, condition.to(), now);
         }
-        List<ExploreVacancyCandidate> discounted = exploreVacancyQueryRepository.findBusinessHourCandidates(condition)
-                .stream()
+        List<ExploreVacancyCandidate> discounted = candidates.stream()
                 .filter(candidate -> candidate.lastMinutePrice() < candidate.price())
                 .toList();
-        return findBusinessHourItems(discounted, max(condition.from(), now),
-                min(condition.to(), now.plus(BookingPolicy.IMMINENT_FROM)), now);
+        return findBusinessHourItems(discounted, from, min(condition.to(), now.plus(BookingPolicy.IMMINENT_FROM)),
+                now);
     }
 
     // 영업시간 기준: B 의 가용 시간 계산(영업시간 + 열기 − 닫기 − 예약, 예약 클릭 마감 반영)을 통과한 시각 중 [from, to) 만 남긴다.
@@ -208,35 +218,6 @@ public class ExploreVacancyService {
         return items.stream();
     }
 
-    // 일반 시술은 OPEN 시간대 안에서, 초보 시술은 조회 기간 전체에서 B 의 가용 시간 계산을 통과한 시각만 남긴다.
-    // 겹치는 OPEN 이 있거나 초보 시술이 OPEN 수만큼 나와도 시술·시각당 한 번만 낸다
-    private Stream<Item> findItems(List<ExploreVacancyCandidate> candidates, ExploreVacancyCondition condition,
-            LocalDateTime now) {
-        if (candidates.isEmpty()) {
-            return Stream.empty();
-        }
-        AvailabilitySnapshot snapshot = loadSnapshot(candidates, condition.from(), condition.to());
-        Map<AvailabilityKey, List<LocalDateTime>> availableTimes = new HashMap<>();
-        Map<String, Item> items = new LinkedHashMap<>();
-        for (ExploreVacancyCandidate candidate : candidates) {
-            boolean businessHours = candidate.treatmentType() == TreatmentType.MODEL;
-            LocalDateTime from = businessHours ? condition.from() : max(candidate.openStartsAt(), condition.from());
-            LocalDateTime to = businessHours ? condition.to() : min(candidate.openEndsAt(), condition.to());
-            for (LocalDate date = from.toLocalDate(); date.atStartOfDay().isBefore(to); date = date.plusDays(1)) {
-                AvailabilityKey key = new AvailabilityKey(candidate.shopId(), date, candidate.durationMinutes());
-                List<LocalDateTime> startTimes = availableTimes.computeIfAbsent(key,
-                        k -> snapshot.startTimes(k.shopId(), k.date(), k.durationMinutes()));
-                for (LocalDateTime startsAt : startTimes) {
-                    if (!startsAt.isBefore(from) && startsAt.isBefore(to)) {
-                        items.putIfAbsent(candidate.treatmentId() + "-" + startsAt,
-                                new Item(candidate, startsAt, quote(candidate, startsAt, now)));
-                    }
-                }
-            }
-        }
-        return items.values().stream();
-    }
-
     // 조회 기간 전체의 일정을 한 번에 읽어, 매장·날짜·소요 시간마다 쿼리를 보내지 않게 한다
     private AvailabilitySnapshot loadSnapshot(List<ExploreVacancyCandidate> candidates, LocalDateTime from,
             LocalDateTime to) {
@@ -247,7 +228,7 @@ public class ExploreVacancyService {
 
     // 매장 상세는 일반 시술만, 초보 시술 모집 상세는 초보 시술만 보여준다. 카드 값이 연결되는 상세와 맞도록
     // 일반 빈자리가 있으면 일반 빈자리로, 없으면 초보 시술 빈자리로 요약하고, 섞인 매장의 초보 시술 빈자리는 따로 담는다
-    private static ExploreShopResponse toShop(List<Item> items) {
+    private static ExploreShopResponse toShop(List<Item> items, LocalDateTime countUntil) {
         ExploreVacancyCandidate shop = items.get(0).candidate();
         List<Item> modelItems = items.stream()
                 .filter(item -> item.candidate().treatmentType() == TreatmentType.MODEL)
@@ -266,14 +247,21 @@ public class ExploreVacancyService {
                 shop.latitude(),
                 shop.longitude(),
                 shop.shopImageUrl(),
-                linked.size(),
+                countStartTimes(linked, countUntil),
                 minSalePrice(linked),
                 linked.stream().mapToInt(item -> item.quote().discountRate()).max().orElseThrow(),
                 TimeUtils.toOffset(earliest.startsAt()),
                 earliest.quote().tier(),
                 modelOnly,
-                modelItems.size(),
-                modelItems.isEmpty() ? null : minSalePrice(modelItems));
+                countStartTimes(modelItems, countUntil),
+                modelItems.isEmpty() ? null : minSalePrice(modelItems),
+                countStartTimes(items, countUntil));
+    }
+
+    // 한 시각에 예약이 잡히면 그 매장의 다른 시술도 그 시각엔 못 잡으므로 시술이 달라도 같은 시작 시각은 한 번만 센다
+    private static int countStartTimes(List<Item> items, LocalDateTime until) {
+        return (int) items.stream().map(Item::startsAt).filter(startsAt -> startsAt.isBefore(until)).distinct()
+                .count();
     }
 
     private static int minSalePrice(List<Item> items) {

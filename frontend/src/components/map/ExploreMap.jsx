@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Spinner from '@/components/common/Spinner';
 import { useMyLocation } from '@/hooks/useMyLocation';
 import { formatMoney } from '@/utils/reservationFormat';
-import { PIN_KIND, pinKind } from '@/utils/exploreVacancy';
+import { PIN_KIND, hasModelVacancy, pinKind } from '@/utils/exploreVacancy';
 import { datePart, timePart, todayKst } from '@/utils/scheduleDate';
 import { hasKakaoMapKey, loadKakaoMap } from '@/utils/kakaoMapLoader';
 import { logger } from '@/utils/logger';
@@ -291,9 +291,13 @@ export default function ExploreMap({
       element.className = `${styles.pin} ${styles[kind]}`;
       if (icon) element.append(pinIcon(icon));
       element.append(pinPart(null, label));
-      // 일반·초보 시술이 섞인 매장은 초보 시술 빈자리도 있다는 걸 초록 점으로 알린다
-      const mixed = kind !== PIN_KIND.NONE && !shop.modelOnly && shop.modelVacancyCount > 0;
-      if (mixed) element.append(pinPart(styles.modelDot, ''));
+      // 일반·초보 시술이 섞인 매장은 초보 시술 빈자리도 있다는 걸 오른쪽 위 새싹 배지로 알린다
+      const mixed = kind !== PIN_KIND.NONE && !shop.modelOnly && hasModelVacancy(shop);
+      if (mixed) {
+        const badge = pinPart(styles.modelBadge, '');
+        badge.append(pinIcon('sprout'));
+        element.append(badge);
+      }
       element.setAttribute(
         'aria-label',
         mixed ? `${ariaLabel}, 초보 시술 빈자리도 있음` : ariaLabel,
