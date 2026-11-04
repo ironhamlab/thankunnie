@@ -88,7 +88,8 @@ function pinContent(shop, today) {
         kind,
         icon: 'bolt',
         label: `${time} · ${shop.maxDiscountRate}%`,
-        ariaLabel: `${shop.shopName} 초임박 특가, 오늘 ${time} 시작, 최대 ${shop.maxDiscountRate}% 할인`,
+        // 메인 지도 핀은 빈자리 한 건이라 vacancyCount 가 없다. 여러 건을 요약한 매장(C-02)일 때만 "최대"를 붙인다
+        ariaLabel: `${shop.shopName} 초임박 특가, 오늘 ${time} 시작, ${shop.vacancyCount > 1 ? '최대 ' : ''}${shop.maxDiscountRate}% 할인`,
       };
     case PIN_KIND.LATER: {
       const date = datePart(shop.earliestStartsAt).slice(5).replace('-', '.');
