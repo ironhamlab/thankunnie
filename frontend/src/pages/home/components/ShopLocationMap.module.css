@@ -7,7 +7,8 @@
   border: 1px solid var(--color-map-line);
   border-radius: 24px;
 }
-/* 매장 수와 핀 범례. 오른쪽 확대 버튼을 가리지 않게 그 앞까지 한 줄로 두고, 넘치면 옆으로 밀어 본다 */
+/* 매장 수와 핀 범례. 오른쪽 확대 버튼을 가리지 않게 그 앞까지만 두고, 넘치면 옆으로 숨기지 않고 다음 줄로 내린다.
+   칩 이름이 짧아 가장 좁은 휴대폰(320px)에서도 두 줄을 넘지 않는다 */
 .legend {
   position: absolute;
   top: 12px;
@@ -15,30 +16,28 @@
   right: 46px;
   z-index: 2;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 3px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  gap: 4px;
   pointer-events: none;
 }
-.legend::-webkit-scrollbar {
-  display: none;
-}
 .legend > * {
-  flex-shrink: 0;
   pointer-events: auto;
 }
 .legendChip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 7px;
+  box-sizing: border-box;
+  height: 22px;
+  padding: 0 7px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-white) 94%, transparent);
   color: var(--color-text-secondary);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
+  line-height: 1;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -141,14 +140,22 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* 휴대폰 지도는 낮아 범례를 조금 작게 둔다 */
+/* 휴대폰 지도는 좁고 낮아 범례를 가장자리에 붙이고 칩을 조금 줄인다.
+   가장 좁은 휴대폰(320px)에서 여섯 종류가 모두 두 자리 수여도 두 줄 안에 들어가는 크기다 */
 @media (max-width: 540px) {
   .legend {
     top: 10px;
     left: 10px;
+    gap: 3px;
   }
   .legendChip {
-    padding: 4px 6px;
+    gap: 3px;
+    height: 20px;
+    padding: 0 5px;
     font-size: 10px;
+  }
+  .legendDot {
+    width: 7px;
+    height: 7px;
   }
 }

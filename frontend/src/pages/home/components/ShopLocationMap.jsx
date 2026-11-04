@@ -15,13 +15,14 @@ import styles from './ShopLocationMap.module.css';
 
 // 아래쪽 매장 패널과 오른쪽 확대 버튼에 핀이 가리지 않게 범위를 맞출 때 여백을 넓게 둔다
 const MAP_BOUNDS_PADDING = { top: 90, right: 110, bottom: 150, left: 100 };
-// 범례 순서와 이름. 지도 핀 색과 같은 점을 붙여 핀 뜻을 알려 주고, 누르면 그 종류만 지도에 남긴다
+// 범례 순서와 이름. 지도 핀 색과 같은 점을 붙여 핀 뜻을 알려 주고, 누르면 그 종류만 지도에 남긴다.
+// 좁은 휴대폰에서도 범례가 두 줄을 넘지 않게 칩에는 짧은 이름을 쓰고, 화면 읽기·마우스 설명에는 원래 이름을 쓴다
 const LEGEND = [
-  [PIN_KIND.LAST_MINUTE, '초임박'],
-  [PIN_KIND.TODAY, '오늘'],
-  [PIN_KIND.LATER, '다른 날'],
-  [PIN_KIND.MODEL, '초보 시술'],
-  [PIN_KIND.NONE, '빈자리 없음'],
+  [PIN_KIND.LAST_MINUTE, '초임박', '초임박 특가'],
+  [PIN_KIND.TODAY, '오늘', '오늘 빈자리'],
+  [PIN_KIND.LATER, '다른 날', '다른 날 빈자리'],
+  [PIN_KIND.MODEL, '초보', '초보 시술 빈자리'],
+  [PIN_KIND.NONE, '마감', '빈자리 없음'],
 ];
 
 /**
@@ -118,20 +119,24 @@ export default function ShopLocationMap({
           type="button"
           className={`${styles.legendChip} ${styles.count}`}
           aria-pressed={!activeKind}
+          aria-label={`전체 매장 ${shops.length}곳 보기`}
+          title={`전체 매장 ${shops.length}곳 보기`}
           onClick={() => {
             setKindFilter(null);
             setFitSignal((value) => value + 1);
           }}
         >
-          매장 {shops.length}곳
+          전체 {shops.length}
         </button>
         {/* 영업시간 기준이라 낮에는 모든 매장이 초임박 한 종류일 때가 많다. 한 종류여도 핀 색의 뜻을 알 수 있게 늘 보여준다 */}
-        {legend.map(([kind, label]) => (
+        {legend.map(([kind, label, fullLabel]) => (
           <button
             key={kind}
             type="button"
             className={styles.legendChip}
             aria-pressed={activeKind === kind}
+            aria-label={`${fullLabel} 매장 ${kindCounts[kind]}곳`}
+            title={`${fullLabel} 매장 ${kindCounts[kind]}곳`}
             onClick={() => setKindFilter(activeKind === kind ? null : kind)}
           >
             <span className={`${styles.legendDot} ${styles[kind]}`} aria-hidden="true" />
