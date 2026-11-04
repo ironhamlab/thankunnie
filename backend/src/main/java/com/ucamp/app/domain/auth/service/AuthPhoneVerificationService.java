@@ -91,7 +91,7 @@ public class AuthPhoneVerificationService {
         Challenge challenge = new Challenge(id, hash(id, code), now.plus(CODE_VALIDITY), now.plus(RESEND_DELAY));
         boolean sent = false;
         try {
-            sent = smsClient.send(phone, "[땡언니] 회원가입 인증번호 [" + code + "]를 입력해 주세요. (3분 이내)")
+            sent = smsClient.send(phone, "[땡잡은 언니] 회원가입 인증번호 [" + code + "]를 입력해 주세요. (3분 이내)")
                     .status() == SmsSendStatus.SUCCESS;
         } finally {
             // 실패·예외여도 발송 중 상태만 풀고, 위에서 늘린 시도 횟수는 유지한다

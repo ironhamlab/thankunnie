@@ -26,6 +26,8 @@ import com.ucamp.app.domain.notification.repository.RecipientContactRepository.C
 class CancelSmsServiceTest {
 
     private static final Long RESERVATION_ID = 100L;
+    private static final String CANCELLED_LINK_PATH =
+            "/my-reservations?tab=cancelled&reservationId=" + RESERVATION_ID;
     private static final Long USER_ID = 7L;
     private static final LocalDateTime STARTS_AT = LocalDateTime.of(2026, 11, 2, 10, 0);
 
@@ -62,7 +64,7 @@ class CancelSmsServiceTest {
                 NotificationInboxCategory.RESERVATION,
                 "예약이 취소되었어요",
                 "[땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 취소되었습니다.",
-                NotificationInboxService.MY_RESERVATIONS_PATH);
+                CANCELLED_LINK_PATH);
     }
 
     @Test
@@ -81,7 +83,7 @@ class CancelSmsServiceTest {
                 NotificationInboxCategory.RESERVATION,
                 "예약이 취소되었어요",
                 "[땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 매장 사정으로 취소되었습니다.",
-                NotificationInboxService.MY_RESERVATIONS_PATH);
+                CANCELLED_LINK_PATH);
     }
 
     @Test
@@ -100,7 +102,7 @@ class CancelSmsServiceTest {
                 NotificationInboxCategory.RESERVATION,
                 "예약이 취소되었어요",
                 "[땡잡은 언니] 예쁜네일 11월 2일 10:00 고객 요청으로 예약이 취소되었습니다.",
-                NotificationInboxService.MY_RESERVATIONS_PATH);
+                CANCELLED_LINK_PATH);
     }
 
     @Test

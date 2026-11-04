@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { generatePath, Link } from 'react-router-dom';
+import { generatePath, Link, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { PAYMENT_STATUS, reservationStatusOf } from '@/constants/reservationStatus';
 import { useReservationStore } from '@/store/useReservationStore';
@@ -42,6 +42,31 @@ const CARD_LAYOUT_QUERY = '(max-width: 640px)';
 
 const cancelPath = (reservationId) => generatePath(ROUTES.MY_RESERVATION_CANCEL, { reservationId });
 
+// 알림 링크의 ?reservationId= . 숫자만 예약 번호로 본다
+function reservationIdFromSearch(searchParams) {
+  const value = searchParams.get('reservationId');
+  if (!value || !/^\d+$/.test(value)) {
+    return null;
+  }
+  return Number(value);
+}
+
+// 알림 링크의 ?tab= . upcoming 은 이용 예정, cancelled 는 취소다. 없거나 다른 값이면 이용 예정이다.
+// 예약 번호가 있는데 숫자가 아니면 상세는 열 수 없다. 이용 예정 링크가 아니면 취소 목록을 보여 준다.
+function tabKeyFromSearch(searchParams) {
+  if (searchParams.get('tab') === 'upcoming') {
+    return 'upcoming';
+  }
+  if (searchParams.get('tab') === 'cancelled') {
+    return 'cancelled';
+  }
+  const reservationValue = searchParams.get('reservationId');
+  if (reservationValue != null && reservationIdFromSearch(searchParams) == null) {
+    return 'cancelled';
+  }
+  return 'upcoming';
+}
+
 /**
  * 고객 내 예약 (B-F5). 여러 매장 예약을 이용 예정·지난 이용·취소 탭으로 나눠 보고, 고른 예약의 결제·취소 상태를 창에서 본다.
  */
@@ -54,7 +79,10 @@ export default function MyReservationsPage() {
   const listError = useReservationStore((state) => state.listError);
   const loadShop = useShopDetailStore((state) => state.loadShop);
   const clearShop = useShopDetailStore((state) => state.clearShop);
-  const [tabKey, setTabKey] = useState('upcoming');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromSearch = tabKeyFromSearch(searchParams);
+  const linkedReservationId = reservationIdFromSearch(searchParams);
+  const [tabKey, setTabKey] = useState(tabFromSearch);
   const [page, setPage] = useState(0);
   // 이 화면에서 목록을 한 번 받은 뒤에는, 다음 목록을 받는 동안에도 목록을 남겨 화면이 튀지 않게 한다
   const [hasLoadedList, setHasLoadedList] = useState(false);
@@ -70,6 +98,67 @@ export default function MyReservationsPage() {
     };
     load();
   }, [loadReservations, tabKey, page]);
+
+  // 주소의 탭이 바뀔 때만 맞춘다. 화면에서 누른 탭은 주소가 그대로면 유지한다.
+  useEffect(() => {
+    setTabKey(tabFromSearch);
+    setPage(0);
+  }, [tabFromSearch]);
+
+  // 예약 번호가 숫자가 아니면 상세를 묻지 않고, 주소는 취소 탭만 남긴다.
+  useEffect(() => {
+    const reservationValue = searchParams.get('reservationId');
+    if (reservationValue == null || reservationIdFromSearch(searchParams) != null) {
+      return;
+    }
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', searchParams.get('tab') === 'upcoming' ? 'upcoming' : 'cancelled');
+    next.delete('reservationId');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  // 알림에 적힌 예약 번호로 상세를 연다. 목록 첫 페이지에 그 카드가 없어도 번호만으로 받는다.
+  useEffect(() => {
+    if (linkedReservationId == null) {
+      return undefined;
+    }
+
+    let ignore = false;
+
+    const openLinkedReservation = async () => {
+      await loadReservation('my', linkedReservationId);
+      if (ignore) {
+        return;
+      }
+
+      const { detailStatus, detail } = useReservationStore.getState();
+      const loadedId = Number(detail?.summary?.reservationId);
+      if (detailStatus === 'succeeded' && loadedId === linkedReservationId) {
+        const shopId = detail.summary.shopId;
+        if (shopId) {
+          loadShop(shopId);
+        }
+        setIsDetailOpen(true);
+        return;
+      }
+      // 목록에서 다른 예약을 누르며 상세를 다시 받는 중이면, 방금 온 결과로 창을 닫지 않는다.
+      if (detailStatus === 'loading' || detailStatus === 'succeeded') {
+        return;
+      }
+      setIsDetailOpen(false);
+      if (tabFromSearch === 'upcoming') {
+        return;
+      }
+      setTabKey('cancelled');
+      setPage(0);
+    };
+
+    openLinkedReservation();
+
+    return () => {
+      ignore = true;
+    };
+  }, [linkedReservationId, loadReservation, loadShop, tabFromSearch]);
 
   // 창을 연 채 취소 화면 등으로 떠나도 공용 스토어에 매장 정보를 남기지 않는다
   useEffect(() => clearShop, [clearShop]);
@@ -88,6 +177,12 @@ export default function MyReservationsPage() {
   const closeDetail = () => {
     setIsDetailOpen(false);
     clearShop();
+    if (!searchParams.has('reservationId')) {
+      return;
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete('reservationId');
+    setSearchParams(next, { replace: true });
   };
 
   // 폰은 목록이 화면보다 길어 페이지를 넘겨도 스크롤이 아래에 남으므로 목록 맨 위로 올린다

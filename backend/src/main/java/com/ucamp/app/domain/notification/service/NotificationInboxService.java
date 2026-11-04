@@ -33,7 +33,7 @@ import com.ucamp.app.domain.notification.repository.NotificationInboxRepository;
 @RequiredArgsConstructor
 public class NotificationInboxService {
 
-    /** 내 예약 화면. 예약 확정·취소 알림이 이동하는 경로다. */
+    /** 내 예약 화면. 확정·취소 알림은 각 서비스에서 탭과 예약 번호를 붙여 쓴다. */
     public static final String MY_RESERVATIONS_PATH = "/my-reservations";
 
     /** 사장님 예약 현황. 예약 번호가 붙은 경로는 ownerBookingsPath 를 쓴다. */
