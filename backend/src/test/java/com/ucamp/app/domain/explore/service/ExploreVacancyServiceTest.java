@@ -210,6 +210,32 @@ class ExploreVacancyServiceTest {
                 .extracting(ExploreShopResponse::modelOnly).containsExactly(false, false);
     }
 
+    // UNNIE-195 에서 넣은 초보 시술 확인을, 일반 시술도 영업시간 기준이 된 UNNIE-220 에 맞게 옮겼다
+    @Test
+    @DisplayName("초보 시술은 연장 영업 시간대뿐 아니라 영업시간 안 빈 시각도 내고, 열지 않은 매장의 초보 시술도 낸다")
+    void search_modelTreatment_usesBusinessHoursAndOpen() {
+        // 매장 1 손 케어: 영업시간(금 10~20시) 10:30 부터 열린 시간(20~22시) 21:30 까지
+        // 매장 2 남성 커트: 열린 시간이 없어도 영업시간(금 11~21시) 11:00 부터 20:30 까지
+        jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건',"
+                + " PHOTO_NOTICE = '안내' WHERE TREATMENT_ID IN (2, 3)");
+
+        List<ExploreVacancyResponse> content = exploreVacancyService.search(
+                request().treatmentType(TreatmentType.MODEL).page(0, 50).build()).content();
+
+        assertThat(content).extracting(ExploreVacancyResponse::vacancyId)
+                .contains("2-202611061030", "2-202611061930", "2-202611062130",
+                        "3-202611061100", "3-202611062030")
+                .doesNotContain("2-202611061000", "3-202611062100");
+        assertThat(exploreVacancyService.searchShops(
+                request().treatmentType(TreatmentType.MODEL).build().filter()).shops())
+                .extracting(ExploreShopResponse::shopId).containsExactlyInAnyOrder(1L, 2L);
+        // 일반 시술도 같은 영업시간 기준이다: 젤네일 10:30~21:00, 디지털 펌 11:00~19:00
+        assertThat(exploreVacancyService.search(request().treatmentType(TreatmentType.NORMAL).page(0, 50).build())
+                .content()).extracting(ExploreVacancyResponse::vacancyId)
+                .hasSize(22 + 17)
+                .contains("1-202611061030", "1-202611062100", "4-202611061100", "4-202611061900");
+    }
+
     @Test
     @DisplayName("일반·초보 시술이 섞인 매장 요약은 매장 상세에 보이는 일반 빈자리로 계산하고 초보 시술 빈자리는 따로 담는다")
     void searchShops_mixedShop_summarizesNormalAndModelSeparately() {
