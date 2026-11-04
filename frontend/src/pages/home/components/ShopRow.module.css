@@ -378,6 +378,40 @@
   background: var(--color-success);
   color: var(--color-white);
 }
+/* 초보 시술 모집 목록은 펼친 카드 테두리·시간 보기 글자도 초록으로 맞춰 일반 예약 목록의 주황과 구분한다 */
+.modelList.expanded {
+  border-color: var(--color-success);
+}
+/* 시간 보기를 누르면 옆 지도에서도 그 매장을 보여주므로, 주황 그림자와 섞이지 않게 선택 표시도 초록으로 한다 */
+.modelList.located {
+  border-color: var(--color-success);
+  box-shadow: 0 0 0 1px var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 4%, var(--color-white));
+  animation-name: modelLocatedPulse;
+}
+@keyframes modelLocatedPulse {
+  0% {
+    box-shadow:
+      0 0 0 1px var(--color-success),
+      0 0 0 0 color-mix(in srgb, var(--color-success) 45%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 1px var(--color-success),
+      0 0 0 10px color-mix(in srgb, var(--color-success) 0%, transparent);
+  }
+}
+.modelList .toggle {
+  color: var(--color-success-text);
+}
+/* 안의 초록 칸이 주황 바탕 위에 뜨지 않게 펼친 영역 바탕은 흰색으로 둔다 */
+.modelList .panel {
+  background: var(--color-white);
+}
+.modelList .message a,
+.modelList .message button {
+  color: var(--color-success-text);
+}
 .noVacancy .thumb {
   opacity: 0.6;
 }
