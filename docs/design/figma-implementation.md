@@ -1,6 +1,6 @@
 # Figma 디자인 구현 — 이슈 #23
 
-> 이 문서는 이슈 #23 시안 작업 기록입니다. 시연 데이터·상태(`useDesignStore`, `demoData.js`, `demoRefundPolicy.js`), 예전 예약 화면(`/reserve/:id`)과 Figma 에셋(`Asset`, `src/assets/figma`)은 UNNIE-207에서 삭제했습니다. 아래 시연 관련 설명은 당시 기준입니다.
+> 이 문서는 이슈 #23 시안 작업 기록입니다. 시연 데이터·상태(`useDesignStore`, `demoData.js`, `demoRefundPolicy.js`), 예전 예약 화면(`/reserve/:id`)과 Figma 에셋(`Asset`, `src/assets/figma`)은 UNNIE-207에서 삭제했고, 전역 CSS(`home-redesign.css`, `remaining-screens.css`)는 UNNIE-233에서 모듈 CSS·`design.css`로 옮겼습니다. 아래 경로와 시연 관련 설명은 당시 기준입니다.
 
 ## 실행
 
