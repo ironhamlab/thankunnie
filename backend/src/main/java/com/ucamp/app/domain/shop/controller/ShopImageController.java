@@ -2,7 +2,6 @@ package com.ucamp.app.domain.shop.controller;
 
 import java.util.List;
 
-import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -60,7 +59,7 @@ public class ShopImageController {
     public ResponseEntity<byte[]> getImage(@PathVariable Long shopId, @PathVariable String fileName) {
         ShopImageContentResponse image = service.getImage(shopId, fileName);
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(image.contentType()))
-                .cacheControl(CacheControl.noStore()).header("X-Content-Type-Options", "nosniff")
+                .cacheControl(ShopImageContentResponse.CACHE_CONTROL).header("X-Content-Type-Options", "nosniff")
                 .body(image.content());
     }
 }

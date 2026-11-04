@@ -68,6 +68,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -229,7 +230,8 @@ class ShopImageIntegrationTest {
                     .andExpect(status().isOk()).andExpect(jsonPath("$.data.treatmentId").value(9701))
                     .andReturn().getResponse().getContentAsString();
             String url = objectMapper.readTree(response).path("data").path("imageUrl").asText();
-            mvc.perform(get(url)).andExpect(status().isOk()).andExpect(content().bytes(file.getBytes()));
+            mvc.perform(get(url)).andExpect(status().isOk()).andExpect(content().bytes(file.getBytes()))
+                    .andExpect(header().string("Cache-Control", "max-age=31536000, public, immutable"));
             assertThat(jdbc.queryForObject("SELECT IMAGE_URL FROM TREATMENT WHERE TREATMENT_ID=9701",
                     String.class)).isEqualTo(url);
             if (previousUrl != null) {
@@ -317,7 +319,8 @@ class ShopImageIntegrationTest {
         MockMultipartFile png = ShopImageFixture.image("png");
         String originalUrl = upload(png);
         mvc.perform(get(originalUrl)).andExpect(status().isOk()).andExpect(content().contentType("image/png"))
-                .andExpect(content().bytes(png.getBytes()));
+                .andExpect(content().bytes(png.getBytes()))
+                .andExpect(header().string("Cache-Control", "max-age=31536000, public, immutable"));
 
         MockMultipartFile jpg = ShopImageFixture.image("jpg");
         String replacedUrl = upload(jpg);
