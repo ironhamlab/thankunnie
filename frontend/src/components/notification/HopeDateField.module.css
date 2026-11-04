@@ -1,0 +1,25 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.input {
+  position: relative;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* 캘린더 아이콘 클릭 영역을 칸 전체로 넓혀, 끝쪽만 눌러야 열리는 브라우저 기본 동작을 보완한다. */
+.input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+}
