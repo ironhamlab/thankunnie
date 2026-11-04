@@ -107,14 +107,19 @@ export const useScheduleStore = create((set, get) => ({
   },
 
   // 실패해도 던지지 않고 refreshFailed 로 알린다. 화면은 새로고침 안내를 보여준다.
+  // 그사이 일정을 새로 받았거나 계정이 바뀌었으면 이 응답은 버린다
   reloadExceptions: async () => {
     const { from, to } = exceptionRange();
+    const requestId = get().loadRequestId;
+    const isCurrent = () => get().loadRequestId === requestId;
     set({ isRefreshing: true });
     try {
       const exceptions = await scheduleApi.getExceptions(from, to);
-      set({ exceptions, refreshFailed: false, isRefreshing: false });
+      if (isCurrent()) set({ exceptions, refreshFailed: false });
     } catch {
-      set({ refreshFailed: true, isRefreshing: false });
+      if (isCurrent()) set({ refreshFailed: true });
+    } finally {
+      set({ isRefreshing: false });
     }
   },
 

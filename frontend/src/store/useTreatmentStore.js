@@ -39,20 +39,31 @@ export const useTreatmentStore = create((set, get) => ({
   },
   selectionStatus: 'idle',
   selectionError: null,
+  selectionRequestId: 0,
 
+  // 마지막 요청의 응답만 반영해 늦게 온 이전 계정의 시술이 들어오지 않게 한다
   loadActiveTreatments: async () => {
-    set({ selectionStatus: 'loading', selectionError: null, activeTreatments: [] });
+    const requestId = get().selectionRequestId + 1;
+    const isCurrent = () => get().selectionRequestId === requestId;
+    set({
+      selectionRequestId: requestId,
+      selectionStatus: 'loading',
+      selectionError: null,
+      activeTreatments: [],
+    });
     try {
       const user = await treatmentApi.getCurrentUser();
+      if (!isCurrent()) return [];
       if (user?.role !== 'OWNER' || !user.shopId) {
         throw { code: 'COMMON_403', message: '매장 계정으로 로그인해 주세요.' };
       }
       const activeTreatments = await treatmentApi.getActiveTreatments(user.shopId);
+      if (!isCurrent()) return [];
       set({ activeTreatments, selectionStatus: 'succeeded' });
       return activeTreatments;
     } catch (error) {
       const failure = toError(error);
-      set({ selectionStatus: 'failed', selectionError: failure });
+      if (isCurrent()) set({ selectionStatus: 'failed', selectionError: failure });
       throw failure;
     }
   },
@@ -134,5 +145,6 @@ onSessionChange(() =>
     error: null,
     selectionError: null,
     loadRequestId: state.loadRequestId + 1,
+    selectionRequestId: state.selectionRequestId + 1,
   })),
 );

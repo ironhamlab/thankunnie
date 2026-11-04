@@ -48,7 +48,10 @@ export const useOwnerDashboardStore = create((set, get) => ({
         set({ monthSummary: stats?.summary ?? null });
       }
     } catch {
-      // 보조 정보라 실패를 따로 알리지 않는다
+      // 보조 정보라 실패를 따로 알리지 않고 그 줄만 숨긴다
+      if (get().monthSummaryRequestId === requestId) {
+        set({ monthSummary: null });
+      }
     }
   },
 

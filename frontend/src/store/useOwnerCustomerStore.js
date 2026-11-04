@@ -9,7 +9,8 @@ const toError = (error, fallback) => ({
 
 /**
  * 매장 고객 관리. 목록·상세·메모 저장을 각각 다른 상태로 둔다.
- * 목록·상세는 마지막 요청의 응답만 반영하고, 시작할 때 이전 값을 비워 다른 고객·다른 매장의 정보가 남지 않게 한다.
+ * 목록·상세는 마지막 요청의 응답만 반영한다. 목록은 조건이 바뀔 때, 상세는 시작할 때 이전 값을 비운다.
+ * 계정이 바뀌면 아래 onSessionChange 가 모두 비워 다른 매장의 정보가 남지 않게 한다.
  */
 export const useOwnerCustomerStore = create((set, get) => ({
   customers: [],
