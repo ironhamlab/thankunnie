@@ -9,7 +9,7 @@ export const LAST_END = '23:30';
 // 열기·닫기는 하루 안에서 끝나야 해서 23:00 칸(~23:30)까지만 고른다
 export const LAST_START = '23:00';
 // 오늘 더 고를 칸이 없을 때의 값. 모든 칸이 이보다 이르므로 전부 막힌다
-export const NO_MORE_TODAY = '24:00';
+const NO_MORE_TODAY = '24:00';
 
 /** 그 날짜에 고를 수 있는 가장 이른 시작 칸. 오늘이 아니면 제한이 없어 null */
 export const minStartOf = (type, date) =>

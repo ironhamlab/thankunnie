@@ -7,7 +7,7 @@ import { useCurrentRole } from '@/hooks/useCurrentRole';
 import { useInboxStream } from '@/hooks/useInboxStream';
 import { useLogout } from '@/hooks/useLogout';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useDesignStore } from '@/store/useDesignStore';
+import { useSearchStore } from '@/store/useSearchStore';
 import { useInboxStore } from '@/store/useInboxStore';
 import { getDevTestUser } from '@/utils/devTestUser';
 import { formatDateTime } from '@/utils/reservationFormat';
@@ -71,8 +71,8 @@ export default function Header() {
   const token = useAuthStore((s) => s.token);
   const role = useCurrentRole();
   const logout = useLogout();
-  const search = useDesignStore((s) => s.search);
-  const setSearch = useDesignStore((s) => s.setSearch);
+  const search = useSearchStore((s) => s.search);
+  const setSearch = useSearchStore((s) => s.setSearch);
   const [open, setOpen] = useState(false);
   // 닫을 때 사라지는 움직임이 끝날 때까지 목록 창을 남겨 둔다
   const [leaving, setLeaving] = useState(false);

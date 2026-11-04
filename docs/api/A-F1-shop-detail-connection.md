@@ -116,7 +116,7 @@ const toSlot = shopPagePath(vacancy.shopId, {
 
 - `constants/routes.js`: `SHOP_DETAIL: '/shops/:shopId'` 추가
 - `routes/AppRouter.jsx`: 이전 시술 상세 라우트(`/services/:id`)를 매장 상세 라우트(`/shops/:shopId`)로 교체
-  - `ROUTES.SERVICE_DETAIL` 상수는 홈·지도·마이페이지 시연 링크(`HomePage`, `HomeBeautyMap`, `ServiceCard`, `VacancyMap`, `CustomerProfilePage`)가 아직 참조하므로 남겨 두었다. 라우트가 없어 이 링크는 찾을 수 없음 화면으로 열리며, 각 담당이 `SHOP_DETAIL`로 바꾼 뒤 상수를 지운다.
+  - 남겨 두었던 `ROUTES.SERVICE_DETAIL` 상수는 참조하는 화면이 없어져 UNNIE-207에서 지웠다.
 
 ## 가격 표시
 

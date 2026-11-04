@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { money } from '@/utils/demoData';
+import { formatMoney } from '@/utils/reservationFormat';
 import { earliestLabel, shopPagePath } from '@/utils/exploreVacancy';
 import { datePart } from '@/utils/scheduleDate';
 import ExploreMap from '@/components/map/ExploreMap';
@@ -97,7 +97,7 @@ export default function ShopLocationMap({
                   })}
                 >
                   ✦ 초보 시술 모집 {selected.modelVacancyCount}개 ·{' '}
-                  {money(selected.modelMinSalePrice)}~
+                  {formatMoney(selected.modelMinSalePrice)}~
                 </Link>
               )}
             </div>

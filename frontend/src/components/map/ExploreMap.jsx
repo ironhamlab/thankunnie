@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Spinner from '@/components/common/Spinner';
 import { useMyLocation } from '@/hooks/useMyLocation';
-import { money } from '@/utils/demoData';
+import { formatMoney } from '@/utils/reservationFormat';
 import { hasKakaoMapKey, loadKakaoMap } from '@/utils/kakaoMapLoader';
 import { logger } from '@/utils/logger';
 import styles from './ExploreMap.module.css';
@@ -134,7 +134,7 @@ export default function ExploreMap({
             const prices = overlays
               .map((overlay) => pricesRef.current.get(overlay))
               .filter((price) => price != null);
-            const minPrice = prices.length ? money(Math.min(...prices)) : null;
+            const minPrice = prices.length ? formatMoney(Math.min(...prices)) : null;
             const content = cluster.getClusterMarker().getContent();
             if (content instanceof HTMLElement) {
               content.innerHTML = `<span>${overlays.length}곳</span>${minPrice ? `<span>${minPrice}~</span>` : ''}`;
@@ -198,11 +198,11 @@ export default function ExploreMap({
       element.type = 'button';
       const hasVacancy = shop.minSalePrice != null;
       element.className = hasVacancy ? styles.pin : `${styles.pin} ${styles.pinNoVacancy}`;
-      element.textContent = hasVacancy ? `${money(shop.minSalePrice)}~` : shop.shopName;
+      element.textContent = hasVacancy ? `${formatMoney(shop.minSalePrice)}~` : shop.shopName;
       element.setAttribute(
         'aria-label',
         hasVacancy
-          ? `${shop.shopName} ${money(shop.minSalePrice)}부터`
+          ? `${shop.shopName} ${formatMoney(shop.minSalePrice)}부터`
           : `${shop.shopName} 빈자리 없음`,
       );
       element.addEventListener('click', () => callbacksRef.current.onSelect?.(String(shop.shopId)));

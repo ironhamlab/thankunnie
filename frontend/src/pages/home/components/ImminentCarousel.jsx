@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { money } from '@/utils/demoData';
+import { formatMoney } from '@/utils/reservationFormat';
 import { useExploreStore } from '@/store/useExploreStore';
 import Button from '@/components/common/Button';
 import VacancyCountdown from './VacancyCountdown';
@@ -212,10 +212,10 @@ export default function ImminentCarousel({
               <p className={styles.location}>⌖ {current.location}</p>
               <div className={styles.price}>
                 <div>
-                  {current.discount > 0 && <del>{money(current.original)}</del>}
+                  {current.discount > 0 && <del>{formatMoney(current.original)}</del>}
                   <div>
                     {current.discount > 0 && <em>{current.discount}%</em>}{' '}
-                    <b>{money(current.price)}</b>
+                    <b>{formatMoney(current.price)}</b>
                   </div>
                 </div>
                 {/* 이 링크가 카드 전체를 덮어, 카드 어디를 눌러도 같은 예약 화면으로 간다 */}

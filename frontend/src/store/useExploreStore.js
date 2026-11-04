@@ -76,9 +76,6 @@ export const useExploreStore = create((set, get) => ({
   homeShops: [],
   homeShopsStatus: 'idle',
   homeShopsError: null,
-  shops: [],
-  shopsStatus: 'idle',
-  shopsError: null,
   searchShops: [],
   searchShopsStatus: 'idle',
   searchShopsError: null,
@@ -120,11 +117,6 @@ export const useExploreStore = create((set, get) => ({
   loadHomeShops: simpleLoader(
     set,
     { data: 'homeShops', status: 'homeShopsStatus', error: 'homeShopsError' },
-    fetchShops,
-  ),
-  loadShops: simpleLoader(
-    set,
-    { data: 'shops', status: 'shopsStatus', error: 'shopsError' },
     fetchShops,
   ),
 
