@@ -83,14 +83,13 @@
 .previewIcon {
   color: var(--color-primary-text);
 }
+/* 필터 상자는 내용만큼만 높이를 갖게 해 위아래가 비지 않게 한다 */
 .filters {
-  padding: 20px;
+  padding: 18px 20px;
   margin: 24px 0;
-  min-height: 182px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 8px;
+  gap: 14px;
 }
 .filterGroup {
   display: flex;
@@ -110,6 +109,13 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 8px 12px;
+}
+/* 웹에서는 '날짜' 이름을 숨겨 날짜 버튼이 위 분야 버튼과 같은 왼쪽 선에서 시작하게 한다.
+   버튼 묶음의 aria-label 로 화면 낭독기에는 그대로 알린다 */
+@media (min-width: 541px) {
+  .dateControls .filterLabel {
+    display: none;
+  }
 }
 /* 짧은 정렬 이름은 휴대폰에서 날짜와 한 줄에 둘 때만 쓴다 */
 .shortLabel {
@@ -252,24 +258,24 @@
   font-size: 13px;
   margin: 8px 0 0;
 }
-/* 시술 분야는 가장 먼저 고르는 조건이라 크게 보여준다 */
+/* 시술 분야는 가장 먼저 고르는 조건이라 맨 위에 두되, 필터 상자 안에서 튀지 않게 알약 크기로 둔다 */
 .categoryRow {
   position: relative;
   isolation: isolate;
   display: flex;
-  gap: 10px;
+  gap: 8px;
   overflow-x: auto;
   padding-bottom: 4px;
 }
 .categoryRow button {
   flex-shrink: 0;
-  min-width: 96px;
-  padding: 12px 24px;
-  border: 1px solid var(--color-border-strong);
+  min-width: 72px;
+  padding: 8px 18px;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   background: white;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--color-text-secondary);
   transition:
     color 0.2s,
@@ -311,7 +317,6 @@
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  padding: 12px 0 4px;
 }
 /* 목록 옆에 지도를 붙여 두고 스크롤해도 지도는 따라오게 한다 */
 .layout {
