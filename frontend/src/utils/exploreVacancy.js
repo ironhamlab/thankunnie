@@ -99,6 +99,15 @@ export const areaName = (address) => address.split(' ').slice(1, 3).join(' ');
 export const earliestLabel = (shop, today = todayKst()) =>
   `${dayLabel(datePart(shop.earliestStartsAt), today)} ${timePart(shop.earliestStartsAt)}`;
 
+// 매장 요약(C-02)의 빈자리 수는 시술과 상관없이 겹치지 않는 시작 시각을 조회 시작일부터 그 주 일요일까지만 센 값이다.
+// 가장 빠른 빈자리가 다음 주 이후면 0 이라 그때는 수를 빼고 시작 시각만 보여준다.
+// 줄이 바뀌어도 "빈자리 N개"가 떨어지지 않게 붙는 공백(NBSP)을 쓴다
+export const vacancySummary = (shop, today = todayKst()) =>
+  `${earliestLabel(shop, today)}부터${shop.vacancyCount > 0 ? ` · 빈자리\u00a0${shop.vacancyCount}개` : ''}`;
+
+/** 일반·초보 시술이 섞인 매장에 초보 시술 빈자리가 있는지. 빈자리 수는 일요일까지만 세므로 조회 기간 전체의 최저가로 본다 */
+export const hasModelVacancy = (shop) => shop.modelMinSalePrice != null;
+
 /** 빈자리를 시술별로 묶는다. 시작 시각 순서는 그대로 둔다 */
 export function groupByTreatment(vacancies) {
   const groups = new Map();

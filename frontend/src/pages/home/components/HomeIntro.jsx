@@ -39,11 +39,8 @@ export default function HomeIntro() {
     };
   }, [loadSummaryShops, loadSaleShops]);
 
-  const vacancyCount = shops.reduce(
-    // 초보 시술만 있는 매장은 vacancyCount 에 이미 초보 시술 빈자리가 담겨 있다
-    (sum, shop) => sum + shop.vacancyCount + (shop.modelOnly ? 0 : shop.modelVacancyCount),
-    0,
-  );
+  // 매장마다 일반·초보 시술을 합쳐 겹치지 않는 시작 시각을 이번 주 일요일까지 센 값(totalVacancyCount)을 더한다
+  const vacancyCount = shops.reduce((sum, shop) => sum + shop.totalVacancyCount, 0);
   const maxDiscount = Math.max(
     0,
     ...[...shops, ...saleShops].map((shop) => shop.maxDiscountRate),

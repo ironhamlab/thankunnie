@@ -1,8 +1,10 @@
 package com.ucamp.app.domain.explore.service;
 
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -100,11 +102,15 @@ public class ExploreVacancyService {
      * 지도 마커용 매장 요약 (C-02). 빈자리가 있는 매장만 가장 빠른 시작 시각, 매장 ID 순으로 최대 200개 돌려준다.
      */
     public ExploreShopMapResponse searchShops(ExploreVacancyFilter filter) {
-        Map<Long, List<Item>> itemsByShop = filteredItems(filter, LocalDateTime.now(clock)).stream()
+        LocalDateTime now = LocalDateTime.now(clock);
+        Map<Long, List<Item>> itemsByShop = filteredItems(filter, now).stream()
                 .collect(Collectors.groupingBy(item -> item.candidate().shopId(), LinkedHashMap::new,
                         Collectors.toList()));
+        // 빈자리 수는 조회 시작일부터 그 주 일요일까지만 센다 (월~일 한 주)
+        LocalDateTime countUntil = searchFromDate(filter, now.toLocalDate())
+                .with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)).plusDays(1).atStartOfDay();
         List<ExploreShopResponse> shops = itemsByShop.values().stream()
-                .map(ExploreVacancyService::toShop)
+                .map(items -> toShop(items, countUntil))
                 .sorted(Comparator.comparing(ExploreShopResponse::earliestStartsAt)
                         .thenComparing(ExploreShopResponse::shopId))
                 .toList();
@@ -147,8 +153,7 @@ public class ExploreVacancyService {
         List<String> regionCodes = regionCodes(filter.regionCodes());
         String keyword = keyword(filter.keyword());
         MapBounds bounds = bounds(filter);
-        // 지난 날짜는 어차피 예약할 수 없으므로 오늘부터 본다
-        LocalDate fromDate = startDate.isBefore(today) ? today : startDate;
+        LocalDate fromDate = searchFromDate(filter, today);
         if (fromDate.isAfter(endDate)) {
             return List.of();
         }
@@ -165,6 +170,12 @@ public class ExploreVacancyService {
                 .filter(item -> filter.priceTier() == null
                         || item.quote().tier().compareTo(filter.priceTier()) >= 0)
                 .toList();
+    }
+
+    // 조회 시작일. 생략하면 오늘이고, 지난 날짜는 어차피 예약할 수 없으므로 오늘부터 본다
+    private static LocalDate searchFromDate(ExploreVacancyFilter filter, LocalDate today) {
+        LocalDate startDate = filter.startDate() != null ? filter.startDate() : today;
+        return startDate.isBefore(today) ? today : startDate;
     }
 
     // 영업시간 안 빈 시각에서 찾는다. 지난 시각은 볼 필요가 없어 지금부터 본다.
@@ -217,7 +228,7 @@ public class ExploreVacancyService {
 
     // 매장 상세는 일반 시술만, 초보 시술 모집 상세는 초보 시술만 보여준다. 카드 값이 연결되는 상세와 맞도록
     // 일반 빈자리가 있으면 일반 빈자리로, 없으면 초보 시술 빈자리로 요약하고, 섞인 매장의 초보 시술 빈자리는 따로 담는다
-    private static ExploreShopResponse toShop(List<Item> items) {
+    private static ExploreShopResponse toShop(List<Item> items, LocalDateTime countUntil) {
         ExploreVacancyCandidate shop = items.get(0).candidate();
         List<Item> modelItems = items.stream()
                 .filter(item -> item.candidate().treatmentType() == TreatmentType.MODEL)
@@ -236,14 +247,21 @@ public class ExploreVacancyService {
                 shop.latitude(),
                 shop.longitude(),
                 shop.shopImageUrl(),
-                linked.size(),
+                countStartTimes(linked, countUntil),
                 minSalePrice(linked),
                 linked.stream().mapToInt(item -> item.quote().discountRate()).max().orElseThrow(),
                 TimeUtils.toOffset(earliest.startsAt()),
                 earliest.quote().tier(),
                 modelOnly,
-                modelItems.size(),
-                modelItems.isEmpty() ? null : minSalePrice(modelItems));
+                countStartTimes(modelItems, countUntil),
+                modelItems.isEmpty() ? null : minSalePrice(modelItems),
+                countStartTimes(items, countUntil));
+    }
+
+    // 한 시각에 예약이 잡히면 그 매장의 다른 시술도 그 시각엔 못 잡으므로 시술이 달라도 같은 시작 시각은 한 번만 센다
+    private static int countStartTimes(List<Item> items, LocalDateTime until) {
+        return (int) items.stream().map(Item::startsAt).filter(startsAt -> startsAt.isBefore(until)).distinct()
+                .count();
     }
 
     private static int minSalePrice(List<Item> items) {

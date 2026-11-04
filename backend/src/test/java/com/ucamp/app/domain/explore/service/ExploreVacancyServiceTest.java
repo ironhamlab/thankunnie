@@ -59,6 +59,10 @@ class ExploreVacancyServiceTest {
     private static final LocalDate NEXT_DAY = OPEN_DAY.plusDays(1);
     private static final int SHOP_ONE_COUNT = 45;
     private static final int SHOP_TWO_COUNT = 37;
+    // 지도 매장 요약의 빈자리 수는 시술과 상관없이 겹치지 않는 시작 시각 수다.
+    // 11-06 매장 1 은 10:30~21:30 23개(젤네일 시각은 손 케어 시각에 모두 들어간다), 매장 2 는 11:00~20:30 20개
+    private static final int SHOP_ONE_TIMES = 23;
+    private static final int SHOP_TWO_TIMES = 20;
 
     @Autowired
     private ExploreVacancyService exploreVacancyService;
@@ -135,7 +139,8 @@ class ExploreVacancyServiceTest {
         assertThat(result.shops()).extracting(ExploreShopResponse::shopId).containsExactly(1L, 2L);
         // 10:30 시작은 3시간 안이라 초임박가: 손 케어 20,000 → 15,000(25%)
         ExploreShopResponse shopOne = result.shops().get(0);
-        assertThat(shopOne.vacancyCount()).isEqualTo(SHOP_ONE_COUNT);
+        assertThat(shopOne.vacancyCount()).isEqualTo(SHOP_ONE_TIMES);
+        assertThat(shopOne.totalVacancyCount()).isEqualTo(SHOP_ONE_TIMES);
         assertThat(shopOne.minSalePrice()).isEqualTo(15000);
         assertThat(shopOne.maxDiscountRate()).isEqualTo(25);
         assertThat(shopOne.earliestStartsAt()).isEqualTo(kst(2026, 11, 6, 10, 30));
@@ -143,7 +148,7 @@ class ExploreVacancyServiceTest {
         assertThat(shopOne.latitude()).isEqualByComparingTo("37.4979");
         // 남성 커트 25,000(할인 없음), 디지털 펌 초임박가 90,000 → 70,000(22%). 펌 120분은 21시 전에 끝나야 해 19:00 이 마지막이다
         ExploreShopResponse shopTwo = result.shops().get(1);
-        assertThat(shopTwo.vacancyCount()).isEqualTo(SHOP_TWO_COUNT);
+        assertThat(shopTwo.vacancyCount()).isEqualTo(SHOP_TWO_TIMES);
         assertThat(shopTwo.minSalePrice()).isEqualTo(25000);
         assertThat(shopTwo.maxDiscountRate()).isEqualTo(22);
         assertThat(shopTwo.earliestStartsAt()).isEqualTo(kst(2026, 11, 6, 11, 0));
@@ -157,8 +162,8 @@ class ExploreVacancyServiceTest {
         ExploreShopResponse shopTwo = exploreVacancyService.searchShops(request().shopId(2L).build().filter())
                 .shops().get(0);
 
-        // 21~22시를 열면 남성 커트 21:00·21:30, 디지털 펌 19:30·20:00 이 늘어난다
-        assertThat(shopTwo.vacancyCount()).isEqualTo(SHOP_TWO_COUNT + 4);
+        // 21~22시를 열면 남성 커트 21:00·21:30 이 늘어난다. 디지털 펌 19:30·20:00 은 커트 시각과 겹쳐 한 번만 센다
+        assertThat(shopTwo.vacancyCount()).isEqualTo(SHOP_TWO_TIMES + 2);
     }
 
     @Test
@@ -221,6 +226,24 @@ class ExploreVacancyServiceTest {
         assertThat(shop.maxDiscountRate()).isEqualTo(14);
         assertThat(shop.modelVacancyCount()).isEqualTo(20);
         assertThat(shop.modelMinSalePrice()).isEqualTo(18000);
+        // 젤네일 시각은 손 케어 시각에 모두 들어가므로 합쳐도 20개다
+        assertThat(shop.totalVacancyCount()).isEqualTo(20);
+    }
+
+    @Test
+    @DisplayName("지도 매장 요약의 빈자리 수는 조회 시작일부터 그 주 일요일까지만 센다")
+    void searchShops_vacancyCount_countsUntilSunday() {
+        // 금(11-06)~다음 주 목(11-12)을 조회해도 금 23개 + 토 10:00~19:30 20개만 센다 (일요일은 매장 1 휴무)
+        ExploreShopResponse thisWeek = exploreVacancyService.searchShops(
+                new RequestBuilder().dates(OPEN_DAY, OPEN_DAY.plusDays(6)).shopId(1L).build().filter()).shops().get(0);
+        assertThat(thisWeek.vacancyCount()).isEqualTo(SHOP_ONE_TIMES + 20);
+
+        // 다음 주 월(11-09)부터 조회하면 그 주 일요일(11-15)까지 센다: 월~토 10:00~19:30 20개씩
+        LocalDate nextMonday = LocalDate.of(2026, 11, 9);
+        ExploreShopResponse nextWeek = exploreVacancyService.searchShops(
+                new RequestBuilder().dates(nextMonday, nextMonday.plusDays(13)).shopId(1L).build().filter())
+                .shops().get(0);
+        assertThat(nextWeek.vacancyCount()).isEqualTo(20 * 6);
     }
 
     @Test

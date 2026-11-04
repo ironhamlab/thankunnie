@@ -157,13 +157,16 @@ export const useExploreStore = create((set, get) => ({
     const isCurrent = () => get().shopVacancies[shopId]?.requestId === requestId;
     entry({ status: 'loading', vacancies: [], error: null });
     try {
-      const vacancies = await fetchVacancyCards({
+      const page = await exploreApi.getVacancies({
         ...params,
         shopId,
         sort: 'START_ASC',
         size: SHOP_VACANCY_SIZE,
       });
-      if (isCurrent()) entry({ status: 'succeeded', vacancies, error: null });
+      const vacancies = page.content.map((item) => toVacancyCard(item));
+      // 개수 제한에 걸려 다 못 받았으면 카드가 매장 페이지에서 나머지를 고르라고 안내한다
+      const truncated = page.totalElements > vacancies.length;
+      if (isCurrent()) entry({ status: 'succeeded', vacancies, truncated, error: null });
     } catch (error) {
       if (isCurrent()) entry({ status: 'failed', vacancies: [], error: toError(error) });
     }
