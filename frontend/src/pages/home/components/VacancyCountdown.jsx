@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import RollingValue from './RollingValue';
+import RollingValue from '@/components/common/RollingValue';
 
 const pad = (value) => String(value).padStart(2, '0');
 

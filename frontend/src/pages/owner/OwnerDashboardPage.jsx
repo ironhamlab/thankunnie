@@ -21,7 +21,7 @@ import Panel from '@/components/common/Panel';
 import SlidingIndicator from '@/components/common/SlidingIndicator';
 import Spinner from '@/components/common/Spinner';
 import NudgeArrow from './components/NudgeArrow';
-import RepresentativeImage from './components/RepresentativeImage';
+import RepresentativeImage from '@/components/common/RepresentativeImage';
 import StatCard from './components/StatCard';
 import StatsSection from './components/StatsSection';
 import styles from './OwnerDashboardPage.module.css';

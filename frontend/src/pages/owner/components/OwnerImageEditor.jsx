@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Button from '@/components/common/Button';
 import Alert from '@/components/common/Alert';
 import ImageFileInput from './ImageFileInput';
-import RepresentativeImage from './RepresentativeImage';
+import RepresentativeImage from '@/components/common/RepresentativeImage';
 import styles from './OwnerImageEditor.module.css';
 
 export default function OwnerImageEditor({ imageUrl, isSaving, onSave, kind = 'treatment' }) {

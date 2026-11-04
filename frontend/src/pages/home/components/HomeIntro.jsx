@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import useAutoRefresh from '@/hooks/useAutoRefresh';
 import { useExploreStore } from '@/store/useExploreStore';
-import RollingValue from './RollingValue';
+import RollingValue from '@/components/common/RollingValue';
 import styles from './HomeIntro.module.css';
 
 /**

@@ -1,4 +1,4 @@
-import RepresentativeImage from './RepresentativeImage';
+import RepresentativeImage from '@/components/common/RepresentativeImage';
 import styles from './TreatmentThumbnail.module.css';
 
 export default function TreatmentThumbnail({ imageUrl, name }) {

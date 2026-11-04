@@ -11,7 +11,7 @@ import EmptyState from '@/components/common/EmptyState';
 import Panel from '@/components/common/Panel';
 import Spinner from '@/components/common/Spinner';
 import ReservationPagination from '@/components/reservation/ReservationPagination';
-import RollingValue from '@/pages/home/components/RollingValue';
+import RollingValue from '@/components/common/RollingValue';
 import SlidingOptions from './components/SlidingOptions';
 import styles from './CustomersPage.module.css';
 

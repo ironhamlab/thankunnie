@@ -3,7 +3,7 @@ import { ROUTES } from '@/constants/routes';
 import { useSlidingIndicator } from '@/hooks/useSlidingIndicator';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useShopStore } from '@/store/useShopStore';
-import RepresentativeImage from '@/pages/owner/components/RepresentativeImage';
+import RepresentativeImage from '@/components/common/RepresentativeImage';
 import Button from '@/components/common/Button';
 import SlidingIndicator from '@/components/common/SlidingIndicator';
 import ChartIcon from '@/components/icons/ChartIcon';

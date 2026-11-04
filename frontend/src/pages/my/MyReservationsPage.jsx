@@ -13,7 +13,7 @@ import Dialog from '@/components/common/Dialog';
 import Panel from '@/components/common/Panel';
 import SlidingIndicator from '@/components/common/SlidingIndicator';
 import { useSlidingIndicator } from '@/hooks/useSlidingIndicator';
-import RollingValue from '@/pages/home/components/RollingValue';
+import RollingValue from '@/components/common/RollingValue';
 import EmptyState from '@/components/common/EmptyState';
 import VisitShopLocation from './components/VisitShopLocation';
 import styles from './MyReservationsPage.module.css';
