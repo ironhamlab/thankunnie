@@ -28,6 +28,7 @@ import com.ucamp.app.common.auth.StubAuthFilter;
 import com.ucamp.app.common.response.PageResponse;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.domain.reservation.dto.response.ReservationSummaryResponse;
+import com.ucamp.app.domain.reservation.entity.ReservationDisplayStatus;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.service.ReservationNoShowService;
 import com.ucamp.app.domain.reservation.service.ReservationQueryService;
@@ -55,7 +56,7 @@ class OwnerReservationControllerTest {
         OffsetDateTime startsAt = OffsetDateTime.of(2026, 11, 2, 14, 0, 0, 0, ZoneOffset.ofHours(9));
         ReservationSummaryResponse item = new ReservationSummaryResponse(1L, ReservationStatus.CONFIRMED,
                 startsAt, startsAt.plusHours(1), 1L, "언니네 네일", 1L, "젤네일", "고객일",
-                30000, 20000, 10000, "PAID", null, true, 1L, false);
+                30000, 20000, 10000, "PAID", null, true, 1L, false, ReservationDisplayStatus.CONFIRMED);
         given(reservationQueryService.getOwnerReservations(any(AuthUser.class), eq(LocalDate.of(2026, 11, 2)),
                 eq(LocalDate.of(2026, 11, 3)), eq(List.of(ReservationStatus.CONFIRMED, ReservationStatus.CANCELLED)),
                 anyInt(), anyInt()))

@@ -32,7 +32,9 @@ import com.ucamp.app.common.util.TimeUtils;
 import com.ucamp.app.domain.reservation.dto.response.ReservationDetailResponse;
 import com.ucamp.app.domain.reservation.dto.response.ReservationSummaryResponse;
 import com.ucamp.app.domain.reservation.entity.Reservation;
+import com.ucamp.app.domain.reservation.entity.ReservationDisplayStatus;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
+import com.ucamp.app.domain.reservation.entity.ReservationTiming;
 import com.ucamp.app.domain.reservation.repository.ReservationQueryRepository;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.reservation.repository.ReservationSearch;
@@ -191,18 +193,50 @@ class ReservationQueryServiceTest {
     void getMyReservations_customer_searchesOwnReservations() {
         given(reservationQueryRepository.search(any(), anyLong(), anyInt())).willReturn(List.of());
 
-        reservationQueryService.getMyReservations(CUSTOMER, null, null, null, 0, 20);
+        reservationQueryService.getMyReservations(CUSTOMER, null, null, null, null, 0, 20);
 
         ArgumentCaptor<ReservationSearch> captor = ArgumentCaptor.forClass(ReservationSearch.class);
         verify(reservationQueryRepository).count(captor.capture());
         assertThat(captor.getValue().userId()).isEqualTo(1L);
         assertThat(captor.getValue().shopId()).isNull();
+        assertThat(captor.getValue().endsAfter()).isNull();
+        assertThat(captor.getValue().endsUntil()).isNull();
+    }
+
+    @Test
+    @DisplayName("이용 예정은 종료 시각이 지금 이후, 지난 이용은 지금까지인 예약으로 조회한다")
+    void getMyReservations_timing_splitsByEndTime() {
+        given(reservationQueryRepository.search(any(), anyLong(), anyInt())).willReturn(List.of());
+
+        reservationQueryService.getMyReservations(CUSTOMER, null, null, null, ReservationTiming.UPCOMING, 0, 20);
+        reservationQueryService.getMyReservations(CUSTOMER, null, null, null, ReservationTiming.PAST, 0, 20);
+
+        ArgumentCaptor<ReservationSearch> captor = ArgumentCaptor.forClass(ReservationSearch.class);
+        verify(reservationQueryRepository, org.mockito.Mockito.times(2)).count(captor.capture());
+        assertThat(captor.getAllValues().get(0).endsAfter()).isEqualTo(NOW);
+        assertThat(captor.getAllValues().get(0).endsUntil()).isNull();
+        assertThat(captor.getAllValues().get(1).endsAfter()).isNull();
+        assertThat(captor.getAllValues().get(1).endsUntil()).isEqualTo(NOW);
+    }
+
+    @Test
+    @DisplayName("목록과 상세에 지금 시각 기준의 표시 상태를 담는다")
+    void getMyReservations_displayStatus_usesNow() {
+        given(reservationQueryRepository.search(any(), anyLong(), anyInt())).willReturn(List.of(
+                view(ReservationStatus.CONFIRMED, NOW.plusHours(2)),
+                view(ReservationStatus.CONFIRMED, NOW.minusDays(1))));
+
+        PageResponse<ReservationSummaryResponse> result =
+                reservationQueryService.getMyReservations(CUSTOMER, null, null, null, null, 0, 20);
+
+        assertThat(result.content()).extracting(ReservationSummaryResponse::displayStatus)
+                .containsExactly(ReservationDisplayStatus.CONFIRMED, ReservationDisplayStatus.COMPLETED);
     }
 
     @Test
     @DisplayName("고객이 아니면 내 예약 조회는 403 예외가 난다")
     void getMyReservations_owner_throwsForbidden() {
-        assertThatThrownBy(() -> reservationQueryService.getMyReservations(OWNER, null, null, null, 0, 20))
+        assertThatThrownBy(() -> reservationQueryService.getMyReservations(OWNER, null, null, null, null, 0, 20))
                 .extracting("errorCode").isEqualTo(ErrorCode.FORBIDDEN);
         verifyNoInteractions(reservationQueryRepository);
     }

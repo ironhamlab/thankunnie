@@ -69,6 +69,20 @@ class ReservationQueryRepositoryTest {
     }
 
     @Test
+    @DisplayName("종료 시각 기준으로 나누면 한 예약이 양쪽에 겹치지 않고 전체를 나눈다")
+    void search_endTime_splitsWithoutOverlap() {
+        LocalDateTime pivot = LocalDateTime.of(2026, 11, 3, 0, 0);
+        ReservationSearch upcoming = new ReservationSearch(1L, null, NOT_EXPIRED, null, null, pivot, null);
+        ReservationSearch past = new ReservationSearch(1L, null, NOT_EXPIRED, null, null, null, pivot);
+        ReservationSearch all = new ReservationSearch(1L, null, NOT_EXPIRED, null, null);
+
+        assertThat(reservationQueryRepository.search(upcoming, 0, 20)).allMatch(view -> view.endsAt().isAfter(pivot));
+        assertThat(reservationQueryRepository.search(past, 0, 20)).noneMatch(view -> view.endsAt().isAfter(pivot));
+        assertThat(reservationQueryRepository.count(upcoming) + reservationQueryRepository.count(past))
+                .isEqualTo(reservationQueryRepository.count(all));
+    }
+
+    @Test
     @DisplayName("상세에는 예약자·결제·취소가 함께 담긴다")
     void findOne_cancelledReservation_includesCustomerPaymentAndCancel() {
         ReservationView view = reservationQueryRepository.findOne(3L, 1L, null).orElseThrow();

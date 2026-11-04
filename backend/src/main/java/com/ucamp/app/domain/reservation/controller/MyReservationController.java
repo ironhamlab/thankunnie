@@ -22,6 +22,7 @@ import com.ucamp.app.common.response.PageResponse;
 import com.ucamp.app.domain.reservation.dto.response.ReservationDetailResponse;
 import com.ucamp.app.domain.reservation.dto.response.ReservationSummaryResponse;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
+import com.ucamp.app.domain.reservation.entity.ReservationTiming;
 import com.ucamp.app.domain.reservation.service.ReservationQueryService;
 import com.ucamp.app.domain.reservation.service.ReservationService;
 
@@ -43,17 +44,18 @@ public class MyReservationController {
     }
 
     @Operation(summary = "내 예약 목록",
-            description = "from~to 시작 날짜(포함)·상태 필터, 시작 시각 순. 상태를 생략하면 점유 만료(EXPIRED)를 뺀 전체")
+            description = "from~to 시작 날짜(포함)·상태·시술 종료 전후(timing) 필터, 시작 시각 순. 상태를 생략하면 점유 만료(EXPIRED)를 뺀 전체")
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ReservationSummaryResponse>>> getReservations(
             @LoginUser AuthUser loginUser,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(name = "status", required = false) List<ReservationStatus> statuses,
+            @RequestParam(required = false) ReservationTiming timing,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(ApiResponse.success(
-                reservationQueryService.getMyReservations(loginUser, from, to, statuses, page, size)));
+                reservationQueryService.getMyReservations(loginUser, from, to, statuses, timing, page, size)));
     }
 
     @Operation(summary = "내 현재 점유",
