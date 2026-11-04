@@ -127,6 +127,7 @@
 | `PAYMENT_005` | 504 | 환불 결과를 확인하고 있습니다. 잠시 후 결제 상태를 확인해 주세요. | 포트원 환불 요청 후 응답을 받지 못했거나, 포트원 환불 후 DB 반영에 실패함. 결제는 REFUND_PENDING 으로 남는다 |
 | `PAYMENT_006` | 400 | 결제가 완료되지 않았습니다. | 결제 확인(`POST /payments/verify`) 때 포트원 결제 상태가 paid 가 아님 (ready, failed, cancelled) |
 | `PAYMENT_007` | 400 | 예약과 맞지 않는 결제입니다. | 결제 주문번호(merchant_uid)가 `reservation-{reservationId}-` 로 시작하지 않음, 또는 같은 imp_uid 가 다른 예약에 이미 저장됨 |
+| `PAYMENT_008` | 409 | 다른 화면에서 이 예약의 결제가 진행 중입니다. | 결제 시작(`POST /payments/start`) 때 다른 탭이 같은 예약의 결제를 시작했고 아직 결제 확인·중단 전 (시작 후 3분 이내) |
 
 ## TREATMENT
 

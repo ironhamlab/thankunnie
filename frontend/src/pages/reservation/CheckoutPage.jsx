@@ -3,7 +3,12 @@ import { generatePath, Link, useBlocker, useNavigate, useSearchParams } from 're
 import { ROUTES } from '@/constants/routes';
 import { formatMoney } from '@/utils/reservationFormat';
 import { datePart, timePart } from '@/utils/scheduleDate';
-import { savePendingRequest, takePendingRequest, verifyErrorMessage } from '@/utils/payment';
+import {
+  PAYMENT_TAB_ID,
+  savePendingRequest,
+  takePendingRequest,
+  verifyErrorMessage,
+} from '@/utils/payment';
 import { loadPortOne, requestPay } from '@/utils/portoneLoader';
 import { useReservationStore } from '@/store/useReservationStore';
 import { usePaymentStore } from '@/store/usePaymentStore';
@@ -85,6 +90,8 @@ export default function CheckoutPage() {
   const clockOffset = useReservationStore((s) => s.detailClockOffset);
   const releaseHold = useReservationStore((s) => s.releaseHold);
   const verifyPayment = usePaymentStore((s) => s.verifyPayment);
+  const startPayment = usePaymentStore((s) => s.startPayment);
+  const abortPayment = usePaymentStore((s) => s.abortPayment);
   const shop = useShopDetailStore((s) => s.shop);
   const loadShop = useShopDetailStore((s) => s.loadShop);
   const clearShop = useShopDetailStore((s) => s.clearShop);
@@ -270,6 +277,9 @@ export default function CheckoutPage() {
     // 결제 중 이동(결제 완료 화면, 모바일 결제창 페이지 이동)은 막지도 풀지도 않는다 (R5)
     payingRef.current = true;
     let moved = false;
+    // 서버에 "이 탭이 결제한다"를 맡긴 뒤 결제창을 닫거나 실패하면 다른 탭이 바로 결제할 수 있게 돌려준다
+    let started = false;
+    const paymentTab = { reservationId: Number(reservationId), tabId: PAYMENT_TAB_ID };
     try {
       // 다른 탭에서 풀린 예약에 결제하지 않도록 결제 직전에 서버 상태를 다시 받는다 (R7).
       // 점유가 아니면 화면이 만료 안내로 바뀐다
@@ -283,24 +293,29 @@ export default function CheckoutPage() {
       ) {
         return;
       }
+      // 같은 예약을 다른 탭에서 결제 중이면 여기서 막혀 결제창이 두 번 뜨지 않는다 (카드가 두 번 결제되지 않게)
+      const { merchantUid } = await startPayment(paymentTab);
+      started = true;
       const IMP = await loadPortOne();
       const { summary: hold } = current;
       savePendingRequest(reservationId, request);
       const rsp = await requestPay(IMP, {
         pg: 'html5_inicis',
         pay_method: 'card',
-        // 서버가 앞부분(reservation-{예약 ID}-)으로 결제와 예약의 짝을 확인한다
-        merchant_uid: `reservation-${reservationId}-${Date.now()}`,
+        // 서버가 발급한 주문번호. 서버가 앞부분(reservation-{예약 ID}-)으로 결제와 예약의 짝을 확인한다
+        merchant_uid: merchantUid,
         name: `${hold.shopName} ${hold.treatmentName} 예약금`,
         amount: hold.deposit,
         buyer_name: hold.customerName,
         buyer_tel: current.customerPhone ?? '',
-        // 모바일은 결제창이 페이지를 옮기므로 결과 화면에서 결제 확인을 이어서 한다
-        m_redirect_url: `${window.location.origin}${resultPath}`,
+        // 모바일은 결제창이 페이지를 옮기므로 결과 화면에서 결제 확인을 이어서 한다.
+        // 결제가 실패해 돌아오면 결과 화면이 이 탭의 결제 시작을 풀 수 있게 탭 값을 함께 보낸다
+        m_redirect_url: `${window.location.origin}${resultPath}&tabId=${PAYMENT_TAB_ID}`,
       });
       // 실패는 error_code 로 판단한다. success 는 V1 문서에서 빠진 옛 값이라 false 일 때만 실패로 본다.
       // 그 밖의 응답은 서버가 포트원에 결제 상태를 다시 조회해 판단한다
       if (rsp.error_code || rsp.success === false || !rsp.imp_uid) {
+        abortPayment(paymentTab);
         takePendingRequest(reservationId);
         setError(
           rsp.error_msg
@@ -309,6 +324,8 @@ export default function CheckoutPage() {
         );
         return;
       }
+      // 결제 확인은 끝나면 성공·실패와 관계없이 서버가 결제 시작을 풀어 준다
+      started = false;
       await verifyPayment({
         impUid: rsp.imp_uid,
         reservationId: Number(reservationId),
@@ -317,6 +334,10 @@ export default function CheckoutPage() {
       moved = true;
       navigate(resultPath, { replace: true });
     } catch (err) {
+      // 결제창 준비(스크립트 불러오기 등)에서 실패하면 결제창이 뜨지 않았으므로 맡은 결제를 돌려준다
+      if (started) {
+        abortPayment(paymentTab);
+      }
       setError(err.code ? verifyErrorMessage(err) : err.message);
       // 자동 취소·만료처럼 예약 상태가 바뀌었을 수 있으므로 화면을 서버 상태에 맞춘다
       loadReservation('my', reservationId);

@@ -29,7 +29,9 @@ import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.domain.payment.client.PortOneClient;
 import com.ucamp.app.domain.payment.client.PortOnePayment;
+import com.ucamp.app.domain.payment.dto.request.PaymentStartRequest;
 import com.ucamp.app.domain.payment.dto.request.PaymentVerifyRequest;
+import com.ucamp.app.domain.reservation.service.ReservationService;
 import com.ucamp.app.domain.payment.dto.response.PaymentVerifyResponse;
 import com.ucamp.app.domain.payment.dto.response.PaymentCancelResponse;
 import com.ucamp.app.domain.payment.entity.DepositPayment;
@@ -53,8 +55,11 @@ class PaymentServiceTest {
         Clock clock = Clock.fixed(NOW.atZone(SEOUL).toInstant(), SEOUL);
         PaymentRefundStateService refundStateService = new PaymentRefundStateService(depositPaymentRepository);
         confirmService = mock(PaymentConfirmService.class);
-        paymentService = new PaymentService(portOneClient, refundStateService, confirmService, clock);
+        startService = new PaymentStartService(mock(ReservationService.class), clock);
+        paymentService = new PaymentService(portOneClient, refundStateService, confirmService, startService, clock);
     }
+
+    private PaymentStartService startService;
 
     private DepositPayment paidPayment() {
         DepositPayment payment = DepositPayment.builder()
@@ -196,6 +201,23 @@ class PaymentServiceTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.PAYMENT_NOT_PAID);
         verify(confirmService, never()).confirm(anyLong(), anyLong(), anyString(), anyInt(), any(), any());
+    }
+
+    @Test
+    @DisplayName("결제 확인이 실패로 끝나도 결제 진행 중 표시를 풀어 다른 탭이 바로 결제할 수 있다")
+    void verify_failed_releasesPaymentInProgress() {
+        startService.start(CUSTOMER, new PaymentStartRequest(RESERVATION_ID, "tab-1"));
+        assertThatThrownBy(() -> startService.start(CUSTOMER, new PaymentStartRequest(RESERVATION_ID, "tab-2")))
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.PAYMENT_IN_PROGRESS);
+        portOnePayment("ready", "reservation-10-1730000000000");
+
+        assertThatThrownBy(() -> paymentService.verify(CUSTOMER, verifyRequest()))
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.PAYMENT_NOT_PAID);
+
+        assertThat(startService.start(CUSTOMER, new PaymentStartRequest(RESERVATION_ID, "tab-2")).merchantUid())
+                .startsWith("reservation-10-");
     }
 
     @Test
