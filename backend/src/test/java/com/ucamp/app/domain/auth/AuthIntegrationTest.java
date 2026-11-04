@@ -45,6 +45,7 @@ import com.ucamp.app.domain.auth.controller.AuthController;
 import com.ucamp.app.domain.auth.entity.ShopAccount;
 import com.ucamp.app.domain.auth.repository.ShopAccountRepository;
 import com.ucamp.app.domain.auth.service.AuthService;
+import com.ucamp.app.domain.auth.service.LoginAttemptLimiter;
 import com.ucamp.app.domain.auth.service.ShopLoginStatusChecker;
 import com.ucamp.app.domain.auth.service.AuthPhoneVerificationService;
 import com.ucamp.app.domain.auth.service.AuthBusinessVerificationService;
@@ -72,7 +73,7 @@ class AuthIntegrationTest {
     @EntityScan(basePackageClasses = {AppUser.class, ShopAccount.class, Shop.class})
     @EnableJpaRepositories(basePackageClasses = {AppUserRepository.class, ShopAccountRepository.class,
             ShopRepository.class})
-    @Import({AuthController.class, AuthService.class, ShopLoginStatusChecker.class, CustomerLoginStatusChecker.class,
+    @Import({AuthController.class, AuthService.class, LoginAttemptLimiter.class, ShopLoginStatusChecker.class, CustomerLoginStatusChecker.class,
             ShopController.class, ShopService.class,
             TermsController.class, TermsAgreementService.class, UserLock.class, GlobalExceptionHandler.class, SecurityConfig.class, TimeConfig.class, WebConfig.class})
     static class AuthTestConfiguration {
@@ -159,6 +160,28 @@ class AuthIntegrationTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error.code").value("AUTH_002"));
         login("/api/v1/auth/login", "nobody", PASSWORD)
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("AUTH_002"));
+    }
+
+    @Test
+    @DisplayName("고객 로그인 5회 연속 실패하면 429 AUTH_013, 잠긴 동안은 맞는 비밀번호도 거절하고 매장 로그인은 따로 센다")
+    void loginCustomer_tooManyFailures_locked() throws Exception {
+        signupCustomer("unnie21").andExpect(status().isCreated());
+
+        for (int i = 0; i < 4; i++) {
+            login("/api/v1/auth/login", "unnie21", "wrong-password")
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.error.code").value("AUTH_002"));
+        }
+        login("/api/v1/auth/login", "unnie21", "wrong-password")
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.error.code").value("AUTH_013"));
+        login("/api/v1/auth/login", "unnie21", PASSWORD)
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.error.code").value("AUTH_013"));
+        // 같은 아이디라도 매장 계정은 따로 센다
+        login("/api/v1/auth/shops/login", "unnie21", "wrong-password")
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error.code").value("AUTH_002"));
     }

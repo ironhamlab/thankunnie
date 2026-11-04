@@ -33,6 +33,7 @@ public enum ErrorCode {
     AUTH_DUPLICATE_PHONE(HttpStatus.CONFLICT, "AUTH_010", "이미 가입된 휴대폰 번호입니다."),
     AUTH_SHOP_PENDING(HttpStatus.FORBIDDEN, "AUTH_011", "매장 가입 승인 대기 중입니다."),
     AUTH_SHOP_REJECTED(HttpStatus.FORBIDDEN, "AUTH_012", "매장 가입이 거절되었습니다."),
+    AUTH_LOGIN_LOCKED(HttpStatus.TOO_MANY_REQUESTS, "AUTH_013", "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요."),
 
     // USER
     USER_WITHDRAW_PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "USER_001", "비밀번호가 올바르지 않습니다."),
