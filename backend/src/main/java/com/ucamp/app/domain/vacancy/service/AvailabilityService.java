@@ -5,6 +5,9 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -18,8 +21,8 @@ import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.common.policy.BookingPolicy;
 import com.ucamp.app.domain.auth.entity.ShopAccountStatus;
 import com.ucamp.app.domain.auth.repository.ShopAccountRepository;
-import com.ucamp.app.domain.reservation.entity.Reservation;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
+import com.ucamp.app.domain.reservation.repository.ReservationOccupancy;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.schedule.entity.BusinessDay;
 import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
@@ -38,6 +41,8 @@ import com.ucamp.app.domain.vacancy.policy.TimeRange;
 @Service
 @Transactional(readOnly = true)
 public class AvailabilityService {
+
+    private static final int MAX_IN_SIZE = 1000;
 
     private final ShopBusinessHourRepository shopBusinessHourRepository;
     private final ShopScheduleExceptionRepository shopScheduleExceptionRepository;
@@ -86,6 +91,77 @@ public class AvailabilityService {
                 .filter(start -> !startTimes.contains(start))
                 .toList();
         return new DayAvailability(startTimes, extendedStartTimes, heldStartTimes);
+    }
+
+    /**
+     * 여러 매장의 일정을 기간 전체로 한 번에 읽어 둔다 (C: 빈자리 탐색용). 매장·날짜마다 쿼리를 보내지 않으려는 것이다.
+     * 잠금 없이 읽은 시점의 값이므로 조회 화면에만 쓴다. 예약 점유는 validateAvailable 로 다시 검사해야 한다.
+     *
+     * @param fromDate           조회할 첫 날짜
+     * @param toDate             조회할 마지막 날짜 (포함)
+     * @param maxDurationMinutes 조회할 시술 중 가장 긴 소요 시간. 자정을 넘는 시술의 일정까지 읽는 데 쓴다
+     */
+    public AvailabilitySnapshot loadSnapshot(Collection<Long> shopIds, LocalDate fromDate, LocalDate toDate,
+            int maxDurationMinutes) {
+        requirePositive(maxDurationMinutes);
+        LocalDateTime from = fromDate.atStartOfDay();
+        LocalDateTime to = toDate.plusDays(1).atStartOfDay().plusMinutes(maxDurationMinutes);
+        List<ShopBusinessHour> hours = new ArrayList<>();
+        List<ShopScheduleException> exceptions = new ArrayList<>();
+        Map<Long, List<Occupancy>> occupanciesByShop = new HashMap<>();
+        List<Long> ids = List.copyOf(new LinkedHashSet<>(shopIds));
+        // Oracle 은 IN 목록을 1,000개까지만 받는다
+        for (int start = 0; start < ids.size(); start += MAX_IN_SIZE) {
+            List<Long> chunk = ids.subList(start, Math.min(start + MAX_IN_SIZE, ids.size()));
+            hours.addAll(shopBusinessHourRepository.findByShopIdIn(chunk));
+            exceptions.addAll(shopScheduleExceptionRepository.findOverlappingByShopIds(chunk, from, to));
+            for (ReservationOccupancy row : reservationRepository.findActiveOccupancies(chunk, from, to)) {
+                occupanciesByShop.computeIfAbsent(row.getShopId(), shopId -> new ArrayList<>()).add(new Occupancy(
+                        row.getStatus(), row.getHoldExpiresAt(), row.getStartsAt(), row.getEndsAt()));
+            }
+        }
+        return new AvailabilitySnapshot(
+                hours.stream().collect(Collectors.groupingBy(ShopBusinessHour::getShopId)),
+                exceptions.stream().collect(Collectors.groupingBy(ShopScheduleException::getShopId)),
+                occupanciesByShop,
+                LocalDateTime.now(clock));
+    }
+
+    /**
+     * loadSnapshot 이 읽어 둔 일정. 시작 시각 계산은 getAvailableStartTimes 와 같고 DB 를 다시 읽지 않는다.
+     */
+    public static final class AvailabilitySnapshot {
+
+        private final Map<Long, List<ShopBusinessHour>> hoursByShop;
+        private final Map<Long, List<ShopScheduleException>> exceptionsByShop;
+        private final Map<Long, List<Occupancy>> occupanciesByShop;
+        private final LocalDateTime now;
+
+        private AvailabilitySnapshot(Map<Long, List<ShopBusinessHour>> hoursByShop,
+                Map<Long, List<ShopScheduleException>> exceptionsByShop,
+                Map<Long, List<Occupancy>> occupanciesByShop, LocalDateTime now) {
+            this.hoursByShop = hoursByShop;
+            this.exceptionsByShop = exceptionsByShop;
+            this.occupanciesByShop = occupanciesByShop;
+            this.now = now;
+        }
+
+        public List<LocalDateTime> startTimes(Long shopId, LocalDate date, int durationMinutes) {
+            requirePositive(durationMinutes);
+            Duration duration = Duration.ofMinutes(durationMinutes);
+            LocalDateTime from = date.atStartOfDay();
+            LocalDateTime to = date.plusDays(1).atStartOfDay().plus(duration);
+            List<ShopScheduleException> exceptions = exceptionsByShop.getOrDefault(shopId, List.of()).stream()
+                    .filter(exception -> exception.getStartsAt().isBefore(to) && exception.getEndsAt().isAfter(from))
+                    .toList();
+            List<Occupancy> occupancies = occupanciesByShop.getOrDefault(shopId, List.of()).stream()
+                    .filter(occupancy -> occupancy.startsAt().isBefore(to) && occupancy.endsAt().isAfter(from))
+                    .toList();
+            Schedule schedule = toSchedule(hoursByShop.getOrDefault(shopId, List.of()), exceptions, occupancies,
+                    from, to, now);
+            return AvailabilityCalculator.availableStartTimes(
+                    date, duration, schedule.openRanges(), schedule.blockedRanges(), now);
+        }
     }
 
     /**
@@ -183,7 +259,18 @@ public class AvailabilityService {
     }
 
     private Schedule loadSchedule(Long shopId, LocalDateTime from, LocalDateTime to, LocalDateTime now) {
-        Map<BusinessDay, ShopBusinessHour> hours = shopBusinessHourRepository.findByShopId(shopId).stream()
+        List<Occupancy> occupancies = reservationRepository.findActiveOverlapping(shopId, from, to).stream()
+                .map(reservation -> new Occupancy(reservation.getStatus(), reservation.getHoldExpiresAt(),
+                        reservation.getStartsAt(), reservation.getEndsAt()))
+                .toList();
+        return toSchedule(shopBusinessHourRepository.findByShopId(shopId),
+                shopScheduleExceptionRepository.findOverlapping(shopId, from, to), occupancies, from, to, now);
+    }
+
+    // 한 매장씩 읽을 때와 여러 매장을 묶어 읽을 때가 같은 규칙으로 계산하도록 한곳에 둔다
+    private static Schedule toSchedule(List<ShopBusinessHour> businessHours, List<ShopScheduleException> exceptions,
+            List<Occupancy> occupancies, LocalDateTime from, LocalDateTime to, LocalDateTime now) {
+        Map<BusinessDay, ShopBusinessHour> hours = businessHours.stream()
                 .collect(Collectors.toMap(ShopBusinessHour::getDayOfWeek, Function.identity()));
         List<TimeRange> businessRanges = new ArrayList<>();
         for (LocalDate date = from.toLocalDate(); !date.isAfter(to.toLocalDate()); date = date.plusDays(1)) {
@@ -194,7 +281,7 @@ public class AvailabilityService {
         }
         List<TimeRange> openRanges = new ArrayList<>(businessRanges);
         List<TimeRange> closedRanges = new ArrayList<>();
-        for (ShopScheduleException exception : shopScheduleExceptionRepository.findOverlapping(shopId, from, to)) {
+        for (ShopScheduleException exception : exceptions) {
             TimeRange range = new TimeRange(exception.getStartsAt(), exception.getEndsAt());
             if (exception.getExceptionType() == ScheduleExceptionType.OPEN) {
                 openRanges.add(range);
@@ -202,19 +289,22 @@ public class AvailabilityService {
                 closedRanges.add(range);
             }
         }
-        List<Reservation> occupying = reservationRepository.findActiveOverlapping(shopId, from, to).stream()
-                .filter(reservation -> SalePolicy.isOccupying(
-                        reservation.getStatus(), reservation.getHoldExpiresAt(), now))
+        List<Occupancy> occupying = occupancies.stream()
+                .filter(occupancy -> SalePolicy.isOccupying(occupancy.status(), occupancy.holdExpiresAt(), now))
                 .toList();
         List<TimeRange> confirmedRanges = occupying.stream()
-                .filter(reservation -> reservation.getStatus() != ReservationStatus.HOLD)
-                .map(reservation -> new TimeRange(reservation.getStartsAt(), reservation.getEndsAt()))
+                .filter(occupancy -> occupancy.status() != ReservationStatus.HOLD)
+                .map(occupancy -> new TimeRange(occupancy.startsAt(), occupancy.endsAt()))
                 .toList();
         List<TimeRange> holdRanges = occupying.stream()
-                .filter(reservation -> reservation.getStatus() == ReservationStatus.HOLD)
-                .map(reservation -> new TimeRange(reservation.getStartsAt(), reservation.getEndsAt()))
+                .filter(occupancy -> occupancy.status() == ReservationStatus.HOLD)
+                .map(occupancy -> new TimeRange(occupancy.startsAt(), occupancy.endsAt()))
                 .toList();
         return new Schedule(businessRanges, openRanges, closedRanges, confirmedRanges, holdRanges);
+    }
+
+    private record Occupancy(ReservationStatus status, LocalDateTime holdExpiresAt, LocalDateTime startsAt,
+            LocalDateTime endsAt) {
     }
 
     /**
