@@ -1,10 +1,8 @@
 import { useEffect } from 'react';
+import useAutoRefresh from '@/hooks/useAutoRefresh';
 import { useExploreStore } from '@/store/useExploreStore';
 import RollingValue from './RollingValue';
 import styles from './HomeIntro.module.css';
-
-// 빈자리는 예약과 시간 경과로 계속 줄어드므로 주기적으로 다시 받는다
-const REFRESH_INTERVAL_MS = 30_000;
 
 /**
  * 홈 첫 줄. 서비스 소개와 앞으로 7일(서버 기본 기간) 빈자리 현황을 실제 조회 값으로 보여준다.
@@ -20,24 +18,11 @@ export default function HomeIntro() {
   const loadSaleShops = useExploreStore((s) => s.loadSaleShops);
 
   useEffect(() => {
-    const refresh = () => {
-      loadSummaryShops();
-      loadSaleShops();
-    };
-    // 탭을 보고 있지 않을 때는 요청하지 않고, 돌아오면 바로 받는다
-    const refreshIfVisible = () => {
-      if (document.visibilityState === 'visible') {
-        refresh();
-      }
-    };
-    refresh();
-    const timer = setInterval(refreshIfVisible, REFRESH_INTERVAL_MS);
-    document.addEventListener('visibilitychange', refreshIfVisible);
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', refreshIfVisible);
-    };
+    loadSummaryShops();
+    loadSaleShops();
   }, [loadSummaryShops, loadSaleShops]);
+  // 빈자리는 예약과 시간 경과로 계속 줄어들므로 아래 임박 카드와 같은 주기로 다시 받는다
+  useAutoRefresh(() => Promise.all([loadSummaryShops(), loadSaleShops()]));
 
   // 매장마다 일반·초보 시술을 합쳐 겹치지 않는 시작 시각을 이번 주 일요일까지 센 값(totalVacancyCount)을 더한다
   const vacancyCount = shops.reduce((sum, shop) => sum + shop.totalVacancyCount, 0);

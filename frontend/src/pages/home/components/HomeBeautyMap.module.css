@@ -21,21 +21,6 @@
   font-weight: 700;
   color: var(--color-primary-text);
 }
-/* 지도 초기화. 글자만 두면 작아 누르기 어려워 알약 버튼으로 둔다 */
-.heading > button {
-  margin-left: auto;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
-  background: white;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-}
-.heading > button:hover {
-  border-color: var(--color-border-strong);
-  color: var(--color-text);
-}
 .root {
   position: relative;
   flex: 1;
@@ -164,6 +149,7 @@
 }
 /* 지도 화면(/map)으로 가는 길 */
 .mapLink {
+  margin-left: auto;
   font-size: 12px;
   font-weight: 700;
   color: var(--color-primary-text);

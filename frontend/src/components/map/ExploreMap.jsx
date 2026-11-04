@@ -142,6 +142,7 @@ function pinContent(shop, today) {
  *                       매장이 넓게 흩어져 있으면 MAX_FIT_LEVEL 까지만 넓히고 목록 맨 앞 매장 주변을 보여준다
  * @param boundsPadding  fitToShops 로 범위를 맞출 때 띄울 여백(px). 지도 위에 패널이 겹치는 쪽을 넓게 준다
  * @param fitSignal      fitToShops 지도에서 바뀔 때마다 매장이 다 보이는 처음 범위로 다시 맞춘다 (전체 보기)
+ * @param fitOnce        true 면 매장 목록이 다시 와도 범위를 다시 맞추지 않는다 (주기적으로 갱신하는 지도)
  * @param activeIds      넘기면 이 매장 ID(문자열) Set 에 없는 핀을 흐리게 보여준다 (목록의 다른 페이지 매장)
  * @param centerOnSelect true 면 핀을 누를 때 그 핀을 지도 가운데로 옮긴다 (홈 지도). 아니면 화면 밖일 때만 옮긴다
  * @param myLocation     useMyLocation() 결과. 넘기면 내 위치를 화면과 같이 써서(목록 거리 표시 등) 내 위치 버튼을 보인다.
@@ -161,8 +162,13 @@ export default function ExploreMap({
   myLocation,
   centerOnSelect = false,
   fitSignal = 0,
+  fitOnce = false,
   activeIds,
 }) {
+  // 마지막으로 범위를 맞춘 fitSignal. fitOnce 지도에서 같은 값이면 다시 맞추지 않는다
+  const fittedSignalRef = useRef(null);
+  // 마지막으로 지도를 옮겨 보여준 매장 ID
+  const movedToIdRef = useRef(null);
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const clustererRef = useRef(null);
@@ -321,7 +327,10 @@ export default function ExploreMap({
     });
     clusterer.addMarkers(overlays);
     const map = mapRef.current;
-    if (fitToShops && map && shops.length > 1) {
+    // fitOnce 지도는 한 번 맞춘 뒤 사용자가 보던 범위를 그대로 둔다
+    const shouldFit = fitToShops && map && !(fitOnce && fittedSignalRef.current === fitSignal);
+    if (shouldFit && shops.length > 0) fittedSignalRef.current = fitSignal;
+    if (shouldFit && shops.length > 1) {
       const bounds = new maps.LatLngBounds();
       shops.forEach((shop) => bounds.extend(new maps.LatLng(shop.latitude, shop.longitude)));
       const { top, right, bottom, left } = boundsPadding;
@@ -331,11 +340,11 @@ export default function ExploreMap({
         map.setLevel(MAX_FIT_LEVEL);
         map.setCenter(new maps.LatLng(shops[0].latitude, shops[0].longitude));
       }
-    } else if (fitToShops && map && shops.length === 1) {
+    } else if (shouldFit && shops.length === 1) {
       map.setCenter(new maps.LatLng(shops[0].latitude, shops[0].longitude));
     }
     return () => clusterer.clear();
-  }, [status, shops, fitToShops, boundsPadding, fitSignal]);
+  }, [status, shops, fitToShops, boundsPadding, fitSignal, fitOnce]);
 
   useEffect(() => {
     if (status !== 'ready') return;
@@ -355,11 +364,14 @@ export default function ExploreMap({
       focusPosition?.zoom &&
       focusPosition.lat === shop?.latitude &&
       focusPosition.lng === shop?.longitude;
-    if (shop && map && !focusing) {
+    // fitOnce 지도는 목록이 다시 와도 같은 매장으로 되돌아가지 않는다. 고른 뒤 사용자가 지도를 옮겼을 수 있다
+    const alreadyMoved = fitOnce && movedToIdRef.current === selectedId;
+    movedToIdRef.current = shop ? selectedId : null;
+    if (shop && map && !focusing && !alreadyMoved) {
       const position = new window.kakao.maps.LatLng(shop.latitude, shop.longitude);
       if (!map.getBounds().contain(position)) map.panTo(position);
     }
-  }, [status, shops, selectedId, autoSelected, focusPosition]);
+  }, [status, shops, selectedId, autoSelected, focusPosition, fitOnce]);
 
   // 목록 지금 페이지에 없는 매장 핀은 흐리게 둬, 목록에 보이는 매장이 지도에서 어디인지 먼저 눈에 들어오게 한다
   useEffect(() => {
