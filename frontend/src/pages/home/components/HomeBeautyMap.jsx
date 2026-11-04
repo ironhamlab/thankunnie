@@ -40,7 +40,6 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
   const vacancies = useExploreStore((s) => s.imminentVacancies);
   const status = useExploreStore((s) => s.imminentStatus);
   const [selectedId, setSelectedId] = useState(null);
-  const [saleOnly, setSaleOnly] = useState(false);
   const [mapUnavailable, setMapUnavailable] = useState(false);
   // 지도 초기화를 누를 때마다 바뀌어 지도를 새로 그린다
   const [fitVersion, setFitVersion] = useState(0);
@@ -61,26 +60,9 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
   // 임박 빈자리가 없어 스토어가 다음으로 빠른 빈자리를 대신 담았으면 문구에서 "임박"을 뺀다
   const upcoming = vacancies.length > 0 && vacancies.every((card) => card.upcoming);
   const listName = upcoming ? '빠른 빈자리' : '임박 빈자리';
-  // 타임세일은 타임세일 화면과 같게 시작 3시간 이내 초임박 할인만 본다.
-  // 대신 보여주는 빈자리는 시작이 멀어 타임세일이 없으므로, 타임세일만 고른 채 바뀌어도 전체를 보여준다
-  const saleFilter = saleOnly && !upcoming;
-  const cards = useMemo(
-    () => (saleFilter ? vacancies.filter((card) => card.priceTier === 'LAST_MINUTE') : vacancies),
-    [vacancies, saleFilter],
-  );
-  // 마감이 지나 목록을 다시 받으면 예전 카드가 빠질 수 있어, 지금 목록에 있는 카드만 쓴다
-  const imminentNow = imminent
-    ? vacancies.find((card) => card.shopId === imminent.shopId)
-    : undefined;
-  // 타임세일만 볼 때도 캐러셀이 보여주는 매장은 핀을 남긴다.
-  // 핀 목록이 바뀌면 지도가 범위를 다시 맞추므로, 목록에 없는 매장일 때만 핀 목록을 바꾼다
-  const extra =
-    imminentNow && !cards.some((card) => card.shopId === imminentNow.shopId) ? imminentNow : null;
-  const mapShops = useMemo(
-    () => [...cards, ...(extra ? [extra] : [])].map(toPinShop),
-    [cards, extra],
-  );
-  const selected = vacancies.find((card) => String(card.shopId) === selectedId) ?? cards[0];
+  // 초임박 특가는 핀 모양(번개)으로 따로 보이므로 따로 거르지 않고 캐러셀과 같은 매장을 모두 찍는다
+  const mapShops = useMemo(() => vacancies.map(toPinShop), [vacancies]);
+  const selected = vacancies.find((card) => String(card.shopId) === selectedId) ?? vacancies[0];
 
   const handleUnavailable = useCallback(() => setMapUnavailable(true), []);
   return (
@@ -97,13 +79,12 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
       <div className={styles.heading}>
         <h2>실시간 빈자리 지도</h2>
         <span>
-          ● {listName} 매장 {cards.length}곳
+          ● {listName} 매장 {vacancies.length}곳
         </span>
         <button
           onClick={() => {
             setSelectedId(null);
             setImminent(null);
-            setSaleOnly(false);
             setFitVersion((value) => value + 1);
           }}
         >
@@ -137,17 +118,6 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
         )}
         <div className={styles.toolbar}>
           <span>⌖ 왼쪽 {listName} 매장만 보여줘요</span>
-          {/* 대신 보여주는 빈자리는 시작이 먼 일반 빈자리라 타임세일이 없어 고르는 버튼을 숨긴다 */}
-          {!upcoming && (
-            <div>
-              <button aria-pressed={!saleOnly} onClick={() => setSaleOnly(false)}>
-                전체
-              </button>
-              <button aria-pressed={saleOnly} onClick={() => setSaleOnly(true)}>
-                타임세일만
-              </button>
-            </div>
-          )}
         </div>
         <div className={styles.preview}>
           <span className={styles.storeIcon} aria-hidden="true">
@@ -175,9 +145,7 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
                   ? '임박 빈자리를 찾는 중이에요'
                   : status === 'failed'
                     ? '빈자리를 불러오지 못했어요'
-                    : saleFilter
-                      ? '지금은 타임세일 빈자리가 없어요'
-                      : '지금은 임박 빈자리가 없어요'}
+                    : '지금은 임박 빈자리가 없어요'}
               </strong>
             </div>
           )}

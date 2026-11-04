@@ -67,30 +67,13 @@
   /* 지도 오른쪽 확대·축소 버튼(오른쪽 끝에서 약 40px)과 겹치지 않게 그만큼 비운다 */
   margin-right: 32px;
 }
-.toolbar > span,
-.toolbar > div {
+.toolbar > span {
   background: color-mix(in srgb, var(--color-white) 94%, transparent);
   border: 1px solid var(--color-border);
   border-radius: 24px;
   box-shadow: 0 1px 3px color-mix(in srgb, var(--color-shadow) 7%, transparent);
   padding: 6px 10px;
   font-size: 10px;
-}
-.toolbar > div {
-  display: flex;
-  padding: 4px;
-  flex-shrink: 0;
-}
-.toolbar button {
-  border: 0;
-  border-radius: var(--radius-xl);
-  background: none;
-  padding: 3px 8px;
-  font-size: 10px;
-}
-.toolbar button[aria-pressed='true'] {
-  background: var(--color-primary);
-  color: white;
 }
 .disclaimer {
   position: absolute;

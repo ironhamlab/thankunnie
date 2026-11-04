@@ -64,9 +64,14 @@
   animation: pinPulse 1.8s ease-out infinite;
   pointer-events: none;
 }
+/* 고른 초임박 핀은 흰 바탕·검은 글자로 뒤집어, 주황으로 채운 다른 초임박 핀 사이에서도 어느 매장인지 바로 보이게 한다 */
 .lastMinute:global(.is-selected) {
-  background: var(--color-primary-text);
-  border-color: var(--color-primary-text);
+  border-width: 2px;
+  background: white;
+  color: var(--color-text);
+}
+.lastMinute:global(.is-selected) .pinIcon {
+  color: var(--color-primary);
 }
 @keyframes pinPulse {
   0% {
