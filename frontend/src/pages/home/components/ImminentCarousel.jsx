@@ -187,21 +187,36 @@ export default function ImminentCarousel({
           >
             <div className={styles.photo}>
               <img src={current.image} alt={`${current.shop} ${current.category} 시술`} />
-              <span
-                className={`${styles.urgency} ${current.urgency !== '초임박 특가' ? styles.isSoon : ''}`}
-              >
-                <span className={styles.urgencyDot} aria-hidden="true">
-                  ●
-                </span>{' '}
-                {current.urgency}
-              </span>
-              <VacancyCountdown
-                className={styles.closes}
-                closesAt={current.bookingClosesAt}
-                closesTime={current.closesAt}
-                // 마감된 빈자리를 계속 고르지 않게 목록을 다시 받아 카드를 바꾼다
-                onExpire={loadImminentVacancies}
-              />
+              {/* 대신 보여주는 빈자리는 임박이 아니므로 깜빡이는 점·특가 문구 대신 날짜만 붙인다 */}
+              {current.upcoming ? (
+                <span className={`${styles.urgency} ${styles.isSoon}`}>{current.day} 빈자리</span>
+              ) : (
+                <span
+                  className={`${styles.urgency} ${current.urgency !== '초임박 특가' ? styles.isSoon : ''}`}
+                >
+                  <span className={styles.urgencyDot} aria-hidden="true">
+                    ●
+                  </span>{' '}
+                  {current.urgency}
+                </span>
+              )}
+              {/* 며칠 뒤 마감이면 남은 시간이 수십 시간으로 늘어나 읽기 어려우므로 시작 시각을 보여준다 */}
+              {current.upcoming ? (
+                <span className={styles.closes}>
+                  <small>시작</small>
+                  <b className={styles.upcomingStart}>
+                    {current.day} {current.time}
+                  </b>
+                </span>
+              ) : (
+                <VacancyCountdown
+                  className={styles.closes}
+                  closesAt={current.bookingClosesAt}
+                  closesTime={current.closesAt}
+                  // 마감된 빈자리를 계속 고르지 않게 목록을 다시 받아 카드를 바꾼다
+                  onExpire={loadImminentVacancies}
+                />
+              )}
             </div>
             <div className={styles.body}>
               <div className={styles.meta}>
@@ -268,7 +283,8 @@ export default function ImminentCarousel({
               ? '임박 빈자리를 찾는 중이에요'
               : status === 'failed'
                 ? '빈자리를 불러오지 못했어요'
-                : '임박 빈자리가 아직 없어요'}
+                : // 임박 빈자리가 없으면 일주일 안의 빈자리로 대신 채우므로, 여기까지 오면 그 기간에도 없는 것이다
+                  '가까운 날짜에 열린 빈자리가 아직 없어요'}
           </strong>
           {status === 'succeeded' && (
             <p>

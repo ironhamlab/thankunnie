@@ -52,10 +52,15 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
     () => (imminent ? { lat: imminent.lat, lng: imminent.lng, zoom: true } : null),
     [imminent],
   );
-  // 타임세일은 타임세일 화면과 같게 시작 3시간 이내 초임박 할인만 본다
+  // 임박 빈자리가 없어 스토어가 다음으로 빠른 빈자리를 대신 담았으면 문구에서 "임박"을 뺀다
+  const upcoming = vacancies.length > 0 && vacancies.every((card) => card.upcoming);
+  const listName = upcoming ? '빠른 빈자리' : '임박 빈자리';
+  // 타임세일은 타임세일 화면과 같게 시작 3시간 이내 초임박 할인만 본다.
+  // 대신 보여주는 빈자리는 시작이 멀어 타임세일이 없으므로, 타임세일만 고른 채 바뀌어도 전체를 보여준다
+  const saleFilter = saleOnly && !upcoming;
   const cards = useMemo(
-    () => (saleOnly ? vacancies.filter((card) => card.priceTier === 'LAST_MINUTE') : vacancies),
-    [vacancies, saleOnly],
+    () => (saleFilter ? vacancies.filter((card) => card.priceTier === 'LAST_MINUTE') : vacancies),
+    [vacancies, saleFilter],
   );
   // 마감이 지나 목록을 다시 받으면 예전 카드가 빠질 수 있어, 지금 목록에 있는 카드만 쓴다
   const imminentNow = imminent
@@ -85,7 +90,9 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
     >
       <div className={styles.heading}>
         <h2>실시간 빈자리 지도</h2>
-        <span>● 임박 빈자리 매장 {cards.length}곳</span>
+        <span>
+          ● {listName} 매장 {cards.length}곳
+        </span>
         <button
           onClick={() => {
             setSelectedId(null);
@@ -122,15 +129,18 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
           />
         )}
         <div className={styles.toolbar}>
-          <span>⌖ 왼쪽 임박 빈자리 매장만 보여줘요</span>
-          <div>
-            <button aria-pressed={!saleOnly} onClick={() => setSaleOnly(false)}>
-              전체
-            </button>
-            <button aria-pressed={saleOnly} onClick={() => setSaleOnly(true)}>
-              타임세일만
-            </button>
-          </div>
+          <span>⌖ 왼쪽 {listName} 매장만 보여줘요</span>
+          {/* 대신 보여주는 빈자리는 시작이 먼 일반 빈자리라 타임세일이 없어 고르는 버튼을 숨긴다 */}
+          {!upcoming && (
+            <div>
+              <button aria-pressed={!saleOnly} onClick={() => setSaleOnly(false)}>
+                전체
+              </button>
+              <button aria-pressed={saleOnly} onClick={() => setSaleOnly(true)}>
+                타임세일만
+              </button>
+            </div>
+          )}
         </div>
         <div className={styles.preview}>
           <span className={styles.storeIcon} aria-hidden="true">
@@ -158,7 +168,7 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
                   ? '임박 빈자리를 찾는 중이에요'
                   : status === 'failed'
                     ? '빈자리를 불러오지 못했어요'
-                    : saleOnly
+                    : saleFilter
                       ? '지금은 타임세일 빈자리가 없어요'
                       : '지금은 임박 빈자리가 없어요'}
               </strong>
