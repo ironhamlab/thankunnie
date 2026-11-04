@@ -258,7 +258,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 | 추가 필드 | 타입 | 설명 |
 | --- | --- | --- |
 | `bookable` | boolean | 지금 이 시각을 예약할 수 있는지 |
-| `notBookableReason` | string, null 가능 | `BOOKING_CLOSED`(마감), `NOT_AVAILABLE`(다른 예약·닫힘 등으로 시작 불가), `HELD`(다른 고객이 결제 중. 화면은 예약하기 대신 대기하기로 예약 대기열에 선다). `bookable=true`면 null |
+| `notBookableReason` | string, null 가능 | `BOOKING_CLOSED`(마감), `NOT_AVAILABLE`(다른 예약·닫힘 등으로 시작 불가), `HELD`(다른 고객이 결제 중이고 그 점유와 시작·끝 시각이 정확히 같음. 일부만 겹치면 `NOT_AVAILABLE`. 화면은 예약하기 대신 대기하기로 예약 대기열에 선다). `bookable=true`면 null |
 | `treatmentDescription` | string, null 가능 | 시술 설명 |
 | `modelCondition` | string, null 가능 | 초보 시술 조건 (`MODEL`일 때) |
 | `preparationNotes`, `photoNotice` | string, null 가능 | 준비 사항, 촬영 안내 |

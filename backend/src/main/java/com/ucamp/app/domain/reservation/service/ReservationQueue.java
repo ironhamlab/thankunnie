@@ -3,11 +3,18 @@ package com.ucamp.app.domain.reservation.service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
+import com.ucamp.app.domain.vacancy.policy.SalePolicy;
 
 /**
- * 빈자리 하나(시술 + 시작 일시)에 선 줄. 먼저 선 순서대로 차례가 온다.
+ * 빈자리 하나(매장 + 시작~끝 일시)에 선 줄. 먼저 선 순서대로 차례가 온다.
+ * 시술이 달라도 시작·끝 시각이 같으면 같은 시간을 두고 다투므로 한 줄에 선다.
  * 여러 요청 스레드가 같은 줄을 함께 바꾸므로 모든 메서드를 이 객체로 잠근다.
  * 서버 메모리에만 있어 재시작하면 비워진다. 예약 자체는 DB 점유(HOLD)가 지키므로 순서만 다시 선다.
  */
@@ -20,8 +27,15 @@ final class ReservationQueue {
     /** 같은 줄의 여러 사람이 순서를 물어도 빈자리 상태는 이 시간에 한 번만 DB 에서 읽는다 */
     static final Duration STATE_CACHE_TTL = Duration.ofSeconds(1);
 
+    /**
+     * 모든 줄이 함께 쓰는 번호표 순번. 겹치는 시간의 서로 다른 줄끼리 누가 먼저 섰는지 비교하는 데 쓴다.
+     */
+    private static final AtomicLong TICKETS = new AtomicLong();
+
     /** 회원 ID → 마지막으로 순서를 물은 시각. 넣은 순서가 줄 순서다 */
     private final LinkedHashMap<Long, LocalDateTime> lastSeenByUser = new LinkedHashMap<>();
+    /** 회원 ID → 줄에 처음 섰을 때 받은 번호표 */
+    private final Map<Long, Long> ticketByUser = new HashMap<>();
     private Long turnUserId;
     private LocalDateTime turnStartedAt;
     private SlotState cachedState;
@@ -59,16 +73,17 @@ final class ReservationQueue {
     /**
      * 줄에 서거나(이미 서 있으면 순서 유지) 순서를 다시 묻는다.
      *
-     * @param state 지금 빈자리 상태 (FREE 또는 다른 사람이 점유한 HELD)
+     * @param held 다른 사람이 이 시간을 점유하고 결제 중인지
      * @return 내 앞 사람 수와 내 차례 정보
      */
-    synchronized Position join(Long userId, SlotState state, LocalDateTime now) {
+    synchronized Position join(Long userId, boolean held, LocalDateTime now) {
         lastAccessedAt = now;
         prune(now);
         // 이미 있는 키에 다시 넣으면 LinkedHashMap 은 순서를 바꾸지 않는다
         lastSeenByUser.put(userId, now);
+        ticketByUser.computeIfAbsent(userId, id -> TICKETS.incrementAndGet());
         int aheadCount = indexOf(userId);
-        if (state.isHeld()) {
+        if (held) {
             // 앞사람이 결제 중이면 아무도 차례가 아니다. 점유가 풀리면 맨 앞 사람의 차례가 새로 시작된다
             turnUserId = null;
             return Position.waiting(aheadCount, true);
@@ -92,9 +107,29 @@ final class ReservationQueue {
         return lastSeenByUser.isEmpty() || userId.equals(lastSeenByUser.keySet().iterator().next());
     }
 
+    /**
+     * @return 아직 기다리는 맨 앞 사람의 번호표, 아무도 없으면 null
+     */
+    synchronized Long frontTicket(LocalDateTime now) {
+        prune(now);
+        if (lastSeenByUser.isEmpty()) {
+            return null;
+        }
+        return ticketByUser.get(lastSeenByUser.keySet().iterator().next());
+    }
+
+    /**
+     * @return 이 회원이 줄에 서 있으면 번호표, 아니면 null
+     */
+    synchronized Long ticketOf(Long userId, LocalDateTime now) {
+        prune(now);
+        return ticketByUser.get(userId);
+    }
+
     synchronized void remove(Long userId, LocalDateTime now) {
         lastAccessedAt = now;
         lastSeenByUser.remove(userId);
+        ticketByUser.remove(userId);
         if (userId.equals(turnUserId)) {
             turnUserId = null;
         }
@@ -110,11 +145,19 @@ final class ReservationQueue {
     /** 대기 화면을 닫고 떠난 사람과, 차례가 왔는데 예약하지 않은 맨 앞 사람을 뺀다 */
     private void prune(LocalDateTime now) {
         LocalDateTime staleBefore = now.minus(HEARTBEAT_TIMEOUT);
-        lastSeenByUser.values().removeIf(lastSeen -> lastSeen.isBefore(staleBefore));
+        Iterator<Map.Entry<Long, LocalDateTime>> entries = lastSeenByUser.entrySet().iterator();
+        while (entries.hasNext()) {
+            Map.Entry<Long, LocalDateTime> entry = entries.next();
+            if (entry.getValue().isBefore(staleBefore)) {
+                ticketByUser.remove(entry.getKey());
+                entries.remove();
+            }
+        }
         Long front = lastSeenByUser.isEmpty() ? null : lastSeenByUser.keySet().iterator().next();
         if (turnUserId != null && turnUserId.equals(front)
                 && turnStartedAt.plus(TURN_TIMEOUT).isBefore(now)) {
             lastSeenByUser.remove(front);
+            ticketByUser.remove(front);
             turnUserId = null;
         } else if (turnUserId != null && !turnUserId.equals(front)) {
             turnUserId = null;
@@ -147,39 +190,45 @@ final class ReservationQueue {
     }
 
     /**
-     * DB 에서 읽은 빈자리 상태.
+     * DB 에서 읽은 빈자리 상태. 같은 줄의 모든 사람이 함께 쓰므로 누가 묻는지와 관계없는 내용만 담는다.
      *
-     * @param kind          비었는지, 누가 점유 중인지, 더 예약할 수 없는지
-     * @param holdUserId    점유한 회원 ID (HELD)
-     * @param holdId        점유 예약 ID (HELD)
-     * @param holdSameSlot  점유가 이 줄과 같은 시술·시작 일시인지. 다르면 겹치는 다른 예약이 막고 있는 것이다
+     * @param kind  비었는지, 점유가 막고 있는지, 더 예약할 수 없는지
+     * @param holds 이 시간과 겹치는 유효한 점유 (HELD 일 때만)
      */
-    record SlotState(Kind kind, Long holdUserId, Long holdId, boolean holdSameSlot) {
+    record SlotState(Kind kind, List<Hold> holds) {
 
         enum Kind { FREE, HELD, CLOSED }
 
         static SlotState free() {
-            return new SlotState(Kind.FREE, null, null, false);
+            return new SlotState(Kind.FREE, List.of());
         }
 
         static SlotState closed() {
-            return new SlotState(Kind.CLOSED, null, null, false);
+            return new SlotState(Kind.CLOSED, List.of());
         }
 
-        static SlotState held(Long holdUserId, Long holdId, boolean holdSameSlot) {
-            return new SlotState(Kind.HELD, holdUserId, holdId, holdSameSlot);
+        static SlotState held(List<Hold> holds) {
+            return new SlotState(Kind.HELD, List.copyOf(holds));
         }
 
         boolean isHeld() {
             return kind == Kind.HELD;
         }
-
-        boolean isHeldBy(Long userId) {
-            return isHeld() && holdSameSlot && userId.equals(holdUserId);
-        }
     }
 
-    /** 줄을 나누는 기준. 같은 시술·같은 시작 일시를 누른 사람끼리 한 줄에 선다 */
-    record SlotKey(Long treatmentId, LocalDateTime startsAt) {
+    /**
+     * 시간을 막고 있는 점유 하나.
+     *
+     * @param exact 점유의 시작·끝 시각이 이 줄의 시간과 똑같은지
+     */
+    record Hold(Long userId, Long reservationId, Long treatmentId, LocalDateTime startsAt, boolean exact) {
+    }
+
+    /** 줄을 나누는 기준. 같은 매장에서 시작·끝 일시가 같은 시간을 누른 사람끼리 한 줄에 선다 */
+    record SlotKey(Long shopId, LocalDateTime startsAt, LocalDateTime endsAt) {
+
+        boolean overlaps(SlotKey other) {
+            return shopId.equals(other.shopId) && SalePolicy.overlaps(startsAt, endsAt, other.startsAt, other.endsAt);
+        }
     }
 }

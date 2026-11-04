@@ -30,6 +30,9 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.beans.BeanUtils;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
 
 import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.UserRole;
@@ -77,7 +80,7 @@ class ReservationQueueServiceTest {
     void setUp() {
         clock = new MutableClock(NOW.atZone(BookingPolicy.ZONE).toInstant());
         queueService = new ReservationQueueService(reservationRepository, treatmentRepository, availabilityService,
-                clock);
+                clock, new NoOpTransactionManager());
         given(treatmentRepository.findById(TREATMENT_ID)).willReturn(Optional.of(treatment()));
         given(reservationRepository.findActiveOverlapping(anyLong(), any(), any()))
                 .willAnswer(invocation -> List.copyOf(activeReservations));
@@ -360,6 +363,27 @@ class ReservationQueueServiceTest {
         Reservation reservation = hold(user, 101L, NOW.plusMinutes(5));
         reservation.confirm(20_000, NOW, null);
         return reservation;
+    }
+
+    /** 저장소를 모의 객체로 바꿨으므로 트랜잭션은 열고 닫는 흉내만 낸다 */
+    private static final class NoOpTransactionManager extends AbstractPlatformTransactionManager {
+
+        @Override
+        protected Object doGetTransaction() {
+            return new Object();
+        }
+
+        @Override
+        protected void doBegin(Object transaction, TransactionDefinition definition) {
+        }
+
+        @Override
+        protected void doCommit(DefaultTransactionStatus status) {
+        }
+
+        @Override
+        protected void doRollback(DefaultTransactionStatus status) {
+        }
     }
 
     /** 줄의 시간 제한을 확인하려고 테스트 안에서 시각을 앞으로 보낸다 */
