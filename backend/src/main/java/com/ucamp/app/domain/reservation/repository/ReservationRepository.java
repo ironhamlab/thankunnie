@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.reservation.repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -95,6 +96,22 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             ORDER BY r.STARTS_AT
             """, nativeQuery = true)
     List<Reservation> findActiveOverlapping(@Param("shopId") Long shopId,
+            @Param("startsAt") LocalDateTime startsAt, @Param("endsAt") LocalDateTime endsAt);
+
+    /**
+     * findActiveOverlapping 의 여러 매장용. 빈자리 탐색이 매장·날짜마다 쿼리를 보내지 않도록 기간 전체를 한 번에 읽는다.
+     */
+    @Query(value = """
+            SELECT t.SHOP_ID AS shopId, r.STATUS AS status, r.HOLD_EXPIRES_AT AS holdExpiresAt,
+                   r.STARTS_AT AS startsAt, r.ENDS_AT AS endsAt
+            FROM RESERVATION r
+            JOIN TREATMENT t ON t.TREATMENT_ID = r.TREATMENT_ID
+            WHERE t.SHOP_ID IN (:shopIds)
+              AND r.STATUS IN ('HOLD', 'CONFIRMED', 'CANCEL_PENDING')
+              AND r.STARTS_AT < :endsAt
+              AND r.ENDS_AT > :startsAt
+            """, nativeQuery = true)
+    List<ReservationOccupancy> findActiveOccupancies(@Param("shopIds") Collection<Long> shopIds,
             @Param("startsAt") LocalDateTime startsAt, @Param("endsAt") LocalDateTime endsAt);
 
     /**

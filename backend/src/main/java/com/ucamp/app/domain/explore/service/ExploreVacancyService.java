@@ -37,6 +37,7 @@ import com.ucamp.app.domain.vacancy.policy.PriceQuote;
 import com.ucamp.app.domain.vacancy.policy.PriceTier;
 import com.ucamp.app.domain.vacancy.policy.SalePrices;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
+import com.ucamp.app.domain.vacancy.service.AvailabilityService.AvailabilitySnapshot;
 
 /**
  * 고객 빈자리 탐색 (C-01 목록, C-02 지도 매장 요약). 매장이 연 시간대(OPEN) 안에서 지금 예약할 수 있는 시술 × 시작 시각을 구한다.
@@ -184,13 +185,17 @@ public class ExploreVacancyService {
     // 범위가 자정을 넘으면 다음 날 새벽 시각도 본다
     private Stream<Item> findBusinessHourItems(List<ExploreVacancyCandidate> candidates, LocalDateTime from,
             LocalDateTime to, LocalDateTime now) {
+        if (candidates.isEmpty() || !from.isBefore(to)) {
+            return Stream.empty();
+        }
+        AvailabilitySnapshot snapshot = loadSnapshot(candidates, from, to);
         Map<AvailabilityKey, List<LocalDateTime>> availableTimes = new HashMap<>();
         List<Item> items = new ArrayList<>();
         for (ExploreVacancyCandidate candidate : candidates) {
             for (LocalDate date = from.toLocalDate(); date.atStartOfDay().isBefore(to); date = date.plusDays(1)) {
                 AvailabilityKey key = new AvailabilityKey(candidate.shopId(), date, candidate.durationMinutes());
                 List<LocalDateTime> startTimes = availableTimes.computeIfAbsent(key,
-                        k -> availabilityService.getAvailableStartTimes(k.shopId(), k.date(), k.durationMinutes()));
+                        k -> snapshot.startTimes(k.shopId(), k.date(), k.durationMinutes()));
                 for (LocalDateTime startsAt : startTimes) {
                     if (!startsAt.isBefore(from) && startsAt.isBefore(to)) {
                         items.add(new Item(candidate, startsAt, quote(candidate, startsAt, now)));
@@ -204,6 +209,10 @@ public class ExploreVacancyService {
     // OPEN 시간대 안에서 시작하고 B 의 가용 시간 계산을 통과한 시각만 남긴다. 겹치는 OPEN 이 있어도 시술·시각당 한 번만 낸다
     private Stream<Item> findItems(List<ExploreVacancyCandidate> candidates, ExploreVacancyCondition condition,
             LocalDateTime now) {
+        if (candidates.isEmpty()) {
+            return Stream.empty();
+        }
+        AvailabilitySnapshot snapshot = loadSnapshot(candidates, condition.from(), condition.to());
         Map<AvailabilityKey, List<LocalDateTime>> availableTimes = new HashMap<>();
         Map<String, Item> items = new LinkedHashMap<>();
         for (ExploreVacancyCandidate candidate : candidates) {
@@ -212,7 +221,7 @@ public class ExploreVacancyService {
             for (LocalDate date = from.toLocalDate(); date.atStartOfDay().isBefore(to); date = date.plusDays(1)) {
                 AvailabilityKey key = new AvailabilityKey(candidate.shopId(), date, candidate.durationMinutes());
                 List<LocalDateTime> startTimes = availableTimes.computeIfAbsent(key,
-                        k -> availabilityService.getAvailableStartTimes(k.shopId(), k.date(), k.durationMinutes()));
+                        k -> snapshot.startTimes(k.shopId(), k.date(), k.durationMinutes()));
                 for (LocalDateTime startsAt : startTimes) {
                     if (!startsAt.isBefore(from) && startsAt.isBefore(to)) {
                         items.putIfAbsent(candidate.treatmentId() + "-" + startsAt,
@@ -222,6 +231,14 @@ public class ExploreVacancyService {
             }
         }
         return items.values().stream();
+    }
+
+    // 조회 기간 전체의 일정을 한 번에 읽어, 매장·날짜·소요 시간마다 쿼리를 보내지 않게 한다
+    private AvailabilitySnapshot loadSnapshot(List<ExploreVacancyCandidate> candidates, LocalDateTime from,
+            LocalDateTime to) {
+        List<Long> shopIds = candidates.stream().map(ExploreVacancyCandidate::shopId).distinct().toList();
+        int maxDuration = candidates.stream().mapToInt(ExploreVacancyCandidate::durationMinutes).max().orElseThrow();
+        return availabilityService.loadSnapshot(shopIds, from.toLocalDate(), to.toLocalDate(), maxDuration);
     }
 
     // 매장 상세는 일반 시술만, 초보 시술 모집 상세는 초보 시술만 보여준다. 카드 값이 연결되는 상세와 맞도록
