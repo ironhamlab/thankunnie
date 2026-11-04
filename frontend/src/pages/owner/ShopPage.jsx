@@ -198,7 +198,9 @@ export default function ShopPage() {
         {error.message} <Button onClick={load}>다시 불러오기</Button>
       </Alert>
     );
-  if (!shop) return <EmptyState role="status">매장 정보를 불러오는 중입니다.</EmptyState>;
+  // 입력 폼은 받아 둔 옛 값으로 열지 않는다. 입력하다 새 값에 덮이거나 옛 값으로 저장될 수 있다
+  if (!shop || status === 'loading')
+    return <EmptyState role="status">매장 정보를 불러오는 중입니다.</EmptyState>;
   return (
     <ShopForm key={shop.shopId} shop={shop} isSaving={isSaving} onSave={save} onImage={saveImage} />
   );

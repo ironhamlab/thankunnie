@@ -176,8 +176,9 @@ export default function CustomersPage() {
               </Button>
             </Alert>
           )}
-          {listStatus === 'loading' && <Spinner />}
-          {listStatus === 'succeeded' && (
+          {listStatus === 'loading' && !customers.length && <Spinner />}
+          {/* 같은 조건을 다시 받는 동안에는 받아 둔 목록을 그대로 보여 준다 */}
+          {(listStatus === 'succeeded' || (listStatus === 'loading' && customers.length > 0)) && (
             <CustomerTable
               customers={customers}
               total={pageInfo.totalElements}
@@ -202,7 +203,12 @@ export default function CustomersPage() {
         {!isDialogLayout && <CustomerDetail onClose={closeDetail} />}
       </div>
       {isDialogLayout && selectedId && (
-        <Dialog title="고객 상세" className={styles.detailDialog} closeOnBackdrop={false} onClose={closeDetail}>
+        <Dialog
+          title="고객 상세"
+          className={styles.detailDialog}
+          closeOnBackdrop={false}
+          onClose={closeDetail}
+        >
           <CustomerDetail onClose={closeDetail} inDialog />
         </Dialog>
       )}

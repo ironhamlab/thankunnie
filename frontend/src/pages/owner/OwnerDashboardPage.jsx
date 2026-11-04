@@ -102,6 +102,10 @@ export default function OwnerDashboardPage() {
   );
 }
 
+// 오늘 예약을 보여 줄 수 있는지. 다시 받는 동안에는 받아 둔 목록이 있을 때만 그대로 둔다
+const hasTodayList = (status, reservations) =>
+  status === 'succeeded' || (status === 'loading' && reservations.length > 0);
+
 function TodayView({ onOpenStats }) {
   const dashboard = useOwnerDashboardStore((state) => state.dashboard);
   const dashboardStatus = useOwnerDashboardStore((state) => state.dashboardStatus);
@@ -123,12 +127,15 @@ function TodayView({ onOpenStats }) {
         {dashboardStatus === 'failed' && (
           <LoadError message="오늘 운영 현황을 불러오지 못했어요." onRetry={loadToday} />
         )}
-        {dashboardStatus === 'loading' && <Spinner />}
-        {dashboardStatus === 'succeeded' && dashboard && (
+        {dashboardStatus === 'loading' && !dashboard && <Spinner />}
+        {/* 다시 받는 동안에는 받아 둔 숫자를 보여 주고, 새 값이 오면 숫자만 바뀐다 */}
+        {dashboardStatus !== 'failed' && dashboard && (
           <TodayCards
             dashboard={dashboard}
             monthSummary={monthSummary}
-            todayReservations={reservationsStatus === 'succeeded' ? todayReservations : null}
+            todayReservations={
+              hasTodayList(reservationsStatus, todayReservations) ? todayReservations : null
+            }
           />
         )}
       </section>
@@ -295,8 +302,8 @@ function TodayReservations({ reservations, status, onRetry }) {
       {status === 'failed' && (
         <LoadError message="오늘 예약을 불러오지 못했어요." onRetry={onRetry} />
       )}
-      {status === 'loading' && <Spinner />}
-      {status === 'succeeded' && <TodayReservationList reservations={reservations} />}
+      {status === 'loading' && !reservations.length && <Spinner />}
+      {hasTodayList(status, reservations) && <TodayReservationList reservations={reservations} />}
     </Panel>
   );
 }

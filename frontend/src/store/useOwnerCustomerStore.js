@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ownerCustomerApi } from '@/api/ownerCustomerApi';
+import { onSessionChange } from '@/utils/sessionChange';
 
 const toError = (error, fallback) => ({
   code: error?.code ?? 'UNKNOWN_ERROR',
@@ -8,7 +9,8 @@ const toError = (error, fallback) => ({
 
 /**
  * 매장 고객 관리. 목록·상세·메모 저장을 각각 다른 상태로 둔다.
- * 목록·상세는 마지막 요청의 응답만 반영하고, 시작할 때 이전 값을 비워 다른 고객·다른 매장의 정보가 남지 않게 한다.
+ * 목록·상세는 마지막 요청의 응답만 반영한다. 목록은 조건이 바뀔 때, 상세는 시작할 때 이전 값을 비운다.
+ * 계정이 바뀌면 아래 onSessionChange 가 모두 비워 다른 매장의 정보가 남지 않게 한다.
  */
 export const useOwnerCustomerStore = create((set, get) => ({
   customers: [],
@@ -16,6 +18,7 @@ export const useOwnerCustomerStore = create((set, get) => ({
   listStatus: 'idle',
   listError: null,
   listRequestId: 0,
+  listKey: null,
 
   detail: null,
   detailUserId: null,
@@ -32,7 +35,15 @@ export const useOwnerCustomerStore = create((set, get) => ({
 
   loadCustomers: async (query) => {
     const requestId = get().listRequestId + 1;
-    set({ listRequestId: requestId, customers: [], listStatus: 'loading', listError: null });
+    // 같은 조건이면 다시 받는 동안 받아 둔 목록을 보여 준다. 조건이 바뀌면 비운다
+    const listKey = JSON.stringify(query);
+    set({
+      listRequestId: requestId,
+      listKey,
+      listStatus: 'loading',
+      listError: null,
+      ...(get().listKey === listKey ? {} : { customers: [] }),
+    });
     try {
       const result = await ownerCustomerApi.getCustomers(query);
       if (get().listRequestId === requestId) {
@@ -144,3 +155,15 @@ export const useOwnerCustomerStore = create((set, get) => ({
     }
   },
 }));
+
+onSessionChange(() => {
+  useOwnerCustomerStore.setState((state) => ({
+    customers: [],
+    pageInfo: { totalElements: 0, totalPages: 0, hasNext: false },
+    listStatus: 'idle',
+    listError: null,
+    listKey: null,
+    listRequestId: state.listRequestId + 1,
+  }));
+  useOwnerCustomerStore.getState().clearCustomer();
+});

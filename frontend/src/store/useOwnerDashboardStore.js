@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { ownerDashboardApi } from '@/api/ownerDashboardApi';
 import { reservationApi } from '@/api/reservationApi';
 import { todayKst } from '@/utils/scheduleDate';
+import { onSessionChange } from '@/utils/sessionChange';
 
 // 오늘 일정에는 시간을 잡고 있는 확정·취소 처리 중 예약만 보여 준다
 const TODAY_STATUSES = ['CONFIRMED', 'CANCEL_PENDING'];
@@ -30,6 +31,7 @@ export const useOwnerDashboardStore = create((set, get) => ({
   monthSummary: null,
   monthSummaryRequestId: 0,
 
+  // 다시 받는 동안 받아 둔 숫자·목록을 보여 준다. 계정이 바뀌면 아래 onSessionChange 가 비운다
   loadDashboard: () => {
     get().loadToday();
     get().loadTodayReservations();
@@ -38,7 +40,7 @@ export const useOwnerDashboardStore = create((set, get) => ({
 
   loadMonthSummary: async () => {
     const requestId = get().monthSummaryRequestId + 1;
-    set({ monthSummaryRequestId: requestId, monthSummary: null });
+    set({ monthSummaryRequestId: requestId });
     const today = todayKst();
     try {
       const stats = await ownerDashboardApi.getStats({ from: `${today.slice(0, 8)}01`, to: today });
@@ -46,16 +48,17 @@ export const useOwnerDashboardStore = create((set, get) => ({
         set({ monthSummary: stats?.summary ?? null });
       }
     } catch {
-      // 보조 정보라 실패를 따로 알리지 않는다
+      // 보조 정보라 실패를 따로 알리지 않고 그 줄만 숨긴다
+      if (get().monthSummaryRequestId === requestId) {
+        set({ monthSummary: null });
+      }
     }
   },
 
-  // 요청 시작 시 이전 값을 비운다. 로그아웃 후 다른 매장이 로그인해도 이전 매장 숫자가 남지 않게 한다
   loadToday: async () => {
     const requestId = get().dashboardRequestId + 1;
     set({
       dashboardRequestId: requestId,
-      dashboard: null,
       dashboardStatus: 'loading',
       dashboardError: null,
     });
@@ -78,7 +81,6 @@ export const useOwnerDashboardStore = create((set, get) => ({
     const requestId = get().reservationsRequestId + 1;
     set({
       reservationsRequestId: requestId,
-      todayReservations: [],
       reservationsStatus: 'loading',
       reservationsError: null,
     });
@@ -103,3 +105,18 @@ export const useOwnerDashboardStore = create((set, get) => ({
     }
   },
 }));
+
+onSessionChange(() =>
+  useOwnerDashboardStore.setState((state) => ({
+    dashboard: null,
+    dashboardStatus: 'idle',
+    dashboardError: null,
+    dashboardRequestId: state.dashboardRequestId + 1,
+    todayReservations: [],
+    reservationsStatus: 'idle',
+    reservationsError: null,
+    reservationsRequestId: state.reservationsRequestId + 1,
+    monthSummary: null,
+    monthSummaryRequestId: state.monthSummaryRequestId + 1,
+  })),
+);

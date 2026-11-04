@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { scheduleApi } from '@/api/scheduleApi';
 import { addDays, todayKst } from '@/utils/scheduleDate';
+import { onSessionChange } from '@/utils/sessionChange';
 
 // 열기·닫기는 오늘부터 60일 안에서만 등록할 수 있어 같은 범위를 불러온다.
 const BOOKING_MAX_DAYS = 60;
@@ -21,6 +22,7 @@ export const useScheduleStore = create((set, get) => ({
   exceptions: [],
   status: 'idle',
   error: null,
+  loadRequestId: 0,
   availableTimes: [],
   timesStatus: 'idle',
   timesRequestId: 0,
@@ -29,11 +31,15 @@ export const useScheduleStore = create((set, get) => ({
   refreshFailed: false,
   isRefreshing: false,
 
+  // 마지막 요청의 응답만 반영해 늦게 온 이전 계정의 일정이 덮어쓰지 않게 한다
   loadSchedule: async () => {
-    set({ status: 'loading', error: null, mutationError: null });
+    const requestId = get().loadRequestId + 1;
+    const isCurrent = () => get().loadRequestId === requestId;
+    set({ loadRequestId: requestId, status: 'loading', error: null, mutationError: null });
     try {
       // 매장 ID·역할은 인증 공통 API에서 받아 사용한다.
       const user = await scheduleApi.getCurrentUser();
+      if (!isCurrent()) return;
       if (user?.role !== 'OWNER' || !user.shopId) {
         throw { code: 'COMMON_403', message: '매장 계정으로 로그인해 주세요.' };
       }
@@ -42,6 +48,7 @@ export const useScheduleStore = create((set, get) => ({
         scheduleApi.getBusinessHours(),
         scheduleApi.getExceptions(from, to),
       ]);
+      if (!isCurrent()) return;
       set({
         shopId: user.shopId,
         businessHours,
@@ -50,7 +57,7 @@ export const useScheduleStore = create((set, get) => ({
         refreshFailed: false,
       });
     } catch (error) {
-      set({ status: 'failed', error: toError(error) });
+      if (isCurrent()) set({ status: 'failed', error: toError(error) });
     }
   },
 
@@ -100,14 +107,19 @@ export const useScheduleStore = create((set, get) => ({
   },
 
   // 실패해도 던지지 않고 refreshFailed 로 알린다. 화면은 새로고침 안내를 보여준다.
+  // 그사이 일정을 새로 받았거나 계정이 바뀌었으면 이 응답은 버린다
   reloadExceptions: async () => {
     const { from, to } = exceptionRange();
+    const requestId = get().loadRequestId;
+    const isCurrent = () => get().loadRequestId === requestId;
     set({ isRefreshing: true });
     try {
       const exceptions = await scheduleApi.getExceptions(from, to);
-      set({ exceptions, refreshFailed: false, isRefreshing: false });
+      if (isCurrent()) set({ exceptions, refreshFailed: false });
     } catch {
-      set({ refreshFailed: true, isRefreshing: false });
+      if (isCurrent()) set({ refreshFailed: true });
+    } finally {
+      set({ isRefreshing: false });
     }
   },
 
@@ -124,3 +136,18 @@ export const useScheduleStore = create((set, get) => ({
     }
   },
 }));
+
+onSessionChange(() =>
+  useScheduleStore.setState((state) => ({
+    shopId: null,
+    businessHours: [],
+    exceptions: [],
+    status: 'idle',
+    error: null,
+    availableTimes: [],
+    timesStatus: 'idle',
+    timesRequestId: state.timesRequestId + 1,
+    loadRequestId: state.loadRequestId + 1,
+    refreshFailed: false,
+  })),
+);

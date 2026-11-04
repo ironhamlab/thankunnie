@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ownerDashboardApi } from '@/api/ownerDashboardApi';
+import { onSessionChange } from '@/utils/sessionChange';
 
 const toError = (error) => ({
   code: error?.code ?? 'UNKNOWN_ERROR',
@@ -38,3 +39,13 @@ export const useOwnerStatsStore = create((set, get) => ({
     }
   },
 }));
+
+onSessionChange(() =>
+  useOwnerStatsStore.setState((state) => ({
+    stats: null,
+    statsKey: null,
+    status: 'idle',
+    error: null,
+    requestId: state.requestId + 1,
+  })),
+);
