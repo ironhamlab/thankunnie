@@ -107,7 +107,7 @@ export default function ShopRow({
   }
   return (
     <article
-      className={`${styles.root} ${expanded ? styles.expanded : ''} ${located ? styles.located : ''}`}
+      className={`${styles.root} ${model ? styles.modelList : ''} ${expanded ? styles.expanded : ''} ${located ? styles.located : ''}`}
       // 지도 핀과 같은 색 띠를 왼쪽에 둬 목록 카드와 핀을 짝지어 보게 한다
       data-pin={pinKind(shop)}
     >
@@ -178,13 +178,13 @@ export default function ShopRow({
           ) : (
             <>
               {groupByTreatment(shownVacancies).map((treatment) => (
-                // 일반 시술과 섞여 있으면 초보 시술을 색과 표시로 구분한다. 초보 시술 모집 목록은 전부 초보 시술이라 구분하지 않는다
+                // 초보 시술은 일반 예약 목록과 같은 초록 칸과 초보 시술 표시로 보여준다
                 <div
-                  className={`${styles.treatment} ${treatment.isModel && !model ? styles.modelTreatment : ''}`}
+                  className={`${styles.treatment} ${treatment.isModel || model ? styles.modelTreatment : ''}`}
                   key={treatment.treatmentId}
                 >
                   <div className={styles.treatmentInfo}>
-                    {treatment.isModel && !model && (
+                    {(treatment.isModel || model) && (
                       <span className={styles.modelBadge}>
                         <SproutIcon size={16} />
                         초보 시술
