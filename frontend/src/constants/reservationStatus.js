@@ -1,14 +1,13 @@
-// 백엔드 예약·결제·취소 상태 값 → 화면 표시. 배지 색은 디자인 CSS 클래스(b-green, b-red, b-neutral, b-dark)를 쓴다.
+// 백엔드 예약·결제·취소 상태 값 → 화면 표시. COMPLETED·NO_SHOW 는 서버가 계산한 표시 상태(displayStatus)에만 온다. 배지 색은 디자인 CSS 클래스(b-green, b-red, b-neutral, b-dark)를 쓴다.
 const RESERVATION_STATUS = {
   HOLD: { label: '결제 대기', tone: '' },
   CONFIRMED: { label: '예약 확정', tone: 'b-green' },
+  COMPLETED: { label: '이용 완료', tone: 'b-neutral' },
+  NO_SHOW: { label: '방문하지 않음', tone: 'b-neutral' },
   CANCEL_PENDING: { label: '취소 처리 중', tone: '' },
   CANCELLED: { label: '취소 완료', tone: 'b-red' },
   EXPIRED: { label: '점유 만료', tone: 'b-neutral' },
 };
-
-// 시작일이 지난 확정 예약. 서버 상태는 CONFIRMED 그대로이고 화면에서만 이렇게 보여준다
-export const PAST_RESERVATION_STATUS = { label: '이용 완료', tone: 'b-neutral' };
 
 export const PAYMENT_STATUS = {
   READY: '결제 대기',

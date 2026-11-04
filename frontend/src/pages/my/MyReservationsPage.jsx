@@ -1,15 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { generatePath, Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import {
-  PAST_RESERVATION_STATUS,
-  PAYMENT_STATUS,
-  reservationStatusOf,
-} from '@/constants/reservationStatus';
+import { PAYMENT_STATUS, reservationStatusOf } from '@/constants/reservationStatus';
 import { useReservationStore } from '@/store/useReservationStore';
 import { useShopDetailStore } from '@/store/useShopDetailStore';
 import { formatReservationTime } from '@/utils/reservationFormat';
-import { addDays, todayKst } from '@/utils/scheduleDate';
 import ReservationDetailPanel from '@/components/reservation/ReservationDetailPanel';
 import ReservationPagination from '@/components/reservation/ReservationPagination';
 import Badge from '@/components/common/Badge';
@@ -23,24 +18,22 @@ import EmptyState from '@/components/common/EmptyState';
 import VisitShopLocation from './components/VisitShopLocation';
 import styles from './MyReservationsPage.module.css';
 
-// 탭별 조회 조건. 날짜는 시술 시작일 기준이다
+// 탭별 조회 조건. 시술이 끝나면 바로 지난 이용으로 넘어가도록 서버가 종료 시각으로 나눈다
 const TABS = [
   {
     key: 'upcoming',
     label: '이용 예정',
-    filters: () => ({ from: todayKst(), statuses: ['HOLD', 'CONFIRMED'] }),
+    filters: { timing: 'UPCOMING', statuses: ['HOLD', 'CONFIRMED'] },
   },
   {
     key: 'past',
     label: '지난 이용',
-    filters: () => ({ to: addDays(todayKst(), -1), statuses: ['CONFIRMED'] }),
-    // 확정 상태로 시작일이 지난 예약만 오므로 이용을 마친 것으로 보여준다
-    displayStatus: PAST_RESERVATION_STATUS,
+    filters: { timing: 'PAST', statuses: ['CONFIRMED'] },
   },
   {
     key: 'cancelled',
     label: '취소',
-    filters: () => ({ statuses: ['CANCEL_PENDING', 'CANCELLED'] }),
+    filters: { statuses: ['CANCEL_PENDING', 'CANCELLED'] },
   },
 ];
 const PAGE_SIZE = 10;
@@ -62,30 +55,20 @@ export default function MyReservationsPage() {
   const loadShop = useShopDetailStore((state) => state.loadShop);
   const clearShop = useShopDetailStore((state) => state.clearShop);
   const [tabKey, setTabKey] = useState('upcoming');
-  // 지금 보이는 목록이 어느 탭 것인지. 다음 목록을 받는 동안 이전 카드를 새 탭 기준으로 표시하지 않게 한다
-  const [listTabKey, setListTabKey] = useState('upcoming');
   const [page, setPage] = useState(0);
   // 이 화면에서 목록을 한 번 받은 뒤에는, 다음 목록을 받는 동안에도 목록을 남겨 화면이 튀지 않게 한다
   const [hasLoadedList, setHasLoadedList] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const listRef = useRef(null);
   const tabIndicator = useSlidingIndicator(tabKey);
-  const { displayStatus } = TABS.find((item) => item.key === listTabKey);
 
   useEffect(() => {
-    let isLatest = true;
     const load = async () => {
       const { filters } = TABS.find((item) => item.key === tabKey);
-      await loadReservations('my', { ...filters(), page, size: PAGE_SIZE });
-      if (isLatest) {
-        setHasLoadedList(true);
-        setListTabKey(tabKey);
-      }
+      await loadReservations('my', { ...filters, page, size: PAGE_SIZE });
+      setHasLoadedList(true);
     };
     load();
-    return () => {
-      isLatest = false;
-    };
   }, [loadReservations, tabKey, page]);
 
   // 창을 연 채 취소 화면 등으로 떠나도 공용 스토어에 매장 정보를 남기지 않는다
@@ -164,7 +147,7 @@ export default function MyReservationsPage() {
             className={`b-stack ${styles.cards} ${pageInfo.totalPages > 1 ? styles.fullPage : ''}`}
           >
             {reservations.map((item) => {
-              const status = displayStatus ?? reservationStatusOf(item.status);
+              const status = reservationStatusOf(item.displayStatus);
               return (
                 <Panel
                   as="button"
@@ -199,12 +182,7 @@ export default function MyReservationsPage() {
       {isDetailOpen && (
         <Dialog title="예약 상세" className={styles.detailDialog} onClose={closeDetail}>
           <VisitShopLocation />
-          <ReservationDetailPanel
-            viewer="customer"
-            cancelPath={cancelPath}
-            displayStatus={displayStatus}
-            hideHeading
-          />
+          <ReservationDetailPanel viewer="customer" cancelPath={cancelPath} hideHeading />
         </Dialog>
       )}
     </div>

@@ -46,7 +46,7 @@ public record ReservationDetailResponse(
                 TimeUtils.toOffset(view.cancelRequestedAt()),
                 TimeUtils.toOffset(view.cancelCompletedAt()));
         return new ReservationDetailResponse(
-                ReservationSummaryResponse.from(view, cancellable),
+                ReservationSummaryResponse.from(view, cancellable, serverTime),
                 view.customerPhone(),
                 view.customerRequest(),
                 TimeUtils.toOffset(view.holdExpiresAt()),
