@@ -86,8 +86,7 @@ export default function ShopAddressFields({ value, onChange, errors }) {
 
       {checkStatus === 'succeeded' && value.regionCode && (
         <p role="status" className={messageStyles.message}>
-          주소를 확인했어요 · 지역코드 {value.regionCode} · 좌표 {value.latitude},{' '}
-          {value.longitude}
+          주소를 확인했어요
         </p>
       )}
       {checkError && (

@@ -52,7 +52,7 @@ const LOCATION_KEYS = ['regionCode', 'latitude', 'longitude'];
 const validateLocation = (form) =>
   form.regionCode.trim() && form.latitude !== '' && form.longitude !== ''
     ? ''
-    : '매장 위치(지역코드·좌표)를 확인해 주세요. 주소 확인을 누르면 자동으로 채워져요.';
+    : '주소 확인을 눌러 매장 위치를 확인해 주세요.';
 
 const toNullable = (value) => value.trim() || null;
 
