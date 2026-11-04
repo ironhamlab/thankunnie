@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useReservationStore } from '@/store/useReservationStore';
+import { getDevTestUser } from '@/utils/devTestUser';
 import { toKstDateTime } from '@/utils/scheduleDate';
 
 // 다른 시간의 결제 대기 예약이 이미 있을 때 서버가 돌려주는 코드 (한 고객은 점유를 하나만 가진다)
@@ -10,6 +12,9 @@ const HOLD_EXISTS = 'RESERVATION_006';
 const NOT_YOUR_TURN = 'RESERVATION_007';
 // 대기 중 순서를 다시 묻는 간격. 서버는 15초 동안 묻지 않으면 떠난 것으로 보고 줄에서 뺀다
 const QUEUE_POLL_MS = 2000;
+// 로그인이 풀렸거나(토큰 만료) 로그인하지 않았을 때 서버가 돌려주는 코드
+const UNAUTHORIZED = 'COMMON_401';
+const LOGIN_REQUIRED_NOTICE = '예약하려면 회원 로그인이 필요합니다.';
 const QUEUE_CLOSED_MESSAGE =
   '다른 분이 먼저 예약했거나 예약할 수 없는 시간이 되었어요. 다른 시간을 선택해 주세요.';
 
@@ -21,9 +26,12 @@ const toSlot = ({ treatmentId, startsAt }) => ({ treatmentId, startsAt });
  * 대기 중에는 몇 초마다 순서를 다시 묻고, 차례가 오면 바로 예약한다.
  * 실패하면 이동하지 않고 서버가 알려준 이유를 error 로 돌려준다.
  * 결제 대기 중인 다른 예약이 있으면 pendingHold 에 그 예약을 담아, 화면이 바꿀지 묻게 한다.
+ * 로그인하지 않았거나 로그인이 풀렸으면 로그인 화면으로 보내고, 로그인하면 고른 시술·시간이 선택된 채로 돌아온다.
  */
 export default function useReserve() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const token = useAuthStore((s) => s.token);
   const createReservation = useReservationStore((s) => s.createReservation);
   const findMyHold = useReservationStore((s) => s.findMyHold);
   const joinQueue = useReservationStore((s) => s.joinQueue);
@@ -39,6 +47,20 @@ export default function useReserve() {
   const waitingSlotRef = useRef(null);
   // 응답을 기다리는 순서 조회. 나가기가 이 조회보다 먼저 서버에 닿으면 조회가 다시 줄에 세우므로 끝난 뒤 나간다
   const joinInFlightRef = useRef(null);
+
+  // 매장 상세는 주소의 treatmentId·startsAt 을 처음 선택으로 잡으므로, 돌아올 주소에 고른 시술·시간을 담는다
+  const goLogin = (request) => {
+    setLoading(false);
+    const params = new URLSearchParams(location.search);
+    params.set('treatmentId', String(request.treatmentId));
+    params.set('startsAt', request.startsAt.slice(0, 16));
+    navigate(ROUTES.LOGIN, {
+      state: {
+        from: { pathname: location.pathname, search: `?${params}` },
+        notice: LOGIN_REQUIRED_NOTICE,
+      },
+    });
+  };
 
   const requestTicket = (slot) => {
     const pending = joinQueue(slot);
@@ -92,6 +114,10 @@ export default function useReserve() {
       // 예약하지 못하고 화면에 머물면 순서를 더 묻지 않으므로, 맨 앞 자리를 비워 뒷사람이 기다리지 않게 한다.
       // 결제 대기 예약을 바꾸기로 하면 다시 줄에 선다
       leaveQueue(toSlot(request));
+      if (err.code === UNAUTHORIZED) {
+        goLogin(request);
+        return;
+      }
       if (err.code === HOLD_EXISTS) {
         // 바꾸기를 눌렀는데도 오면 그 사이 점유가 다른 예약으로 바뀐 것이다. 지금 점유로 다시 묻는다
         const baseRequest = toSlot(request);
@@ -156,6 +182,10 @@ export default function useReserve() {
     try {
       await applyTicket(await requestTicket(toSlot(request)), request);
     } catch (err) {
+      if (err.code === UNAUTHORIZED) {
+        goLogin(request);
+        return;
+      }
       setError(err.message);
       setLoading(false);
     }
@@ -209,8 +239,15 @@ export default function useReserve() {
    * @param {string} date        YYYY-MM-DD
    * @param {string} time        HH:mm (30분 단위)
    */
-  const reserve = (treatmentId, date, time) =>
-    submit({ treatmentId, startsAt: toKstDateTime(date, time.padStart(5, '0')) });
+  const reserve = (treatmentId, date, time) => {
+    const request = { treatmentId, startsAt: toKstDateTime(date, time.padStart(5, '0')) };
+    // 로그인하지 않았으면 서버에 묻지 않고 바로 로그인 화면으로 보낸다 (개발 서버의 테스트 계정도 로그인으로 본다)
+    if (!token && !getDevTestUser()) {
+      goLogin(request);
+      return;
+    }
+    submit(request);
+  };
 
   // 확인창에 보여준 그 예약의 확보를 풀고 이 시간으로 바꾼다. 새 시간이 그새 찼으면 서버가 거절하고 기존 확보는 남는다
   const replaceHold = () =>
