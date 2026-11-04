@@ -178,16 +178,17 @@
 .slots a:active {
   transform: scale(0.94);
 }
+/* 임박·초임박 특가 시각은 눈에 띄게 한다 */
+.slots a.urgent {
+  border-color: var(--color-primary);
+  color: var(--color-primary-text);
+}
+/* 특가 시각의 글자색을 덮어써야 하므로 그 규칙보다 뒤에 둔다. 앞에 있으면 주황 바탕에 주황 글자가 된다 */
 .slots a:hover,
 .slots a:focus-visible {
   border-color: var(--color-primary);
   background: var(--color-primary);
   color: white;
-}
-/* 임박·초임박 특가 시각은 눈에 띄게 한다 */
-.slots a.urgent {
-  border-color: var(--color-primary);
-  color: var(--color-primary-text);
 }
 /* 기본 전환을 정한 규칙보다 뒤에 두어야 움직임 줄이기 설정이 이긴다 */
 @media (prefers-reduced-motion: reduce) {
