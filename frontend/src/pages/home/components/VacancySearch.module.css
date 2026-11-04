@@ -221,21 +221,12 @@
     flex-shrink: 0;
     font-size: 11px;
   }
-  /* 날짜·예약 종류는 버튼이 둘뿐이라 한 줄에 나란히 두고, 고른 날짜 달력은 그 아래 한 줄을 다 쓴다.
-     아래 .dateRow 기본값보다 앞에 있어 한 단계 좁혀 쓴다 */
+  /* 날짜 조건 아래에 고른 날짜 달력을 둔다. 아래 .dateRow 기본값보다 앞에 있어 한 단계 좁혀 쓴다 */
   .filters .dateRow {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    padding: 8px 0 0;
-  }
-  .dateRow > :not(.filterGroup) {
-    grid-column: 1 / -1;
-    order: 1;
-  }
-  /* 타임세일·초보 시술 모집처럼 날짜 조건이 빠지면 예약 종류가 한 줄을 다 쓴다 */
-  .dateRow:not(:has(> .filterGroup ~ .filterGroup)) > .filterGroup {
-    grid-column: 1 / -1;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 6px 0 0;
   }
   .filterLine {
     flex-direction: column;
@@ -361,11 +352,22 @@
     min-height: 300px;
   }
 }
+/* 휴대폰에서는 분야 버튼을 작은 알약 모양으로 줄여 한 화면에 더 많이 보이게 한다 */
 @media (max-width: 540px) {
+  .categoryRow {
+    gap: 6px;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .categoryRow::-webkit-scrollbar {
+    display: none;
+  }
   .categoryRow button {
-    min-width: 80px;
-    padding: 10px 18px;
-    font-size: 15px;
+    min-width: 0;
+    padding: 6px 14px;
+    border-color: var(--color-border);
+    font-size: 13px;
+    font-weight: 600;
   }
 }
 .rows {

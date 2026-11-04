@@ -413,13 +413,6 @@ export default function VacancySearch() {
               onChange={(value) => updateOption('date', value === today ? '' : value)}
             />
           )}
-          <Filter
-            label="예약 종류"
-            options={[ALL, '타임세일']}
-            value={saleOnly ? '타임세일' : ALL}
-            onChange={(value) => updateOption('sale', value === '타임세일' ? '1' : '')}
-            segmented
-          />
         </div>
         {saleOnly && (
           <p className={styles.description}>
