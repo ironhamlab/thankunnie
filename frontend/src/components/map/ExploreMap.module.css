@@ -102,17 +102,52 @@
   border-radius: 50%;
   background: var(--color-success);
 }
-/* 빈자리가 없는 매장은 가격 없이 이름만 흐리게 보여준다 */
+/* 빈자리가 없는 매장은 가격 없이 이름만, 점선 테두리에 회색 바탕으로 흐리게 보여줘 다른 날 핀(흰 바탕)과 구분한다 */
 .none {
   --pin-color: var(--color-text-muted);
-  border-width: 1px;
-  border-color: var(--color-border-strong);
-  background: var(--color-surface);
+  border: 1.5px dashed var(--color-text-muted);
+  background: var(--color-border);
   color: var(--color-text-muted);
+  font-size: 11px;
   font-weight: 500;
+  box-shadow: none;
 }
 .none:global(.is-selected) {
-  border-color: var(--pin-color);
+  border-style: solid;
+}
+/* 묶음 안 글자. 묶음 겉모양은 ExploreMap.jsx 의 CLUSTER_STYLE 이다 */
+.clusterCount {
+  font-size: 12px;
+  font-weight: 800;
+}
+.clusterPrice {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.92;
+}
+/* 묶음 안 초임박 매장 수. 모서리에 붙은 흰 배지라 주황 묶음 위에서도 잘 보인다 */
+.clusterBadge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 2px 5px;
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-pill);
+  background: white;
+  color: var(--color-primary-text);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+/* 목록의 다른 페이지 매장. 고른 핀은 흐리게 두지 않는다 */
+.dimmed:not(:global(.is-selected)) {
+  opacity: 0.45;
+}
+.dimmed.lastMinute::after {
+  animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .pin {

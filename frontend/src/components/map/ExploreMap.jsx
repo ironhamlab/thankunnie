@@ -20,24 +20,30 @@ const CLUSTER_MIN_LEVEL = 6;
 const CLUSTER_GRID_PX = 70;
 // 위경도는 소수 6자리(약 10cm)면 충분하고, 같은 범위를 같은 값으로 보내야 불필요한 재조회가 줄어든다
 const COORD_DIGITS = 6;
-// 묶음 동그라미 모양. 카카오 클러스터러가 요소에 직접 넣는 인라인 스타일이다
+// 묶음 모양. 카카오 클러스터러가 요소에 직접 넣는 인라인 스타일이다.
+// 동그라미에 글자 세 줄을 넣으면 답답해 글자 길이만큼 늘어나는 둥근 사각형으로 두고, 초임박 수는 모서리 배지로 뺀다
 const CLUSTER_STYLE = {
-  width: '64px',
-  height: '64px',
-  borderRadius: '50%',
+  position: 'relative',
+  minWidth: '52px',
+  padding: '5px 10px',
+  borderRadius: '14px',
   background: 'var(--color-primary)',
-  border: '3px solid white',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
+  border: '2px solid white',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.22)',
   color: 'white',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  justifyContent: 'center',
   lineHeight: '1.2',
-  fontSize: '11px',
-  fontWeight: '700',
   textAlign: 'center',
+  whiteSpace: 'nowrap',
+  cursor: 'pointer',
 };
+
+// 묶음 배지의 번개. 묶음은 카카오 클러스터러가 그린 요소에 HTML 로 넣으므로 고정 SVG 문자열로 둔다
+const CLUSTER_BOLT =
+  '<svg viewBox="0 0 24 24" width="9" height="9" aria-hidden="true">' +
+  '<path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="currentColor"/></svg>';
 
 // 매장이 다 보이게 범위를 맞출 때 기본 여백(px)
 const DEFAULT_FIT_PADDING = { top: 40, right: 40, bottom: 40, left: 40 };
@@ -129,11 +135,15 @@ function pinContent(shop, today) {
  * @param onUnavailable  키가 없거나 SDK 를 불러오지 못했을 때 부른다
  * @param resetSignal    바뀔 때마다 지도를 처음 위치로 돌린다 (지도 초기화 버튼). 0 이면 무시한다
  * @param focusPosition  { lat, lng, zoom } 가 들어오면 그 위치로 지도를 옮긴다 (새로고침 때 고른 매장 위치 복원).
- *                       zoom 이 true 면 묶음이 풀리도록 가까이 확대한다 (목록에서 고른 매장 보여주기)
+ *                       zoom 이 true 면 묶음이 풀리도록 가까이 확대한다 (목록에서 고른 매장 보여주기).
+ *                       level 을 함께 주면 그 확대 단계로 맞춘다 (홈 지도는 주변 매장도 보이게 한 단계 넓게)
  * @param fitToShops     true 면 받은 매장이 다 보이게 범위를 맞춘다 (검색 화면처럼 목록이 지도 범위와 상관없는 곳).
  *                       이때는 onBoundsChange 를 넘기지 않아 지도를 움직여도 다시 조회하지 않는다.
  *                       매장이 넓게 흩어져 있으면 MAX_FIT_LEVEL 까지만 넓히고 목록 맨 앞 매장 주변을 보여준다
  * @param boundsPadding  fitToShops 로 범위를 맞출 때 띄울 여백(px). 지도 위에 패널이 겹치는 쪽을 넓게 준다
+ * @param fitSignal      fitToShops 지도에서 바뀔 때마다 매장이 다 보이는 처음 범위로 다시 맞춘다 (전체 보기)
+ * @param activeIds      넘기면 이 매장 ID(문자열) Set 에 없는 핀을 흐리게 보여준다 (목록의 다른 페이지 매장)
+ * @param centerOnSelect true 면 핀을 누를 때 그 핀을 지도 가운데로 옮긴다 (홈 지도). 아니면 화면 밖일 때만 옮긴다
  * @param myLocation     useMyLocation() 결과. 넘기면 내 위치를 화면과 같이 써서(목록 거리 표시 등) 내 위치 버튼을 보인다.
  *                       넘기지 않으면 지도 혼자 위치를 확인하고, 다시 조회하지 않는 지도(fitToShops)에는 버튼을 숨긴다
  */
@@ -149,6 +159,9 @@ export default function ExploreMap({
   fitToShops = false,
   boundsPadding = DEFAULT_FIT_PADDING,
   myLocation,
+  centerOnSelect = false,
+  fitSignal = 0,
+  activeIds,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -156,9 +169,9 @@ export default function ExploreMap({
   const elementsRef = useRef(new Map());
   // 고른 핀을 이웃 핀 위로 올리려고 매장 ID → 오버레이를 기억해 둔다
   const overlaysRef = useRef(new Map());
-  // 묶음에 최저가를 쓰려고 핀(오버레이) → 최저가를 기억해 둔다
-  const pricesRef = useRef(new Map());
-  const callbacksRef = useRef({ onSelect, onBoundsChange, onUnavailable });
+  // 묶음에 최저가·초임박 수를 쓰려고 핀(오버레이) → { price, kind } 를 기억해 둔다
+  const pinInfoRef = useRef(new Map());
+  const callbacksRef = useRef({ onSelect, onBoundsChange, onUnavailable, centerOnSelect });
   const [status, setStatus] = useState(hasKakaoMapKey() ? 'loading' : 'error');
   const myLocationRef = useRef(null);
   const ownLocation = useMyLocation();
@@ -171,8 +184,8 @@ export default function ExploreMap({
   const showLocate = Boolean(onBoundsChange || myLocation);
 
   useEffect(() => {
-    callbacksRef.current = { onSelect, onBoundsChange, onUnavailable };
-  }, [onSelect, onBoundsChange, onUnavailable]);
+    callbacksRef.current = { onSelect, onBoundsChange, onUnavailable, centerOnSelect };
+  }, [onSelect, onBoundsChange, onUnavailable, centerOnSelect]);
 
   useEffect(() => {
     if (!hasKakaoMapKey()) {
@@ -197,21 +210,27 @@ export default function ExploreMap({
           gridSize: CLUSTER_GRID_PX,
           styles: [CLUSTER_STYLE],
         });
-        // 기본 묶음은 개수만 보여 주므로 묶인 매장의 최저가를 함께 쓴다
+        // 기본 묶음은 개수만 보여 주므로 묶인 매장의 최저가와, 초임박 매장이 있으면 그 수(번개 n)를 함께 쓴다
         maps.event.addListener(clusterer, 'clustered', (clusters) => {
           clusters.forEach((cluster) => {
             const overlays = cluster.getMarkers();
+            const infos = overlays.map((overlay) => pinInfoRef.current.get(overlay) ?? {});
             // 빈자리가 없는 매장만 묶이면 최저가 없이 개수만 보여 준다
-            const prices = overlays
-              .map((overlay) => pricesRef.current.get(overlay))
-              .filter((price) => price != null);
+            const prices = infos.map((info) => info.price).filter((price) => price != null);
             const minPrice = prices.length ? formatMoney(Math.min(...prices)) : null;
+            const urgent = infos.filter((info) => info.kind === PIN_KIND.LAST_MINUTE).length;
             const content = cluster.getClusterMarker().getContent();
             if (content instanceof HTMLElement) {
-              content.innerHTML = `<span>${overlays.length}곳</span>${minPrice ? `<span>${minPrice}~</span>` : ''}`;
+              const badge = urgent
+                ? `<span class="${styles.clusterBadge}">${CLUSTER_BOLT}${urgent}</span>`
+                : '';
+              const price = minPrice
+                ? `<span class="${styles.clusterPrice}">${minPrice}~</span>`
+                : '';
+              content.innerHTML = `<span class="${styles.clusterCount}">${overlays.length}곳</span>${price}${badge}`;
               content.setAttribute(
                 'aria-label',
-                `매장 ${overlays.length}곳${minPrice ? `, ${minPrice}부터` : ''}`,
+                `매장 ${overlays.length}곳${urgent ? `, 초임박 특가 ${urgent}곳` : ''}${minPrice ? `, ${minPrice}부터` : ''}`,
               );
             }
           });
@@ -260,10 +279,10 @@ export default function ExploreMap({
     const { maps } = window.kakao;
     const elements = elementsRef.current;
     const overlaysById = overlaysRef.current;
-    const prices = pricesRef.current;
+    const pinInfo = pinInfoRef.current;
     elements.clear();
     overlaysById.clear();
-    prices.clear();
+    pinInfo.clear();
     const today = todayKst();
     const overlays = shops.map((shop) => {
       const element = document.createElement('button');
@@ -279,14 +298,20 @@ export default function ExploreMap({
         'aria-label',
         mixed ? `${ariaLabel}, 초보 시술 빈자리도 있음` : ariaLabel,
       );
-      element.addEventListener('click', () => callbacksRef.current.onSelect?.(String(shop.shopId)));
+      element.addEventListener('click', () => {
+        // 누른 핀을 지도 가운데로 부드럽게 옮긴다. 확대 단계는 그대로 둬 주변 핀도 계속 보이게 한다
+        if (callbacksRef.current.centerOnSelect) {
+          mapRef.current?.panTo(new maps.LatLng(shop.latitude, shop.longitude));
+        }
+        callbacksRef.current.onSelect?.(String(shop.shopId));
+      });
       elements.set(String(shop.shopId), element);
       const overlay = new maps.CustomOverlay({
         position: new maps.LatLng(shop.latitude, shop.longitude),
         content: element,
         yAnchor: 1.3,
       });
-      prices.set(overlay, shop.minSalePrice);
+      pinInfo.set(overlay, { price: shop.minSalePrice, kind });
       overlaysById.set(String(shop.shopId), overlay);
       return overlay;
     });
@@ -306,7 +331,7 @@ export default function ExploreMap({
       map.setCenter(new maps.LatLng(shops[0].latitude, shops[0].longitude));
     }
     return () => clusterer.clear();
-  }, [status, shops, fitToShops, boundsPadding]);
+  }, [status, shops, fitToShops, boundsPadding, fitSignal]);
 
   useEffect(() => {
     if (status !== 'ready') return;
@@ -332,6 +357,14 @@ export default function ExploreMap({
     }
   }, [status, shops, selectedId, autoSelected, focusPosition]);
 
+  // 목록 지금 페이지에 없는 매장 핀은 흐리게 둬, 목록에 보이는 매장이 지도에서 어디인지 먼저 눈에 들어오게 한다
+  useEffect(() => {
+    if (status !== 'ready') return;
+    elementsRef.current.forEach((element, id) => {
+      element.classList.toggle(styles.dimmed, Boolean(activeIds) && !activeIds.has(id));
+    });
+  }, [status, shops, activeIds]);
+
   // 지도 초기화: 값이 바뀔 때마다 처음 위치·확대 단계로 돌린다. 옮기면 idle 로 그 범위를 다시 조회한다
   useEffect(() => {
     const map = mapRef.current;
@@ -344,7 +377,7 @@ export default function ExploreMap({
   useEffect(() => {
     const map = mapRef.current;
     if (status !== 'ready' || !map || !focusPosition) return;
-    if (focusPosition.zoom) map.setLevel(FOCUS_LEVEL);
+    if (focusPosition.zoom) map.setLevel(focusPosition.level ?? FOCUS_LEVEL);
     map.setCenter(new window.kakao.maps.LatLng(focusPosition.lat, focusPosition.lng));
   }, [status, focusPosition]);
 

@@ -1,6 +1,7 @@
 .root {
   /* 놓인 목록의 폭(검색 목록·지도 옆 좁은 패널)에 맞춰 배치를 바꾸려고 카드 폭을 기준으로 삼는다 */
   container-type: inline-size;
+  position: relative;
   background: white;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -383,4 +384,25 @@
 .none {
   color: var(--color-text-muted);
   font-size: 12px;
+}
+/* 지도 핀과 같은 색 띠. 초임박·오늘은 주황, 다른 날은 회색, 초보 시술은 초록이다 */
+.root[data-pin]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  width: 4px;
+  background: var(--color-primary);
+  pointer-events: none;
+}
+.root[data-pin='today']::before {
+  background: color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+.root[data-pin='later']::before {
+  background: var(--color-border-strong);
+}
+.root[data-pin='model']::before {
+  background: var(--color-success);
 }

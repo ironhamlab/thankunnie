@@ -8,6 +8,8 @@ import styles from './HomeBeautyMap.module.css';
 
 // 아래쪽 매장 패널과 위쪽 도구 막대에 핀이 가리지 않게 범위를 맞출 때 여백을 넓게 둔다
 const MAP_BOUNDS_PADDING = { top: 70, right: 70, bottom: 120, left: 50 };
+// 캐러셀 카드 매장으로 옮길 때 확대 단계. 매장 하나만 크게 보이지 않고 주변 매장 핀도 보이게 목록 지도보다 한 단계 넓힌다
+const FOCUS_LEVEL = 5;
 
 // 임박 빈자리 카드를 지도 핀 모양(C-02 매장 요약과 같은 이름)으로 바꾼다. 핀 종류도 카드의 시작 시각·가격 구간으로 정한다
 function toPinShop(card) {
@@ -52,7 +54,8 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
     setSelectedId(focusCard ? String(focusCard.shopId) : null);
   }
   const focusPosition = useMemo(
-    () => (imminent ? { lat: imminent.lat, lng: imminent.lng, zoom: true } : null),
+    () =>
+      imminent ? { lat: imminent.lat, lng: imminent.lng, zoom: true, level: FOCUS_LEVEL } : null,
     [imminent],
   );
   // 임박 빈자리가 없어 스토어가 다음으로 빠른 빈자리를 대신 담았으면 문구에서 "임박"을 뺀다
@@ -127,6 +130,7 @@ export default function HomeBeautyMap({ focusCard, onHover, onExplore, onPickSho
             }}
             onUnavailable={handleUnavailable}
             fitToShops
+            centerOnSelect
             boundsPadding={MAP_BOUNDS_PADDING}
             focusPosition={focusPosition}
           />
