@@ -31,7 +31,8 @@ const GONE_NOTICE_MS = 4000;
  * 휴대폰에서는 옆으로 밀어 넘기고, 손을 대고 있는 동안만 멈춘다. 끝에서 넘기면 처음으로 돌아간다.
  * 기기에서 동작 줄이기를 켰으면 자동으로 넘기지 않는다.
  * 탭을 보는 동안 목록을 주기적으로 다시 받는다. 순번이 아니라 빈자리 ID 로 보던 카드를 유지해, 앞 카드가 팔려도
- * 누르려던 카드가 바뀌지 않게 한다. 보던 카드가 팔렸을 때만 그 자리의 다음 카드로 넘어가며 안내한다.
+ * 누르려던 카드가 바뀌지 않게 한다. 다른 고객이 결제 중인 카드는 표시를 바꿔 남기고, 보던 카드의 예약이 확정되거나
+ * 닫혔을 때만 그 자리의 다음 카드로 넘어가며 마감을 안내한다.
  * 장이 바뀔 때마다(저절로 넘길 때도) onShowShop 으로 알려 지도가 지금 카드의 매장을 따라오게 한다.
  * 옆 지도를 보는 중(paused)이면 지도가 옮겨 가지 않게 자동 넘김을 멈춘다.
  * 캐러셀이 화면에서 거의 벗어나면(휴대폰에서 아래 지도로 내려 보는 중) 지도가 바뀌지 않게 자동 넘김을 멈춘다.
@@ -49,6 +50,7 @@ export default function ImminentCarousel({
 }) {
   const vacancies = useExploreStore((s) => s.imminentVacancies);
   const status = useExploreStore((s) => s.imminentStatus);
+  const closedIds = useExploreStore((s) => s.imminentClosedIds);
   const loadImminentVacancies = useExploreStore((s) => s.loadImminentVacancies);
   // 보고 있는 카드. 그 카드가 목록에서 사라지면 마지막 순번 자리의 카드를 보여준다
   const [shownCard, setShownCard] = useState(null);
@@ -87,8 +89,8 @@ export default function ImminentCarousel({
   const current = vacancies[currentIndex] ?? null;
   // 보던 카드와 순번을 기억한다. 렌더 중에 맞춰 효과로 한 번 더 그리지 않게 한다
   if (current !== shownCard || currentIndex !== lastIndex) {
-    // 대신 보여주던 빈자리가 새 임박 빈자리로 바뀐 것은 마감이 아니므로 알리지 않는다
-    if (shownCard && foundIndex < 0 && Boolean(shownCard.upcoming) === Boolean(current?.upcoming)) {
+    // 결제 중이거나 목록 순위에 밀려 빠진 카드는 마감이 아니므로 알리지 않는다
+    if (shownCard && foundIndex < 0 && closedIds.includes(shownCard.id)) {
       setGone({
         label: `${shownCard.shop} ${shownCard.day} ${shownCard.time}`,
         next: current,
@@ -230,7 +232,9 @@ export default function ImminentCarousel({
             <div className={styles.photo}>
               <img src={current.image} alt={`${current.shop} ${current.category} 시술`} />
               {/* 대신 보여주는 빈자리는 임박이 아니므로 깜빡이는 점·특가 문구 대신 날짜만 붙인다 */}
-              {current.upcoming ? (
+              {current.held ? (
+                <span className={`${styles.urgency} ${styles.isSoon}`}>다른 분이 결제 중</span>
+              ) : current.upcoming ? (
                 <span className={`${styles.urgency} ${styles.isSoon}`}>{current.day} 빈자리</span>
               ) : (
                 <span
@@ -288,7 +292,7 @@ export default function ImminentCarousel({
                   className={styles.cardLink}
                   to={current.shopPath}
                 >
-                  이 시간 예약하기
+                  {current.held ? '이 시간 대기하기' : '이 시간 예약하기'}
                 </Button>
               </div>
             </div>
