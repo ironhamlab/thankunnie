@@ -2,6 +2,27 @@
   flex-wrap: wrap;
   gap: 16px;
 }
+/* 통계를 받으면 그래프 묶음이 차례로 올라온다. 기간을 바꾸면 다시 그려져 또 올라온다 */
+.section > :global(.b-panel):not(.filters),
+.twoColumns > * {
+  animation: panelRise 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.1s backwards;
+}
+.twoColumns > :nth-child(2) {
+  animation-delay: 0.18s;
+}
+@keyframes panelRise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .section > :global(.b-panel):not(.filters),
+  .twoColumns > *,
+  .twoColumns > :nth-child(2) {
+    animation: none;
+  }
+}
 .notice {
   font-size: 12px;
   color: var(--color-warning);

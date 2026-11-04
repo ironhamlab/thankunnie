@@ -467,6 +467,21 @@
 .root nav a svg {
   transform-origin: top center;
 }
+/* 메뉴마다 아이콘 색을 뜻에 맞춘다. 글자·밑줄은 모든 메뉴가 같다 */
+.iconShop {
+  color: var(--color-primary);
+}
+/* 목록의 초보 시술 초록 표시와 같은 색 */
+.iconModel {
+  color: var(--color-success);
+}
+/* 마감이 임박한 느낌 */
+.iconSale {
+  color: var(--color-danger);
+}
+.iconMine {
+  color: var(--color-info);
+}
 /* 폰의 하단 메뉴는 현재 위치를 색으로 보여주므로 밑줄을 쓰지 않는다 */
 @media (max-width: 767px) {
   .root nav a::after {

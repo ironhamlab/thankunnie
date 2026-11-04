@@ -8,6 +8,7 @@ import {
   shopPagePath,
 } from '@/utils/exploreVacancy';
 import { datePart } from '@/utils/scheduleDate';
+import SproutIcon from '@/components/icons/SproutIcon';
 import styles from './ShopRow.module.css';
 
 // 전체 날짜 보기는 60일 치가 섞여 길어지므로 빈자리가 있는 가장 빠른 날짜 이만큼만 펼쳐 보여준다
@@ -121,8 +122,9 @@ export default function ShopRow({
             <strong>{shop.shopName}</strong>
             {area}
             <span className={styles.time}>
-              {/* 줄이 바뀌어도 "빈자리 N개"는 떨어지지 않게 붙는 공백(NBSP)을 쓴다 */}
-              ◷ {earliestLabel(shop)}부터 · 빈자리{' '}{shop.vacancyCount}개
+              {/* 줄이 바뀌어도 "빈자리 N개"는 떨어지지 않게 붙는 공백(NBSP)을 쓴다 */}◷{' '}
+              {earliestLabel(shop)}부터 · 빈자리{' '}
+              {shop.vacancyCount}개
             </span>
           </span>
           <span className={styles.price}>
@@ -150,7 +152,10 @@ export default function ShopRow({
           className={styles.modelLink}
           to={shopPagePath(shop.shopId, { date: datePart(shop.earliestStartsAt), model: true })}
         >
-          <span>✦ 초보 시술 모집 빈자리 {shop.modelVacancyCount}개</span>
+          <span className={styles.modelLinkLabel}>
+            <SproutIcon size={16} />
+            초보 시술 모집 빈자리 {shop.modelVacancyCount}개
+          </span>
           <b>{formatMoney(shop.modelMinSalePrice)}~</b>
         </Link>
       )}
@@ -170,8 +175,18 @@ export default function ShopRow({
           ) : (
             <>
               {groupByTreatment(shownVacancies).map((treatment) => (
-                <div className={styles.treatment} key={treatment.treatmentId}>
+                // 일반 시술과 섞여 있으면 초보 시술을 색과 표시로 구분한다. 초보 시술 모집 목록은 전부 초보 시술이라 구분하지 않는다
+                <div
+                  className={`${styles.treatment} ${treatment.isModel && !model ? styles.modelTreatment : ''}`}
+                  key={treatment.treatmentId}
+                >
                   <div className={styles.treatmentInfo}>
+                    {treatment.isModel && !model && (
+                      <span className={styles.modelBadge}>
+                        <SproutIcon size={16} />
+                        초보 시술
+                      </span>
+                    )}
                     <strong>{treatment.name}</strong>
                     <span>
                       {treatment.duration}분 · {formatMoney(treatment.price)}

@@ -178,16 +178,17 @@
 .slots a:active {
   transform: scale(0.94);
 }
+/* 임박·초임박 특가 시각은 눈에 띄게 한다 */
+.slots a.urgent {
+  border-color: var(--color-primary);
+  color: var(--color-primary-text);
+}
+/* 특가 시각의 글자색을 덮어써야 하므로 그 규칙보다 뒤에 둔다. 앞에 있으면 주황 바탕에 주황 글자가 된다 */
 .slots a:hover,
 .slots a:focus-visible {
   border-color: var(--color-primary);
   background: var(--color-primary);
   color: white;
-}
-/* 임박·초임박 특가 시각은 눈에 띄게 한다 */
-.slots a.urgent {
-  border-color: var(--color-primary);
-  color: var(--color-primary-text);
 }
 /* 기본 전환을 정한 규칙보다 뒤에 두어야 움직임 줄이기 설정이 이긴다 */
 @media (prefers-reduced-motion: reduce) {
@@ -324,16 +325,57 @@
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  border-top: 1px dashed var(--color-border);
-  background: var(--color-primary-faint);
+  border-top: 1px dashed var(--color-success-line);
+  background: var(--color-success-bg);
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-primary-text);
+  color: var(--color-success-text);
   text-decoration: none;
 }
 .modelLink b {
   font-size: 13px;
   color: var(--color-text);
+}
+.modelLinkLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-success-text);
+}
+/* 일반 시술과 섞인 초보 시술은 초록으로 구분한다. 새싹 메뉴·초보 시술 표시와 같은 색이다 */
+.modelTreatment {
+  padding: 12px;
+  border: 1px solid var(--color-success-line);
+  border-radius: var(--radius-md);
+  background: var(--color-success-bg);
+}
+.treatmentInfo .modelBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px 2px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-success);
+  color: var(--color-white);
+  font-size: 11px;
+  font-weight: 700;
+}
+.modelTreatment .treatmentInfo em {
+  color: var(--color-success-text);
+}
+.modelTreatment .slots a {
+  border-color: var(--color-success-line);
+}
+.modelTreatment .slots a.urgent {
+  border-color: var(--color-success);
+  color: var(--color-success-text);
+}
+/* 시각 버튼의 글자색 규칙들보다 뒤에 두어야 마우스를 올렸을 때 흰 글자가 된다 */
+.modelTreatment .slots a:hover,
+.modelTreatment .slots a:focus-visible {
+  border-color: var(--color-success);
+  background: var(--color-success);
+  color: var(--color-white);
 }
 .noVacancy .thumb {
   opacity: 0.6;

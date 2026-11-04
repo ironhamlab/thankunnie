@@ -135,6 +135,7 @@ export function toVacancyCard(item, today = todayKst()) {
     discount: item.discountRate,
     priceTier: item.priceTier,
     urgency: URGENCY[item.priceTier] ?? URGENCY.NORMAL,
+    isModel: item.treatmentType === 'MODEL',
     image: vacancyImage(item.imageUrl),
     // 이 시술 · 시각이 골라진 매장 페이지. 초보 시술은 참여 조건·촬영 안내가 보이는 모집 상세로 간다
     shopPath: shopPagePath(item.shopId, {
