@@ -265,6 +265,13 @@ export default function VacancySearch() {
     Math.max(totalPages - 1, 0),
   );
   const visibleShops = sortedShops.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  // 지도에서 지금 페이지 매장만 또렷하게 보이게 넘긴다. 한 페이지뿐이면 흐리게 할 매장이 없다.
+  // 목록 배열은 그릴 때마다 새로 만들어지므로 매장 ID 문자열이 바뀔 때만 새 Set 을 만든다
+  const pageIdsKey = totalPages > 1 ? visibleShops.map((shop) => shop.shopId).join(',') : '';
+  const pageShopIds = useMemo(
+    () => (pageIdsKey ? new Set(pageIdsKey.split(',')) : undefined),
+    [pageIdsKey],
+  );
   const goToPage = (next) => {
     setPaging({ key: pagingKey, page: next });
     document.getElementById('vacancy-results')?.scrollIntoView({ block: 'start' });
@@ -563,6 +570,7 @@ export default function VacancySearch() {
             pinnedShopId={pinnedId}
             focusPosition={mapFocus}
             myLocation={myLocation}
+            pageShopIds={pageShopIds}
             onPinShop={(id) => {
               // 지도에서 고른 매장이 다른 페이지에 있으면 그 페이지로 넘긴다
               setPaging({ key: pagingKey, page: pageOf(id) });

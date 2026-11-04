@@ -7,17 +7,70 @@
   border: 1px solid var(--color-map-line);
   border-radius: 24px;
 }
-.count {
+/* 매장 수와 핀 범례. 오른쪽 확대 버튼을 가리지 않게 그 앞까지 한 줄로 두고, 넘치면 옆으로 밀어 본다 */
+.legend {
   position: absolute;
-  top: 14px;
-  left: 14px;
+  top: 12px;
+  left: 12px;
+  right: 46px;
   z-index: 2;
-  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  pointer-events: none;
+}
+.legend::-webkit-scrollbar {
+  display: none;
+}
+.legend > * {
+  flex-shrink: 0;
+  pointer-events: auto;
+}
+.legendChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 7px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-white) 94%, transparent);
-  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-size: 10.5px;
   font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.legendChip[aria-pressed='true'] {
+  border-color: var(--color-text);
+  background: var(--color-text);
+  color: white;
+}
+/* 매장 수(전체 보기) */
+.count {
+  font-weight: 700;
+}
+/* 핀과 같은 모양의 점. 초임박은 주황 채움, 오늘은 주황 테두리, 다른 날은 진한 회색 테두리,
+   빈자리 없음은 점선 테두리라 다른 날과 구분된다 */
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--color-primary);
+  border-radius: 50%;
+  background: white;
+}
+.legendDot.lastMinute {
+  background: var(--color-primary);
+}
+.legendDot.later {
+  border-color: var(--color-text-secondary);
+}
+.legendDot.none {
+  border: 1.5px dashed var(--color-text-secondary);
+}
+.legendDot.model {
+  border-color: var(--color-success);
 }
 .panel {
   position: absolute;
@@ -87,4 +140,15 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* 휴대폰 지도는 낮아 범례를 조금 작게 둔다 */
+@media (max-width: 540px) {
+  .legend {
+    top: 10px;
+    left: 10px;
+  }
+  .legendChip {
+    padding: 4px 6px;
+    font-size: 10px;
+  }
 }

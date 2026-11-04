@@ -64,9 +64,14 @@
   animation: pinPulse 1.8s ease-out infinite;
   pointer-events: none;
 }
+/* 고른 초임박 핀은 흰 바탕·검은 글자로 뒤집어, 주황으로 채운 다른 초임박 핀 사이에서도 어느 매장인지 바로 보이게 한다 */
 .lastMinute:global(.is-selected) {
-  background: var(--color-primary-text);
-  border-color: var(--color-primary-text);
+  border-width: 2px;
+  background: white;
+  color: var(--color-text);
+}
+.lastMinute:global(.is-selected) .pinIcon {
+  color: var(--color-primary);
 }
 @keyframes pinPulse {
   0% {
@@ -102,17 +107,52 @@
   border-radius: 50%;
   background: var(--color-success);
 }
-/* 빈자리가 없는 매장은 가격 없이 이름만 흐리게 보여준다 */
+/* 빈자리가 없는 매장은 가격 없이 이름만 보여준다. 흐리면 지도에서 있는지도 모르므로 흰 바탕에 진한 회색 점선 테두리로
+   또렷하게 두고, 다른 날 핀(실선 테두리)과는 점선으로 구분한다 */
 .none {
-  --pin-color: var(--color-text-muted);
-  border-width: 1px;
-  border-color: var(--color-border-strong);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  font-weight: 500;
+  --pin-color: var(--color-text-secondary);
+  border: 1.5px dashed var(--color-text-secondary);
+  background: white;
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 600;
 }
 .none:global(.is-selected) {
-  border-color: var(--pin-color);
+  border-style: solid;
+}
+/* 묶음 안 글자. 묶음 겉모양은 ExploreMap.jsx 의 CLUSTER_STYLE 이다 */
+.clusterCount {
+  font-size: 12px;
+  font-weight: 800;
+}
+.clusterPrice {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.92;
+}
+/* 묶음 안 초임박 매장 수. 모서리에 붙은 흰 배지라 주황 묶음 위에서도 잘 보인다 */
+.clusterBadge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 2px 5px;
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-pill);
+  background: white;
+  color: var(--color-primary-text);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+/* 목록의 다른 페이지 매장. 고른 핀은 흐리게 두지 않는다 */
+.dimmed:not(:global(.is-selected)) {
+  opacity: 0.7;
+}
+.dimmed.lastMinute::after {
+  animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .pin {
