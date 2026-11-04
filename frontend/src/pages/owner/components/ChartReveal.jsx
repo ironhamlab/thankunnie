@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import styles from './ChartReveal.module.css';
 
 // 차트를 담은 패널이 올라오는 데 걸리는 시간(ms). StatsSection.module.css 의 패널 효과와 맞춘다
-const PANEL_SETTLE_MS = 650;
+const PANEL_SETTLE_MS = 300;
 // 보이는 비율이 바뀔 때마다 판단하도록 5% 단위로 알림을 받는다
 const OBSERVER_STEPS = Array.from({ length: 21 }, (_, index) => index / 20);
 // 차트가 화면보다 커서 비율을 채울 수 없어도, 화면의 이만큼을 차지하면 시작한다

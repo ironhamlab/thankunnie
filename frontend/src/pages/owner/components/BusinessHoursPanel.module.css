@@ -23,22 +23,22 @@
 }
 /* 요일 줄이 월요일부터 이어서 나타난다 */
 .days > li {
-  animation: dayEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation: dayEnter 0.22s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 .days > li:nth-child(2) {
-  animation-delay: 0.04s;
+  animation-delay: 0.01s;
 }
 .days > li:nth-child(3) {
-  animation-delay: 0.08s;
+  animation-delay: 0.02s;
 }
 .days > li:nth-child(4) {
-  animation-delay: 0.12s;
+  animation-delay: 0.03s;
 }
 .days > li:nth-child(5) {
-  animation-delay: 0.16s;
+  animation-delay: 0.04s;
 }
 .days > li:nth-child(n + 6) {
-  animation-delay: 0.2s;
+  animation-delay: 0.05s;
 }
 @keyframes dayEnter {
   from {

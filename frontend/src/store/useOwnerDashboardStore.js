@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { ownerDashboardApi } from '@/api/ownerDashboardApi';
 import { reservationApi } from '@/api/reservationApi';
 import { todayKst } from '@/utils/scheduleDate';
+import { currentSessionKey } from '@/utils/sessionKey';
 
 // 오늘 일정에는 시간을 잡고 있는 확정·취소 처리 중 예약만 보여 준다
 const TODAY_STATUSES = ['CONFIRMED', 'CANCEL_PENDING'];
@@ -18,6 +19,7 @@ const toError = (error, fallback) => ({
  * 예약 현황 화면의 목록 상태와 섞이지 않도록 예약 스토어와 따로 둔다.
  */
 export const useOwnerDashboardStore = create((set, get) => ({
+  sessionKey: null,
   dashboard: null,
   dashboardStatus: 'idle',
   dashboardError: null,
@@ -30,7 +32,13 @@ export const useOwnerDashboardStore = create((set, get) => ({
   monthSummary: null,
   monthSummaryRequestId: 0,
 
+  // 같은 계정이면 다시 받는 동안 받아 둔 숫자·목록을 보여 준다. 로그아웃 후 다른 매장이 로그인하면
+  // 이전 매장 숫자가 남지 않게 먼저 비운다
   loadDashboard: () => {
+    const sessionKey = currentSessionKey();
+    if (get().sessionKey !== sessionKey) {
+      set({ sessionKey, dashboard: null, todayReservations: [], monthSummary: null });
+    }
     get().loadToday();
     get().loadTodayReservations();
     get().loadMonthSummary();
@@ -38,7 +46,7 @@ export const useOwnerDashboardStore = create((set, get) => ({
 
   loadMonthSummary: async () => {
     const requestId = get().monthSummaryRequestId + 1;
-    set({ monthSummaryRequestId: requestId, monthSummary: null });
+    set({ monthSummaryRequestId: requestId });
     const today = todayKst();
     try {
       const stats = await ownerDashboardApi.getStats({ from: `${today.slice(0, 8)}01`, to: today });
@@ -50,12 +58,10 @@ export const useOwnerDashboardStore = create((set, get) => ({
     }
   },
 
-  // 요청 시작 시 이전 값을 비운다. 로그아웃 후 다른 매장이 로그인해도 이전 매장 숫자가 남지 않게 한다
   loadToday: async () => {
     const requestId = get().dashboardRequestId + 1;
     set({
       dashboardRequestId: requestId,
-      dashboard: null,
       dashboardStatus: 'loading',
       dashboardError: null,
     });
@@ -78,7 +84,6 @@ export const useOwnerDashboardStore = create((set, get) => ({
     const requestId = get().reservationsRequestId + 1;
     set({
       reservationsRequestId: requestId,
-      todayReservations: [],
       reservationsStatus: 'loading',
       reservationsError: null,
     });

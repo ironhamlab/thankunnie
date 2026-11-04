@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { shopApi } from '@/api/shopApi';
+import { currentSessionKey } from '@/utils/sessionKey';
 
 const failure = (error) => ({
   code: error?.code ?? 'UNKNOWN_ERROR',
@@ -8,15 +9,24 @@ const failure = (error) => ({
 
 export const useShopStore = create((set, get) => ({
   shop: null,
+  sessionKey: null,
   status: 'idle',
   error: null,
   mutationStatus: 'idle',
   loadRequestId: 0,
   // 매장 센터 레이아웃과 매장 정보 화면이 함께 부르고, 로그아웃 후 다른 매장이 바로 로그인할 수도 있다.
-  // 마지막 요청의 응답만 반영해 늦게 도착한 이전 계정의 매장 정보가 덮어쓰지 않게 한다
+  // 마지막 요청의 응답만 반영해 늦게 도착한 이전 계정의 매장 정보가 덮어쓰지 않게 한다.
+  // 같은 계정이면 다시 받는 동안 기존 정보를 남겨 사이드바 카드가 깜빡이지 않게 하고, 계정이 바뀌면 비운다
   loadShop: async () => {
     const requestId = get().loadRequestId + 1;
-    set({ loadRequestId: requestId, shop: null, status: 'loading', error: null });
+    const sessionKey = currentSessionKey();
+    set({
+      loadRequestId: requestId,
+      sessionKey,
+      status: 'loading',
+      error: null,
+      ...(get().sessionKey === sessionKey ? {} : { shop: null }),
+    });
     const isCurrent = () => get().loadRequestId === requestId;
     try {
       const user = await shopApi.getCurrentUser();

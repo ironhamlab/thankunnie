@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { treatmentApi } from '@/api/treatmentApi';
+import { currentSessionKey } from '@/utils/sessionKey';
 
 const toError = (error) => ({
   code: error?.code ?? 'UNKNOWN_ERROR',
@@ -8,6 +9,7 @@ const toError = (error) => ({
 
 export const useTreatmentStore = create((set, get) => ({
   shopId: null,
+  sessionKey: null,
   treatments: [],
   status: 'idle',
   mutationStatus: 'idle',
@@ -55,13 +57,15 @@ export const useTreatmentStore = create((set, get) => ({
     }
   },
 
+  // 같은 계정이면 다시 받는 동안 받아 둔 목록을 보여 준다. 계정이 바뀌면 이전 매장 목록이 남지 않게 비운다
   loadTreatments: async () => {
+    const sessionKey = currentSessionKey();
     set({
       status: 'loading',
       error: null,
       mutationError: null,
-      treatments: [],
-      shopId: null,
+      sessionKey,
+      ...(get().sessionKey === sessionKey ? {} : { treatments: [], shopId: null }),
     });
     try {
       // 매장 ID·역할은 인증 공통 API에서 받아 사용한다.

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { generatePath, useLocation, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { PAYMENT_STATUS, ownerReservationStatusOf } from '@/constants/reservationStatus';
-import { useReservationStore } from '@/store/useReservationStore';
+import { reservationListKey, useReservationStore } from '@/store/useReservationStore';
 import { formatReservationTime } from '@/utils/reservationFormat';
 import { todayKst } from '@/utils/scheduleDate';
 import ReservationDetailPanel from '@/components/reservation/ReservationDetailPanel';
@@ -45,6 +45,14 @@ function reservationIdFromSearch(searchParams) {
 /**
  * 매장 예약 현황 (B-F6). 본인 매장 예약을 날짜·상태로 거르고, 고른 예약의 예약자·결제·취소 상태를 본다.
  */
+const listFilters = ({ from, to, filterKey, page }) => ({
+  from,
+  to,
+  statuses: STATUS_FILTERS.find((filter) => filter.key === filterKey).statuses,
+  page,
+  size: PAGE_SIZE,
+});
+
 export default function OwnerBookingsPage() {
   const loadReservations = useReservationStore((state) => state.loadReservations);
   const loadReservation = useReservationStore((state) => state.loadReservation);
@@ -67,8 +75,13 @@ export default function OwnerBookingsPage() {
   // 목록에서 고른 예약. 현재 목록에 없으면 첫 예약으로 돌아간다.
   // 주소의 예약 번호가 바뀌면 비워서, 뒤로 가기·다른 알림이 그 번호를 따르게 한다.
   const [selectedId, setSelectedId] = useState(null);
-  // 이 화면에서 목록을 한 번 받은 뒤에는, 다음 목록을 받는 동안에도 표를 남겨 화면이 튀지 않게 한다
-  const [hasLoadedList, setHasLoadedList] = useState(false);
+  // 목록을 한 번 받은 뒤에는, 다음 목록을 받는 동안에도 표를 남겨 화면이 튀지 않게 한다.
+  // 다른 메뉴에 갔다 돌아왔을 때 같은 계정·같은 조건의 목록이 남아 있으면 바로 보여 준다
+  const [hasLoadedList, setHasLoadedList] = useState(
+    () =>
+      useReservationStore.getState().listKey ===
+      reservationListKey('owner', listFilters({ from, to, filterKey, page })),
+  );
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isCardLayout, setIsCardLayout] = useState(
     () => window.matchMedia(CARD_LAYOUT_QUERY).matches,
@@ -97,8 +110,7 @@ export default function OwnerBookingsPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { statuses } = STATUS_FILTERS.find((filter) => filter.key === filterKey);
-      await loadReservations('owner', { from, to, statuses, page, size: PAGE_SIZE });
+      await loadReservations('owner', listFilters({ from, to, filterKey, page }));
       setHasLoadedList(true);
     };
     load();

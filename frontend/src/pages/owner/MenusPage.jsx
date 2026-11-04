@@ -18,6 +18,9 @@ export default function MenusPage() {
   const isMutating = useTreatmentStore((state) => state.mutationStatus === 'loading');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isSaving = isMutating || isSubmitting;
+  // 다시 받는 동안에는 받아 둔 목록을 보여 주되, 고치는 버튼은 새 목록이 올 때까지 막는다
+  const isRefreshing = status === 'loading';
+  const hasList = status === 'succeeded' || (isRefreshing && treatments.length > 0);
   const load = useTreatmentStore((state) => state.loadTreatments);
   const save = useTreatmentStore((state) => state.saveTreatment);
   const changeStatus = useTreatmentStore((state) => state.changeTreatmentStatus);
@@ -101,16 +104,14 @@ export default function MenusPage() {
           시간은 30분 배수로 입력해 주세요.
         </p>
       </Notice>
-      {(status === 'idle' || status === 'loading') && (
-        <p role="status">시술 메뉴를 불러오는 중입니다.</p>
-      )}
+      {!hasList && status !== 'failed' && <p role="status">시술 메뉴를 불러오는 중입니다.</p>}
       {status === 'failed' && (
         <div role="alert">
           <p>{error.message}</p>
           <Button onClick={load}>다시 불러오기</Button>
         </div>
       )}
-      {status === 'succeeded' && (
+      {hasList && (
         <>
           <Panel as="section" className="b-table-panel" aria-busy={isSaving}>
             <div className="b-row b-pad">
@@ -162,10 +163,18 @@ export default function MenusPage() {
                         <td>{item.status === 'ACTIVE' ? '활성' : '비활성'}</td>
                         <td>
                           <div className="b-flex">
-                            <Button size="small" disabled={isSaving} onClick={() => openForm(item)}>
+                            <Button
+                              size="small"
+                              disabled={isSaving || isRefreshing}
+                              onClick={() => openForm(item)}
+                            >
                               수정
                             </Button>
-                            <Button size="small" disabled={isSaving} onClick={() => toggle(item)}>
+                            <Button
+                              size="small"
+                              disabled={isSaving || isRefreshing}
+                              onClick={() => toggle(item)}
+                            >
                               {item.status === 'ACTIVE' ? '비활성화' : '활성화'}
                             </Button>
                           </div>

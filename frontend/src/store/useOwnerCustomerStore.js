@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ownerCustomerApi } from '@/api/ownerCustomerApi';
+import { currentSessionKey } from '@/utils/sessionKey';
 
 const toError = (error, fallback) => ({
   code: error?.code ?? 'UNKNOWN_ERROR',
@@ -16,6 +17,7 @@ export const useOwnerCustomerStore = create((set, get) => ({
   listStatus: 'idle',
   listError: null,
   listRequestId: 0,
+  listKey: null,
 
   detail: null,
   detailUserId: null,
@@ -32,7 +34,15 @@ export const useOwnerCustomerStore = create((set, get) => ({
 
   loadCustomers: async (query) => {
     const requestId = get().listRequestId + 1;
-    set({ listRequestId: requestId, customers: [], listStatus: 'loading', listError: null });
+    // 같은 계정·같은 조건이면 다시 받는 동안 받아 둔 목록을 보여 준다. 조건이나 계정이 바뀌면 비운다
+    const listKey = JSON.stringify([currentSessionKey(), query]);
+    set({
+      listRequestId: requestId,
+      listKey,
+      listStatus: 'loading',
+      listError: null,
+      ...(get().listKey === listKey ? {} : { customers: [] }),
+    });
     try {
       const result = await ownerCustomerApi.getCustomers(query);
       if (get().listRequestId === requestId) {
