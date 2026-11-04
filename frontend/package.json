@@ -12,7 +12,10 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@seed-design/css": "^3.1.0",
+    "@seed-design/react": "^3.1.0",
     "axios": "^1.7.0",
+    "clsx": "^2.1.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^6.30.0",
