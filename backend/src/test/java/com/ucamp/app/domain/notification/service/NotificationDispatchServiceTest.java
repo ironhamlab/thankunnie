@@ -952,8 +952,8 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("알림 문자 수신을 철회한 회원에게는 보내지 않고 SKIPPED 로 남긴다")
-    void sendClaimedJob_smsWithdrawn_marksSkipped() {
+    @DisplayName("알림 문자 수신을 철회한 회원에게는 문자를 보내지 않고 SKIPPED 로 남기되 받은 알림은 저장한다")
+    void sendClaimedJob_smsWithdrawn_marksSkippedAndSavesInbox() {
         openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
         notificationSubscriptionRepository.save(store(USER_ID));
         NotificationDispatch job = claimedJob(1L, USER_ID);
@@ -964,7 +964,10 @@ class NotificationDispatchServiceTest {
         NotificationDispatch saved = notificationDispatchRepository.findById(job.getId()).orElseThrow();
         assertThat(saved.getStatus()).isEqualTo(NotificationDispatchStatus.SKIPPED);
         verify(solapiSmsClient, never()).send(anyString(), anyString());
-        assertThat(notificationInboxRepository.count()).isZero();
+        assertThat(notificationInboxRepository.findAll()).singleElement().satisfies(inbox -> {
+            assertThat(inbox.getUserId()).isEqualTo(USER_ID);
+            assertThat(inbox.getCategory()).isEqualTo(NotificationInboxCategory.INTEREST);
+        });
     }
 
     @Test
@@ -1001,8 +1004,8 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("알림 문자 수신을 철회한 회원에게는 묶음 문자를 보내지 않고 목록만 비운다")
-    void flushCategoryRegionSummaries_smsWithdrawn_clearsWithoutSending() {
+    @DisplayName("알림 문자 수신을 철회한 회원에게는 묶음 문자를 보내지 않고 목록을 비우며 받은 알림만 저장한다")
+    void flushCategoryRegionSummaries_smsWithdrawn_savesInboxWithoutSending() {
         NotificationSubscription subscription = notificationSubscriptionRepository.save(
                 categoryRegion(USER_ID, NOW.plusHours(6)));
         withdrawSmsAgreement(USER_ID);
@@ -1016,6 +1019,10 @@ class NotificationDispatchServiceTest {
         assertThat(sent).isZero();
         verify(solapiSmsClient, never()).send(anyString(), anyString());
         assertThat(categoryRegionPendingQueue.pendingEventIds(subscription.getId())).isEmpty();
+        assertThat(notificationInboxRepository.findAll()).singleElement().satisfies(inbox -> {
+            assertThat(inbox.getUserId()).isEqualTo(USER_ID);
+            assertThat(inbox.getTitle()).isEqualTo("빈자리 알림");
+        });
     }
 
     @Test
