@@ -41,7 +41,7 @@ import com.ucamp.app.domain.vacancy.service.AvailabilityService.AvailabilitySnap
 
 /**
  * 고객 빈자리 탐색 (C-01 목록, C-02 지도 매장 요약). 매장이 연 시간대(OPEN) 안에서 지금 예약할 수 있는 시술 × 시작 시각을 구한다.
- * 타임세일(가격 구간 초임박)과 메인 임박 빈자리는 OPEN 없이 영업시간 안 빈 시각에서 구한다.
+ * 초보 시술, 타임세일(가격 구간 초임박), 메인 임박 빈자리는 OPEN 없이 영업시간 안 빈 시각에서 구한다.
  * 예약 가능 판단과 가격은 B 의 AvailabilityService·PriceCalculator 를 그대로 쓴다.
  * 시작 시각을 계산한 뒤 거르고 정렬하므로 페이지 처리·매장 묶기는 메모리에서 한다.
  */
@@ -168,7 +168,9 @@ public class ExploreVacancyService {
     }
 
     // 타임세일(초임박)은 메인 임박 빈자리처럼 OPEN 없이 영업시간 안 빈 시각에서 찾고, 초임박가가 일반 판매가보다 싼 시술만 남긴다.
-    // 3시간 범위는 뒤의 가격 구간 조건이 자르므로 여기서는 8시간까지만 본다. 그 밖의 조회는 OPEN 시간대 기준이다
+    // 3시간 범위는 뒤의 가격 구간 조건이 자르므로 여기서는 8시간까지만 본다.
+    // 그 밖의 조회에서 일반 시술은 OPEN 시간대 기준이고, 초보 시술은 모집 상세의 시간 선택과 같게 영업시간 + 연 시간 기준이다.
+    // 초보 시술을 OPEN 기준으로만 보면 연장 영업을 연 매장은 연장 시간대만, 열지 않은 매장은 아무 시각도 나오지 않는다
     private Stream<Item> candidateItems(PriceTier priceTier, ExploreVacancyCondition condition, LocalDateTime now) {
         if (priceTier != PriceTier.LAST_MINUTE) {
             return findItems(exploreVacancyQueryRepository.findCandidates(condition), condition, now);
@@ -206,7 +208,8 @@ public class ExploreVacancyService {
         return items.stream();
     }
 
-    // OPEN 시간대 안에서 시작하고 B 의 가용 시간 계산을 통과한 시각만 남긴다. 겹치는 OPEN 이 있어도 시술·시각당 한 번만 낸다
+    // 일반 시술은 OPEN 시간대 안에서, 초보 시술은 조회 기간 전체에서 B 의 가용 시간 계산을 통과한 시각만 남긴다.
+    // 겹치는 OPEN 이 있거나 초보 시술이 OPEN 수만큼 나와도 시술·시각당 한 번만 낸다
     private Stream<Item> findItems(List<ExploreVacancyCandidate> candidates, ExploreVacancyCondition condition,
             LocalDateTime now) {
         if (candidates.isEmpty()) {
@@ -216,8 +219,9 @@ public class ExploreVacancyService {
         Map<AvailabilityKey, List<LocalDateTime>> availableTimes = new HashMap<>();
         Map<String, Item> items = new LinkedHashMap<>();
         for (ExploreVacancyCandidate candidate : candidates) {
-            LocalDateTime from = max(candidate.openStartsAt(), condition.from());
-            LocalDateTime to = min(candidate.openEndsAt(), condition.to());
+            boolean businessHours = candidate.treatmentType() == TreatmentType.MODEL;
+            LocalDateTime from = businessHours ? condition.from() : max(candidate.openStartsAt(), condition.from());
+            LocalDateTime to = businessHours ? condition.to() : min(candidate.openEndsAt(), condition.to());
             for (LocalDate date = from.toLocalDate(); date.atStartOfDay().isBefore(to); date = date.plusDays(1)) {
                 AvailabilityKey key = new AvailabilityKey(candidate.shopId(), date, candidate.durationMinutes());
                 List<LocalDateTime> startTimes = availableTimes.computeIfAbsent(key,

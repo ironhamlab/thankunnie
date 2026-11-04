@@ -14,7 +14,8 @@ import com.ucamp.app.domain.treatment.entity.TreatmentType;
 
 /**
  * 고객 빈자리 탐색 후보 조회 (C). 매장(A)·시술·시간대 열기(B) 엔티티를 읽기만 하고 고치지 않는다.
- * 조회 기간과 겹치는 OPEN 시간대 × 그 매장의 판매 중인 시술을 돌려준다. 임박 빈자리·타임세일은 OPEN 없이 매장 × 시술만 돌려준다.
+ * 조회 기간과 겹치는 OPEN 시간대 × 그 매장의 판매 중인 시술을 돌려준다. 초보 시술은 OPEN 이 없어도 돌려준다.
+ * 임박 빈자리·타임세일은 OPEN 없이 매장 × 시술만 돌려준다.
  * 매장 노출 상태(SHOP.STATUS)는 Shop 엔티티에 없어 같은 테이블을 매핑한 ShopAccount 로 거른다.
  */
 public interface ExploreVacancyQueryRepository extends Repository<ShopScheduleException, Long> {
@@ -63,22 +64,28 @@ public interface ExploreVacancyQueryRepository extends Repository<ShopScheduleEx
             order by s.shopId, t.treatmentId
             """;
 
+    // 일반 시술은 조회 기간과 겹치는 OPEN 이 있어야 후보다. 초보 시술은 영업시간 기준이라 OPEN 이 없어도 후보로 남긴다.
+    // 한 쿼리로 읽어야 빈자리 탐색 쿼리 수가 늘지 않는다
+    String MODEL = "com.ucamp.app.domain.treatment.entity.TreatmentType.MODEL";
+
     String FIND_CANDIDATES = """
             select new com.ucamp.app.domain.explore.repository.ExploreVacancyCandidate(
                    e.startsAt, e.endsAt,
                    s.shopId, s.name, s.regionCode, s.address, s.latitude, s.longitude, s.imageUrl,
                    t.treatmentId, t.name, c.categoryId, c.name, t.treatmentType, t.durationMinutes,
                    t.regularPrice, t.price, t.lastMinutePrice, t.imageUrl)
-            from ShopScheduleException e
-            join Shop s on s.shopId = e.shopId
+            from Shop s
             join ShopAccount a on a.shopId = s.shopId
             join Treatment t on t.shop = s
             join ShopCategory c on c.categoryId = s.categoryId
-            where e.exceptionType = \
+            left join ShopScheduleException e on e.shopId = s.shopId
+                   and e.exceptionType = \
             """
             + OPEN
             + """
-              and a.status = \
+                   and e.endsAt > :from
+                   and e.startsAt < :to
+            where a.status = \
             """
             + SHOP_ACTIVE
             + """
@@ -86,8 +93,11 @@ public interface ExploreVacancyQueryRepository extends Repository<ShopScheduleEx
             """
             + TREATMENT_ACTIVE
             + """
-              and e.endsAt > :from
-              and e.startsAt < :to
+              and (e.startsAt is not null or t.treatmentType = \
+            """
+            + MODEL
+            + """
+            )
             """
             + CANDIDATE_FILTERS
             + """
@@ -96,6 +106,7 @@ public interface ExploreVacancyQueryRepository extends Repository<ShopScheduleEx
 
     /**
      * 조건에 맞는 탐색 후보를 OPEN 시작 시각, 시술 ID 순으로 조회한다. 시간대가 조회 기간과 겹치면 후보로 본다(종료 시각 미포함).
+     * 초보 시술은 OPEN 이 없어도 openStartsAt·openEndsAt 이 null 인 줄로 나오고, OPEN 이 여럿이면 그 수만큼 나온다.
      *
      * @param condition 조회 조건
      * @return 탐색 후보 목록
