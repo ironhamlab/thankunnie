@@ -28,6 +28,8 @@ class ReservationSmsServiceTest {
     private static final Long USER_ID = 7L;
     private static final LocalDateTime STARTS_AT = LocalDateTime.of(2026, 11, 2, 10, 0);
     private static final String CONFIRMED_MESSAGE = "[땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 확정되었습니다.";
+    private static final String CONFIRMED_LINK_PATH =
+            "/my-reservations?tab=upcoming&reservationId=" + RESERVATION_ID;
 
     @Mock
     private RecipientContactRepository recipientContactRepository;
@@ -61,7 +63,7 @@ class ReservationSmsServiceTest {
                 NotificationInboxCategory.RESERVATION,
                 "예약이 확정되었어요",
                 CONFIRMED_MESSAGE,
-                NotificationInboxService.MY_RESERVATIONS_PATH);
+                CONFIRMED_LINK_PATH);
     }
 
     @Test

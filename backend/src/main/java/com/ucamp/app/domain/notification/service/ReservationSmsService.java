@@ -56,13 +56,20 @@ public class ReservationSmsService {
                     NotificationInboxCategory.RESERVATION,
                     CONFIRMED_TITLE,
                     messageBody,
-                    NotificationInboxService.MY_RESERVATIONS_PATH);
+                    confirmedReservationPath(reservationId));
             log.info("예약 확정 문자 발송 성공 reservationId={}, providerMessageId={}",
                     reservationId, result.providerMessageId());
         } else {
             log.warn("예약 확정 문자 발송 {} reservationId={}, reason={}",
                     result.status(), reservationId, result.failReason());
         }
+    }
+
+    // 내 예약 이용 예정 탭에서 이 예약 상세가 열린다.
+    // 예: /my-reservations?tab=upcoming&reservationId=100
+    private static String confirmedReservationPath(Long reservationId) {
+        return NotificationInboxService.MY_RESERVATIONS_PATH
+                + "?tab=upcoming&reservationId=" + reservationId;
     }
 
     // 예: [땡잡은 언니] 예쁜네일 11월 2일 10:00 예약이 확정되었습니다.
