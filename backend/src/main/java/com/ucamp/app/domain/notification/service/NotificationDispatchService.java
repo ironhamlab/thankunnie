@@ -186,8 +186,9 @@ public class NotificationDispatchService {
                         : self.getObject().completeCategoryRegionSummary(subscriptionId, now);
                 if (result.attempted()) {
                     sent++;
-                    rememberInbox(result.inbox());
                 }
+                // 문자 수신을 철회한 회원은 문자 없이 받은 알림만 남긴다
+                rememberInbox(result.inbox());
             } catch (RuntimeException exception) {
                 log.warn("카테고리 묶음 문자 처리 실패 subscriptionId={}", subscriptionId, exception);
             }
@@ -234,11 +235,23 @@ public class NotificationDispatchService {
             categoryRegionPendingQueue.clearPendingEvents(subscriptionId);
             return SummaryResult.skipped();
         }
+        int openSlotCount = openEvents.size();
+        LocalDate earliestDate = earliestSlotDate(openEvents);
+        String messageBody = "땡 잡을 기회 " + openSlotCount + "건이 생겼어요!";
+        SmsInbox inbox = new SmsInbox(
+                subscription.getUserId(),
+                NotificationInboxCategory.INTEREST,
+                "빈자리 알림",
+                messageBody,
+                NotificationInboxService.categoryRegionListPath(
+                        subscription.getCategoryId(), subscription.getRegionCode(), earliestDate));
+        // 문자 수신 동의는 문자에만 적용한다. 철회한 회원도 웹 알림함에는 같은 주기로 남긴다.
         if (!termsAgreementService.hasAgreed(subscription.getUserId(), TermsCode.SMS_NOTIFICATION)) {
             categoryRegionPendingQueue.clearPendingEvents(subscriptionId);
-            log.info("카테고리 묶음 문자 생략(문자 수신 미동의) subscriptionId={}, userId={}",
+            categoryRegionPendingQueue.markSent(subscriptionId, now);
+            log.info("카테고리 묶음 문자 생략(문자 수신 미동의), 받은 알림만 저장 subscriptionId={}, userId={}",
                     subscriptionId, subscription.getUserId());
-            return SummaryResult.skipped();
+            return SummaryResult.inboxOnly(inbox);
         }
         Optional<String> phone = recipientContactRepository.findPhoneByUserId(subscription.getUserId());
         if (phone.isEmpty() || !StringUtils.hasText(phone.get())) {
@@ -248,9 +261,6 @@ public class NotificationDispatchService {
             return SummaryResult.skipped();
         }
 
-        int openSlotCount = openEvents.size();
-        LocalDate earliestDate = earliestSlotDate(openEvents);
-        String messageBody = "땡 잡을 기회 " + openSlotCount + "건이 생겼어요!";
         log.info("카테고리 묶음 문자 발송 시작 subscriptionId={}, userId={}, count={}, to={}",
                 subscriptionId, subscription.getUserId(), openSlotCount, maskPhone(phone.get()));
         SmsSendResult result = solapiSmsClient.send(phone.get(), messageBody);
@@ -261,13 +271,7 @@ public class NotificationDispatchService {
         if (result.status() != SmsSendStatus.SUCCESS) {
             return SummaryResult.attempted(null);
         }
-        return SummaryResult.attempted(new SmsInbox(
-                subscription.getUserId(),
-                NotificationInboxCategory.INTEREST,
-                "빈자리 알림",
-                messageBody,
-                NotificationInboxService.categoryRegionListPath(
-                        subscription.getCategoryId(), subscription.getRegionCode(), earliestDate)));
+        return SummaryResult.attempted(inbox);
     }
 
     // 남은 빈자리 중 가장 빠른 날. 목록이 비면 null 이다.
@@ -405,7 +409,7 @@ public class NotificationDispatchService {
      * 같은 이벤트·회원에 이미 SENT 또는 UNKNOWN 이 있으면 문자를 다시 보내지 않는다.
      *
      * @param job 선점했고 재검사를 통과한 발송 대기 작업
-     * @return 문자 발송에 성공했으면 받은 알림. 아니면 null
+     * @return 문자 발송에 성공했거나 문자 수신에 동의하지 않았으면 받은 알림. 아니면 null
      */
     @Transactional
     public SmsInbox completeClaimedJob(NotificationDispatch job) {
@@ -438,9 +442,10 @@ public class NotificationDispatchService {
             return null;
         }
 
+        // 문자 수신 동의는 문자에만 적용한다. 철회한 회원은 문자 없이 SKIPPED 로 끝내고 받은 알림만 남긴다.
         if (!termsAgreementService.hasAgreed(latest.getUserId(), TermsCode.SMS_NOTIFICATION)) {
             finishWithoutSending(latest);
-            return null;
+            return interestInbox(latest, event);
         }
 
         Optional<String> phone = recipientContactRepository.findPhoneByUserId(latest.getUserId());
@@ -463,12 +468,17 @@ public class NotificationDispatchService {
         if (result.status() != SmsSendStatus.SUCCESS) {
             return null;
         }
+        return interestInbox(latest, event);
+    }
+
+    // 업장 알림의 받은 알림 한 줄. 본문은 보내는 문자와 같다.
+    private SmsInbox interestInbox(NotificationDispatch job, NotificationEvent event) {
         return new SmsInbox(
-                latest.getUserId(),
+                job.getUserId(),
                 NotificationInboxCategory.INTEREST,
                 interestTitle(event.getEventType()),
-                messageBody,
-                storeNotificationLink(event, latest.getUserId()));
+                buildMessage(event),
+                storeNotificationLink(event, job.getUserId()));
     }
 
     // 업장 알림 링크. 그 회원에게 맞는 시술이 있으면 시술과 시작 시각을 붙인다.
@@ -615,7 +625,7 @@ public class NotificationDispatchService {
                 job.getId(), job.getUserId(), job.getEventId());
     }
 
-    /** 묶음 문자 한 건을 시도했는지와, 성공했을 때 남길 받은 알림. */
+    /** 묶음 문자 한 건을 시도했는지와, 남길 받은 알림(문자 성공 또는 문자 수신 미동의). */
     public record SummaryResult(boolean attempted, SmsInbox inbox) {
 
         private static SummaryResult skipped() {
@@ -625,9 +635,14 @@ public class NotificationDispatchService {
         private static SummaryResult attempted(SmsInbox inbox) {
             return new SummaryResult(true, inbox);
         }
+
+        // 문자는 보내지 않고 받은 알림만 남긴다
+        private static SummaryResult inboxOnly(SmsInbox inbox) {
+            return new SummaryResult(false, inbox);
+        }
     }
 
-    /** 문자 발송에 성공한 뒤 받은 알림에 남길 한 줄. */
+    /** 받은 알림에 남길 한 줄. 문자 발송에 성공했거나 문자 수신에 동의하지 않은 회원에게 남긴다. */
     public record SmsInbox(
             Long userId,
             NotificationInboxCategory category,
