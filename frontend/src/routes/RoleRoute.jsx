@@ -44,7 +44,7 @@ export default function RoleRoute({ allow, areaName, redirectPaths = [] }) {
   // 레이아웃 밖에서 띄우므로 공통 배경을 깔아 둔다
   return (
     <div className="beauty-app">
-      <Dialog title="로그아웃이 필요해요" onClose={handleBack}>
+      <Dialog title="로그아웃이 필요해요" closeOnBackdrop={false} onClose={handleBack}>
         <p>
           {ROLE_LABEL[role]} 계정으로 로그인되어 있어요. {areaName}을 이용하려면 로그아웃해야
           합니다. 로그아웃할까요?
