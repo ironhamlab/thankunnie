@@ -38,17 +38,17 @@
   top: 12px;
   left: 50%;
   transform: translateX(-50%);
+  /* 매장 이름이 길어도 "마감됐어요"가 잘리지 않게 줄을 바꾼다 */
+  width: max-content;
   max-width: calc(100% - 24px);
   margin: 0;
   padding: 6px 14px;
-  border-radius: 999px;
-  background: var(--color-text, #2b1a12);
+  border-radius: 16px;
+  text-align: center;
+  background: var(--color-text);
   color: white;
   font-size: 13px;
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   pointer-events: none;
 }
 .card {

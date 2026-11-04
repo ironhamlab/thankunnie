@@ -325,11 +325,10 @@ export default function ExploreMap({
     });
     clusterer.addMarkers(overlays);
     const map = mapRef.current;
-    const alreadyFitted = fitOnce && fittedSignalRef.current === fitSignal;
-    if (shops.length > 0 && !alreadyFitted) fittedSignalRef.current = fitSignal;
-    if (alreadyFitted) {
-      // 사용자가 보던 지도 범위를 그대로 둔다
-    } else if (fitToShops && map && shops.length > 1) {
+    // fitOnce 지도는 한 번 맞춘 뒤 사용자가 보던 범위를 그대로 둔다
+    const shouldFit = fitToShops && map && !(fitOnce && fittedSignalRef.current === fitSignal);
+    if (shouldFit && shops.length > 0) fittedSignalRef.current = fitSignal;
+    if (shouldFit && shops.length > 1) {
       const bounds = new maps.LatLngBounds();
       shops.forEach((shop) => bounds.extend(new maps.LatLng(shop.latitude, shop.longitude)));
       const { top, right, bottom, left } = boundsPadding;
@@ -339,7 +338,7 @@ export default function ExploreMap({
         map.setLevel(MAX_FIT_LEVEL);
         map.setCenter(new maps.LatLng(shops[0].latitude, shops[0].longitude));
       }
-    } else if (fitToShops && map && shops.length === 1) {
+    } else if (shouldFit && shops.length === 1) {
       map.setCenter(new maps.LatLng(shops[0].latitude, shops[0].longitude));
     }
     return () => clusterer.clear();

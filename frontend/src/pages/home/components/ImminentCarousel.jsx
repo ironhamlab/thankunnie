@@ -30,7 +30,7 @@ const GONE_NOTICE_MS = 4000;
  * 저절로 넘기되, 마우스를 올리거나 키보드로 안의 버튼에 초점이 있으면 누르려던 카드가 바뀌지 않게 멈춘다.
  * 휴대폰에서는 옆으로 밀어 넘기고, 손을 대고 있는 동안만 멈춘다. 끝에서 넘기면 처음으로 돌아간다.
  * 기기에서 동작 줄이기를 켰으면 자동으로 넘기지 않는다.
- * 캐러셀이 보이는 동안 목록을 주기적으로 다시 받는다. 순번이 아니라 빈자리 ID 로 보던 카드를 유지해, 앞 카드가 팔려도
+ * 탭을 보는 동안 목록을 주기적으로 다시 받는다. 순번이 아니라 빈자리 ID 로 보던 카드를 유지해, 앞 카드가 팔려도
  * 누르려던 카드가 바뀌지 않게 한다. 보던 카드가 팔렸을 때만 그 자리의 다음 카드로 넘어가며 안내한다.
  * 장이 바뀔 때마다(저절로 넘길 때도) onShowShop 으로 알려 지도가 지금 카드의 매장을 따라오게 한다.
  * 옆 지도를 보는 중(paused)이면 지도가 옮겨 가지 않게 자동 넘김을 멈춘다.
@@ -77,7 +77,8 @@ export default function ImminentCarousel({
     loadImminentVacancies();
   }, [loadImminentVacancies]);
 
-  useAutoRefresh(loadImminentVacancies, inView);
+  // 옆 지도도 이 목록으로 핀을 찍으므로 캐러셀이 화면 밖이어도 다시 받는다
+  useAutoRefresh(loadImminentVacancies);
 
   const count = vacancies.length;
   const foundIndex = vacancies.findIndex((card) => card.id === shownCard?.id);
@@ -86,11 +87,13 @@ export default function ImminentCarousel({
   const current = vacancies[currentIndex] ?? null;
   // 보던 카드와 순번을 기억한다. 렌더 중에 맞춰 효과로 한 번 더 그리지 않게 한다
   if (current !== shownCard || currentIndex !== lastIndex) {
-    if (shownCard && foundIndex < 0) {
+    // 대신 보여주던 빈자리가 새 임박 빈자리로 바뀐 것은 마감이 아니므로 알리지 않는다
+    if (shownCard && foundIndex < 0 && Boolean(shownCard.upcoming) === Boolean(current?.upcoming)) {
       setGone({
         label: `${shownCard.shop} ${shownCard.day} ${shownCard.time}`,
         next: current,
-        moveMap: !paused,
+        // 지도를 보는 중이면 보던 지도를 옮기지 않는다
+        moveMap: !paused && inView,
       });
     }
     setShownCard(current);
