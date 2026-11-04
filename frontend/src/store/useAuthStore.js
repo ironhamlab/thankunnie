@@ -140,3 +140,17 @@ export const useAuthStore = create((set) => {
     },
   };
 });
+
+// 다른 탭에서 로그인·로그아웃하면 이 탭도 같은 세션으로 맞춘다.
+// storage 이벤트는 값을 바꾼 탭이 아닌 다른 탭에서만 발생하므로 서로 다시 부르지 않는다
+window.addEventListener('storage', (event) => {
+  if (event.key !== STORAGE_KEY && event.key !== null) {
+    return;
+  }
+  const session = readStoredSession();
+  useAuthStore.setState(
+    session
+      ? { token: session.token, data: session.user, status: 'succeeded', error: null }
+      : { token: null, data: null, status: 'idle', error: null },
+  );
+});

@@ -4,6 +4,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import AdminLayout from '@/components/layout/AdminLayout';
 import OwnerLayout from '@/components/layout/OwnerLayout';
 import Spinner from '@/components/common/Spinner';
+import GuestRoute from '@/routes/GuestRoute';
 import PrivateRoute from '@/routes/PrivateRoute';
 import RoleRoute from '@/routes/RoleRoute';
 import { ROUTES } from '@/constants/routes';
@@ -48,11 +49,13 @@ export default function AppRouter() {
   return (
     <Suspense fallback={<Spinner />}>
       <Routes>
-        {/* 로그인·가입 화면은 이미 로그인한 경우를 각 화면에서 안내하므로 역할 가드 밖에 둔다 */}
+        {/* 로그인·가입 화면은 비로그인 전용이다. 역할과 관계없이 로그인되어 있으면 GuestRoute 가 안내한다 */}
         <Route element={<MainLayout />}>
-          <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-          <Route path={ROUTES.SIGNUP} element={<SignupPage />} />
-          <Route path={ROUTES.SHOP_SIGNUP} element={<ShopSignupPage />} />
+          <Route element={<GuestRoute />}>
+            <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+            <Route path={ROUTES.SIGNUP} element={<SignupPage />} />
+            <Route path={ROUTES.SHOP_SIGNUP} element={<ShopSignupPage />} />
+          </Route>
         </Route>
         {/* 고객 화면. 매장 계정이면 홈은 매장 센터로 보내고, 나머지는 로그아웃 확인 창을 띄운다 */}
         <Route
@@ -84,8 +87,11 @@ export default function AppRouter() {
                 element={<CancelResultPage viewer="customer" />}
               />
             </Route>
-            <Route path={ROUTES.NOT_FOUND} element={<NotFoundPage />} />
           </Route>
+        </Route>
+        {/* 없는 주소는 역할과 관계없이 안내한다. 고객 화면 가드 안에 두면 매장·관리자 계정에 로그아웃 창이 뜬다 */}
+        <Route element={<MainLayout />}>
+          <Route path={ROUTES.NOT_FOUND} element={<NotFoundPage />} />
         </Route>
         {/* 매장 센터는 매장으로 로그인한 뒤에 들어간다. 고객 계정이면 레이아웃(매장 조회)도 열지 않는다 */}
         <Route element={<PrivateRoute />}>
