@@ -167,6 +167,8 @@ export default function ExploreMap({
 }) {
   // 마지막으로 범위를 맞춘 fitSignal. fitOnce 지도에서 같은 값이면 다시 맞추지 않는다
   const fittedSignalRef = useRef(null);
+  // 마지막으로 지도를 옮겨 보여준 매장 ID
+  const movedToIdRef = useRef(null);
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const clustererRef = useRef(null);
@@ -362,11 +364,14 @@ export default function ExploreMap({
       focusPosition?.zoom &&
       focusPosition.lat === shop?.latitude &&
       focusPosition.lng === shop?.longitude;
-    if (shop && map && !focusing) {
+    // fitOnce 지도는 목록이 다시 와도 같은 매장으로 되돌아가지 않는다. 고른 뒤 사용자가 지도를 옮겼을 수 있다
+    const alreadyMoved = fitOnce && movedToIdRef.current === selectedId;
+    movedToIdRef.current = shop ? selectedId : null;
+    if (shop && map && !focusing && !alreadyMoved) {
       const position = new window.kakao.maps.LatLng(shop.latitude, shop.longitude);
       if (!map.getBounds().contain(position)) map.panTo(position);
     }
-  }, [status, shops, selectedId, autoSelected, focusPosition]);
+  }, [status, shops, selectedId, autoSelected, focusPosition, fitOnce]);
 
   // 목록 지금 페이지에 없는 매장 핀은 흐리게 둬, 목록에 보이는 매장이 지도에서 어디인지 먼저 눈에 들어오게 한다
   useEffect(() => {

@@ -46,6 +46,8 @@ export default function HomePage() {
   const [mapHovered, setMapHovered] = useState(false);
   const [mapExplored, setMapExplored] = useState(false);
   const [advanceSignal, setAdvanceSignal] = useState(0);
+  // 내 위치로 옮긴 지도. 캐러셀을 직접 넘기기 전까지 저절로 넘어가는 카드가 지도를 옮기지 않는다
+  const [mapAtMyLocation, setMapAtMyLocation] = useState(false);
   const exploreTimerRef = useRef(null);
   useEffect(() => () => window.clearTimeout(exploreTimerRef.current), []);
   // 끄는 동안 계속 불리므로, 이미 멈춘 상태면 다시 그리지 않고 타이머만 새로 건다
@@ -58,10 +60,11 @@ export default function HomePage() {
     }, mapIdleDelay());
   };
   const showImminent = (card, { manual = false } = {}) => {
-    setImminentFocus(card);
+    if (manual || !mapAtMyLocation) setImminentFocus(card);
     if (manual) {
       window.clearTimeout(exploreTimerRef.current);
       setMapExplored(false);
+      setMapAtMyLocation(false);
     }
   };
   const searchMode = params.has('view') || params.has('sale') || params.has('search');
@@ -100,6 +103,7 @@ export default function HomePage() {
           onHover={setMapHovered}
           onExplore={exploreMap}
           onPickShop={(shopId) => setCarouselRequest({ shopId })}
+          onLocated={() => setMapAtMyLocation(true)}
         />
       </section>
       <section id="home-deals" className={`home-deals ${styles.riseIn} ${styles.later}`}>
