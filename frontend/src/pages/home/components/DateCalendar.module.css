@@ -1,65 +1,88 @@
 .root {
   position: relative;
 }
+/* 이전날·날짜·다음날을 필터 버튼과 같은 연한 막대 하나에 묶어 낮고 깔끔하게 보여준다 */
 .picker {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-blue);
 }
 .arrow {
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--color-border);
-  border-radius: 50%;
-  background: white;
-  font-size: 18px;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 16px;
   line-height: 1;
 }
+.arrow:not(:disabled):hover {
+  background: white;
+}
 .arrow:disabled {
-  opacity: 0.35;
+  opacity: 0.3;
 }
 .current {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 18px;
-  border: 1px solid var(--color-primary);
-  border-radius: var(--radius-pill);
+  gap: 5px;
+  height: 26px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
   background: white;
-  font-size: 14px;
+  color: var(--color-text);
+  font-size: 12px;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-shadow) 8%, transparent);
+}
+.current > span:first-child {
+  color: var(--color-text-muted);
+  font-size: 11px;
 }
 .current strong {
-  font-size: 17px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 .current span:last-child {
   color: var(--color-primary-text);
-  font-weight: 600;
+  font-weight: 700;
 }
 .popover {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
   z-index: 20;
-  width: 300px;
-  padding: 16px;
+  width: 280px;
+  max-width: calc(100vw - 16px);
+  padding: 14px;
   background: white;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 12px 30px color-mix(in srgb, var(--color-shadow) 13%, transparent);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--color-shadow) 12%, transparent);
 }
 .monthBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+}
+.monthBar strong {
+  font-size: 14px;
 }
 .monthBar button {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border: 0;
-  border-radius: 50%;
-  background: var(--color-surface-blue);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
   font-size: 16px;
+}
+.monthBar button:not(:disabled):hover {
+  background: var(--color-surface-blue);
 }
 .monthBar button:disabled {
   opacity: 0.35;
@@ -67,7 +90,7 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 2px;
   text-align: center;
 }
 .weekday {
@@ -88,16 +111,22 @@
 .grid button:disabled {
   color: var(--color-text-disabled);
 }
+/* 오늘은 얇은 테두리로만 표시해 고른 날짜와 헷갈리지 않게 한다 */
 .grid button.today {
   font-weight: 800;
   color: var(--color-primary-text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 45%, transparent);
 }
 .grid button[aria-pressed='true'] {
   background: var(--color-primary);
+  box-shadow: none;
   color: white;
+  font-weight: 700;
 }
 .help {
-  margin-top: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
   font-size: 11px;
   color: var(--color-text-muted);
   text-align: center;
