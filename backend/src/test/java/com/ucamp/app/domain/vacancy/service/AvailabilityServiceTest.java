@@ -193,17 +193,30 @@ class AvailabilityServiceTest {
     }
 
     @Test
-    @DisplayName("다른 고객의 결제 대기 점유 때문에만 막힌 시각은 대기 가능 시각으로 따로 알려준다")
+    @DisplayName("다른 고객의 결제 대기 점유와 시간이 정확히 같은 시각만 대기 가능 시각으로 따로 알려준다")
     void getDayAvailability_activeHold_marksHeldStartTimes() {
         given(reservationRepository.findActiveOverlapping(eq(SHOP_ID), any(), any()))
                 .willReturn(List.of(activeHold(14, 0), reservation(17, 0, ReservationStatus.CONFIRMED)));
 
         DayAvailability result = service.getDayAvailability(SHOP_ID, DATE, ONE_HOUR);
 
-        // 14:00~15:00 점유와 겹치는 13:30·14:00·14:30 만 대기 가능이고, 확정 예약과 겹치는 시각은 어디에도 없다
-        assertThat(result.heldStartTimes()).containsExactly(at(13, 30), at(14, 0), at(14, 30));
-        assertThat(result.startTimes()).doesNotContain(at(14, 0), at(16, 30), at(17, 0));
+        // 14:00~15:00 점유와 정확히 같은 14:00 만 대기 가능이다.
+        // 일부만 겹치는 13:30·14:30 은 옆 시간 예약에 밀려 기다려도 못 잡을 수 있어 대기 가능도, 예약 가능도 아니다
+        assertThat(result.heldStartTimes()).containsExactly(at(14, 0));
+        assertThat(result.startTimes()).doesNotContain(at(13, 30), at(14, 0), at(14, 30), at(16, 30), at(17, 0));
         assertThat(result.heldStartTimes()).doesNotContain(at(16, 30), at(17, 0));
+    }
+
+    @Test
+    @DisplayName("점유와 길이가 다른 시술(30분)은 점유 시간 안에 들어가도 시작·끝이 같지 않으면 대기 가능이 아니다")
+    void getDayAvailability_activeHold_differentDurationNotHeld() {
+        given(reservationRepository.findActiveOverlapping(eq(SHOP_ID), any(), any()))
+                .willReturn(List.of(activeHold(14, 0)));
+
+        DayAvailability result = service.getDayAvailability(SHOP_ID, DATE, 30);
+
+        assertThat(result.heldStartTimes()).isEmpty();
+        assertThat(result.startTimes()).doesNotContain(at(14, 0), at(14, 30));
     }
 
     @Test
@@ -213,6 +226,8 @@ class AvailabilityServiceTest {
                 .willReturn(List.of(activeHold(14, 0), reservation(17, 0, ReservationStatus.CONFIRMED)));
 
         assertThat(service.isHeldOnly(SHOP_ID, at(14, 0), ONE_HOUR)).isTrue();
+        // 점유와 일부만 겹치면 기다려도 못 잡을 수 있어 false 다
+        assertThat(service.isHeldOnly(SHOP_ID, at(14, 30), ONE_HOUR)).isFalse();
         assertThat(service.isHeldOnly(SHOP_ID, at(17, 0), ONE_HOUR)).isFalse();
         assertThat(service.isHeldOnly(SHOP_ID, at(11, 0), ONE_HOUR)).isFalse();
     }

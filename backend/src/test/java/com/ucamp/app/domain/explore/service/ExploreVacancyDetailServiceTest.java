@@ -106,7 +106,7 @@ class ExploreVacancyDetailServiceTest {
     }
 
     @Test
-    @DisplayName("다른 고객이 결제 중(점유)인 시각은 대기열에 설 수 있도록 HELD 다")
+    @DisplayName("다른 고객이 결제 중(점유)인 시간과 정확히 같으면 대기열에 설 수 있도록 HELD, 일부만 겹치면 NOT_AVAILABLE 이다")
     void getDetail_activeHold_held() {
         jdbcTemplate.update("""
                 INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT,
@@ -114,9 +114,15 @@ class ExploreVacancyDetailServiceTest {
                 VALUES (901, 1, 1, 'HOLD', ?, ?, 30000, 20000, ?, ?, ?)
                 """, NOW.withHour(20), NOW.withHour(21), NOW.plusMinutes(5), NOW, NOW);
 
-        ExploreVacancyDetailResponse held = exploreVacancyDetailService.getDetail(2L, NOW.withHour(20).withMinute(30));
+        // 젤네일 60분 20:00~21:00 은 점유와 정확히 같다
+        ExploreVacancyDetailResponse held = exploreVacancyDetailService.getDetail(1L, NOW.withHour(20));
         assertThat(held.bookable()).isFalse();
         assertThat(held.notBookableReason()).isEqualTo(ExploreNotBookableReason.HELD);
+        // 손 케어 30분 20:30~21:00 은 점유 안에 일부만 걸쳐, 기다려도 순서를 지켜 줄 수 없어 예약 불가다
+        ExploreVacancyDetailResponse partial = exploreVacancyDetailService.getDetail(2L,
+                NOW.withHour(20).withMinute(30));
+        assertThat(partial.bookable()).isFalse();
+        assertThat(partial.notBookableReason()).isEqualTo(ExploreNotBookableReason.NOT_AVAILABLE);
     }
 
     @Test

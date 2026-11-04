@@ -174,6 +174,23 @@ public class ReservationService {
     }
 
     /**
+     * 결제창을 열기 전에 이 예약을 지금 결제할 수 있는지 확인한다. 확정 때와 같은 기준이며 상태는 바꾸지 않는다.
+     * 결제창을 열고 나서 확정에 실패하면 결제를 자동 취소해야 하므로, 열기 전에 걸러 낸다.
+     *
+     * @throws BusinessException 없거나 다른 고객의 예약이면 RESERVATION_NOT_FOUND,
+     *                           결제 마감(시작 15분 전)이 지났으면 VACANCY_PAYMENT_CLOSED,
+     *                           그 밖의 상태 오류는 Reservation.validateConfirmable 참고
+     */
+    public void validatePayable(Long userId, Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .filter(found -> found.getUserId().equals(userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
+        LocalDateTime now = LocalDateTime.now(clock);
+        reservation.validateConfirmable(reservation.getDeposit(), now);
+        SalePolicy.validatePayable(reservation.getStartsAt(), now);
+    }
+
+    /**
      * 고객이 결제 화면을 떠날 때 본인 점유를 푼다. 행을 지우지 않고 EXPIRED 로 바꾼다.
      * 예약 행을 잠근 뒤 바꾸므로 같은 예약의 결제 확정과 동시에 와도 한쪽만 반영된다.
      * 이미 만료됐으면 아무것도 하지 않아 여러 번 불러도 안전하다.

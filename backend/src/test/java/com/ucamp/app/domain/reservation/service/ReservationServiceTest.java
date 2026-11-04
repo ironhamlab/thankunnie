@@ -314,6 +314,31 @@ class ReservationServiceTest {
     }
 
     @Test
+    @DisplayName("결제창을 열기 전 검사: 본인의 유효한 점유면 통과하고 예약 상태는 바꾸지 않는다")
+    void validatePayable_validHold_passes() {
+        Reservation hold = userReservation(NOW.plusMinutes(5));
+        given(reservationRepository.findById(RESERVATION_ID)).willReturn(Optional.of(hold));
+
+        reservationService.validatePayable(CUSTOMER.userId(), RESERVATION_ID);
+
+        assertThat(hold.getStatus()).isEqualTo(ReservationStatus.HOLD);
+    }
+
+    @Test
+    @DisplayName("결제창을 열기 전 검사: 만료된 점유는 RESERVATION_003, 남의 예약은 RESERVATION_001 이다")
+    void validatePayable_expiredOrOthers_throws() {
+        given(reservationRepository.findById(RESERVATION_ID))
+                .willReturn(Optional.of(userReservation(NOW.minusSeconds(1))));
+        assertErrorCode(() -> reservationService.validatePayable(CUSTOMER.userId(), RESERVATION_ID),
+                ErrorCode.RESERVATION_HOLD_EXPIRED);
+
+        given(reservationRepository.findById(RESERVATION_ID))
+                .willReturn(Optional.of(userReservation(NOW.plusMinutes(5))));
+        assertErrorCode(() -> reservationService.validatePayable(CUSTOMER.userId() + 1, RESERVATION_ID),
+                ErrorCode.RESERVATION_NOT_FOUND);
+    }
+
+    @Test
     @DisplayName("본인 점유를 예약금만큼 결제하면 예약 행을 잠가 조회한 뒤 CONFIRMED 로 확정하고 요청사항을 저장한 뒤 확정 이벤트를 발행한다")
     void confirmReservation_validHold_confirms() {
         Reservation hold = userReservation(NOW.plusMinutes(5));
