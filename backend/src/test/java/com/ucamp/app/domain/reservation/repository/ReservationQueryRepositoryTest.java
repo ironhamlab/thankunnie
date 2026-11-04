@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
@@ -32,6 +33,20 @@ class ReservationQueryRepositoryTest {
 
     @Autowired
     private ReservationQueryRepository reservationQueryRepository;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Test
+    @DisplayName("탈퇴 회원의 예약은 휴대폰 번호를 보내지 않는다")
+    void findOne_withdrawnCustomer_hidesPhone() {
+        assertThat(reservationQueryRepository.findOne(3L, 1L, null).orElseThrow().customerPhone()).isNotNull();
+        jdbcTemplate.update("UPDATE APP_USER SET STATUS = 'INACTIVE', NAME = '탈퇴회원' WHERE USER_ID = 1");
+
+        ReservationView view = reservationQueryRepository.findOne(3L, 1L, null).orElseThrow();
+
+        assertThat(view.customerName()).isEqualTo("탈퇴회원");
+        assertThat(view.customerPhone()).isNull();
+    }
 
     @Test
     @DisplayName("매장 범위로 조회하면 그 매장 예약만 시작 시각 순으로 나온다")

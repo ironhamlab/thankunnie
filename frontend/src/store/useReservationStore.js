@@ -27,6 +27,9 @@ export const useReservationStore = create((set, get) => ({
   detailRequestId: 0,
   // 서버 시각 - 기기 시각(ms). 기기 시계가 틀려도 점유 남은 시간을 서버 기준으로 세기 위해 응답을 받은 순간 잰다
   detailClockOffset: 0,
+  // 노쇼 표시·해제 진행 상태. 실패는 어느 예약의 실패인지 함께 둔다
+  noShowStatus: 'idle',
+  noShowError: null,
 
   // 필터를 빠르게 바꾸면 요청이 겹치므로 마지막 요청의 응답만 반영한다.
   loadReservations: async (scope, filters) => {
@@ -118,6 +121,33 @@ export const useReservationStore = create((set, get) => ({
       return hold?.summary ?? null;
     } catch (error) {
       throw toError(error);
+    }
+  },
+
+  // 매장 노쇼 표시(noShow=true)·해제. 한 번에 하나만 보내고, 성공하면 목록 항목과 보고 있는 상세를 함께 바꾼다
+  changeNoShow: async (reservationId, noShow) => {
+    if (get().noShowStatus === 'saving') return false;
+    set({ noShowStatus: 'saving', noShowError: null });
+    try {
+      const detail = noShow
+        ? await reservationApi.markNoShow(reservationId)
+        : await reservationApi.unmarkNoShow(reservationId);
+      set((state) => ({
+        noShowStatus: 'idle',
+        reservations: state.reservations.map((item) =>
+          item.reservationId === reservationId ? { ...item, noShow: detail.summary.noShow } : item,
+        ),
+        // 그사이 다른 예약을 고르지 않았을 때만 상세를 바꾼다
+        detail:
+          state.detailStatus === 'succeeded' &&
+          state.detail?.summary?.reservationId === reservationId
+            ? detail
+            : state.detail,
+      }));
+      return true;
+    } catch (error) {
+      set({ noShowStatus: 'idle', noShowError: { ...toError(error), reservationId } });
+      return false;
     }
   },
 

@@ -13,7 +13,10 @@ import Spinner from '@/components/common/Spinner';
 import ReservationPagination from '@/components/reservation/ReservationPagination';
 import styles from './CustomersPage.module.css';
 
-const PAGE_SIZE = 20;
+// 한 화면에 목록이 다 들어오도록 10명씩 본다
+const PAGE_SIZE = 10;
+// 목록과 상세가 나란히 놓이지 않는 폭(태블릿·폰). 상세가 긴 목록 아래로 멀어지므로 창으로 연다
+const DIALOG_LAYOUT_QUERY = '(max-width: 1180px)';
 const MEMO_MAX_LENGTH = 1000;
 
 const SEGMENTS = [
@@ -31,6 +34,8 @@ const HISTORY_STATUS = {
   COMPLETED: { label: '이용 완료', tone: 'success' },
   UPCOMING: { label: '방문 예정', className: 'upcomingBadge' },
   CANCELLED: { label: '취소', className: 'cancelledBadge' },
+  // 공통 배지 색(design.css). 예약 관리의 노쇼 배지와 같다
+  NO_SHOW: { label: '노쇼', badgeClass: 'b-dark' },
 };
 const CANCEL_TYPE_LABEL = {
   CUSTOMER: '고객 취소',
@@ -42,7 +47,7 @@ const pick = (value, options, fallback) =>
   options.some((option) => option.key === value) ? value : fallback;
 
 /**
- * 매장 고객 관리. 이 매장에 예약한 고객의 이용 횟수·최근 이용·누적 금액과 신규·재방문 분류를 보고,
+ * 매장 고객 관리. 목록은 이름·연락처·신규/재방문·이용 횟수만 한 줄로 보고, 최근 이용·누적 금액은 상세에서 본다.
  * 고객을 고르면 예약 이력·요청사항과 매장 메모를 본다.
  * 검색어·분류·정렬·페이지·고른 고객은 주소에 남겨 오늘 예약에서 이름으로 바로 찾아오거나 새로고침해도 유지한다.
  * 목록의 연락처는 서버가 가운데를 가려 주고, 상세에서만 전체 번호를 보여 준다.
@@ -62,6 +67,16 @@ export default function CustomersPage() {
   const loadCustomer = useOwnerCustomerStore((state) => state.loadCustomer);
   const clearCustomer = useOwnerCustomerStore((state) => state.clearCustomer);
   const [draftKeyword, setDraftKeyword] = useState(keyword);
+  const [isDialogLayout, setIsDialogLayout] = useState(
+    () => window.matchMedia(DIALOG_LAYOUT_QUERY).matches,
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia(DIALOG_LAYOUT_QUERY);
+    const handleChange = (event) => setIsDialogLayout(event.matches);
+    media.addEventListener('change', handleChange);
+    return () => media.removeEventListener('change', handleChange);
+  }, []);
 
   useEffect(() => {
     setDraftKeyword(keyword);
@@ -91,6 +106,7 @@ export default function CustomersPage() {
   };
 
   const retry = () => loadCustomers({ segment, sort, keyword, page, size: PAGE_SIZE });
+  const closeDetail = () => update({ customer: null }, { resetPage: false });
 
   return (
     <div className="b-stack">
@@ -175,16 +191,26 @@ export default function CustomersPage() {
               onSelect={(userId) => update({ customer: userId }, { resetPage: false })}
             />
           )}
-          <ReservationPagination
-            page={page}
-            pageInfo={pageInfo}
-            onPageChange={(next) => update({ page: next || null }, { resetPage: false })}
-          />
-          <p className={styles.hint}>신규: 이용 0~1회 · 재방문: 이용 2회 이상</p>
+          {/* 분류 기준 안내와 페이지 이동을 한 줄에 둬 목록 아래 여백을 줄인다 */}
+          <div className={styles.listFoot}>
+            <p className={styles.hint}>신규: 이용 0~1회 · 재방문: 이용 2회 이상</p>
+            <div className={styles.pager}>
+              <ReservationPagination
+                page={page}
+                pageInfo={pageInfo}
+                onPageChange={(next) => update({ page: next || null }, { resetPage: false })}
+              />
+            </div>
+          </div>
         </Panel>
 
-        <CustomerDetail onClose={() => update({ customer: null }, { resetPage: false })} />
+        {!isDialogLayout && <CustomerDetail onClose={closeDetail} />}
       </div>
+      {isDialogLayout && selectedId && (
+        <Dialog title="고객 상세" className={styles.detailDialog} onClose={closeDetail}>
+          <CustomerDetail onClose={closeDetail} inDialog />
+        </Dialog>
+      )}
     </div>
   );
 }
@@ -202,43 +228,50 @@ function CustomerTable({ customers, total, selectedId, hasFilter, onSelect }) {
   return (
     <>
       <p className={styles.count}>{total}명</p>
-      <ul className={styles.rows}>
-        {customers.map((customer) => (
-          <li key={customer.userId}>
-            <button
-              type="button"
-              className={
-                customer.userId === selectedId ? `${styles.row} ${styles.selected}` : styles.row
-              }
-              aria-current={customer.userId === selectedId ? 'true' : undefined}
-              onClick={() => onSelect(customer.userId)}
-            >
-              <span className={styles.who}>
-                <strong>{customer.name}</strong>
-                <SegmentBadge segment={customer.segment} />
-                {customer.hasMemo && <Badge tone="neutral">메모</Badge>}
-                <small>{customer.phone}</small>
-              </span>
-              <span className={styles.numbers}>
-                <span>
-                  이용 <strong>{customer.visitCount}회</strong>
+      <div className={styles.table}>
+        {/* 예약 현황 표처럼 칸을 맞춘 머리글. 화면 읽기 도구는 각 줄의 내용을 그대로 읽는다 */}
+        <div className={`${styles.row} ${styles.head}`} aria-hidden="true">
+          <span>고객</span>
+          <span>연락처</span>
+          <span className={styles.num}>이용</span>
+          <span className={`${styles.num} ${styles.recent}`}>최근 이용</span>
+        </div>
+        <ul className={styles.rows}>
+          {customers.map((customer) => (
+            <li key={customer.userId}>
+              <button
+                type="button"
+                className={
+                  customer.userId === selectedId ? `${styles.row} ${styles.selected}` : styles.row
+                }
+                aria-current={customer.userId === selectedId ? 'true' : undefined}
+                onClick={() => onSelect(customer.userId)}
+              >
+                <span className={styles.who}>
+                  <strong>{customer.name}</strong>
+                  <SegmentBadge segment={customer.segment} />
+                  {customer.hasMemo && <Badge tone="neutral">메모</Badge>}
+                  <NoShowBadge count={customer.noShowCount} />
                 </span>
-                <span>{formatMoney(customer.totalAmount)}</span>
-                <small>{describeVisit(customer)}</small>
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
+                <span className={styles.phone}>{customer.phone}</span>
+                <span className={`${styles.num} ${styles.visits}`}>
+                  <strong>{customer.visitCount}회</strong>
+                </span>
+                <span className={`${styles.num} ${styles.recent}`}>
+                  {customer.lastVisitAt ? datePart(customer.lastVisitAt) : '이용 전'}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
     </>
   );
 }
 
-// 최근 이용일, 이용 전이면 첫 방문 예정일
-function describeVisit(customer) {
-  if (customer.lastVisitAt) return `최근 ${datePart(customer.lastVisitAt)}`;
-  if (customer.nextReservationAt) return `첫 방문 ${datePart(customer.nextReservationAt)} 예정`;
-  return '이용 전';
+// 노쇼가 있었던 고객만 횟수를 보여준다
+function NoShowBadge({ count }) {
+  return count > 0 ? <Badge className="b-dark">노쇼 {count}회</Badge> : null;
 }
 
 function SegmentBadge({ segment }) {
@@ -252,13 +285,16 @@ function SegmentBadge({ segment }) {
   );
 }
 
-function CustomerDetail({ onClose }) {
+// inDialog: 폰의 창 안. 창에 닫기와 제목이 있어 패널 테두리·닫기 버튼을 빼고, 고른 고객이 없을 때 안내도 그리지 않는다
+function CustomerDetail({ onClose, inDialog = false }) {
   const detail = useOwnerCustomerStore((state) => state.detail);
   const detailUserId = useOwnerCustomerStore((state) => state.detailUserId);
   const detailStatus = useOwnerCustomerStore((state) => state.detailStatus);
   const loadCustomer = useOwnerCustomerStore((state) => state.loadCustomer);
 
   if (detailStatus === 'idle') {
+    // 창은 고객을 골랐을 때만 열리므로, 상세를 부르기 직전에는 안내 대신 로딩을 보여 준다
+    if (inDialog) return <Spinner />;
     return (
       <Panel as="aside" padded className={styles.detail}>
         <EmptyState>고객을 고르면 예약 이력과 메모를 볼 수 있어요.</EmptyState>
@@ -283,6 +319,7 @@ function CustomerDetail({ onClose }) {
               <div className={styles.detailName}>
                 <h2>{detail.customer.name}</h2>
                 <SegmentBadge segment={detail.customer.segment} />
+                <NoShowBadge count={detail.customer.noShowCount} />
               </div>
               <p className="b-muted">
                 {detail.customer.phone}
@@ -290,9 +327,11 @@ function CustomerDetail({ onClose }) {
                   ` · 첫 이용 ${datePart(detail.customer.firstVisitAt)}`}
               </p>
             </div>
-            <Button size="small" type="button" onClick={onClose}>
-              닫기
-            </Button>
+            {!inDialog && (
+              <Button size="small" type="button" onClick={onClose}>
+                닫기
+              </Button>
+            )}
           </div>
           <div className={styles.miniStats}>
             <div>
@@ -302,6 +341,12 @@ function CustomerDetail({ onClose }) {
             <div>
               <small>누적 금액</small>
               <strong>{formatMoney(detail.customer.totalAmount)}</strong>
+            </div>
+            <div>
+              <small>최근 이용</small>
+              <strong>
+                {detail.customer.lastVisitAt ? datePart(detail.customer.lastVisitAt) : '-'}
+              </strong>
             </div>
             <div>
               <small>다음 예약</small>
@@ -317,7 +362,7 @@ function CustomerDetail({ onClose }) {
             userId={detail.customer.userId}
             memo={detail.memo}
           />
-          <History reservations={detail.reservations} />
+          <History key={detail.customer.userId} reservations={detail.reservations} />
         </>
       )}
     </Panel>
@@ -420,15 +465,21 @@ function MemoEditor({ userId, memo }) {
   );
 }
 
+// 예약 이력은 한 번에 받은 최근 50건을 화면에서 나눠 보여 준다
+const HISTORY_PAGE_SIZE = 5;
+
 function History({ reservations }) {
+  const [page, setPage] = useState(0);
+  const totalPages = Math.ceil(reservations.length / HISTORY_PAGE_SIZE);
+  const shown = reservations.slice(page * HISTORY_PAGE_SIZE, (page + 1) * HISTORY_PAGE_SIZE);
   return (
     <section className="b-stack" aria-labelledby="history-title">
       <h3 id="history-title" className={styles.historyTitle}>
-        예약 이력 <small>최근 50건</small>
+        예약 이력 <small>{reservations.length}건 (최근 50건까지)</small>
       </h3>
       {reservations.length ? (
         <ul className={styles.history}>
-          {reservations.map((item) => {
+          {shown.map((item) => {
             const status = HISTORY_STATUS[item.status] ?? { label: item.status };
             return (
               <li key={item.reservationId}>
@@ -436,7 +487,9 @@ function History({ reservations }) {
                   <strong>{formatReservationTime(item.startsAt, item.endsAt)}</strong>
                   <Badge
                     tone={status.tone}
-                    className={status.className ? styles[status.className] : ''}
+                    className={
+                      status.className ? styles[status.className] : (status.badgeClass ?? '')
+                    }
                   >
                     {item.status === 'CANCELLED' && item.cancelType
                       ? (CANCEL_TYPE_LABEL[item.cancelType] ?? status.label)
@@ -455,6 +508,15 @@ function History({ reservations }) {
         </ul>
       ) : (
         <EmptyState as="p">예약 이력이 없어요.</EmptyState>
+      )}
+      {totalPages > 1 && (
+        <div className={styles.pager}>
+          <ReservationPagination
+            page={page}
+            pageInfo={{ totalPages, hasNext: page + 1 < totalPages }}
+            onPageChange={setPage}
+          />
+        </div>
       )}
     </section>
   );

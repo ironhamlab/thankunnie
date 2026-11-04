@@ -75,9 +75,29 @@
 .time {
   font-variant-numeric: tabular-nums;
 }
+/* 폰: 시각과 상태 배지를 한 줄에, 시술과 고객 이름을 다음 줄에 둔다 */
 @media (max-width: 640px) {
   .timeline li {
-    grid-template-columns: 90px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'time badge'
+      'treatment customer';
+    gap: 4px 12px;
+  }
+  .time {
+    grid-area: time;
+  }
+  .treatment {
+    grid-area: treatment;
+    color: var(--color-text-secondary);
+  }
+  .customer {
+    grid-area: customer;
+    justify-self: end;
+  }
+  .badge {
+    grid-area: badge;
+    justify-self: end;
   }
 }
 /* 카드 5개: 넓으면 한 줄, 중간 폭은 2개·3개 두 줄로 나눠 한 개만 떨어지지 않게 한다 */
@@ -95,16 +115,26 @@
     grid-column: span 2;
   }
 }
+/* 폰: 오늘 예약만 한 줄을 다 쓰고 나머지 네 개는 2×2 로 둬서 스크롤을 줄인다 */
 @media (max-width: 640px) {
   .todayGrid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
   .todayGrid > :nth-child(n) {
     grid-column: auto;
   }
+  .todayGrid > :first-child {
+    grid-column: 1 / -1;
+  }
 }
 .todayGrid h2 {
   font-size: 26px;
+}
+@media (max-width: 640px) {
+  .todayGrid h2 {
+    font-size: 20px;
+  }
 }
 .statsLink {
   flex-wrap: wrap;
@@ -130,4 +160,54 @@
 .empty p {
   color: var(--color-text-secondary);
   font-size: 13px;
+}
+/* 오늘 남은 빈 시간대 칩. 바로가기 버튼(주황)과 헷갈리지 않게 회색 테두리로 둔다 */
+.ranges {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  /* 카드 폭에 따라 한 줄에 1~2개 */
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 6px;
+}
+.ranges li {
+  padding: 2px 4px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-white);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.2px;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--color-text);
+}
+/* 폰 반쪽 카드에서도 두 개씩 들어가게 조금 줄인다 */
+@media (max-width: 640px) {
+  .ranges {
+    grid-template-columns: repeat(auto-fill, minmax(66px, 1fr));
+    gap: 4px;
+  }
+  .ranges li {
+    padding: 2px;
+    font-size: 11px;
+  }
+}
+/* 오늘 예약 카드의 다음 예약. 두 줄을 넘지 않게 줄마다 말줄임한다 */
+.next {
+  margin-top: 6px;
+  font-size: 13px;
+  min-width: 0;
+}
+.next p {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.next .treatment {
+  font-size: 12px;
+  color: var(--color-text-secondary);
 }

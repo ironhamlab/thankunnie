@@ -2,6 +2,7 @@ package com.ucamp.app.config;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 
+import com.ucamp.app.common.auth.AuthUserStatusChecker;
 import com.ucamp.app.common.auth.JwtAuthFilter;
 import com.ucamp.app.common.auth.JwtProvider;
 import com.ucamp.app.common.auth.StubAuthFilter;
@@ -46,12 +48,18 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtProvider jwtProvider) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtProvider jwtProvider,
+            ObjectProvider<AuthUserStatusChecker> statusCheckerProvider) throws Exception {
         // stub 이 먼저 테스트 사용자를 인증하고, JWT 필터는 아직 인증되지 않은 요청만 처리한다
         if (environment.acceptsProfiles(Profiles.of(STUB_AUTH_PROFILES))) {
             http.addFilterBefore(new StubAuthFilter(), AnonymousAuthenticationFilter.class);
         }
-        http.addFilterBefore(new JwtAuthFilter(jwtProvider), AnonymousAuthenticationFilter.class);
+        // 앱에서는 매장(ShopLoginStatusChecker)·고객(CustomerLoginStatusChecker) 상태 검사기가 등록되고, 모두 통과해야 인증한다.
+        // 각 검사기는 자기 역할의 토큰만 본다. 도메인 빈이 없는 슬라이스 테스트는 목록이 비어 검사를 건너뛴다
+        List<AuthUserStatusChecker> statusCheckers = statusCheckerProvider.orderedStream().toList();
+        AuthUserStatusChecker statusChecker = authUser -> statusCheckers.stream()
+                .allMatch(checker -> checker.canAuthenticate(authUser));
+        http.addFilterBefore(new JwtAuthFilter(jwtProvider, statusChecker), AnonymousAuthenticationFilter.class);
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())

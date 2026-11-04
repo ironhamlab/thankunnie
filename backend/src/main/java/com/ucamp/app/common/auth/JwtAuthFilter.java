@@ -19,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * Authorization: Bearer {JWT} 를 검증해 현재 사용자를 SecurityContext 에 넣는다.
  * 모든 프로필에서 동작하며, local·test 에서는 테스트 사용자 stub 이 먼저 인증한 요청을 건너뛴다.
  * 토큰이 없거나 유효하지 않으면 비로그인으로 처리하고, @LoginUser 가 필요한 API 에서 401 이 된다.
+ * 서명이 맞아도 계정 상태 검사(AuthUserStatusChecker)를 통과하지 못하면 비로그인으로 본다 (승인 취소된 매장 등).
  */
 public class JwtAuthFilter extends OncePerRequestFilter {
 
@@ -26,9 +27,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private static final String ROLE_PREFIX = "ROLE_";
 
     private final JwtProvider jwtProvider;
+    private final AuthUserStatusChecker statusChecker;
 
-    public JwtAuthFilter(JwtProvider jwtProvider) {
+    public JwtAuthFilter(JwtProvider jwtProvider, AuthUserStatusChecker statusChecker) {
         this.jwtProvider = jwtProvider;
+        this.statusChecker = statusChecker;
     }
 
     @Override
@@ -38,6 +41,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
             if (authorization != null && authorization.startsWith(BEARER_PREFIX)) {
                 jwtProvider.parse(authorization.substring(BEARER_PREFIX.length()).trim())
+                        .filter(statusChecker::canAuthenticate)
                         .ifPresent(JwtAuthFilter::authenticate);
             }
         }

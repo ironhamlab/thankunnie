@@ -25,7 +25,7 @@ export const datePart = (dateTime) => dateTime.slice(0, 10);
 export const timePart = (dateTime) => dateTime.slice(11, 16);
 
 /** 한국 시간 기준 지금 이후의 다음 30분 칸. 오늘이 끝나면 내일 00:00 */
-export const nextHalfHourKst = () => {
+const nextHalfHourKst = () => {
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Seoul',
     hour: '2-digit',

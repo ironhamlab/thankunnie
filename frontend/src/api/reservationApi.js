@@ -23,6 +23,11 @@ export const reservationApi = {
     axiosInstance.get('/v1/owner/reservations', { params: toParams(filters) }),
   getOwnerReservation: (reservationId) =>
     axiosInstance.get(`/v1/owner/reservations/${reservationId}`),
+  // 끝난 확정 예약을 노쇼로 표시·해제한다. 응답은 바뀐 예약 상세다
+  markNoShow: (reservationId) =>
+    axiosInstance.put(`/v1/owner/reservations/${reservationId}/no-show`),
+  unmarkNoShow: (reservationId) =>
+    axiosInstance.delete(`/v1/owner/reservations/${reservationId}/no-show`),
   getMyReservations: (filters) =>
     axiosInstance.get('/v1/my/reservations', { params: toParams(filters) }),
   getMyReservation: (reservationId) => axiosInstance.get(`/v1/my/reservations/${reservationId}`),

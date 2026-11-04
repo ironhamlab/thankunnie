@@ -45,6 +45,7 @@ import com.ucamp.app.domain.auth.controller.AuthController;
 import com.ucamp.app.domain.auth.entity.ShopAccount;
 import com.ucamp.app.domain.auth.repository.ShopAccountRepository;
 import com.ucamp.app.domain.auth.service.AuthService;
+import com.ucamp.app.domain.auth.service.ShopLoginStatusChecker;
 import com.ucamp.app.domain.auth.service.AuthPhoneVerificationService;
 import com.ucamp.app.domain.auth.service.AuthBusinessVerificationService;
 import com.ucamp.app.domain.shop.controller.ShopController;
@@ -55,6 +56,7 @@ import com.ucamp.app.domain.user.controller.TermsController;
 import com.ucamp.app.domain.user.entity.AppUser;
 import com.ucamp.app.domain.user.entity.TermsCode;
 import com.ucamp.app.domain.user.repository.AppUserRepository;
+import com.ucamp.app.domain.user.service.CustomerLoginStatusChecker;
 import com.ucamp.app.domain.user.service.TermsAgreementService;
 
 @SpringBootTest(classes = AuthIntegrationTest.AuthTestConfiguration.class)
@@ -70,7 +72,8 @@ class AuthIntegrationTest {
     @EntityScan(basePackageClasses = {AppUser.class, ShopAccount.class, Shop.class})
     @EnableJpaRepositories(basePackageClasses = {AppUserRepository.class, ShopAccountRepository.class,
             ShopRepository.class})
-    @Import({AuthController.class, AuthService.class, ShopController.class, ShopService.class,
+    @Import({AuthController.class, AuthService.class, ShopLoginStatusChecker.class, CustomerLoginStatusChecker.class,
+            ShopController.class, ShopService.class,
             TermsController.class, TermsAgreementService.class, UserLock.class, GlobalExceptionHandler.class, SecurityConfig.class, TimeConfig.class, WebConfig.class})
     static class AuthTestConfiguration {
     }
@@ -194,6 +197,36 @@ class AuthIntegrationTest {
     }
 
     @Test
+    @DisplayName("탈퇴 전에 받은 고객 토큰은 탈퇴 뒤 다음 요청부터 401")
+    void customerToken_afterWithdraw_returnsUnauthorized() throws Exception {
+        JsonNode data = data(signupCustomer("unnie10").andExpect(status().isCreated()));
+        mvc.perform(get("/api/v1/auth/me").header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isOk());
+
+        jdbc.update("UPDATE APP_USER SET STATUS = 'INACTIVE' WHERE LOGIN_ID = 'unnie10'");
+        entityManager.clear();
+
+        mvc.perform(get("/api/v1/auth/me").header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("탈퇴 회원의 휴대폰 번호로 새 아이디 가입을 하면 새 계정을 만들고 탈퇴 계정의 번호를 비운다")
+    void signupCustomer_withdrawnPhone_createsNewAccount() throws Exception {
+        signupCustomer("unnie08").andExpect(status().isCreated());
+        Long withdrawnId = jdbc.queryForObject("SELECT USER_ID FROM APP_USER WHERE LOGIN_ID = 'unnie08'", Long.class);
+        jdbc.update("UPDATE APP_USER SET STATUS = 'INACTIVE' WHERE USER_ID = ?", withdrawnId);
+        entityManager.clear();
+
+        signupCustomer("unnie09").andExpect(status().isCreated());
+
+        assertThat(jdbc.queryForObject("SELECT PHONE FROM APP_USER WHERE LOGIN_ID = 'unnie09'", String.class))
+                .isEqualTo("010-1234-5678");
+        assertThat(jdbc.queryForObject("SELECT PHONE FROM APP_USER WHERE USER_ID = ?", String.class, withdrawnId))
+                .isEqualTo("WD-" + withdrawnId);
+    }
+
+    @Test
     @DisplayName("매장 STATUS 는 노출 여부라 INACTIVE 매장도 로그인한다")
     void loginShop_inactiveShop_stillLogsIn() throws Exception {
         signupShop("closedshop").andExpect(status().isCreated());
@@ -206,9 +239,60 @@ class AuthIntegrationTest {
     }
 
     @Test
-    @DisplayName("매장 가입 토큰으로 본인 매장은 조회되고 다른 매장은 403")
+    @DisplayName("매장 가입은 승인 대기로 저장되고 토큰을 주지 않으며, 승인 전에는 로그인하면 403")
+    void signupShop_pending_cannotLogin() throws Exception {
+        signupShop("waitshop")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.accessToken").doesNotExist());
+
+        assertThat(jdbc.queryForObject("SELECT STATUS FROM SHOP WHERE LOGIN_ID = 'waitshop'", String.class))
+                .isEqualTo("PENDING");
+        login("/api/v1/auth/shops/login", "waitshop", PASSWORD)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("AUTH_011"));
+        // 비밀번호가 틀리면 승인 상태를 알리지 않는다
+        login("/api/v1/auth/shops/login", "waitshop", "wrong-password")
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("AUTH_002"));
+    }
+
+    @Test
+    @DisplayName("거절된 매장은 로그인하면 403 과 함께 거절 사유를 받는다")
+    void loginShop_rejectedShop_returnsReason() throws Exception {
+        signupShop("rejectshop").andExpect(status().isCreated());
+        jdbc.update("UPDATE SHOP SET STATUS = 'REJECTED', REJECT_REASON = '사업자 정보 불일치' "
+                + "WHERE LOGIN_ID = 'rejectshop'");
+        entityManager.clear();
+
+        login("/api/v1/auth/shops/login", "rejectshop", PASSWORD)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("AUTH_012"))
+                .andExpect(jsonPath("$.error.message").value("매장 가입이 거절되었습니다. 사유: 사업자 정보 불일치"));
+    }
+
+    @Test
+    @DisplayName("승인이 취소(거절)된 매장의 기존 토큰은 다음 요청부터 401, 노출 중지(INACTIVE)는 계속 쓸 수 있다")
+    void shopToken_afterApprovalCancelled_isRejected() throws Exception {
+        JsonNode data = approvedShopLogin("cancelshop");
+        long shopId = data.get("shopId").asLong();
+        mvc.perform(get("/api/v1/shops/{shopId}", shopId).header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isOk());
+
+        jdbc.update("UPDATE SHOP SET STATUS = 'INACTIVE' WHERE SHOP_ID = ?", shopId);
+        mvc.perform(get("/api/v1/shops/{shopId}", shopId).header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isOk());
+
+        jdbc.update("UPDATE SHOP SET STATUS = 'REJECTED', REJECT_REASON = '승인 취소' WHERE SHOP_ID = ?", shopId);
+        mvc.perform(get("/api/v1/shops/{shopId}", shopId).header(HttpHeaders.AUTHORIZATION, bearer(data)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("COMMON_401"));
+    }
+
+    @Test
+    @DisplayName("승인된 매장 토큰으로 본인 매장은 조회되고 다른 매장은 403")
     void signupShop_thenOwnShopOnly() throws Exception {
-        JsonNode data = data(signupShop("nailshop").andExpect(status().isCreated()));
+        JsonNode data = approvedShopLogin("nailshop");
 
         assertThat(data.get("role").asText()).isEqualTo("OWNER");
         long shopId = data.get("shopId").asLong();
@@ -457,7 +541,7 @@ class AuthIntegrationTest {
     @Test
     @DisplayName("매장은 약관 동의 API 를 쓸 수 없다 (403)")
     void agree_owner_returnsForbidden() throws Exception {
-        JsonNode data = data(signupShop("owner10").andExpect(status().isCreated()));
+        JsonNode data = approvedShopLogin("owner10");
 
         mvc.perform(put("/api/v1/users/me/terms-agreements/SMS_NOTIFICATION")
                         .header(HttpHeaders.AUTHORIZATION, bearer(data)))
@@ -493,6 +577,16 @@ class AuthIntegrationTest {
         return mvc.perform(post("/api/v1/auth/shops/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(shopSignupBody(loginId, CATEGORY_ID, agreedTermsJson)));
+    }
+
+    // 가입 후 관리자 승인을 DB 로 대신하고 로그인한 응답을 돌려준다
+    private JsonNode approvedShopLogin(String loginId) throws Exception {
+        signupShop(loginId).andExpect(status().isCreated());
+        // 쓰기 지연 중인 약관 동의가 clear 로 버려지지 않게 먼저 내보낸다
+        entityManager.flush();
+        jdbc.update("UPDATE SHOP SET STATUS = 'ACTIVE' WHERE LOGIN_ID = ?", loginId);
+        entityManager.clear();
+        return data(login("/api/v1/auth/shops/login", loginId, PASSWORD).andExpect(status().isOk()));
     }
 
     private static String shopSignupBody(String loginId, long categoryId) {

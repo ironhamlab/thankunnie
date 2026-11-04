@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { GRACE_CANCEL_MESSAGE } from '@/constants/cancelPolicy';
-import { useDesignStore } from '@/store/useDesignStore';
+import { useSearchStore } from '@/store/useSearchStore';
 import { useExploreStore } from '@/store/useExploreStore';
 import { regionNameOf } from '@/constants/regions';
 import { TIME_OF_DAY, dayLabel, validDate } from '@/utils/exploreVacancy';
@@ -20,7 +20,6 @@ import DateCalendar from '@/pages/home/components/DateCalendar';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
-import './VacancySearch.css';
 import styles from './VacancySearch.module.css';
 
 const ALL = '전체';
@@ -123,8 +122,8 @@ export default function VacancySearch() {
       { replace: true },
     );
   };
-  const search = useDesignStore((s) => s.search);
-  const resetSearch = useDesignStore((s) => s.setSearch);
+  const search = useSearchStore((s) => s.search);
+  const resetSearch = useSearchStore((s) => s.setSearch);
   const shops = useExploreStore((s) => s.searchShops);
   const status = useExploreStore((s) => s.searchShopsStatus);
   const error = useExploreStore((s) => s.searchShopsError);

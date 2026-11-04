@@ -21,6 +21,7 @@ import com.ucamp.app.common.auth.StubAuthFilter;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.domain.user.dto.response.UserProfileResponse;
 import com.ucamp.app.domain.user.service.UserService;
+import com.ucamp.app.domain.user.service.UserWithdrawalService;
 
 @WebMvcTest(controllers = UserController.class)
 @Import(SecurityConfig.class)
@@ -32,6 +33,9 @@ class UserControllerTest {
 
     @MockitoBean
     private UserService userService;
+
+    @MockitoBean
+    private UserWithdrawalService userWithdrawalService;
 
     @Test
     @DisplayName("로그인 고객의 회원 정보를 반환한다")

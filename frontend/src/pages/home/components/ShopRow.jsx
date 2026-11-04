@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { money } from '@/utils/demoData';
+import { formatMoney } from '@/utils/reservationFormat';
 import {
   areaName,
   earliestLabel,
@@ -127,7 +127,7 @@ export default function ShopRow({
           </span>
           <span className={styles.price}>
             {shop.maxDiscountRate > 0 && <em>최대 {shop.maxDiscountRate}%↓</em>}
-            <b>{money(shop.minSalePrice)}~</b>
+            <b>{formatMoney(shop.minSalePrice)}~</b>
           </span>
         </Card>
         {showTimes && (
@@ -151,7 +151,7 @@ export default function ShopRow({
           to={shopPagePath(shop.shopId, { date: datePart(shop.earliestStartsAt), model: true })}
         >
           <span>✦ 초보 시술 모집 빈자리 {shop.modelVacancyCount}개</span>
-          <b>{money(shop.modelMinSalePrice)}~</b>
+          <b>{formatMoney(shop.modelMinSalePrice)}~</b>
         </Link>
       )}
       {expanded && (
@@ -174,7 +174,7 @@ export default function ShopRow({
                   <div className={styles.treatmentInfo}>
                     <strong>{treatment.name}</strong>
                     <span>
-                      {treatment.duration}분 · {money(treatment.price)}
+                      {treatment.duration}분 · {formatMoney(treatment.price)}
                       {treatment.discount > 0 && <em> {treatment.discount}%↓</em>}
                     </span>
                   </div>
@@ -228,7 +228,7 @@ function SlotLinks({ treatment, slots }) {
           key={slot.id}
           to={slot.shopPath}
           className={slot.urgency !== '일반 빈자리' ? styles.urgent : ''}
-          aria-label={`${treatment.name} ${slot.day} ${slot.time} ${money(slot.price)}`}
+          aria-label={`${treatment.name} ${slot.day} ${slot.time} ${formatMoney(slot.price)}`}
         >
           {slot.time}
         </Link>

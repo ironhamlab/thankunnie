@@ -1,8 +1,7 @@
 import Badge from '@/components/common/Badge';
 import Panel from '@/components/common/Panel';
+import { formatMoney } from '@/utils/reservationFormat';
 import styles from '../ShopDetailPage.module.css';
-
-const money = (value) => `${value.toLocaleString('ko-KR')}원`;
 
 /**
  * 판매 중인 시술 중 하나를 고른다. 목록은 정상 가격만 보여주고, 시각별 할인 가격은 예약 요약에서 서버 값으로 보여준다
@@ -37,7 +36,7 @@ export default function TreatmentPicker({ treatments, selectedId, onSelect, empt
                   {treatment.description && <span>{treatment.description}</span>}
                   <span className={styles.treatmentMeta}>
                     <span>{treatment.durationMinutes}분</span>
-                    <strong>{money(treatment.regularPrice)}</strong>
+                    <strong>{formatMoney(treatment.regularPrice)}</strong>
                   </span>
                 </button>
               </li>

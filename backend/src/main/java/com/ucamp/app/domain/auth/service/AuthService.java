@@ -18,12 +18,14 @@ import com.ucamp.app.domain.auth.dto.request.AuthBusinessVerificationRequest;
 import com.ucamp.app.domain.auth.dto.request.AuthLoginRequest;
 import com.ucamp.app.domain.auth.dto.request.AuthShopSignupRequest;
 import com.ucamp.app.domain.auth.dto.response.AuthShopCategoryResponse;
+import com.ucamp.app.domain.auth.dto.response.AuthShopSignupResponse;
 import com.ucamp.app.domain.auth.dto.response.AuthTokenResponse;
 import com.ucamp.app.domain.auth.entity.ShopAccount;
 import com.ucamp.app.domain.auth.repository.ShopAccountRepository;
 import com.ucamp.app.domain.shop.repository.ShopCategoryRepository;
 import com.ucamp.app.domain.user.entity.AppUser;
 import com.ucamp.app.domain.user.entity.AppUserRole;
+import com.ucamp.app.domain.user.entity.AppUserStatus;
 import com.ucamp.app.domain.user.repository.AppUserRepository;
 import com.ucamp.app.domain.user.service.TermsAgreementService;
 
@@ -77,6 +79,7 @@ public class AuthService {
         termsAgreementService.validateSignupAgreements(request.agreedTerms());
         validatePhoneAvailable(request.phone());
         phoneVerificationService.consume(request.phone(), request.phoneVerificationId());
+        releaseWithdrawnPhone(normalizeMobilePhone(request.phone()));
         AppUser user = AppUser.builder()
                 .loginId(request.loginId())
                 .passwordHash(passwordEncoder.encode(request.password()))
@@ -89,9 +92,12 @@ public class AuthService {
         return issue(saved.toAuthUser());
     }
 
-    /** 매장 정보와 함께 매장 계정으로 가입하고 바로 로그인한다. 매장 약관 동의도 같은 트랜잭션에서 저장한다. */
+    /**
+     * 매장 정보와 함께 매장 계정으로 가입 신청한다. 매장 약관 동의도 같은 트랜잭션에서 저장한다.
+     * 관리자 승인 전이라 토큰을 발급하지 않는다.
+     */
     @Transactional
-    public AuthTokenResponse signupShop(AuthShopSignupRequest request) {
+    public AuthShopSignupResponse signupShop(AuthShopSignupRequest request) {
         if (shopAccountRepository.existsByLoginId(request.loginId())) {
             throw new BusinessException(ErrorCode.AUTH_DUPLICATE_LOGIN_ID);
         }
@@ -120,7 +126,7 @@ public class AuthService {
                 .build();
         ShopAccount saved = saveShopAccount(account);
         termsAgreementService.agreeOnShopSignup(saved.getShopId(), request.agreedTerms());
-        return issue(saved.toAuthUser());
+        return AuthShopSignupResponse.from(saved);
     }
 
     /** 고객·관리자 로그인. 아이디가 없을 때와 비밀번호가 틀릴 때를 구분하지 않는다. */
@@ -137,13 +143,20 @@ public class AuthService {
     }
 
     /**
-     * 매장 계정 로그인. SHOP.STATUS 는 매장 노출·판매 여부라 계정 잠금으로 쓰지 않는다.
-     * INACTIVE 매장도 로그인해서 매장을 관리할 수 있어야 한다.
+     * 매장 계정 로그인. 관리자 승인 전(PENDING)·거절(REJECTED) 매장은 로그인할 수 없다.
+     * INACTIVE 는 노출 중지일 뿐이라 로그인해서 매장을 관리할 수 있어야 한다.
      */
     public AuthTokenResponse loginShop(AuthLoginRequest request) {
         ShopAccount account = shopAccountRepository.findByLoginId(request.loginId()).orElse(null);
         if (!matchesPassword(request.password(), account == null ? null : account.getPasswordHash())) {
             throw new BusinessException(ErrorCode.AUTH_LOGIN_FAILED);
+        }
+        // 비밀번호가 맞은 뒤에만 승인 상태를 알려 계정 존재 여부가 드러나지 않게 한다
+        switch (account.getStatus()) {
+            case PENDING -> throw new BusinessException(ErrorCode.AUTH_SHOP_PENDING);
+            case REJECTED -> throw new BusinessException(ErrorCode.AUTH_SHOP_REJECTED, rejectedMessage(account));
+            default -> {
+            }
         }
         return issue(account.toAuthUser());
     }
@@ -164,11 +177,22 @@ public class AuthService {
         };
     }
 
-    /** 고객은 번호당 계정 하나만 허용한다. 매장 가입은 번호 중복을 허용하므로 호출하지 않는다. */
+    /**
+     * 고객은 번호당 사용 중인 계정 하나만 허용한다. 탈퇴 계정의 번호는 다시 쓸 수 있다.
+     * 매장 가입은 번호 중복을 허용하므로 호출하지 않는다.
+     */
     public void validatePhoneAvailable(String phone) {
-        if (appUserRepository.existsByPhone(normalizeMobilePhone(phone))) {
+        if (appUserRepository.existsByPhoneAndStatus(normalizeMobilePhone(phone), AppUserStatus.ACTIVE)) {
             throw new BusinessException(ErrorCode.AUTH_DUPLICATE_PHONE);
         }
+    }
+
+    // Hibernate 는 flush 때 INSERT 를 UPDATE 보다 먼저 실행하므로, 번호를 비운 것을 먼저 반영해야 새 계정이 UNIQUE 에 걸리지 않는다
+    private void releaseWithdrawnPhone(String phone) {
+        appUserRepository.findByPhoneAndStatus(phone, AppUserStatus.INACTIVE).ifPresent(withdrawn -> {
+            withdrawn.releasePhone();
+            appUserRepository.flush();
+        });
     }
 
     // 계정이 없어도 같은 비용의 BCrypt 비교를 한 번 수행해 응답 시간으로 아이디 존재 여부가 드러나지 않게 한다.
@@ -181,6 +205,12 @@ public class AuthService {
             return false;
         }
         return passwordEncoder.matches(rawPassword, passwordHash);
+    }
+
+    private static String rejectedMessage(ShopAccount account) {
+        String message = ErrorCode.AUTH_SHOP_REJECTED.getMessage();
+        String reason = account.getRejectReason();
+        return reason == null || reason.isBlank() ? message : message + " 사유: " + reason;
     }
 
     private AuthTokenResponse issue(AuthUser authUser) {

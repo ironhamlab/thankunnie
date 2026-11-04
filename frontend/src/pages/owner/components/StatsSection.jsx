@@ -8,6 +8,7 @@ import {
   describeChange,
   formatAmount,
   formatAxisMoney,
+  formatCompareRange,
   formatMinutes,
   formatRate,
   formatShortDate,
@@ -29,7 +30,6 @@ import styles from './StatsSection.module.css';
 
 // 서버 최대 조회 기간(3660일)과 맞춘다
 const MAX_DAYS = 3660;
-const CHANGE_LABEL = '직전 기간 대비';
 
 const PRESETS = [
   { key: 'thisMonth', label: '이번 달', range: (today) => monthRange(today) },
@@ -77,7 +77,7 @@ const METRICS = [
 
 const describeRow = (row) =>
   [
-    `이용 ${row.completedCount}건 · ${formatMoney(row.completedAmount)}`,
+    `시술 ${row.completedCount}건 · ${formatMoney(row.completedAmount)}`,
     row.upcomingCount ? `예정 ${row.upcomingCount}건 · ${formatMoney(row.upcomingAmount)}` : null,
     `취소 ${row.cancelledCount}건`,
   ].filter(Boolean);
@@ -129,7 +129,8 @@ export default function StatsSection() {
     summary.completedCount +
       summary.upcomingCount +
       summary.customerCancelCount +
-      summary.shopFaultCancelCount ===
+      summary.shopFaultCancelCount +
+      (summary.noShowCount ?? 0) ===
       0;
   // 전체 기간은 응답의 기간을 날짜 칸에 보여 준다. 날짜를 고치면 그 날짜로 직접 조회한다
   const shown = period.all
@@ -138,6 +139,15 @@ export default function StatsSection() {
   const changeOf = (pick, options) =>
     previous ? describeChange(pick(summary), pick(previous), options) : null;
   const monthly = current?.granularity === 'MONTH';
+  // 비교한 직전 같은 길이 기간을 날짜로 적는다 (예: 10/2~10/31 대비)
+  const changeLabel = previous ? formatCompareRange(previous, today) : '';
+  // 확정 예약(이용·예정·노쇼) 중 초임박 구간(시작 3시간 이내)에 들어온 비율
+  const confirmedCount = summary
+    ? summary.completedCount + summary.upcomingCount + (summary.noShowCount ?? 0)
+    : 0;
+  const lastMinuteShare = confirmedCount
+    ? Math.round((summary.lastMinuteCount / confirmedCount) * 1000) / 10
+    : null;
 
   return (
     <section className="b-stack">
@@ -213,27 +223,27 @@ export default function StatsSection() {
         <>
           <div className={`b-stat-grid ${styles.kpis}`}>
             <StatCard
-              label="이용 추정 금액"
+              label="시술 매출 (추정)"
               value={formatAmount(summary.completedAmount)}
               unit="원"
               change={changeOf((item) => item.completedAmount)}
-              changeLabel={CHANGE_LABEL}
+              changeLabel={changeLabel}
               notes={['끝난 확정 예약 기준']}
             />
             <StatCard
-              label="이용 건수"
+              label="시술 건수"
               value={summary.completedCount}
               unit="건"
               change={changeOf((item) => item.completedCount)}
-              changeLabel={CHANGE_LABEL}
+              changeLabel={changeLabel}
             />
             <StatCard
               label="객단가"
               value={summary.averageAmount === null ? '-' : formatAmount(summary.averageAmount)}
               unit={summary.averageAmount === null ? undefined : '원'}
               change={changeOf((item) => item.averageAmount)}
-              changeLabel={CHANGE_LABEL}
-              notes={['이용 추정 금액 ÷ 건수']}
+              changeLabel={changeLabel}
+              notes={['시술 매출 ÷ 시술 건수']}
             />
             <StatCard
               label="예정 예약 금액"
@@ -248,37 +258,47 @@ export default function StatsSection() {
                 isRate: true,
                 higherIsBetter: false,
               })}
-              changeLabel={CHANGE_LABEL}
+              changeLabel={changeLabel}
               notes={[
                 `고객 취소 ${summary.customerCancelCount}건 · 매장 사유 ${summary.shopFaultCancelCount}건`,
                 `환불되지 않은 예약금 ${formatMoney(summary.nonRefundedDepositAmount)}`,
+                `노쇼 ${summary.noShowCount ?? 0}건 · 노쇼율 ${formatRate(summary.noShowRate)}`,
               ]}
             />
             <StatCard
               label="취소 후 다시 채운 시간"
               value={formatRate(summary.rebookRate)}
               change={changeOf((item) => item.rebookRate, { isRate: true })}
-              changeLabel={CHANGE_LABEL}
-              notes={[
-                `취소로 빈 ${formatMinutes(summary.cancelledMinutes)} 중 ${formatMinutes(summary.rebookedMinutes)}`,
-                `재판매 관련 예약 ${formatMoney(summary.rebookedBookingAmount)}`,
-              ]}
+              changeLabel={changeLabel}
+              notes={
+                summary.cancelledMinutes > 0
+                  ? [
+                      `취소로 빈 ${formatMinutes(summary.cancelledMinutes)} 중 ${formatMinutes(summary.rebookedMinutes)}을 다시 채웠어요`,
+                      `그 시간에 다시 들어온 예약 ${formatMoney(summary.rebookedBookingAmount)}`,
+                    ]
+                  : ['이 기간에는 취소로 빈 시간이 없었어요']
+              }
             />
             <StatCard
               label="재방문율"
               value={formatRate(summary.revisitRate)}
               change={changeOf((item) => item.revisitRate, { isRate: true })}
-              changeLabel={CHANGE_LABEL}
+              changeLabel={changeLabel}
               notes={[
                 `이용 고객 ${summary.customerCount}명 · 신규 ${summary.newCustomerCount} · 재방문 ${summary.returningCustomerCount}`,
               ]}
               action={<Link to={ROUTES.OWNER_CUSTOMERS}>고객 관리 →</Link>}
             />
             <StatCard
-              label="막판 예약"
+              label="초임박 예약 매출"
               value={formatAmount(summary.lastMinuteAmount)}
               unit="원"
-              notes={[`시작 3시간 이내 점유 ${summary.lastMinuteCount}건`]}
+              change={changeOf((item) => item.lastMinuteAmount)}
+              changeLabel={changeLabel}
+              notes={[
+                `시술 시작 3시간 내 예약 ${summary.lastMinuteCount}건 · 전체의 ${formatRate(lastMinuteShare)}`,
+              ]}
+              action={<Link to={ROUTES.OWNER_MENUS}>초임박가 설정 →</Link>}
             />
           </div>
 
@@ -322,8 +342,8 @@ export default function StatsSection() {
                   <thead>
                     <tr>
                       <th>{monthly ? '기간' : '날짜'}</th>
-                      <th>이용</th>
-                      <th>이용 추정 금액</th>
+                      <th>시술</th>
+                      <th>시술 매출 (추정)</th>
                       <th>예정</th>
                       <th>취소</th>
                     </tr>
@@ -351,7 +371,7 @@ export default function StatsSection() {
           <div className={styles.twoColumns}>
             <Panel as="section" padded className="b-stack">
               <h2>요일별 예약</h2>
-              <WeekdayBars weekdays={current.byWeekday} />
+              <WeekdayBars weekdays={current.byWeekday} from={summary.from} to={summary.to} />
             </Panel>
             <Panel as="section" padded className="b-stack">
               <h2>시술별 비중</h2>
@@ -366,13 +386,19 @@ export default function StatsSection() {
           <Panel as="section" padded className="b-stack">
             <h2>예약이 차 있는 시간</h2>
             {current.heatmap.length ? (
-              <OccupancyHeatmap cells={current.heatmap} />
+              <OccupancyHeatmap
+                // 기간을 바꾸면 고른 칸을 그 기간의 가장 바쁜 시간으로 다시 잡는다
+                key={`${summary.from}-${summary.to}`}
+                cells={current.heatmap}
+                from={summary.from}
+                to={summary.to}
+              />
             ) : (
               <EmptyState as="p">이 기간에 확정된 예약이 없습니다.</EmptyState>
             )}
             <p className={styles.hint}>
-              예약 시간을 시간대별로 나눠 더한 값이에요. 13:30~15:00 예약은 13시에 30분, 14시에
-              60분으로 들어가요.
+              색은 그 시간대 1시간 중 예약이 찬 비율(평균)이에요. 칸을 누르면 숫자를 볼 수 있어요.
+              기간 안 모든 날짜 기준이라 휴무일이 있으면 실제보다 조금 낮게 나와요.
             </p>
           </Panel>
         </>

@@ -116,7 +116,7 @@
 | `nonRefundedDepositAmount` | 취소 완료 건의 (납부 예약금 − 환불액) 합계. 수수료·정산 전 금액이라 "번 돈"과 다르다 | 환불되지 않은 예약금 |
 | `cancelledMinutes`, `rebookedMinutes`, `rebookRate` | 취소로 비었던 시간(분), 그중 다시 채운 시간(분), 회수율(%) | 취소 후 다시 채운 시간 |
 | `rebookedBookingAmount` | 비었던 시간에 다시 들어온 확정 예약의 적용가 합계. 겹친 예약 전체 금액이라 손실 회수액과 같지 않다 | 재판매 관련 예약 금액 |
-| `lastMinuteCount`, `lastMinuteAmount` | 시작 3시간 이내에 점유한 확정 예약 건수·금액 | 막판 예약 |
+| `lastMinuteCount`, `lastMinuteAmount` | 시작 3시간 이내(초임박가 구간)에 점유한 확정 예약 건수·금액 | 초임박 예약 매출 |
 | `customerCount` | 기간 안에 이용한 고객 수 | 이용 고객 |
 | `newCustomerCount`, `returningCustomerCount` | 그중 기간 끝 시점까지 이 매장 누적 이용이 1회인 고객 / 2회 이상인 고객 | 신규 / 재방문 |
 | `revisitRate` | 재방문 ÷ 이용 고객 × 100. 이용 고객이 없으면 `null` | 재방문율 |

@@ -1,0 +1,151 @@
+/* 약관 동의 창(TermsAgreementDialog)과 같은 틀에 탈퇴 안내라 위 테두리만 경고색으로 둔다 */
+.dialog {
+  border: 0;
+  border-top: 4px solid var(--color-danger);
+  width: min(440px, calc(100vw - 32px));
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--color-danger) 12%, transparent);
+}
+
+.dialog :global(.b-pad) {
+  padding: 22px 22px 18px;
+  background: var(--color-white);
+}
+
+.dialog :global(.b-panel-heading) {
+  justify-content: center;
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.dialog h2 {
+  font-size: 17px;
+  line-height: 1.45;
+  text-align: center;
+  word-break: keep-all;
+  padding-inline: 8px;
+}
+
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.badge {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.badgeDone {
+  background: linear-gradient(160deg, var(--color-primary-soft), var(--color-primary-faint));
+  color: var(--color-primary-text);
+}
+
+/* Dialog 공통의 .root p 여백보다 구체적으로 잡는다 */
+.root .description {
+  margin: 0;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.content {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+}
+
+.content ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--color-text-secondary);
+  word-break: keep-all;
+}
+
+.content li + li {
+  margin-top: 4px;
+}
+
+.agree {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agree:has(input:checked) {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.agree input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  /* 공통 입력칸 여백(.beauty-app input)이 체크박스까지 키우지 않게 한다 */
+  padding: 0;
+  accent-color: var(--color-danger);
+}
+
+.password {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.password input {
+  width: 100%;
+}
+
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+}
+
+.root .error p {
+  margin: 0;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.actions :global(.b-button) {
+  width: 100%;
+  justify-content: center;
+  /* 공통 .b-danger 의 위 여백(margin-top)이 탈퇴 버튼만 밀어내지 않게 한다 */
+  margin: 0;
+}

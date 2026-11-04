@@ -1,5 +1,7 @@
 # Figma 디자인 구현 — 이슈 #23
 
+> 이 문서는 이슈 #23 시안 작업 기록입니다. 시연 데이터·상태(`useDesignStore`, `demoData.js`, `demoRefundPolicy.js`), 예전 예약 화면(`/reserve/:id`)과 Figma 에셋(`Asset`, `src/assets/figma`)은 UNNIE-207에서 삭제했습니다. 아래 시연 관련 설명은 당시 기준입니다.
+
 ## 실행
 
 ```sh
@@ -17,9 +19,7 @@ npm run dev
 | `src/pages/reservation/`                                 | 일반 예약·결제·결과                                     |
 | `src/pages/my/`                                          | 내 예약·프로필                                          |
 | `src/pages/owner/`                                       | 매장 센터 화면 (`components/`: 시술 폼·영업시간 패널) |
-| `src/components/common/`                                 | `Dialog`, `Asset`(Figma 에셋)                           |
-| `src/store/useDesignStore.js`                            | 시연 상태                                               |
-| `src/utils/demoData.js`, `src/utils/demoRefundPolicy.js` | 시연 데이터·환불 시연 계산                              |
+| `src/components/common/`                                 | `Dialog`                                                |
 | `src/assets/styles/`                                     | `global.css`(디자인 토큰), `design.css`(공통 클래스)    |
 
 ## 구현 화면
@@ -31,7 +31,6 @@ npm run dev
 | `/`                | 날짜·시술·지역·시간 필터 및 빈자리 카드 | `8:3`                |
 | `/?view=map`       | 동일한 검색 결과의 지도·목록 보기       | `18:3548` 기반       |
 | `/?sale=1`         | 오늘 시작하는 할인 빈자리만 표시        | 통합 탐색 필터       |
-| `/reserve/nail`    | 일반 예약 날짜·시간 선택                | `32:2`               |
 | `/checkout`        | 임시 확보·약관 동의·모의 결제           | `8:4`                |
 | `/bookings`        | (데모) 내 예약·상세·취소 및 모의 환불   | `8:8`                |
 | `/my-reservations` | (실제 API) 내 예약 목록·상세            | `8:8` 기반           |
@@ -45,7 +44,7 @@ npm run dev
 | `/owner/slots/new` | 별도 빈자리 즉시 등록 페이지            | `18:3220` (제공 PNG) |
 | `/profile`         | 고객 프로필·예약·찜·알림 설정           | `32:467` (제공 PNG)  |
 
-데스크톱의 3열 카드 및 사이드바 레이아웃은 작은 화면에서 재배치됩니다. Figma 원본 이미지와 SVG는 `src/assets/figma`에 저장했으며 임시 다운로드 URL을 실행 코드에서 사용하지 않습니다. SVG의 원본 크기는 유지하고 지도 도로 레이어는 원본 좌표에 맞춰 조합했습니다. 웹폰트 파일이 제공되지 않아 로컬 `Noto Sans KR`, `Malgun Gothic`, 시스템 폰트 순으로 표시합니다.
+데스크톱의 3열 카드 및 사이드바 레이아웃은 작은 화면에서 재배치됩니다. SVG의 원본 크기는 유지하고 지도 도로 레이어는 원본 좌표에 맞춰 조합했습니다. 웹폰트 파일이 제공되지 않아 로컬 `Noto Sans KR`, `Malgun Gothic`, 시스템 폰트 순으로 표시합니다.
 
 ## 시연 범위와 API 연결 지점
 

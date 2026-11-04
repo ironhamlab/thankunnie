@@ -28,7 +28,8 @@ import com.ucamp.app.common.entity.BaseTimeEntity;
  * 매장 로그인 계정. SHOP 테이블에 매장 정보와 함께 있으며, 매장 프로필은 shop 도메인의 Shop 이 관리한다.
  *
  * <p>가입 시 SHOP 의 필수 컬럼을 한 번에 넣어야 해서 프로필 컬럼도 매핑한다. 가입 후 프로필 수정은 Shop 으로만 한다.
- * STATUS 는 가입 시 ACTIVE 로 넣기만 하고 로그인 판단에는 쓰지 않는다 (매장 노출·판매 여부).
+ * STATUS 는 가입 시 PENDING(승인 대기)으로 넣고 관리자가 승인하면 ACTIVE 가 된다.
+ * 승인 대기·거절 매장은 로그인할 수 없다 (AuthService.loginShop).
  * 대표 이미지(IMAGE_URL)는 이미지 API 가 관리하므로 매핑하지 않고, 가입 시 null 로 남는다.
  */
 @Entity
@@ -111,7 +112,7 @@ public class ShopAccount extends BaseTimeEntity {
         this.phone = phone;
         this.description = description;
         this.notice = notice;
-        this.status = ShopAccountStatus.ACTIVE;
+        this.status = ShopAccountStatus.PENDING;
     }
 
     /** 가입을 승인해 매장을 노출 상태로 바꾼다. 승인 대기 여부는 호출한 쪽이 먼저 확인한다. */

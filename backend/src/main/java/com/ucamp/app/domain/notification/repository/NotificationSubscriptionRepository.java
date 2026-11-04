@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -147,4 +148,17 @@ public interface NotificationSubscriptionRepository extends JpaRepository<Notifi
     List<NotificationSubscription> findNotifiableByCategoryRegion(@Param("categoryId") Long categoryId,
             @Param("regionCode") String regionCode, @Param("slotStartTime") LocalDateTime slotStartTime,
             @Param("now") LocalDateTime now);
+
+    /**
+     * 한 회원의 사용 중인 구독을 모두 해제한다. 회원 탈퇴 뒤 빈자리 알림 대상이 되지 않게 한다.
+     *
+     * @param userId 회원 ID
+     * @param now    수정 시각
+     * @return 해제한 구독 수
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE NotificationSubscription s"
+            + " SET s.status = com.ucamp.app.domain.notification.entity.SubscriptionStatus.INACTIVE, s.updatedAt = :now"
+            + " WHERE s.userId = :userId AND s.status = " + ACTIVE)
+    int deactivateAllByUserId(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 }

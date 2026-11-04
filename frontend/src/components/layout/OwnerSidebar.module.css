@@ -100,10 +100,10 @@
   .brand strong {
     font-size: 20px;
   }
-  /* 메뉴가 두 줄로 나뉘지 않게 네 칸을 같은 너비로 둔다. 아이콘 위·글자 아래 */
+  /* 메뉴가 두 줄로 나뉘지 않게 다섯 칸을 같은 너비로 둔다. 아이콘 위·글자 아래 */
   .root nav {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 4px;
   }
   .root nav a {
