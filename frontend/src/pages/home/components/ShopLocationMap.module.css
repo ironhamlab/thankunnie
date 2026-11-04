@@ -52,7 +52,7 @@
   font-weight: 700;
 }
 /* 핀과 같은 모양의 점. 초임박은 주황 채움, 오늘은 주황 테두리, 다른 날은 진한 회색 테두리,
-   빈자리 없음은 점선 테두리에 회색 바탕이라 다른 날과 구분된다 */
+   빈자리 없음은 점선 테두리라 다른 날과 구분된다 */
 .legendDot {
   width: 8px;
   height: 8px;
@@ -67,8 +67,7 @@
   border-color: var(--color-text-secondary);
 }
 .legendDot.none {
-  border: 1.5px dashed var(--color-text-muted);
-  background: var(--color-border);
+  border: 1.5px dashed var(--color-text-secondary);
 }
 .legendDot.model {
   border-color: var(--color-success);

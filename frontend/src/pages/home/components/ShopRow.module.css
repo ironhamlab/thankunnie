@@ -381,9 +381,15 @@
 .noVacancy .thumb {
   opacity: 0.6;
 }
+/* 빈자리 없음 안내는 회색 알약으로 둬 흐린 글자보다 눈에 띄게 한다 */
 .none {
-  color: var(--color-text-muted);
+  width: fit-content;
+  padding: 2px 8px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
   font-size: 12px;
+  font-weight: 600;
 }
 /* 지도 핀과 같은 색 띠. 초임박·오늘은 주황, 다른 날은 회색, 초보 시술은 초록이다 */
 .root[data-pin]::before {
