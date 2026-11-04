@@ -7,6 +7,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import org.springframework.stereotype.Service;
@@ -57,6 +58,8 @@ import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 public class ReservationQueueService {
 
     private final ConcurrentHashMap<SlotKey, ReservationQueue> queues = new ConcurrentHashMap<>();
+    /** 모든 줄이 함께 쓰는 번호표 순번. 겹치는 시간의 서로 다른 줄끼리 누가 먼저 섰는지 비교한다 */
+    private final AtomicLong tickets = new AtomicLong();
     private final ReservationRepository reservationRepository;
     private final TreatmentRepository treatmentRepository;
     private final AvailabilityService availabilityService;
@@ -234,6 +237,11 @@ public class ReservationQueueService {
         return before - queues.size();
     }
 
+    /** 모든 줄을 비운다. 줄은 메모리에 남아 겹치는 시간을 쓰는 다음 테스트를 막을 수 있어, 테스트 정리에서만 쓴다 */
+    void clearQueues() {
+        queues.clear();
+    }
+
     /**
      * 같은 매장에서 이 시간과 겹치는 다른 시간의 줄에, 나보다 먼저 선 사람이 아직 기다리고 있는지.
      *
@@ -255,7 +263,7 @@ public class ReservationQueueService {
     private ReservationQueue acquire(SlotKey key, LocalDateTime now) {
         return queues.compute(key, (k, queue) -> {
             if (queue == null) {
-                return new ReservationQueue(now);
+                return new ReservationQueue(now, tickets::incrementAndGet);
             }
             queue.touch(now);
             return queue;

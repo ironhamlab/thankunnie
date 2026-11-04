@@ -58,17 +58,17 @@ public class PaymentStartService {
         // 결제창을 연 뒤 확정에 실패하면 자동 취소해야 하므로, 열 수 없는 예약은 여기서 먼저 돌려보낸다
         reservationService.validatePayable(loginUser.userId(), reservationId);
         LocalDateTime now = LocalDateTime.now(clock);
-        removeTimedOut(now);
+        // 판단은 한 예약 단위로 원자적으로 하고, 막힌 경우의 예외는 맵 갱신이 끝난 뒤 밖에서 던진다
         Attempt attempt = attempts.compute(reservationId, (id, current) -> {
-            if (current != null && current.isActive(now)) {
-                if (!current.isOf(loginUser.userId(), request.tabId())) {
-                    throw new BusinessException(ErrorCode.PAYMENT_IN_PROGRESS);
-                }
-                // 같은 탭이 다시 시도하면 주문번호는 그대로 두고 시간만 새로 센다
-                return new Attempt(current.userId(), current.tabId(), current.merchantUid(), now);
+            if (current == null || !current.isActive(now)) {
+                return new Attempt(loginUser.userId(), request.tabId(), newMerchantUid(id), now);
             }
-            return new Attempt(loginUser.userId(), request.tabId(), newMerchantUid(id), now);
+            // 같은 탭이 다시 시도하면 주문번호는 그대로 두고 시간만 새로 센다. 다른 탭의 결제는 건드리지 않는다
+            return current.isOf(loginUser.userId(), request.tabId()) ? current.restartedAt(now) : current;
         });
+        if (!attempt.isOf(loginUser.userId(), request.tabId())) {
+            throw new BusinessException(ErrorCode.PAYMENT_IN_PROGRESS);
+        }
         return new PaymentStartResponse(attempt.merchantUid());
     }
 
@@ -92,9 +92,21 @@ public class PaymentStartService {
         attempts.computeIfPresent(reservationId, (id, current) -> current.userId().equals(userId) ? null : current);
     }
 
-    // 탭을 닫아 중단 알림이 오지 않은 결제가 메모리에 쌓이지 않게 한다
-    private void removeTimedOut(LocalDateTime now) {
+    /**
+     * 탭을 닫아 중단 알림이 오지 않은 결제 시작을 지운다. 메모리에 쌓이지 않도록 주기 작업에서 부른다.
+     * 시간이 지난 기록은 지우기 전에도 start 가 새 결제로 덮어쓰므로, 이 정리는 결제 동작에는 영향을 주지 않는다.
+     *
+     */
+    public void sweepTimedOut() {
+        LocalDateTime now = LocalDateTime.now(clock);
+        // ConcurrentHashMap 의 values().removeIf 는 확인한 값이 그대로일 때만 지운다.
+        // 그사이 같은 탭이 다시 시작해 기록이 바뀌었으면 지우지 않는다
         attempts.values().removeIf(attempt -> !attempt.isActive(now));
+    }
+
+    // 테스트에서 정리 결과를 확인한다
+    int attemptCount() {
+        return attempts.size();
     }
 
     // 결제 확인은 앞부분(reservation-{예약 ID}-)으로 결제와 예약의 짝을 맞춘다 (PaymentService.merchantUidPrefix)
@@ -107,6 +119,10 @@ public class PaymentStartService {
 
         boolean isActive(LocalDateTime now) {
             return now.isBefore(startedAt.plus(ATTEMPT_TIMEOUT));
+        }
+
+        Attempt restartedAt(LocalDateTime now) {
+            return new Attempt(userId, tabId, merchantUid, now);
         }
 
         boolean isOf(Long otherUserId, String otherTabId) {

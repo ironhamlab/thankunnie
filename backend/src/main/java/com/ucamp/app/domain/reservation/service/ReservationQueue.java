@@ -8,7 +8,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongSupplier;
 
 import com.ucamp.app.domain.vacancy.policy.SalePolicy;
 
@@ -27,11 +27,6 @@ final class ReservationQueue {
     /** 같은 줄의 여러 사람이 순서를 물어도 빈자리 상태는 이 시간에 한 번만 DB 에서 읽는다 */
     static final Duration STATE_CACHE_TTL = Duration.ofSeconds(1);
 
-    /**
-     * 모든 줄이 함께 쓰는 번호표 순번. 겹치는 시간의 서로 다른 줄끼리 누가 먼저 섰는지 비교하는 데 쓴다.
-     */
-    private static final AtomicLong TICKETS = new AtomicLong();
-
     /** 회원 ID → 마지막으로 순서를 물은 시각. 넣은 순서가 줄 순서다 */
     private final LinkedHashMap<Long, LocalDateTime> lastSeenByUser = new LinkedHashMap<>();
     /** 회원 ID → 줄에 처음 섰을 때 받은 번호표 */
@@ -41,9 +36,15 @@ final class ReservationQueue {
     private SlotState cachedState;
     private LocalDateTime stateCheckedAt;
     private LocalDateTime lastAccessedAt;
+    /**
+     * 모든 줄이 함께 쓰는 번호표 발급기. 겹치는 시간의 서로 다른 줄끼리 누가 먼저 섰는지 비교하는 데 쓰므로
+     * 줄마다 따로 세지 않고 줄을 만드는 쪽(ReservationQueueService)이 하나를 나눠 준다.
+     */
+    private final LongSupplier tickets;
 
-    ReservationQueue(LocalDateTime now) {
+    ReservationQueue(LocalDateTime now, LongSupplier tickets) {
         this.lastAccessedAt = now;
+        this.tickets = tickets;
     }
 
     synchronized void touch(LocalDateTime now) {
@@ -81,7 +82,7 @@ final class ReservationQueue {
         prune(now);
         // 이미 있는 키에 다시 넣으면 LinkedHashMap 은 순서를 바꾸지 않는다
         lastSeenByUser.put(userId, now);
-        ticketByUser.computeIfAbsent(userId, id -> TICKETS.incrementAndGet());
+        ticketByUser.computeIfAbsent(userId, id -> tickets.getAsLong());
         int aheadCount = indexOf(userId);
         if (held) {
             // 앞사람이 결제 중이면 아무도 차례가 아니다. 점유가 풀리면 맨 앞 사람의 차례가 새로 시작된다

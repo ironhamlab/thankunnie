@@ -10,7 +10,6 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -33,7 +32,6 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -144,7 +142,7 @@ class ReservationConcurrencyTest {
     @AfterEach
     void tearDown() {
         // 줄은 서버 메모리에 15초 동안 남아, 겹치는 시간을 쓰는 다음 테스트를 막을 수 있으므로 비운다
-        ((Map<?, ?>) ReflectionTestUtils.getField(reservationQueueService, "queues")).clear();
+        reservationQueueService.clearQueues();
         jdbc.update("DELETE FROM RESERVATION WHERE TREATMENT_ID IN (?, ?)", TREATMENT_A, TREATMENT_B);
         jdbc.update("DELETE FROM SHOP_SCHEDULE_EXCEPTION WHERE SHOP_ID = ?", SHOP_ID);
         jdbc.update("DELETE FROM TREATMENT WHERE TREATMENT_ID IN (?, ?)", TREATMENT_A, TREATMENT_B);

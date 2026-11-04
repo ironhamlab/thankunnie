@@ -19,6 +19,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -125,6 +129,45 @@ class PaymentStartServiceTest {
         clock.advance(Duration.ofMinutes(2));
 
         assertInProgress(() -> service.start(CUSTOMER, request("tab-2")));
+    }
+
+    @Test
+    @DisplayName("다른 탭이 막혀도 결제 중인 탭의 주문번호와 3분 시간은 그대로다")
+    void start_blockedTab_leavesInProgressAttemptUntouched() {
+        String first = service.start(CUSTOMER, request("tab-1")).merchantUid();
+        clock.advance(Duration.ofMinutes(2));
+
+        assertInProgress(() -> service.start(CUSTOMER, request("tab-2")));
+
+        // 막힌 시도가 시간을 새로 세지 않았으면 처음 시작에서 3분 뒤 다른 탭이 이어받는다
+        clock.advance(Duration.ofMinutes(1));
+        assertThat(service.start(CUSTOMER, request("tab-2")).merchantUid()).isNotEqualTo(first);
+    }
+
+    @Test
+    @DisplayName("주기 정리는 3분이 지난 결제 시작만 지우고 진행 중인 것은 남긴다")
+    void sweepTimedOut_removesOnlyTimedOut() {
+        service.start(CUSTOMER, request("tab-1"));
+        clock.advance(PaymentStartService.ATTEMPT_TIMEOUT);
+        service.start(OTHER, new PaymentStartRequest(RESERVATION_ID + 1, "tab-9"));
+
+        service.sweepTimedOut();
+
+        assertThat(service.attemptCount()).isEqualTo(1);
+        assertInProgress(() -> service.start(CUSTOMER, new PaymentStartRequest(RESERVATION_ID + 1, "tab-1")));
+    }
+
+    @Test
+    @DisplayName("탭 값은 영문·숫자·하이픈만 받는다. 돌아올 주소에 실리므로 다른 문자는 요청 검증에서 막는다")
+    void request_tabIdPattern() {
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            Validator validator = factory.getValidator();
+
+            assertThat(validator.validate(request("8f0c2c1e-0b7a-4c43-9d55-3f1a2b4c5d6e"))).isEmpty();
+            assertThat(validator.validate(request("1730700000000-k3j2h1"))).isEmpty();
+            assertThat(validator.validate(request("tab&next=/evil"))).isNotEmpty();
+            assertThat(validator.validate(request("a".repeat(65)))).isNotEmpty();
+        }
     }
 
     @Test
