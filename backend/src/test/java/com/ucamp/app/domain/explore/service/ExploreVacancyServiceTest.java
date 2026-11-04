@@ -273,6 +273,62 @@ class ExploreVacancyServiceTest {
     }
 
     @Test
+    @DisplayName("결제 중인 점유는 매장 빈자리 수에서만 빠지고 메인 합계는 그대로다")
+    void searchShops_holdOccupancy_keepsTotalVacancyCount() {
+        reserve("HOLD", NOW.plusMinutes(5));
+
+        ExploreShopResponse shop = shopOne();
+
+        // 20~21시 점유로 20:00·20:30 시작 시각이 막힌다 (19:30 은 30분 시술로 가능)
+        assertThat(shop.vacancyCount()).isEqualTo(SHOP_ONE_TIMES - 2);
+        assertThat(shop.totalVacancyCount()).isEqualTo(SHOP_ONE_TIMES);
+    }
+
+    @Test
+    @DisplayName("결제가 끝나 예약이 확정되면 메인 합계도 줄어든다")
+    void searchShops_confirmedReservation_reducesTotalVacancyCount() {
+        reserve("CONFIRMED", NOW);
+
+        ExploreShopResponse shop = shopOne();
+
+        assertThat(shop.vacancyCount()).isEqualTo(SHOP_ONE_TIMES - 2);
+        assertThat(shop.totalVacancyCount()).isEqualTo(SHOP_ONE_TIMES - 2);
+    }
+
+    @Test
+    @DisplayName("점유 시간이 지나면 어느 빈자리 수도 줄지 않는다")
+    void searchShops_expiredHold_countsAsVacant() {
+        reserve("HOLD", NOW.minusMinutes(1));
+
+        ExploreShopResponse shop = shopOne();
+
+        assertThat(shop.vacancyCount()).isEqualTo(SHOP_ONE_TIMES);
+        assertThat(shop.totalVacancyCount()).isEqualTo(SHOP_ONE_TIMES);
+    }
+
+    @Test
+    @DisplayName("결제 중인 시각은 빈자리 목록에는 나오지 않는다")
+    void search_holdOccupancy_excludedFromList() {
+        reserve("HOLD", NOW.plusMinutes(5));
+
+        assertThat(exploreVacancyService.search(request().shopId(1L).page(0, 50).build()).content())
+                .extracting(ExploreVacancyResponse::vacancyId)
+                .doesNotContain("2-202611062000", "2-202611062030");
+    }
+
+    private void reserve(String status, LocalDateTime holdExpiresAt) {
+        jdbcTemplate.update("""
+                INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT,
+                                         APPLIED_PRICE, DEPOSIT, HOLD_EXPIRES_AT, CREATED_AT, UPDATED_AT)
+                VALUES (900, 1, 1, ?, ?, ?, 30000, 20000, ?, ?, ?)
+                """, status, NOW.withHour(20), NOW.withHour(21), holdExpiresAt, NOW, NOW);
+    }
+
+    private ExploreShopResponse shopOne() {
+        return exploreVacancyService.searchShops(request().build().filter()).shops().get(0);
+    }
+
+    @Test
     @DisplayName("다른 예약이 잡은 시간과 겹치는 시각은 빠진다")
     void search_reservedTime_excludesOverlappingStarts() {
         jdbcTemplate.update("""

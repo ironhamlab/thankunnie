@@ -151,6 +151,31 @@ public class AvailabilityService {
         public List<LocalDateTime> startTimes(Long shopId, LocalDate date, int durationMinutes) {
             requirePositive(durationMinutes);
             Duration duration = Duration.ofMinutes(durationMinutes);
+            Schedule schedule = schedule(shopId, date, duration);
+            return AvailabilityCalculator.availableStartTimes(
+                    date, duration, schedule.openRanges(), schedule.blockedRanges(), now);
+        }
+
+        /**
+         * 결제 대기 점유(HOLD) 때문에만 지금 시작할 수 없는 시각. 일부만 겹치는 시각도 담는다.
+         * 메인 "이번 주 빈자리"처럼 결제가 끝나 예약이 확정되어야 줄어드는 집계에 쓴다.
+         */
+        public List<LocalDateTime> heldOnlyStartTimes(Long shopId, LocalDate date, int durationMinutes) {
+            requirePositive(durationMinutes);
+            Duration duration = Duration.ofMinutes(durationMinutes);
+            Schedule schedule = schedule(shopId, date, duration);
+            if (schedule.holdRanges().isEmpty()) {
+                return List.of();
+            }
+            List<LocalDateTime> startTimes = AvailabilityCalculator.availableStartTimes(
+                    date, duration, schedule.openRanges(), schedule.blockedRanges(), now);
+            return AvailabilityCalculator.availableStartTimes(
+                            date, duration, schedule.openRanges(), schedule.blockedRangesWithoutHolds(), now).stream()
+                    .filter(start -> !startTimes.contains(start))
+                    .toList();
+        }
+
+        private Schedule schedule(Long shopId, LocalDate date, Duration duration) {
             LocalDateTime from = date.atStartOfDay();
             LocalDateTime to = date.plusDays(1).atStartOfDay().plus(duration);
             List<ShopScheduleException> exceptions = exceptionsByShop.getOrDefault(shopId, List.of()).stream()
@@ -159,10 +184,7 @@ public class AvailabilityService {
             List<Occupancy> occupancies = occupanciesByShop.getOrDefault(shopId, List.of()).stream()
                     .filter(occupancy -> occupancy.startsAt().isBefore(to) && occupancy.endsAt().isAfter(from))
                     .toList();
-            Schedule schedule = toSchedule(hoursByShop.getOrDefault(shopId, List.of()), exceptions, occupancies,
-                    from, to, now);
-            return AvailabilityCalculator.availableStartTimes(
-                    date, duration, schedule.openRanges(), schedule.blockedRanges(), now);
+            return toSchedule(hoursByShop.getOrDefault(shopId, List.of()), exceptions, occupancies, from, to, now);
         }
     }
 
