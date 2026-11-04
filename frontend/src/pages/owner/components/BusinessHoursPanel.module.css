@@ -21,6 +21,37 @@
   margin: 0;
   padding: 0;
 }
+/* 요일 줄이 월요일부터 이어서 나타난다 */
+.days > li {
+  animation: dayEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.days > li:nth-child(2) {
+  animation-delay: 0.04s;
+}
+.days > li:nth-child(3) {
+  animation-delay: 0.08s;
+}
+.days > li:nth-child(4) {
+  animation-delay: 0.12s;
+}
+.days > li:nth-child(5) {
+  animation-delay: 0.16s;
+}
+.days > li:nth-child(n + 6) {
+  animation-delay: 0.2s;
+}
+@keyframes dayEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .days > li,
+  .days > li:nth-child(n) {
+    animation: none;
+  }
+}
 /* 요일·영업 여부·시간을 한 줄에 모아 넓은 화면에서도 시작~종료가 멀어지지 않게 한다 */
 .day {
   display: grid;

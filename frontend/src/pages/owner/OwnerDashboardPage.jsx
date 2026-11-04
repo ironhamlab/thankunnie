@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { ownerReservationStatusOf } from '@/constants/reservationStatus';
+import { useSlidingIndicator } from '@/hooks/useSlidingIndicator';
 import { useOwnerDashboardStore } from '@/store/useOwnerDashboardStore';
 import { useShopStore } from '@/store/useShopStore';
 import {
@@ -17,7 +18,9 @@ import Alert from '@/components/common/Alert';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import Panel from '@/components/common/Panel';
+import SlidingIndicator from '@/components/common/SlidingIndicator';
 import Spinner from '@/components/common/Spinner';
+import NudgeArrow from './components/NudgeArrow';
 import RepresentativeImage from './components/RepresentativeImage';
 import StatCard from './components/StatCard';
 import StatsSection from './components/StatsSection';
@@ -36,6 +39,7 @@ export default function OwnerDashboardPage() {
   const shop = useShopStore((state) => state.shop);
   const [searchParams, setSearchParams] = useSearchParams();
   const view = searchParams.get('view') === 'stats' ? 'stats' : 'today';
+  const tabIndicator = useSlidingIndicator(view);
 
   const selectView = (key) => {
     setSearchParams(key === 'today' ? {} : { view: key }, { replace: true });
@@ -58,15 +62,17 @@ export default function OwnerDashboardPage() {
             </div>
           </div>
           <Button as={Link} variant="primary" to={ROUTES.OWNER_SHOP}>
-            매장 정보 관리 →
+            매장 정보 관리 <NudgeArrow />
           </Button>
         </Panel>
       )}
 
       <div className={styles.tabs} role="tablist" aria-label="운영 현황 보기">
+        <SlidingIndicator indicator={tabIndicator} className={styles.tabIndicator} />
         {VIEWS.map((item) => (
           <button
             key={item.key}
+            ref={view === item.key ? tabIndicator.selectedRef : null}
             type="button"
             role="tab"
             id={`owner-view-${item.key}`}
@@ -79,7 +85,13 @@ export default function OwnerDashboardPage() {
         ))}
       </div>
 
-      <div role="tabpanel" id={`owner-panel-${view}`} aria-labelledby={`owner-view-${view}`}>
+      {/* 탭을 바꾸면 내용이 통째로 바뀌므로 새로 그려 다시 올라오게 한다 */}
+      <div
+        key={view}
+        role="tabpanel"
+        id={`owner-panel-${view}`}
+        aria-labelledby={`owner-view-${view}`}
+      >
         {view === 'today' ? (
           <TodayView onOpenStats={() => selectView('stats')} />
         ) : (
@@ -133,7 +145,7 @@ function TodayView({ onOpenStats }) {
           <p>최근 1년 금액, 피크 요일·시간, 신규·재방문 고객을 확인해 보세요.</p>
         </div>
         <Button type="button" variant="soft" onClick={onOpenStats}>
-          매출·예약 분석 보기 →
+          매출·예약 분석 보기 <NudgeArrow />
         </Button>
       </Panel>
     </div>
@@ -185,7 +197,11 @@ function TodayCards({ dashboard, monthSummary, todayReservations }) {
         label="내일 확정 예약"
         value={dashboard.tomorrowConfirmedCount}
         unit="건"
-        action={<Link to={ROUTES.OWNER_BOOKINGS}>예약 관리 →</Link>}
+        action={
+          <Link to={ROUTES.OWNER_BOOKINGS}>
+            예약 관리 <NudgeArrow />
+          </Link>
+        }
       />
       <StatCard
         label="이번 달 시술 매출"
@@ -210,7 +226,11 @@ function TodayCards({ dashboard, monthSummary, todayReservations }) {
         value={dashboard.favoriteCustomerCount}
         unit="명"
         notes={['빈자리를 열면 알림을 받아요']}
-        action={<Link to={ROUTES.OWNER_VACANCIES}>빈자리 열기 →</Link>}
+        action={
+          <Link to={ROUTES.OWNER_VACANCIES}>
+            빈자리 열기 <NudgeArrow />
+          </Link>
+        }
       />
     </div>
   );
@@ -224,7 +244,11 @@ function TodayAvailableCard({ today }) {
         label="오늘 남은 빈 시간"
         value="휴무"
         notes={['오늘은 예약받는 시간이 없어요']}
-        action={<Link to={ROUTES.OWNER_SCHEDULE}>영업시간 설정하기 →</Link>}
+        action={
+          <Link to={ROUTES.OWNER_SCHEDULE}>
+            영업시간 설정하기 <NudgeArrow />
+          </Link>
+        }
       />
     );
   }
@@ -264,7 +288,9 @@ function TodayReservations({ reservations, status, onRetry }) {
     <Panel as="section" padded className="b-stack">
       <div className="b-row">
         <h2>오늘 예약</h2>
-        <Link to={ROUTES.OWNER_BOOKINGS}>예약 관리에서 전체 보기 →</Link>
+        <Link to={ROUTES.OWNER_BOOKINGS}>
+          예약 관리에서 전체 보기 <NudgeArrow />
+        </Link>
       </div>
       {status === 'failed' && (
         <LoadError message="오늘 예약을 불러오지 못했어요." onRetry={onRetry} />

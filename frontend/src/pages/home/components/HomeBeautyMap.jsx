@@ -9,7 +9,7 @@ import styles from './HomeBeautyMap.module.css';
 // 아래쪽 매장 패널과 위쪽 도구 막대에 핀이 가리지 않게 범위를 맞출 때 여백을 넓게 둔다
 const MAP_BOUNDS_PADDING = { top: 70, right: 70, bottom: 120, left: 50 };
 
-// 임박 빈자리 카드를 지도 핀 모양으로 바꾼다
+// 임박 빈자리 카드를 지도 핀 모양(C-02 매장 요약과 같은 이름)으로 바꾼다. 핀 종류도 카드의 시작 시각·가격 구간으로 정한다
 function toPinShop(card) {
   return {
     shopId: card.shopId,
@@ -17,6 +17,9 @@ function toPinShop(card) {
     latitude: card.lat,
     longitude: card.lng,
     minSalePrice: card.price,
+    earliestStartsAt: card.startsAt,
+    earliestPriceTier: card.priceTier,
+    maxDiscountRate: card.discount,
   };
 }
 
