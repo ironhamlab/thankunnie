@@ -74,6 +74,7 @@ export default function WithdrawDialog({ onClose }) {
       title="정말 탈퇴하시겠어요?"
       stepKey="confirm"
       plainClose
+      closeOnBackdrop={false}
       hideClose={submitting}
       onClose={() => {
         if (!submitting) onClose();

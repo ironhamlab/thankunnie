@@ -202,7 +202,7 @@ export default function CustomersPage() {
         {!isDialogLayout && <CustomerDetail onClose={closeDetail} />}
       </div>
       {isDialogLayout && selectedId && (
-        <Dialog title="고객 상세" className={styles.detailDialog} onClose={closeDetail}>
+        <Dialog title="고객 상세" className={styles.detailDialog} closeOnBackdrop={false} onClose={closeDetail}>
           <CustomerDetail onClose={closeDetail} inDialog />
         </Dialog>
       )}

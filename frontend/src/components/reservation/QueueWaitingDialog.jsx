@@ -14,7 +14,7 @@ import styles from './QueueWaitingDialog.module.css';
  */
 export default function QueueWaitingDialog({ aheadCount, paying, onCancel }) {
   return (
-    <Dialog title="예약 대기 중이에요" onClose={onCancel}>
+    <Dialog title="예약 대기 중이에요" closeOnBackdrop={false} onClose={onCancel}>
       <Spinner />
       <p className={styles.position} aria-live="polite">
         {aheadCount > 0 ? (

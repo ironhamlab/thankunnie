@@ -86,7 +86,11 @@ export default function TreatmentForm({
   };
 
   return (
-    <Dialog title={treatment ? '시술 메뉴 수정' : '신규 시술 등록'} onClose={onClose}>
+    <Dialog
+      title={treatment ? '시술 메뉴 수정' : '신규 시술 등록'}
+      closeOnBackdrop={false}
+      onClose={onClose}
+    >
       {treatment && !imageFile && (
         <OwnerImageEditor imageUrl={imageUrl} isSaving={isSaving} onSave={onImageSave} />
       )}

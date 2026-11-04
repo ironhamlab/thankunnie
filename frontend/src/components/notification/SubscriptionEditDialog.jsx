@@ -119,6 +119,7 @@ export default function SubscriptionEditDialog({ subscription, categories, onClo
       className={closing ? styles.editDialogClosing : styles.editDialog}
       title="조건 수정"
       plainClose
+      closeOnBackdrop={false}
       onClose={requestClose}
     >
       <form className={styles.form} onSubmit={handleSubmit} noValidate>

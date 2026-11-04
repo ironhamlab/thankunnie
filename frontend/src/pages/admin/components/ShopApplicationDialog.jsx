@@ -99,7 +99,7 @@ export default function ShopApplicationDialog({ application, onClose, onDone }) 
   };
 
   return (
-    <Dialog title="가입 신청 상세" onClose={onClose}>
+    <Dialog title="가입 신청 상세" closeOnBackdrop={false} onClose={onClose}>
       <dl className={styles.rows}>
         {rows.map(([label, value]) => (
           <div key={label}>
