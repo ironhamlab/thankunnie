@@ -85,7 +85,7 @@ public class ExploreVacancyService {
      */
     public PageResponse<ExploreVacancyResponse> search(ExploreVacancySearchRequest request) {
         validatePage(request.page(), request.size());
-        List<Item> items = filteredItems(request.filter(), LocalDateTime.now(clock)).stream()
+        List<Item> items = filteredItems(request.filter(), LocalDateTime.now(clock), false).stream()
                 .sorted(comparator(request.sort()))
                 .toList();
 
@@ -100,16 +100,18 @@ public class ExploreVacancyService {
 
     /**
      * 지도 마커용 매장 요약 (C-02). 빈자리가 있는 매장만 가장 빠른 시작 시각, 매장 ID 순으로 최대 200개 돌려준다.
+     * 결제 대기 점유로만 막힌 시각은 메인 합계(totalVacancyCount)를 셀 때만 쓰고, 점유로만 남은 매장은 돌려주지 않는다.
      */
     public ExploreShopMapResponse searchShops(ExploreVacancyFilter filter) {
         LocalDateTime now = LocalDateTime.now(clock);
-        Map<Long, List<Item>> itemsByShop = filteredItems(filter, now).stream()
+        Map<Long, List<Item>> itemsByShop = filteredItems(filter, now, true).stream()
                 .collect(Collectors.groupingBy(item -> item.candidate().shopId(), LinkedHashMap::new,
                         Collectors.toList()));
         // 빈자리 수는 조회 시작일부터 그 주 일요일까지만 센다 (월~일 한 주)
         LocalDateTime countUntil = searchFromDate(filter, now.toLocalDate())
                 .with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)).plusDays(1).atStartOfDay();
         List<ExploreShopResponse> shops = itemsByShop.values().stream()
+                .filter(items -> items.stream().anyMatch(item -> !item.heldOnly()))
                 .map(items -> toShop(items, countUntil))
                 .sorted(Comparator.comparing(ExploreShopResponse::earliestStartsAt)
                         .thenComparing(ExploreShopResponse::shopId))
@@ -126,7 +128,7 @@ public class ExploreVacancyService {
     public List<ExploreVacancyResponse> searchImminent() {
         LocalDateTime now = LocalDateTime.now(clock);
         Map<Long, Item> earliestByShop = findBusinessHourItems(exploreVacancyQueryRepository.findImminentCandidates(),
-                now, now.plus(BookingPolicy.IMMINENT_FROM), now)
+                now, now.plus(BookingPolicy.IMMINENT_FROM), now, false)
                 .collect(Collectors.toMap(item -> item.candidate().shopId(), item -> item,
                         ExploreVacancyService::earlier));
         return earliestByShop.values().stream()
@@ -140,8 +142,9 @@ public class ExploreVacancyService {
         return IMMINENT_ORDER.compare(a, b) <= 0 ? a : b;
     }
 
-    // 필터를 검사하고 조건에 맞는 빈자리(시술 × 시작 시각)를 구한다. 정렬하지 않은 상태다
-    private List<Item> filteredItems(ExploreVacancyFilter filter, LocalDateTime now) {
+    // 필터를 검사하고 조건에 맞는 빈자리(시술 × 시작 시각)를 구한다. 정렬하지 않은 상태다.
+    // includeHeld 면 결제 대기 점유로만 막힌 시각도 heldOnly 로 표시해 담는다
+    private List<Item> filteredItems(ExploreVacancyFilter filter, LocalDateTime now, boolean includeHeld) {
         LocalDate today = now.toLocalDate();
         LocalDate lastDay = today.plusDays(BookingPolicy.BOOKING_MAX_DAYS - 1L);
         LocalDate startDate = filter.startDate() != null ? filter.startDate() : today;
@@ -162,7 +165,7 @@ public class ExploreVacancyService {
                 filter.treatmentType(), keyword,
                 bounds);
 
-        return candidateItems(filter.priceTier(), condition, now)
+        return candidateItems(filter.priceTier(), condition, now, includeHeld)
                 .filter(item -> filter.timeOfDay() == null
                         || filter.timeOfDay().contains(item.startsAt().toLocalTime()))
                 .filter(item -> filter.closingWithinHours() == null
@@ -180,28 +183,30 @@ public class ExploreVacancyService {
 
     // 영업시간 안 빈 시각에서 찾는다. 지난 시각은 볼 필요가 없어 지금부터 본다.
     // 타임세일(초임박)은 초임박가가 일반 판매가보다 싼 시술만 남기고, 3시간 범위는 뒤의 가격 구간 조건이 자르므로 여기서는 8시간까지만 본다
-    private Stream<Item> candidateItems(PriceTier priceTier, ExploreVacancyCondition condition, LocalDateTime now) {
+    private Stream<Item> candidateItems(PriceTier priceTier, ExploreVacancyCondition condition, LocalDateTime now,
+            boolean includeHeld) {
         List<ExploreVacancyCandidate> candidates = exploreVacancyQueryRepository.findBusinessHourCandidates(condition);
         LocalDateTime from = max(condition.from(), now);
         if (priceTier != PriceTier.LAST_MINUTE) {
-            return findBusinessHourItems(candidates, from, condition.to(), now);
+            return findBusinessHourItems(candidates, from, condition.to(), now, includeHeld);
         }
         List<ExploreVacancyCandidate> discounted = candidates.stream()
                 .filter(candidate -> candidate.lastMinutePrice() < candidate.price())
                 .toList();
         return findBusinessHourItems(discounted, from, min(condition.to(), now.plus(BookingPolicy.IMMINENT_FROM)),
-                now);
+                now, includeHeld);
     }
 
     // 영업시간 기준: B 의 가용 시간 계산(영업시간 + 열기 − 닫기 − 예약, 예약 클릭 마감 반영)을 통과한 시각 중 [from, to) 만 남긴다.
     // 범위가 자정을 넘으면 다음 날 새벽 시각도 본다
     private Stream<Item> findBusinessHourItems(List<ExploreVacancyCandidate> candidates, LocalDateTime from,
-            LocalDateTime to, LocalDateTime now) {
+            LocalDateTime to, LocalDateTime now, boolean includeHeld) {
         if (candidates.isEmpty() || !from.isBefore(to)) {
             return Stream.empty();
         }
         AvailabilitySnapshot snapshot = loadSnapshot(candidates, from, to);
         Map<AvailabilityKey, List<LocalDateTime>> availableTimes = new HashMap<>();
+        Map<AvailabilityKey, List<LocalDateTime>> heldOnlyTimes = new HashMap<>();
         List<Item> items = new ArrayList<>();
         for (ExploreVacancyCandidate candidate : candidates) {
             for (LocalDate date = from.toLocalDate(); date.atStartOfDay().isBefore(to); date = date.plusDays(1)) {
@@ -210,7 +215,16 @@ public class ExploreVacancyService {
                         k -> snapshot.startTimes(k.shopId(), k.date(), k.durationMinutes()));
                 for (LocalDateTime startsAt : startTimes) {
                     if (!startsAt.isBefore(from) && startsAt.isBefore(to)) {
-                        items.add(new Item(candidate, startsAt, quote(candidate, startsAt, now)));
+                        items.add(new Item(candidate, startsAt, quote(candidate, startsAt, now), false));
+                    }
+                }
+                if (includeHeld) {
+                    List<LocalDateTime> heldTimes = heldOnlyTimes.computeIfAbsent(key,
+                            k -> snapshot.heldOnlyStartTimes(k.shopId(), k.date(), k.durationMinutes()));
+                    for (LocalDateTime startsAt : heldTimes) {
+                        if (!startsAt.isBefore(from) && startsAt.isBefore(to)) {
+                            items.add(new Item(candidate, startsAt, quote(candidate, startsAt, now), true));
+                        }
                     }
                 }
             }
@@ -228,7 +242,9 @@ public class ExploreVacancyService {
 
     // 매장 상세는 일반 시술만, 초보 시술 모집 상세는 초보 시술만 보여준다. 카드 값이 연결되는 상세와 맞도록
     // 일반 빈자리가 있으면 일반 빈자리로, 없으면 초보 시술 빈자리로 요약하고, 섞인 매장의 초보 시술 빈자리는 따로 담는다
-    private static ExploreShopResponse toShop(List<Item> items, LocalDateTime countUntil) {
+    // 메인 합계(totalVacancyCount)만 결제 대기 점유로 막힌 시각까지 세어, 결제가 끝나 예약이 확정될 때 줄어들게 한다
+    private static ExploreShopResponse toShop(List<Item> itemsWithHeld, LocalDateTime countUntil) {
+        List<Item> items = itemsWithHeld.stream().filter(item -> !item.heldOnly()).toList();
         ExploreVacancyCandidate shop = items.get(0).candidate();
         List<Item> modelItems = items.stream()
                 .filter(item -> item.candidate().treatmentType() == TreatmentType.MODEL)
@@ -255,7 +271,7 @@ public class ExploreVacancyService {
                 modelOnly,
                 countStartTimes(modelItems, countUntil),
                 modelItems.isEmpty() ? null : minSalePrice(modelItems),
-                countStartTimes(items, countUntil));
+                countStartTimes(itemsWithHeld, countUntil));
     }
 
     // 한 시각에 예약이 잡히면 그 매장의 다른 시술도 그 시각엔 못 잡으므로 시술이 달라도 같은 시작 시각은 한 번만 센다
@@ -361,6 +377,7 @@ public class ExploreVacancyService {
     private record AvailabilityKey(Long shopId, LocalDate date, int durationMinutes) {
     }
 
-    private record Item(ExploreVacancyCandidate candidate, LocalDateTime startsAt, PriceQuote quote) {
+    private record Item(ExploreVacancyCandidate candidate, LocalDateTime startsAt, PriceQuote quote,
+            boolean heldOnly) {
     }
 }

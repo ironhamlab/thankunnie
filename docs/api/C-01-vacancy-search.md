@@ -173,6 +173,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
   - **조회 시작일(오늘 이전이면 오늘)부터 그 주 일요일까지**만 센다. 전체 날짜(60일)를 조회해도 이번 주에 남은 빈 시각 수다.
   - 가장 빠른 빈자리가 다음 주 이후인 매장은 0 일 수 있다. 화면은 0 이면 수를 빼고 시작 시각만 보여준다.
   - 가격(`minSalePrice`·`maxDiscountRate`·`modelMinSalePrice`)과 `earliestStartsAt`은 조회 기간 전체로 계산한다.
+  - `totalVacancyCount`는 다른 고객의 결제 대기 점유(HOLD)로만 막힌 시각도 빈자리로 센다 (UNNIE-230). 결제가 끝나 예약이 확정되어야 줄어들며, 결제 없이 풀리면 그대로다. `vacancyCount`·`modelVacancyCount`는 지금 예약할 수 있는 시각만 센다.
 - 한 번에 최대 200개 매장을 돌려주고, 더 있으면 `hasMore=true`다. 지도에는 "확대하면 더 보여요"를 표시한다.
 
 ```json
@@ -218,7 +219,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
 | `earliestPriceTier` | 가장 빠른 빈자리의 가격 구간 `NORMAL`·`IMMINENT`·`LAST_MINUTE` (UNNIE-202) | 지도 핀 종류(초임박·오늘·다른 날) 구분 |
 | `modelOnly` | 조건에 맞는 빈자리가 모두 MODEL 시술인지 | true 면 매장 카드·"매장 보기"가 초보 시술 모집 상세(`/shops/{shopId}/models`)로 연결 |
 | `modelVacancyCount`, `modelMinSalePrice` | MODEL 빈 시작 시각 수(그 주 일요일까지)·최저 판매가(조회 기간 전체, 없으면 null) | 일반·초보 시술이 섞인 매장의 "초보 시술 모집 빈자리 N개 · 가격~" 링크. 링크를 보일지는 `modelMinSalePrice`로 정한다 |
-| `totalVacancyCount` | 일반·초보 시술을 합친 빈 시작 시각 수(그 주 일요일까지). 같은 시각은 한 번만 센다 (UNNIE-220) | 메인 "이번 주 빈자리" 합계 |
+| `totalVacancyCount` | 일반·초보 시술을 합친 빈 시작 시각 수(그 주 일요일까지). 같은 시각은 한 번만 센다 (UNNIE-220). 결제 대기 점유로만 막힌 시각을 포함한다 (UNNIE-230) | 메인 "이번 주 빈자리" 합계 |
 
 ## 4-1. 메인 임박 빈자리 (UNNIE-157)
 
