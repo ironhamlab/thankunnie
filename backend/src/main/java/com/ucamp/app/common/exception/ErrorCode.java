@@ -102,6 +102,7 @@ public enum ErrorCode {
     PAYMENT_IN_PROGRESS(HttpStatus.CONFLICT, "PAYMENT_008", "다른 화면에서 이 예약의 결제가 진행 중입니다."),
     // TREATMENT
     TREATMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "TREATMENT_001", "시술을 찾을 수 없습니다."),
+    TREATMENT_HAS_RESERVATION(HttpStatus.CONFLICT, "TREATMENT_002", "남은 예약이 있어 시술을 삭제할 수 없습니다. 먼저 비활성화해 새 예약을 막고, 남은 예약이 끝난 뒤 삭제해 주세요."),
 
     // CANCEL
     CANCEL_RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "CANCEL_001", "취소할 예약을 찾을 수 없습니다."),
