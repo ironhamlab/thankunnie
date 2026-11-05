@@ -114,13 +114,13 @@ class ReservationDashboardRepositoryTest {
     }
 
     @Test
-    @DisplayName("찜 고객 수는 이 매장의 사용 중인 업장 구독 고객만 한 번씩 센다")
+    @DisplayName("찜 고객 수는 이 매장의 사용 중인 업장 알림 고객만 한 번씩 센다")
     void countFavoriteCustomers_activeStoreSubscriptionsOnly() {
         insertSubscription(100, 1, 1L, "STORE", "ACTIVE");
-        // 같은 고객의 다른 희망 시간 구독은 한 명으로 센다
+        // 같은 고객의 다른 희망 시간 알림은 한 명으로 센다
         insertSubscription(101, 1, 1L, "STORE", "ACTIVE");
         insertSubscription(102, 2, 1L, "STORE", "ACTIVE");
-        // 해지한 구독, 다른 매장 구독은 세지 않는다
+        // 해지한 알림, 다른 매장 알림은 세지 않는다
         insertSubscription(103, 21, 1L, "STORE", "INACTIVE");
         insertSubscription(104, 21, 2L, "STORE", "ACTIVE");
 

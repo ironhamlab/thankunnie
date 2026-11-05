@@ -189,7 +189,7 @@ public class TermsAgreementService {
 
     /**
      * 동의하지 않았으면 약관별 에러를 던진다. 프론트는 에러 코드를 보고 동의 모달을 띄운 뒤 다시 요청한다.
-     * 문자 수신은 구독 등록, 초보 시술 촬영은 초보 시술 예약 생성에서 호출한다.
+     * 문자 수신은 알림 등록, 초보 시술 촬영은 초보 시술 예약 생성에서 호출한다.
      */
     public void requireAgreed(Long userId, TermsCode code) {
         if (!hasAgreed(userId, code)) {

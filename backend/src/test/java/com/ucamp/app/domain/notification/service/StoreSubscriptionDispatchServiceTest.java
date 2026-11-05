@@ -50,7 +50,7 @@ class StoreSubscriptionDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("희망 시간이 있는 업장 구독은 그 회원만 발송 줄을 만든다")
+    @DisplayName("희망 시간이 있는 업장 알림은 그 회원만 발송 줄을 만든다")
     void enqueue_storeWithHopeTime_savesOnlyMissingRows() {
         NotificationSubscription subscription = storeSubscription(HOPE_START, HOPE_END);
         NotificationEvent first = event(10L);
@@ -96,7 +96,7 @@ class StoreSubscriptionDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("희망 시간이 없거나 업장 구독이 아니면 줄을 만들지 않는다")
+    @DisplayName("희망 시간이 없거나 업장 알림이 아니면 줄을 만들지 않는다")
     void enqueue_withoutStoreHopeTime_doesNothing() {
         storeSubscriptionDispatchService.enqueue(null);
         storeSubscriptionDispatchService.enqueue(storeSubscription(null, null));

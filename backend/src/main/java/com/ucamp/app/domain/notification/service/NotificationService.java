@@ -31,8 +31,8 @@ import com.ucamp.app.domain.user.repository.AppUserRepository;
 import com.ucamp.app.domain.user.service.TermsAgreementService;
 
 /**
- * 알림 구독 업무.
- * 고객의 구독 등록·목록·수정·해제와, 해제·만료를 뺀 알림 대상 조회를 담당한다.
+ * 알림 업무.
+ * 고객의 알림 등록·목록·수정·해제와, 해제·만료를 뺀 알림 대상 조회를 담당한다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -49,14 +49,14 @@ public class NotificationService {
     private final UserLock userLock;
 
     /**
-     * 업장 구독 또는 카테고리·지역 구독을 등록한다.
-     * 희망 시간이 있는(문자가 나가는) 구독은 알림 문자 수신 동의(SMS_NOTIFICATION)가 없으면
+     * 업장 알림 또는 카테고리·지역 알림을 등록한다.
+     * 희망 시간이 있는(문자가 나가는) 알림은 알림 문자 수신 동의(SMS_NOTIFICATION)가 없으면
      * TERMS_SMS_AGREEMENT_REQUIRED 를 던진다. 희망 시간 없는 업장 찜은 문자가 나가지 않아 검사하지 않는다.
      * 프론트는 이 에러를 받으면 동의 모달을 띄운 뒤 다시 요청한다.
      *
      * @param loginUser 로그인한 고객
-     * @param request   구독 등록 요청
-     * @return 등록된 구독
+     * @param request   알림 등록 요청
+     * @return 등록된 알림
      */
     @Transactional
     public NotificationSubscriptionResponse subscribe(AuthUser loginUser,
@@ -79,7 +79,7 @@ public class NotificationService {
         if (hasHopeTime(subscription)) {
             requireSmsAgreement(loginUser);
         }
-        // 등록이므로 제외할 구독 ID 는 없다 (excludeId = null)
+        // 등록이므로 제외할 알림 ID 는 없다 (excludeId = null)
         validateNoDuplicate(loginUser.userId(), subscription.getSubscriptionType(), subscription.getShopId(),
                 subscription.getTreatmentId(), subscription.getCategoryId(), subscription.getRegionCode(),
                 subscription.getStartTime(), subscription.getEndTime(), null);
@@ -89,10 +89,10 @@ public class NotificationService {
     }
 
     /**
-     * 본인의 구독 중 해제하지 않은 구독을 최신 등록 순으로 조회한다.
+     * 본인의 알림 중 해제하지 않은 알림을 최신 등록 순으로 조회한다.
      *
      * @param loginUser 로그인한 고객
-     * @return 활성 구독 목록
+     * @return 활성 알림 목록
      */
     public List<NotificationSubscriptionResponse> getMySubscriptions(AuthUser loginUser) {
         loginUser.requireRole(UserRole.CUSTOMER);
@@ -104,20 +104,20 @@ public class NotificationService {
     }
 
     /**
-     * 본인의 활성 구독에서 대상과 희망 시간을 바꾼다. 구독 유형은 유지한다.
+     * 본인의 활성 알림에서 대상과 희망 시간을 바꾼다. 알림 유형은 유지한다.
      * 찜(희망 시간 없음)에 희망 시간을 넣어 알림을 새로 켤 때만 문자 수신 동의를 검사한다.
-     * 이미 알림이 켜진 구독의 수정은 동의는 검사하지 않고, 바꾼 희망 시간에 들어오는 열린 빈자리는 다시 찾는다.
+     * 이미 알림이 켜진 알림의 수정은 동의는 검사하지 않고, 바꾼 희망 시간에 들어오는 열린 빈자리는 다시 찾는다.
      *
      * @param loginUser      로그인한 고객
-     * @param subscriptionId 구독 ID
-     * @param request        구독 수정 요청
-     * @return 수정된 구독
+     * @param subscriptionId 알림 ID
+     * @param request        알림 수정 요청
+     * @return 수정된 알림
      */
     @Transactional
     public NotificationSubscriptionResponse updateSubscription(AuthUser loginUser, Long subscriptionId,
             NotificationSubscriptionUpdateRequest request) {
         loginUser.requireRole(UserRole.CUSTOMER);
-        // 잠금 뒤에 구독을 읽어야, 탈퇴가 해제한 구독을 ACTIVE 로 읽어 덮어쓰지 않는다
+        // 잠금 뒤에 알림을 읽어야, 탈퇴가 해제한 알림을 ACTIVE 로 읽어 덮어쓰지 않는다
         lockActiveCustomer(loginUser);
         NotificationSubscription subscription = getActiveSubscription(loginUser, subscriptionId);
         boolean wasNotifying = hasHopeTime(subscription);
@@ -130,7 +130,7 @@ public class NotificationService {
         if (!wasNotifying && hasHopeTime(subscription)) {
             requireSmsAgreement(loginUser);
         }
-        // 수정이므로 자기 구독은 중복에서 뺀다 (excludeId = 자기 ID). 중복이면 트랜잭션이 롤백된다.
+        // 수정이므로 자기 알림은 중복에서 뺀다 (excludeId = 자기 ID). 중복이면 트랜잭션이 롤백된다.
         validateNoDuplicate(loginUser.userId(), subscription.getSubscriptionType(), subscription.getShopId(),
                 subscription.getTreatmentId(), subscription.getCategoryId(), subscription.getRegionCode(),
                 subscription.getStartTime(), subscription.getEndTime(), subscription.getId());
@@ -141,10 +141,10 @@ public class NotificationService {
     }
 
     /**
-     * 본인의 구독을 해제한다. 이후 목록과 알림 대상에서 빠진다.
+     * 본인의 알림을 해제한다. 이후 목록과 알림 대상에서 빠진다.
      *
      * @param loginUser      로그인한 고객
-     * @param subscriptionId 구독 ID
+     * @param subscriptionId 알림 ID
      */
     @Transactional
     public void unsubscribe(AuthUser loginUser, Long subscriptionId) {
@@ -153,23 +153,23 @@ public class NotificationService {
     }
 
     /**
-     * 매장 빈자리의 알림 대상 구독을 조회한다. 해제·만료 구독은 제외한다.
+     * 매장 빈자리의 알림 대상을 조회한다. 해제·만료 알림은 제외한다.
      *
      * @param shopId        매장 ID
      * @param slotStartTime 빈자리 시작 시각
-     * @return 알림 대상 구독 목록
+     * @return 알림 대상 목록
      */
     public List<NotificationSubscription> findNotifiableByShop(Long shopId, LocalDateTime slotStartTime) {
         return notificationSubscriptionRepository.findNotifiableByShop(shopId, slotStartTime, now());
     }
 
     /**
-     * 카테고리·지역 빈자리의 알림 대상 구독을 조회한다. 해제·만료 구독은 제외한다.
+     * 카테고리·지역 빈자리의 알림 대상을 조회한다. 해제·만료 알림은 제외한다.
      *
      * @param categoryId    카테고리 ID
      * @param regionCode    지역코드
      * @param slotStartTime 빈자리 시작 시각
-     * @return 알림 대상 구독 목록
+     * @return 알림 대상 목록
      */
     public List<NotificationSubscription> findNotifiableByCategoryRegion(Long categoryId, String regionCode,
             LocalDateTime slotStartTime) {
@@ -202,7 +202,7 @@ public class NotificationService {
     }
 
     // 탈퇴와 같은 회원 잠금으로 줄 세운다. 토큰 검사 뒤 탈퇴가 먼저 끝났으면, 탈퇴가 해제한 뒤에
-    // ACTIVE 구독이 새로 저장되거나 되살아나지 않도록 비로그인으로 막는다
+    // ACTIVE 알림이 새로 저장되거나 되살아나지 않도록 비로그인으로 막는다
     private void lockActiveCustomer(AuthUser loginUser) {
         userLock.lock(loginUser.userId());
         if (!appUserRepository.existsByUserIdAndStatus(loginUser.userId(), AppUserStatus.ACTIVE)) {
@@ -210,7 +210,7 @@ public class NotificationService {
         }
     }
 
-    // 다른 고객의 구독과 이미 해제한 구독은 둘 다 없는 것으로 처리한다.
+    // 다른 고객의 알림과 이미 해제한 알림은 둘 다 없는 것으로 처리한다.
     private NotificationSubscription getActiveSubscription(AuthUser loginUser, Long subscriptionId) {
         NotificationSubscription subscription = notificationSubscriptionRepository
                 .findByIdAndUserId(subscriptionId, loginUser.userId())
@@ -250,10 +250,10 @@ public class NotificationService {
     }
 
     /**
-     * ACTIVE 구독 중 같은 대상·같은 희망 시간(시작·종료 둘 다 동일)이 있으면 막는다.
-     * 업장 구독은 매장과 시술이 같아야 같은 대상이다. INACTIVE 는 다시 등록할 수 있다.
+     * ACTIVE 알림 중 같은 대상·같은 희망 시간(시작·종료 둘 다 동일)이 있으면 막는다.
+     * 업장 알림은 매장과 시술이 같아야 같은 대상이다. INACTIVE 는 다시 등록할 수 있다.
      *
-     * @param excludeId 수정 시 자기 구독 ID. 등록 시에는 null
+     * @param excludeId 수정 시 자기 알림 ID. 등록 시에는 null
      */
     private void validateNoDuplicate(Long userId, SubscriptionType subscriptionType, Long shopId, Long treatmentId,
             Long categoryId, String regionCode, LocalDateTime startTime, LocalDateTime endTime,

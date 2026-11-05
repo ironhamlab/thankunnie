@@ -38,10 +38,10 @@ import com.ucamp.app.domain.notification.service.NotificationService;
 
 /**
  * 알림 API.
- * 구독 등록·조회·수정·해제는 고객만 사용할 수 있다.
+ * 알림 등록·조회·수정·해제는 고객만 사용할 수 있다.
  * 받은 알림 목록·한 건 읽음·모두 읽음·알림 스트림은 고객과 사장님이 사용할 수 있다.
  */
-@Tag(name = "Notification", description = "알림 구독")
+@Tag(name = "Notification", description = "알림")
 @RestController
 @RequestMapping("/api/v1/notifications")
 @RequiredArgsConstructor
@@ -52,13 +52,13 @@ public class NotificationController {
     private final NotificationInboxStreamService notificationInboxStreamService;
 
     /**
-     * 업장 구독 또는 카테고리·지역 구독을 등록한다.
+     * 업장 알림 또는 카테고리·지역 알림을 등록한다.
      *
      * @param loginUser 로그인한 고객
-     * @param request   구독 등록 요청
-     * @return 등록된 구독
+     * @param request   알림 등록 요청
+     * @return 등록된 알림
      */
-    @Operation(summary = "알림 구독 등록",
+    @Operation(summary = "알림 등록",
             description = "STORE 찜은 shopId 만, 알림은 shopId 와 고객이 고른 treatmentId 와 희망 시간을 보낸다. CATEGORY_REGION 은 categoryId·regionCode 와 희망 시작·종료 시각을 보낸다")
     @PostMapping("/subscriptions")
     public ResponseEntity<ApiResponse<NotificationSubscriptionResponse>> subscribe(
@@ -70,12 +70,12 @@ public class NotificationController {
     }
 
     /**
-     * 해제하지 않은 내 구독 목록을 최신 등록 순으로 조회한다.
+     * 해제하지 않은 내 알림 목록을 최신 등록 순으로 조회한다.
      *
      * @param loginUser 로그인한 고객
-     * @return 활성 구독 목록
+     * @return 활성 알림 목록
      */
-    @Operation(summary = "내 알림 구독 목록 조회", description = "해제하지 않은 구독을 최신 등록 순으로 반환한다")
+    @Operation(summary = "내 알림 목록 조회", description = "해제하지 않은 알림을 최신 등록 순으로 반환한다")
     @GetMapping("/subscriptions")
     public ResponseEntity<ApiResponse<List<NotificationSubscriptionResponse>>> getMySubscriptions(
             @LoginUser AuthUser loginUser) {
@@ -83,14 +83,14 @@ public class NotificationController {
     }
 
     /**
-     * 본인의 구독에서 대상과 희망 시간을 수정한다. 구독 유형은 유지한다.
+     * 본인의 알림에서 대상과 희망 시간을 수정한다. 알림 유형은 유지한다.
      *
      * @param loginUser      로그인한 고객
-     * @param subscriptionId 구독 ID
-     * @param request        구독 수정 요청
-     * @return 수정된 구독
+     * @param subscriptionId 알림 ID
+     * @param request        알림 수정 요청
+     * @return 수정된 알림
      */
-    @Operation(summary = "알림 구독 수정", description = "구독 유형은 바꿀 수 없으며, 기존 유형에 맞는 대상과 희망 시각을 보낸다")
+    @Operation(summary = "알림 수정", description = "알림 유형은 바꿀 수 없으며, 기존 유형에 맞는 대상과 희망 시각을 보낸다")
     @PutMapping("/subscriptions/{subscriptionId}")
     public ResponseEntity<ApiResponse<NotificationSubscriptionResponse>> updateSubscription(
             @LoginUser AuthUser loginUser,
@@ -101,13 +101,13 @@ public class NotificationController {
     }
 
     /**
-     * 본인의 구독을 해제한다. 해제한 구독은 목록과 알림 대상에서 빠진다.
+     * 본인의 알림을 해제한다. 해제한 알림은 목록과 알림 대상에서 빠진다.
      *
      * @param loginUser      로그인한 고객
-     * @param subscriptionId 구독 ID
+     * @param subscriptionId 알림 ID
      * @return 본문 없는 204 응답
      */
-    @Operation(summary = "알림 구독 해제", description = "해제한 구독은 목록과 알림 대상에서 제외된다")
+    @Operation(summary = "알림 해제", description = "해제한 알림은 목록과 알림 대상에서 제외된다")
     @DeleteMapping("/subscriptions/{subscriptionId}")
     public ResponseEntity<Void> unsubscribe(@LoginUser AuthUser loginUser, @PathVariable Long subscriptionId) {
         notificationService.unsubscribe(loginUser, subscriptionId);

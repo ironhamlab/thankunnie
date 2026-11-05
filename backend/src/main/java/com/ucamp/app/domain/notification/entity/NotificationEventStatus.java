@@ -5,7 +5,7 @@ package com.ucamp.app.domain.notification.entity;
  */
 public enum NotificationEventStatus {
 
-    /** 구독 매칭·발송 대기 */
+    /** 알림 매칭·발송 대기 */
     PENDING,
 
     /** 매칭·발송 대기열 생성 완료 */

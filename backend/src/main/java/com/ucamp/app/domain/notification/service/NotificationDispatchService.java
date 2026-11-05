@@ -67,7 +67,7 @@ public class NotificationDispatchService {
             NotificationDispatchStatus.SENT,
             NotificationDispatchStatus.UNKNOWN);
 
-    /** 카테고리·지역 구독은 단건 문자를 만든 시각부터 이 시간 동안 다음 빈자리를 발송 줄에 넣지 않는다. */
+    /** 카테고리·지역 알림은 단건 문자를 만든 시각부터 이 시간 동안 다음 빈자리를 발송 줄에 넣지 않는다. */
     private static final Duration CATEGORY_REGION_COOLDOWN = Duration.ofMinutes(60);
 
     private final NotificationEventRepository notificationEventRepository;
@@ -86,7 +86,7 @@ public class NotificationDispatchService {
     private final TermsAgreementService termsAgreementService;
 
     /**
-     * PENDING 이벤트 하나를 고른다. 매장 구독 회원은 대기 작업을 넣고, 카테고리 구독은 쿨다운을 보고 나눈다.
+     * PENDING 이벤트 하나를 고른다. 매장 알림 회원은 대기 작업을 넣고, 카테고리 알림은 쿨다운을 보고 나눈다.
      * 같은 이벤트·회원이 이미 있으면 그 회원은 건너뛴다. 한 번 호출에 이벤트 하나만 처리한다.
      *
      * @return 이벤트를 처리했으면 이번에 만든 대기 작업 수. 맞는 회원이 없어도 0이다.
@@ -106,7 +106,7 @@ public class NotificationDispatchService {
                 event.getShopId(), event.getSlotStartsAt());
 
         int created = 0;
-        // 매장 구독은 지금처럼 회원마다 발송 줄을 바로 만든다. 쿨다운 메모장에는 적지 않는다.
+        // 매장 알림은 지금처럼 회원마다 발송 줄을 바로 만든다. 쿨다운 메모장에는 적지 않는다.
         for (Long userId : groups.storeUserIds()) {
             if (saveDispatchIfAbsent(event.getId(), userId)) {
                 created++;
@@ -120,7 +120,7 @@ public class NotificationDispatchService {
     }
 
     /**
-     * 카테고리·지역 구독만 처리한다.
+     * 카테고리·지역 알림만 처리한다.
      * 마지막 발송 시각부터 60분이 지나지 않았으면 발송 줄을 만들지 않고 메모장에만 넣는다.
      * 60분이 지났거나 한 번도 안 보냈으면 발송 줄을 만들고, 그 순간 마지막 발송 시각을 적는다.
      * 문자가 나가기 전에 다음 이벤트가 또 바로 나가지 않게 하려는 것이다.
@@ -167,20 +167,20 @@ public class NotificationDispatchService {
     }
 
     /**
-     * 마지막 발송 시각이 60분을 넘긴 카테고리·지역 구독만 본다.
-     * 아직 안 보낸 이벤트를 하나씩 다시 확인해, 구독이 살아 있고 슬롯이 비어 있는 개수를 센다.
+     * 마지막 발송 시각이 60분을 넘긴 카테고리·지역 알림만 본다.
+     * 아직 안 보낸 이벤트를 하나씩 다시 확인해, 알림이 살아 있고 슬롯이 비어 있는 개수를 센다.
      * 개수는 매장 수가 아니라 슬롯 수다.
      * 1건 이상이면 "새 빈자리 N건" 한 통을 바로 보내고 목록을 비운 뒤 마지막 발송 시각을 지금으로 바꾼다.
      * 0건이면 문자는 보내지 않고 목록만 비운다. 마지막 발송 시각은 그대로라서 다음 빈자리는 다시 단건으로 나간다.
      * 묶음 문자는 발송 줄에 넣지 않는다.
      *
-     * @return 이번에 문자 발송을 시도한 구독 수
+     * @return 이번에 문자 발송을 시도한 알림 수
      */
     @Transactional(propagation = Propagation.SUPPORTS)
     public int flushCategoryRegionSummaries() {
         LocalDateTime now = LocalDateTime.now(clock);
         int sent = 0;
-        // 이미 트랜잭션이 있으면 그 안에서 이어서 본다. 없으면 구독자마다 커밋한 뒤 알림함을 남긴다.
+        // 이미 트랜잭션이 있으면 그 안에서 이어서 본다. 없으면 회원마다 커밋한 뒤 알림함을 남긴다.
         boolean joinCurrent = TransactionSynchronizationManager.isActualTransactionActive();
         for (Long subscriptionId : categoryRegionPendingQueue.subscriptionIds()) {
             try {
@@ -200,10 +200,10 @@ public class NotificationDispatchService {
     }
 
     /**
-     * 구독 하나의 묶음 문자를 보내고 메모장을 갱신한다.
+     * 알림 하나의 묶음 문자를 보내고 메모장을 갱신한다.
      * 호출한 쪽은 이 메서드가 끝난 뒤에 받은 알림을 저장한다.
      *
-     * @param subscriptionId 카테고리·지역 구독 ID
+     * @param subscriptionId 카테고리·지역 알림 ID
      * @param now            기준 시각
      * @return 발송을 시도했는지와, 성공했을 때의 받은 알림
      */
@@ -291,7 +291,7 @@ public class NotificationDispatchService {
         return earliest;
     }
 
-    // 아직 팔리고 구독과도 맞는 묶음 대기 이벤트만 모은다.
+    // 아직 팔리고 알림과도 맞는 묶음 대기 이벤트만 모은다.
     private List<NotificationEvent> openCategoryRegionEvents(Long subscriptionId, List<Long> eventIds,
             LocalDateTime now) {
         NotificationSubscription subscription = notificationSubscriptionRepository.findById(subscriptionId).orElse(null);
@@ -312,7 +312,7 @@ public class NotificationDispatchService {
         return openEvents;
     }
 
-    // 해제한 구독, 희망 종료가 지난 구독, 빈자리 시작이 희망 시간 밖인 구독은 세지 않는다.
+    // 해제한 알림, 희망 종료가 지난 알림, 빈자리 시작이 희망 시간 밖인 알림은 세지 않는다.
     private boolean categorySubscriptionStillApplies(NotificationSubscription subscription, NotificationEvent event,
             LocalDateTime now) {
         if (subscription == null || !subscription.isActive() || now == null) {
@@ -361,8 +361,8 @@ public class NotificationDispatchService {
     }
 
     /**
-     * 선점한 작업만 다시 본다. 구독이 아직 활성이고, 희망 종료가 지나지 않았고, 빈자리가 아직 팔리면 true.
-     * 업장 구독은 고객이 고른 시술을 그 시각에 예약할 수 있는지도 다시 본다.
+     * 선점한 작업만 다시 본다. 알림이 아직 활성이고, 희망 종료가 지나지 않았고, 빈자리가 아직 팔리면 true.
+     * 업장 알림은 고객이 고른 시술을 그 시각에 예약할 수 있는지도 다시 본다.
      * 하나라도 아니면 그 작업을 끝으로 두고 false를 돌려준다. 문자는 보내지 않는다.
      *
      * @param job 선점한 발송 대기 작업
@@ -380,8 +380,8 @@ public class NotificationDispatchService {
             finishWithoutSending(job);
             return false;
         }
-        // 활성 구독이고, 희망 종료가 지나지 않았고, 이 빈자리와 아직 맞는 회원인지 다시 본다.
-        // 업장 구독은 고른 시술을 그 시각에 예약할 수 있을 때만 맞는다.
+        // 활성 알림이고, 희망 종료가 지나지 않았고, 이 빈자리와 아직 맞는 회원인지 다시 본다.
+        // 업장 알림은 고른 시술을 그 시각에 예약할 수 있을 때만 맞는다.
         if (!subscriptionStillMatches(event, job.getUserId())) {
             finishWithoutSending(job);
             return false;
@@ -609,8 +609,8 @@ public class NotificationDispatchService {
         return failReason.substring(0, FAIL_REASON_MAX_LENGTH);
     }
 
-    // 업장 구독과 카테고리 구독 중 하나라도 아직 맞으면 포함한다.
-    // 업장 구독은 고른 시술을 그 시각에 예약할 수 있어야 맞는다. 해제한 구독과 희망 종료가 지난 구독은 빠진다.
+    // 업장 알림과 카테고리 알림 중 하나라도 아직 맞으면 포함한다.
+    // 업장 알림은 고른 시술을 그 시각에 예약할 수 있어야 맞는다. 해제한 알림과 희망 종료가 지난 알림은 빠진다.
     private boolean subscriptionStillMatches(NotificationEvent event, Long userId) {
         List<Long> userIds = subscriptionMatchService.findRecipientUserIds(
                 event.getShopId(), event.getSlotStartsAt());

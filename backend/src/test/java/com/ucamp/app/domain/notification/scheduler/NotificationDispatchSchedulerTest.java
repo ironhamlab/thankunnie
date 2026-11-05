@@ -192,7 +192,7 @@ class NotificationDispatchSchedulerTest {
         scheduler.saveDispatchJobs();
 
         NotificationDispatch alreadyProcessing = notificationDispatchService.claimDispatchJob().orElseThrow();
-        // 이미 집은 사람의 구독을 해제한다. 그 쪽지를 다시 보면 SKIPPED가 된다.
+        // 이미 집은 사람의 알림을 해제한다. 그 쪽지를 다시 보면 SKIPPED가 된다.
         // 다시 보지 않으면 PROCESSING으로 남고, 아직 대기인 사람만 집어서 보낸다.
         if (alreadyProcessing.getUserId().equals(USER_ID)) {
             minji.deactivate();
@@ -233,7 +233,7 @@ class NotificationDispatchSchedulerTest {
     }
 
     @Test
-    @DisplayName("선점 스케줄은 구독이 해제된 작업을 끝으로 둔다")
+    @DisplayName("선점 스케줄은 알림이 해제된 작업을 끝으로 둔다")
     void claimAndRecheck_inactiveSubscription_skips() {
         NotificationFixture.exception(jdbcTemplate, 1L, SHOP_ID, null, "OPEN", SLOT_START, SLOT_START.plusHours(1));
         NotificationSubscription subscription = notificationSubscriptionRepository.save(store(USER_ID));
@@ -249,7 +249,7 @@ class NotificationDispatchSchedulerTest {
     }
 
     @Test
-    @DisplayName("묶음 스케줄은 60분이 지난 카테고리 구독만 문자 한 통으로 비우고 발송 줄은 만들지 않는다")
+    @DisplayName("묶음 스케줄은 60분이 지난 카테고리 알림만 문자 한 통으로 비우고 발송 줄은 만들지 않는다")
     void flushCategoryRegionSummaries_dueSubscription_sendsWithoutDispatch() {
         NotificationFixture.exception(jdbcTemplate, 1L, SHOP_ID, null, "OPEN", SLOT_START, SLOT_START.plusHours(1));
         NotificationSubscription subscription = notificationSubscriptionRepository.save(categoryRegion(USER_ID));

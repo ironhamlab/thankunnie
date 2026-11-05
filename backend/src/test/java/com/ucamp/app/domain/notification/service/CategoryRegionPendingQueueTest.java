@@ -43,7 +43,7 @@ class CategoryRegionPendingQueueTest {
     }
 
     @Test
-    @DisplayName("구독마다 마지막 발송 시각과 이벤트 목록을 따로 둔다")
+    @DisplayName("알림마다 마지막 발송 시각과 이벤트 목록을 따로 둔다")
     void subscriptions_doNotSharePendingEvents() {
         queue.markSent(SUBSCRIPTION_ID, SENT_AT);
         queue.addPendingEvent(SUBSCRIPTION_ID, 1L);
@@ -91,7 +91,7 @@ class CategoryRegionPendingQueueTest {
     }
 
     @Test
-    @DisplayName("아직 없는 구독은 마지막 발송 시각이 없고 이벤트 목록도 비어 있다")
+    @DisplayName("아직 없는 알림은 마지막 발송 시각이 없고 이벤트 목록도 비어 있다")
     void unknownSubscription_returnsEmpty() {
         assertThat(queue.lastSentAt(SUBSCRIPTION_ID)).isNull();
         assertThat(queue.pendingEventIds(SUBSCRIPTION_ID)).isEmpty();
@@ -113,7 +113,7 @@ class CategoryRegionPendingQueueTest {
     }
 
     @Test
-    @DisplayName("구독 번호나 이벤트 번호, 발송 시각이 없으면 적지 않는다")
+    @DisplayName("알림 번호나 이벤트 번호, 발송 시각이 없으면 적지 않는다")
     void nullInput_isIgnored() {
         queue.markSent(null, SENT_AT);
         queue.markSent(SUBSCRIPTION_ID, null);
@@ -126,7 +126,7 @@ class CategoryRegionPendingQueueTest {
     }
 
     @Test
-    @DisplayName("전체 비우기는 구독에 적어 둔 시각과 이벤트 번호를 모두 지운다")
+    @DisplayName("전체 비우기는 알림에 적어 둔 시각과 이벤트 번호를 모두 지운다")
     void clear_removesEverySubscription() {
         queue.markSent(SUBSCRIPTION_ID, SENT_AT);
         queue.addPendingEvent(SUBSCRIPTION_ID, 1L);
@@ -140,7 +140,7 @@ class CategoryRegionPendingQueueTest {
     }
 
     @Test
-    @DisplayName("메모장에 있는 구독 번호를 돌려준다")
+    @DisplayName("메모장에 있는 알림 번호를 돌려준다")
     void subscriptionIds_returnsStoredSubscriptions() {
         queue.markSent(SUBSCRIPTION_ID, SENT_AT);
         queue.addPendingEvent(OTHER_SUBSCRIPTION_ID, 2L);

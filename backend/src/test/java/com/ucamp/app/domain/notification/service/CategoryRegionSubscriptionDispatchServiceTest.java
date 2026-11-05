@@ -108,7 +108,7 @@ class CategoryRegionSubscriptionDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리·지역 구독이 아니거나 구독 ID가 없으면 줄을 만들지 않는다")
+    @DisplayName("카테고리·지역 알림이 아니거나 알림 ID가 없으면 줄을 만들지 않는다")
     void enqueue_notCategoryRegion_doesNothing() {
         categoryRegionSubscriptionDispatchService.enqueue(null);
         categoryRegionSubscriptionDispatchService.enqueue(NotificationSubscription.builder()

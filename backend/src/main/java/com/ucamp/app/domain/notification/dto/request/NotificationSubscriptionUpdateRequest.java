@@ -10,12 +10,12 @@ import jakarta.validation.constraints.Size;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
- * 알림 구독 수정 요청. 구독 유형은 바꿀 수 없으며, 기존 유형에 맞는 대상 값을 모두 보낸다.
+ * 알림 수정 요청. 알림 유형은 바꿀 수 없으며, 기존 유형에 맞는 대상 값을 모두 보낸다.
  *
- * @param shopId      매장 ID. 카테고리 구독이면 null
- * @param treatmentId 시술 ID. 업장 구독이면 고객이 고른 시술, 카테고리 구독이면 null
- * @param categoryId  카테고리 ID. 업장 구독이면 null
- * @param regionCode  지역코드. 업장 구독이면 null
+ * @param shopId      매장 ID. 카테고리 알림이면 null
+ * @param treatmentId 시술 ID. 업장 알림이면 고객이 고른 시술, 카테고리 알림이면 null
+ * @param categoryId  카테고리 ID. 업장 알림이면 null
+ * @param regionCode  지역코드. 업장 알림이면 null
  * @param startTime   알림 희망 시작 시각
  * @param endTime     알림 희망 종료 시각
  */
@@ -32,7 +32,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
                 }
                 """)
 public record NotificationSubscriptionUpdateRequest(
-        @Schema(description = "매장 ID. STORE 구독일 때만", example = "2", nullable = true)
+        @Schema(description = "매장 ID. STORE 알림일 때만", example = "2", nullable = true)
         Long shopId,
         @Schema(description = "시술 ID. STORE 일 때만. 그 매장의 판매 중인 일반 시술", example = "10", nullable = true)
         Long treatmentId,

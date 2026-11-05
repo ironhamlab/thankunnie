@@ -261,7 +261,7 @@ public class NotificationInboxService {
      * 예: /shops/1?treatmentId=10&startsAt=2026-11-02T15:00:00
      *
      * @param shopId       매장 ID
-     * @param treatmentId  그 회원 구독 중 이 시각에 예약되는 시술. 여러 개면 ID가 가장 작은 것
+     * @param treatmentId  그 회원 알림 중 이 시각에 예약되는 시술. 여러 개면 ID가 가장 작은 것
      * @param slotStartsAt 빈자리 시작 시각
      * @return 시술과 시작 시각이 붙은 매장 상세 경로. 시술이나 시각이 없으면 매장 주소만 반환
      */
@@ -289,8 +289,8 @@ public class NotificationInboxService {
      * 카테고리·지역 알림이 이동하는 빈자리 목록 경로.
      * 예: /?view=list&category=1&region=11680&date=2026-11-02
      *
-     * @param categoryId 구독한 카테고리 ID
-     * @param regionCode 구독한 지역코드
+     * @param categoryId 알림에 고른 카테고리 ID
+     * @param regionCode 알림에 고른 지역코드
      * @param date       빈자리가 있는 날. null 이면 날짜 없이 보낸다
      * @return 그 카테고리·지역·날짜로 좁힌 빈자리 목록 경로
      */

@@ -204,7 +204,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리 구독의 첫 빈자리는 발송 줄을 만들고 그 시각을 마지막 발송 시각으로 적는다")
+    @DisplayName("카테고리 알림의 첫 빈자리는 발송 줄을 만들고 그 시각을 마지막 발송 시각으로 적는다")
     void createDispatchJobs_categoryRegionFirstEvent_savesJobAndMarksSent() {
         NotificationEvent event = notificationEventRepository.saveAndFlush(event(1L));
         NotificationSubscription subscription = notificationSubscriptionRepository.save(categoryRegion(USER_ID, NOW.plusHours(5)));
@@ -221,7 +221,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리 구독은 마지막 발송 시각부터 60분 안에는 발송 줄을 만들지 않고 메모장에만 넣는다")
+    @DisplayName("카테고리 알림은 마지막 발송 시각부터 60분 안에는 발송 줄을 만들지 않고 메모장에만 넣는다")
     void createDispatchJobs_categoryRegionWithin60Minutes_queuesWithoutDispatch() {
         NotificationSubscription subscription = notificationSubscriptionRepository.save(categoryRegion(USER_ID, NOW.plusHours(6)));
         notificationEventRepository.saveAndFlush(event(1L));
@@ -238,7 +238,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리 구독은 마지막 발송 시각부터 60분이 지나면 다시 발송 줄을 만든다")
+    @DisplayName("카테고리 알림은 마지막 발송 시각부터 60분이 지나면 다시 발송 줄을 만든다")
     void createDispatchJobs_categoryRegionAfter60Minutes_savesJobAgain() {
         NotificationSubscription subscription = notificationSubscriptionRepository.save(categoryRegion(USER_ID, NOW.plusHours(5)));
         categoryRegionPendingQueue.markSent(subscription.getId(), NOW.minusMinutes(60));
@@ -255,7 +255,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리 구독은 마지막 발송 시각부터 59분이면 아직 메모장에만 넣는다")
+    @DisplayName("카테고리 알림은 마지막 발송 시각부터 59분이면 아직 메모장에만 넣는다")
     void createDispatchJobs_categoryRegionAt59Minutes_queuesWithoutDispatch() {
         NotificationSubscription subscription = notificationSubscriptionRepository.save(categoryRegion(USER_ID, NOW.plusHours(5)));
         categoryRegionPendingQueue.markSent(subscription.getId(), NOW.minusMinutes(59));
@@ -270,7 +270,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("매장 구독은 쿨다운 메모장에 적지 않는다")
+    @DisplayName("매장 알림은 쿨다운 메모장에 적지 않는다")
     void createDispatchJobs_storeUser_doesNotTouchCategoryQueue() {
         notificationEventRepository.saveAndFlush(event(1L));
         notificationSubscriptionRepository.save(store(USER_ID));
@@ -283,7 +283,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("매장 구독으로 알림을 받는 회원은 카테고리 구독이 있어도 메모장에 넣지 않는다")
+    @DisplayName("매장 알림으로 이 빈자리를 받는 회원은 카테고리 알림이 있어도 메모장에 넣지 않는다")
     void createDispatchJobs_storeAndCategorySameUser_savesStoreJobOnly() {
         notificationEventRepository.saveAndFlush(event(1L));
         notificationSubscriptionRepository.save(store(USER_ID));
@@ -300,7 +300,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("같은 회원의 카테고리 구독이 두 개여도 발송 줄은 하나고 둘 다 마지막 발송 시각을 적는다")
+    @DisplayName("같은 회원의 카테고리 알림이 두 개여도 발송 줄은 하나고 둘 다 마지막 발송 시각을 적는다")
     void createDispatchJobs_twoCategorySubscriptions_oneJobAndBothMarkedSent() {
         notificationEventRepository.saveAndFlush(event(1L));
         NotificationSubscription first = notificationSubscriptionRepository.save(categoryRegion(USER_ID, NOW.plusHours(5)));
@@ -317,7 +317,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("쿨다운 중인 구독만 메모장에 넣고 쿨다운이 아닌 구독은 발송 줄을 만든다")
+    @DisplayName("쿨다운 중인 알림만 메모장에 넣고 쿨다운이 아닌 알림은 발송 줄을 만든다")
     void createDispatchJobs_oneCoolingAndOneReady_queuesOnlyTheCoolingSubscription() {
         NotificationSubscription cooling = notificationSubscriptionRepository.save(categoryRegion(USER_ID, NOW.plusHours(5)));
         NotificationSubscription ready = notificationSubscriptionRepository.save(categoryRegion(OTHER_USER_ID, NOW.plusHours(5)));
@@ -337,7 +337,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("같은 회원이어도 쿨다운 중인 구독만 메모장에 넣고 다른 구독은 발송 줄을 만든다")
+    @DisplayName("같은 회원이어도 쿨다운 중인 알림만 메모장에 넣고 다른 알림은 발송 줄을 만든다")
     void createDispatchJobs_sameUserOneCoolingAndOneReady_queuesOnlyTheCoolingSubscription() {
         NotificationSubscription cooling = notificationSubscriptionRepository.save(categoryRegion(USER_ID, NOW.plusHours(5)));
         NotificationSubscription ready = notificationSubscriptionRepository.save(categoryRegion(USER_ID, NOW.plusHours(6)));
@@ -356,7 +356,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("60분이 지난 카테고리 구독은 빈 슬롯 수만큼 묶음 문자 한 통을 보내고 발송 줄은 만들지 않는다")
+    @DisplayName("60분이 지난 카테고리 알림은 빈 슬롯 수만큼 묶음 문자 한 통을 보내고 발송 줄은 만들지 않는다")
     void flushCategoryRegionSummaries_openSlots_sendsOneSummaryWithoutDispatch() {
         NotificationSubscription subscription = notificationSubscriptionRepository.save(
                 categoryRegion(USER_ID, NOW.plusHours(6)));
@@ -387,7 +387,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("한 구독자 문자 발송이 실패해도 다른 구독자의 묶음 문자는 보낸다")
+    @DisplayName("한 회원 문자 발송이 실패해도 다른 회원의 묶음 문자는 보낸다")
     void flushCategoryRegionSummaries_oneSendThrows_continuesNextSubscriber() {
         NotificationSubscription failed = notificationSubscriptionRepository.save(
                 categoryRegion(USER_ID, NOW.plusHours(6)));
@@ -494,7 +494,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("해제한 카테고리 구독은 묶음 문자를 보내지 않고 목록만 비운다")
+    @DisplayName("해제한 카테고리 알림은 묶음 문자를 보내지 않고 목록만 비운다")
     void flushCategoryRegionSummaries_inactiveSubscription_clearsWithoutSending() {
         NotificationSubscription subscription = categoryRegion(USER_ID, NOW.plusHours(6));
         subscription.deactivate();
@@ -513,7 +513,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("해제한 카테고리 구독은 새 빈자리를 발송 줄에도 메모장에도 넣지 않는다")
+    @DisplayName("해제한 카테고리 알림은 새 빈자리를 발송 줄에도 메모장에도 넣지 않는다")
     void createDispatchJobs_inactiveCategory_createsNothing() {
         NotificationSubscription subscription = categoryRegion(USER_ID, NOW.plusHours(6));
         subscription.deactivate();
@@ -530,7 +530,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리 발송 줄이 생긴 뒤 구독을 해제하면 문자를 보내지 않는다")
+    @DisplayName("카테고리 발송 줄이 생긴 뒤 알림을 해제하면 문자를 보내지 않는다")
     void recheckClaimedJob_inactiveCategory_skipsSend() {
         openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
         NotificationSubscription subscription = notificationSubscriptionRepository.save(
@@ -588,7 +588,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("매장 구독은 임박·초임박·재공개를 각각 한 통씩 보내고 메모장에는 넣지 않는다")
+    @DisplayName("매장 알림은 임박·초임박·재공개를 각각 한 통씩 보내고 메모장에는 넣지 않는다")
     void storeSubscription_eachEventType_sendsOneSms() {
         notificationSubscriptionRepository.save(store(USER_ID));
         openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
@@ -645,7 +645,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리 구독이 두 개면 60분 안에는 발송 줄을 만들지 않고 메모장도 두 개로 쌓는다")
+    @DisplayName("카테고리 알림이 두 개면 60분 안에는 발송 줄을 만들지 않고 메모장도 두 개로 쌓는다")
     void createDispatchJobs_twoCategorySubscriptions_keepSeparatePendingLists() {
         NotificationSubscription first = notificationSubscriptionRepository.save(
                 categoryRegion(USER_ID, NOW.plusHours(6)));
@@ -719,7 +719,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("구독이 활성이고 희망 종료가 남았고 빈자리가 아직 팔리면 그대로 둔다")
+    @DisplayName("알림이 활성이고 희망 종료가 남았고 빈자리가 아직 팔리면 그대로 둔다")
     void recheckClaimedJob_stillSendable_keepsProcessing() {
         openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
         notificationSubscriptionRepository.save(store(USER_ID));
@@ -732,7 +732,7 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("구독을 해제했으면 끝으로 두고 보내지 않는다")
+    @DisplayName("알림을 해제했으면 끝으로 두고 보내지 않는다")
     void recheckClaimedJob_inactiveSubscription_skips() {
         openSlot(1L, SLOT_START, SLOT_START.plusHours(1));
         NotificationSubscription subscription = store(USER_ID);

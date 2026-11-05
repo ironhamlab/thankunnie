@@ -20,7 +20,7 @@ import com.ucamp.app.domain.user.entity.TermsCode;
  * 매장 회원가입 요청. SHOP 의 필수 컬럼이 많아 계정과 매장 정보를 함께 받는다.
  * 매장 정보 검증 규칙은 매장 수정(ShopUpdateRequest)과 같다. 대표 이미지는 가입 후 이미지 API 로 올린다.
  *
- * @param regionCode          시군구 지역코드 (구독 알림 매칭 기준)
+ * @param regionCode          시군구 지역코드 (알림 매칭 기준)
  * @param phone               매장 휴대폰 번호. 가입 때는 휴대폰 인증을 받아 010-0000-0000 형식으로 저장한다.
  *                            고객과 달리 다른 매장·고객이 쓰는 번호여도 가입할 수 있다
  * @param agreedTerms         동의한 매장 약관 코드. 필수 매장 약관(SHOP_SERVICE·SHOP_PRIVACY·SHOP_BUSINESS_CHECK)은
