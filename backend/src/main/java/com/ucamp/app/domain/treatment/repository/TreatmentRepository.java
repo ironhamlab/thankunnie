@@ -14,11 +14,15 @@ public interface TreatmentRepository extends JpaRepository<Treatment, Long> {
     boolean existsByImageUrlEndingWith(String suffix);
 
     @EntityGraph(attributePaths = "shop")
-    List<Treatment> findByShopShopIdOrderByTreatmentIdDesc(Long shopId);
+    List<Treatment> findByShopShopIdAndStatusNotOrderByTreatmentIdDesc(Long shopId, TreatmentStatus status);
 
     @EntityGraph(attributePaths = "shop")
     List<Treatment> findByShopShopIdAndStatusOrderByTreatmentIdDesc(Long shopId, TreatmentStatus status);
 
     @EntityGraph(attributePaths = "shop")
     Optional<Treatment> findByTreatmentIdAndShopShopId(Long treatmentId, Long shopId);
+
+    @EntityGraph(attributePaths = "shop")
+    Optional<Treatment> findByTreatmentIdAndShopShopIdAndStatusNot(Long treatmentId, Long shopId,
+            TreatmentStatus status);
 }
