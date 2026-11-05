@@ -1,6 +1,6 @@
 # C 빈자리 탐색·지도 API 계약
 
-상태: **C 결정 완료 · 구현 대기** · 작성일: 2026-10-28
+상태: **구현 완료** · 작성일: 2026-10-28
 
 고객이 빈자리를 찾아보고(목록·지도) 고르는(빈자리 상세) 탐색 기능의 요청·응답 형식과 지도 메인 화면 흐름을 정한다. A-01·A-02에서 제안한 `/api/v1/items` 임시 계약을 실제 스키마(`docs/erd/01_schema_ddl.sql`)와 B의 빈자리 공통 규칙(`domain/vacancy`)에 맞춰 구체화했다.
 
@@ -52,7 +52,7 @@
 | Method | GET |
 | Path | `/api/v1/explore/vacancies` |
 | 인증 | 불필요 (비로그인 조회 가능) |
-| 응답 | `ApiResponse<VacancyPageResponse>` |
+| 응답 | `ApiResponse<PageResponse<ExploreVacancyResponse>>` |
 
 ### 요청 파라미터
 
@@ -66,7 +66,7 @@
 | `categoryId` | number | 전체 | `SHOP.CATEGORY_ID` |
 | `shopId` | number | 전체 | 한 매장의 빈자리만. 지도에서 매장 마커를 눌렀을 때 사용 |
 | `treatmentType` | `NORMAL`·`MODEL` | 전체 | 해당 시술 유형만. 초보 시술 모집 목록에서 `MODEL` 로 사용 |
-| `timeOfDay` | `MORNING`·`AFTERNOON`·`EVENING` | 전체 | 시작 시각 기준 09~12시 / 12~18시 / 18시 이후 |
+| `timeOfDay` | `MORNING`·`AFTERNOON`·`EVENING` | 전체 | 시작 시각 기준 12시 전 / 12~18시 / 18시 이후 |
 | `closingWithinHours` | number (1~72) | 없음 | 예약 마감(시작 20분 전)이 지금부터 N시간 안인 빈자리만. 메인 "마감 임박" 영역용 |
 | `priceTier` | `IMMINENT`·`LAST_MINUTE` | 전체 | 해당 가격 구간 이상만. 타임세일(`/?sale=1`·`/map?sale=1`·홈 지도 "타임세일만")은 `LAST_MINUTE`. `LAST_MINUTE`이면 시작 3시간 이내에서 초임박가가 판매가보다 싼 시술만 낸다 (2장) |
 | `keyword` | string (최대 50자) | 없음 | 매장명·주소(지역)·시술명 부분 일치. 예: `강서구`, `마곡` |
@@ -197,7 +197,8 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
         "modelOnly": false,
         "modelVacancyCount": 0,
         "modelMinSalePrice": null,
-        "totalVacancyCount": 7
+        "totalVacancyCount": 7,
+        "modelEarliestStartsAt": null
       }
     ],
     "hasMore": false
