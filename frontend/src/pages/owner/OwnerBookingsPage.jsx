@@ -216,7 +216,7 @@ export default function OwnerBookingsPage() {
             />
           </label>
           <label>
-            시작일까지
+            종료일까지
             <input
               type="date"
               value={to}

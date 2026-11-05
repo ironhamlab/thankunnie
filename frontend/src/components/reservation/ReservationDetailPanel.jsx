@@ -81,6 +81,7 @@ export default function ReservationDetailPanel({
             <span>{detail.customerPhone ?? '-'}</span>
           </div>
           <small>요청사항: {detail.customerRequest || '없음'}</small>
+          <br />
           {summary.customerId && (
             <Link
               className="b-pink"
