@@ -2,6 +2,8 @@
 
 상태: **메인 측 구현 및 검증 완료 · C 실제 화면/API 통합 대기**
 
+> **기록용 문서.** 여기의 `/api/v1/items`, `/items/:id`, `/explore` 임시 계약은 쓰지 않는다. 실제 API는 `C-01-vacancy-search.md`의 `/api/v1/explore/...`를 기준으로 한다.
+
 > 2026-10-27 UNNIE-109: 기본 홈이 시안 기반 화면으로 바뀌어 이 문서의 프론트 구현(`pages/main/`, `useMainStore`, `createMainStore`, `itemApi`, `mainPresets`, `mainNavigation`, `mainItemDisplay`, `tests/main*.mjs`)을 삭제했다. 필요하면 Git 이력에서 복원한다. 아래 내용은 작업 기록으로만 남긴다.
 작성일: 2026-10-23
 작업 브랜치: `feature/fe/26-main-page`
