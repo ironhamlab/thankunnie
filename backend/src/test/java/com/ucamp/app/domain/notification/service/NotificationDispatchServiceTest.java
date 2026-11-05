@@ -614,11 +614,11 @@ class NotificationDispatchServiceTest {
                 .containsOnly(NotificationDispatchStatus.SENT)
                 .hasSize(3);
         verify(solapiSmsClient).send(eq("010-1111-1111"), eq(shopSms(
-                "임박! ", "2026년 10월 22일 15:00", "2026-10-22T15:00:00")));
+                "📢임박!📢 ", "2026년 10월 22일 15:00", "2026-10-22T15:00:00")));
         verify(solapiSmsClient).send(eq("010-1111-1111"), eq(shopSms(
-                "초임박! ", "2026년 10월 22일 14:00", "2026-10-22T14:00:00")));
+                "🚨초임박!🚨 ", "2026년 10월 22일 14:00", "2026-10-22T14:00:00")));
         verify(solapiSmsClient).send(eq("010-1111-1111"), eq(shopSms(
-                "땡! ", "2026년 10월 22일 16:00", "2026-10-22T16:00:00")));
+                "🔔땡!🔔 ", "2026년 10월 22일 16:00", "2026-10-22T16:00:00")));
         assertThat(categoryRegionPendingQueue.subscriptionIds()).isEmpty();
     }
 
@@ -885,12 +885,12 @@ class NotificationDispatchServiceTest {
         assertThat(saved.getFailReason()).isNull();
         // 본문 시각은 연도 포함 한국어 형식이다. 기본 toString(2026-10-22T15:00)을 쓰지 않는다.
         verify(solapiSmsClient).send(eq("010-1111-1111"), eq(shopSms(
-                "임박! ", "2026년 10월 22일 15:00", "2026-10-22T15:00:00")));
+                "📢임박!📢 ", "2026년 10월 22일 15:00", "2026-10-22T15:00:00")));
         NotificationInbox inbox = notificationInboxRepository.findAll().get(0);
         assertThat(inbox.getUserId()).isEqualTo(USER_ID);
         assertThat(inbox.getCategory()).isEqualTo(NotificationInboxCategory.INTEREST);
         assertThat(inbox.getTitle()).isEqualTo("임박 알림");
-        assertThat(inbox.getBody()).isEqualTo("임박! 매장1-2026년 10월 22일 15:00 땡잡을 기회가 생겼어요!");
+        assertThat(inbox.getBody()).isEqualTo("📢임박!📢 매장1-2026년 10월 22일 15:00 땡잡을 기회가 생겼어요!");
         assertThat(inbox.getLinkPath()).isEqualTo("/shops/1?treatmentId=100&startsAt=2026-10-22T15:00:00");
         assertThat(inbox.getReadAt()).isNull();
     }
@@ -925,7 +925,7 @@ class NotificationDispatchServiceTest {
         NotificationInbox inbox = notificationInboxRepository.findAll().get(0);
         assertThat(inbox.getLinkPath()).isEqualTo("/shops/1?treatmentId=101&startsAt=2026-10-22T15:00:00");
         verify(solapiSmsClient).send(eq("010-1111-1111"),
-                eq(shopSms("임박! ", "2026년 10월 22일 15:00", "2026-10-22T15:00:00", 101L)));
+                eq(shopSms("📢임박!📢 ", "2026년 10월 22일 15:00", "2026-10-22T15:00:00", 101L)));
     }
 
     @Test
@@ -941,7 +941,7 @@ class NotificationDispatchServiceTest {
         NotificationInbox inbox = notificationInboxRepository.findAll().get(0);
         assertThat(inbox.getLinkPath()).isEqualTo("/shops/1");
         verify(solapiSmsClient).send(eq("010-1111-1111"), eq(
-                "임박! 매장1-2026년 10월 22일 15:00 땡잡을 기회가 생겼어요!\nhttps://thankunnie.shop/shops/1"));
+                "📢임박!📢 매장1-2026년 10월 22일 15:00 땡잡을 기회가 생겼어요!\nhttps://thankunnie.shop/shops/1"));
     }
 
     @Test
