@@ -19,6 +19,7 @@ import com.ucamp.app.domain.shop.repository.ShopRepository;
 import com.ucamp.app.domain.shop.service.ShopImageStorage;
 import com.ucamp.app.domain.treatment.dto.response.TreatmentImageResponse;
 import com.ucamp.app.domain.treatment.entity.Treatment;
+import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
 import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
 
 /** 시술 대표 이미지의 권한 검사와 DB·파일 변경 순서를 관리한다. */
@@ -95,7 +96,8 @@ public class TreatmentImageService {
     }
 
     private Treatment findTreatment(Long shopId, Long treatmentId) {
-        return treatmentRepository.findByTreatmentIdAndShopShopId(treatmentId, shopId)
+        return treatmentRepository.findByTreatmentIdAndShopShopIdAndStatusNot(treatmentId, shopId,
+                        TreatmentStatus.DELETED)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
     }
 

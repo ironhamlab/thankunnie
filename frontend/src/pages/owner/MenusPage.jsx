@@ -10,6 +10,8 @@ import Panel from '@/components/common/Panel';
 import Notice from '@/components/common/Notice';
 import EmptyState from '@/components/common/EmptyState';
 import Alert from '@/components/common/Alert';
+import Dialog from '@/components/common/Dialog';
+import styles from './MenusPage.module.css';
 
 export default function MenusPage() {
   const treatments = useTreatmentStore((state) => state.treatments);
@@ -25,7 +27,9 @@ export default function MenusPage() {
   const save = useTreatmentStore((state) => state.saveTreatment);
   const changeStatus = useTreatmentStore((state) => state.changeTreatmentStatus);
   const saveImage = useTreatmentStore((state) => state.saveImage);
+  const remove = useTreatmentStore((state) => state.deleteTreatment);
   const [edit, setEdit] = useState(null);
+  const [removeTarget, setRemoveTarget] = useState(null);
   const [notice, setNotice] = useState('');
   const [actionError, setActionError] = useState(null);
 
@@ -38,14 +42,16 @@ export default function MenusPage() {
     setActionError(null);
     setEdit({ treatment });
   };
-  const submit = async (treatmentId, payload, imageFile) => {
+  // 이미지 선택·삭제는 폼에서 대기만 하다가 저장을 누를 때 시술 정보와 함께 반영한다
+  const submit = async (treatmentId, payload, imageChange) => {
     if (isSaving) return;
     setIsSubmitting(true);
     setActionError(null);
     let saved;
     try {
       saved = await save(treatmentId, payload);
-      if (imageFile) await saveImage(saved.treatmentId, imageFile);
+      if (imageChange?.file) await saveImage(saved.treatmentId, imageChange.file);
+      if (imageChange?.remove) await saveImage(saved.treatmentId, null);
       setEdit(null);
       setNotice('시술 메뉴를 저장했습니다.');
     } catch (failure) {
@@ -54,7 +60,7 @@ export default function MenusPage() {
         setEdit({ treatment: saved });
         setActionError({
           ...failure,
-          message: `시술 정보는 저장됐지만 이미지 등록에 실패했습니다. 다시 저장해 주세요. ${failure.message}`,
+          message: `시술 정보는 저장됐지만 이미지 ${imageChange?.remove ? '삭제' : '등록'}에 실패했습니다. 다시 저장해 주세요. ${failure.message}`,
         });
       } else setActionError(failure);
     } finally {
@@ -69,11 +75,37 @@ export default function MenusPage() {
         treatment.treatmentId,
         treatment.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
       );
+      const remaining = updated.remainingReservationCount ?? 0;
       setNotice(
-        `${updated.name} 시술을 ${updated.status === 'ACTIVE' ? '활성화' : '비활성화'}했습니다.`,
+        `${updated.name} 시술을 ${updated.status === 'ACTIVE' ? '활성화' : '비활성화'}했습니다.${
+          updated.status === 'INACTIVE' && remaining > 0
+            ? ` 남은 예약 ${remaining}건은 그대로 진행됩니다.`
+            : ''
+        }`,
       );
     } catch (failure) {
       setActionError(failure);
+    }
+  };
+  // 서버 거절 뒤 목록을 다시 받으면 새 남은 예약 수로 안내가 바뀌도록 목록의 최신 값을 쓴다
+  const removeItem =
+    removeTarget &&
+    (treatments.find((item) => item.treatmentId === removeTarget.treatmentId) ?? removeTarget);
+  const removeRemaining = removeItem?.remainingReservationCount ?? 0;
+  const confirmRemove = async () => {
+    if (isSaving || !removeTarget) return;
+    setIsSubmitting(true);
+    setActionError(null);
+    try {
+      await remove(removeTarget.treatmentId);
+      setNotice(`${removeTarget.name} 시술을 삭제했습니다.`);
+      setRemoveTarget(null);
+    } catch (failure) {
+      setActionError(failure);
+      // 화면을 연 뒤 새 예약이 생겨 서버가 거절했으면 남은 예약 수를 다시 받아 안내를 맞춘다
+      if (failure.code === 'TREATMENT_002') load();
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -160,9 +192,14 @@ export default function MenusPage() {
                         <td>
                           <strong>{formatMoney(item.regularPrice)}</strong>
                         </td>
-                        <td>{item.status === 'ACTIVE' ? '활성' : '비활성'}</td>
                         <td>
-                          <div className="b-flex">
+                          {item.status === 'ACTIVE' ? '활성' : '비활성'}
+                          {item.remainingReservationCount > 0 && (
+                            <small>남은 예약 {item.remainingReservationCount}건</small>
+                          )}
+                        </td>
+                        <td>
+                          <div className={`b-flex ${styles.actions}`}>
                             <Button
                               size="small"
                               disabled={isSaving || isRefreshing}
@@ -176,6 +213,18 @@ export default function MenusPage() {
                               onClick={() => toggle(item)}
                             >
                               {item.status === 'ACTIVE' ? '비활성화' : '활성화'}
+                            </Button>
+                            <Button
+                              size="small"
+                              variant="danger"
+                              disabled={isSaving || isRefreshing}
+                              onClick={() => {
+                                setNotice('');
+                                setActionError(null);
+                                setRemoveTarget(item);
+                              }}
+                            >
+                              삭제
                             </Button>
                           </div>
                         </td>
@@ -193,14 +242,68 @@ export default function MenusPage() {
           {notice}
         </Alert>
       )}
-      {!edit && actionError && <p role="alert">{actionError.message}</p>}
+      {!edit && !removeTarget && actionError && <p role="alert">{actionError.message}</p>}
+      {removeTarget && (
+        <Dialog
+          title="시술 삭제"
+          closeOnBackdrop={false}
+          onClose={() => {
+            if (!isSaving) setRemoveTarget(null);
+          }}
+        >
+          <div className="b-stack">
+            {removeRemaining > 0 ? (
+              <p>
+                <strong>{removeItem.name}</strong> 시술에 남은 예약이 {removeRemaining}건 있어
+                지금은 삭제할 수 없습니다.{' '}
+                {removeItem.status === 'ACTIVE'
+                  ? '먼저 비활성화해 새 예약을 막고, 남은 예약이 끝난 뒤 삭제해 주세요.'
+                  : '남은 예약이 끝난 뒤 삭제해 주세요.'}
+              </p>
+            ) : (
+              <p>
+                <strong>{removeItem.name}</strong> 시술을 삭제할까요? 삭제한 시술은 목록과 신규
+                빈자리 선택에서 사라지며 되돌릴 수 없습니다. 지난 예약 이력은 그대로 유지됩니다.
+              </p>
+            )}
+            {actionError && !(actionError.code === 'TREATMENT_002' && removeRemaining > 0) && (
+              <p role="alert">{actionError.message}</p>
+            )}
+            <div className={`b-flex ${styles.actions}`}>
+              <Button disabled={isSaving} onClick={() => setRemoveTarget(null)}>
+                {removeRemaining > 0 ? '닫기' : '취소'}
+              </Button>
+              {removeRemaining > 0 && removeItem.status === 'ACTIVE' && (
+                <Button
+                  variant="primary"
+                  disabled={isSaving || isRefreshing}
+                  onClick={async () => {
+                    setRemoveTarget(null);
+                    await toggle(removeItem);
+                  }}
+                >
+                  비활성화하기
+                </Button>
+              )}
+              {removeRemaining === 0 && (
+                <Button
+                  variant="danger"
+                  disabled={isSaving || isRefreshing}
+                  onClick={confirmRemove}
+                >
+                  {isSaving ? '삭제 중…' : '삭제'}
+                </Button>
+              )}
+            </div>
+          </div>
+        </Dialog>
+      )}
       {edit && (
         <TreatmentForm
           treatment={edit.treatment}
           imageUrl={
             treatments.find((item) => item.treatmentId === edit.treatment?.treatmentId)?.imageUrl
           }
-          onImageSave={(file) => saveImage(edit.treatment.treatmentId, file)}
           isSaving={isSaving}
           error={actionError}
           onSave={submit}

@@ -21,4 +21,6 @@ export const treatmentApi = {
     axiosInstance.put(`${basePath(shopId)}/${treatmentId}`, payload),
   updateStatus: (shopId, treatmentId, status) =>
     axiosInstance.patch(`${basePath(shopId)}/${treatmentId}/status`, { status }),
+  deleteTreatment: (shopId, treatmentId) =>
+    axiosInstance.delete(`${basePath(shopId)}/${treatmentId}`),
 };

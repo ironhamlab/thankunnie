@@ -12,9 +12,10 @@ public record TreatmentDetailResponse(
         Integer regularPrice, Integer price, Integer lastMinutePrice,
         Integer durationMinutes, TreatmentStatus status,
         TreatmentType treatmentType, String modelCondition, String photoNotice, String imageUrl,
-        OffsetDateTime createdAt, OffsetDateTime updatedAt) {
+        OffsetDateTime createdAt, OffsetDateTime updatedAt, long remainingReservationCount) {
 
-    public static TreatmentDetailResponse from(Treatment treatment) {
+    /** remainingReservationCount: 아직 끝나지 않은 예약 수. 0보다 크면 삭제할 수 없다. */
+    public static TreatmentDetailResponse from(Treatment treatment, long remainingReservationCount) {
         return new TreatmentDetailResponse(
                 treatment.getTreatmentId(), treatment.getShop().getShopId(),
                 treatment.getName(), treatment.getDescription(), treatment.getRegularPrice(),
@@ -22,6 +23,7 @@ public record TreatmentDetailResponse(
                 treatment.getDurationMinutes(), treatment.getStatus(),
                 treatment.getTreatmentType(),
                 treatment.getModelCondition(), treatment.getPhotoNotice(), treatment.getImageUrl(),
-                TimeUtils.toOffset(treatment.getCreatedAt()), TimeUtils.toOffset(treatment.getUpdatedAt()));
+                TimeUtils.toOffset(treatment.getCreatedAt()), TimeUtils.toOffset(treatment.getUpdatedAt()),
+                remainingReservationCount);
     }
 }
