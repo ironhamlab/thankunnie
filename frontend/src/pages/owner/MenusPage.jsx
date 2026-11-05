@@ -11,6 +11,7 @@ import Notice from '@/components/common/Notice';
 import EmptyState from '@/components/common/EmptyState';
 import Alert from '@/components/common/Alert';
 import Dialog from '@/components/common/Dialog';
+import styles from './MenusPage.module.css';
 
 export default function MenusPage() {
   const treatments = useTreatmentStore((state) => state.treatments);
@@ -181,7 +182,7 @@ export default function MenusPage() {
                         </td>
                         <td>{item.status === 'ACTIVE' ? '활성' : '비활성'}</td>
                         <td>
-                          <div className="b-flex">
+                          <div className={`b-flex ${styles.actions}`}>
                             <Button
                               size="small"
                               disabled={isSaving || isRefreshing}
@@ -240,7 +241,7 @@ export default function MenusPage() {
               유지됩니다.
             </p>
             {actionError && <p role="alert">{actionError.message}</p>}
-            <div className="b-flex">
+            <div className={`b-flex ${styles.actions}`}>
               <Button disabled={isSaving} onClick={() => setRemoveTarget(null)}>
                 취소
               </Button>
