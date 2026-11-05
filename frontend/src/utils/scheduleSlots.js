@@ -7,7 +7,15 @@ const MINUTES_PER_DAY = 24 * 60;
 // 고객 예약 클릭 마감: 시작 20분 전
 const BOOKING_DEADLINE_MS = 20 * 60 * 1000;
 
-export const DAY_LABELS = { SUN: '일', MON: '월', TUE: '화', WED: '수', THU: '목', FRI: '금', SAT: '토' };
+export const DAY_LABELS = {
+  SUN: '일',
+  MON: '월',
+  TUE: '화',
+  WED: '수',
+  THU: '목',
+  FRI: '금',
+  SAT: '토',
+};
 
 const dayCodeOf = (date) => {
   const [year, month, day] = date.split('-').map(Number);
@@ -40,6 +48,10 @@ export const dayHoursOf = (businessHours, date) => {
   const hours = businessHours.find((item) => item.dayOfWeek === dayCodeOf(date));
   return hours && !hours.closed ? { openTime: hours.openTime, closeTime: hours.closeTime } : null;
 };
+
+/** 고른 [시작, 종료) 안에 예약이 있는 칸이 있는지 */
+export const hasBookedSlot = (slots, startTime, endTime) =>
+  slots.some((slot) => slot.status === 'BOOKED' && slot.time >= startTime && slot.time < endTime);
 
 /** 2026-10-30 → 10/30(금) */
 export const formatDayLabel = (date) =>

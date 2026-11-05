@@ -33,6 +33,7 @@ import com.ucamp.app.domain.reservation.entity.Reservation;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.schedule.dto.request.BusinessHourSaveRequest;
+import com.ucamp.app.domain.schedule.dto.response.BusinessHourClosingImpactResponse;
 import com.ucamp.app.domain.schedule.dto.response.BusinessHourResponse;
 import com.ucamp.app.domain.schedule.entity.BusinessDay;
 import com.ucamp.app.domain.schedule.entity.ScheduleExceptionType;
@@ -179,6 +180,110 @@ class ShopBusinessHourServiceTest {
                 service.updateBusinessHours(owner, new BusinessHourSaveRequest(week(10, 14)));
 
         assertThat(result).hasSize(7);
+    }
+
+    @Test
+    @DisplayName("줄어든 시간에 밀려나는 예약이 있으면 어느 예약인지 알려준다")
+    void updateBusinessHours_strandsReservation_namesReservation() {
+        given(shopBusinessHourRepository.save(any(ShopBusinessHour.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(reservationRepository.findActiveOverlapping(any(), any(), any()))
+                .willReturn(List.of(confirmedReservation(SUNDAY_14)));
+
+        assertThatThrownBy(() -> service.updateBusinessHours(owner, new BusinessHourSaveRequest(week(10, 14))))
+                .hasMessageContaining("10/25(일) 14:00");
+    }
+
+    @Test
+    @DisplayName("앞으로 예약이 있는 요일도 휴무로 바꿀 수 있고 예약은 그대로 둔다")
+    void updateBusinessHours_closeDayWithReservation_saves() {
+        ShopBusinessHour sunday = hour(BusinessDay.SUN, 10, 20);
+        given(shopBusinessHourRepository.findByShopId(owner.shopId())).willReturn(List.of(sunday));
+        given(shopBusinessHourRepository.save(any(ShopBusinessHour.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        Reservation reservation = confirmedReservation(SUNDAY_14);
+        given(reservationRepository.findActiveOverlapping(any(), any(), any())).willReturn(List.of(reservation));
+
+        List<BusinessHourResponse> result = service.updateBusinessHours(owner, closeSunday(null));
+
+        assertThat(sunday.isClosed()).isTrue();
+        assertThat(result).hasSize(7);
+        assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
+        verify(shopScheduleExceptionRepository, never()).delete(any(ShopScheduleException.class));
+    }
+
+    @Test
+    @DisplayName("휴무로 바꾸며 열기를 함께 닫으면 예약 없는 열기만 지운다")
+    void updateBusinessHours_closeOpenExceptions_deletesOnlyUnreserved() {
+        given(shopBusinessHourRepository.findByShopId(owner.shopId()))
+                .willReturn(List.of(hour(BusinessDay.SUN, 10, 20)));
+        given(shopBusinessHourRepository.save(any(ShopBusinessHour.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(reservationRepository.findActiveOverlapping(any(), any(), any()))
+                .willReturn(List.of(confirmedReservation(SUNDAY_14)));
+        ShopScheduleException reserved = open(SUNDAY_14);
+        ShopScheduleException free = open(SUNDAY_14.plusHours(4));
+        ShopScheduleException otherDay = open(SUNDAY_14.plusDays(1));
+        given(shopScheduleExceptionRepository.findOverlapping(any(), any(), any()))
+                .willReturn(List.of(reserved, free, otherDay));
+
+        service.updateBusinessHours(owner, closeSunday(true));
+
+        verify(shopScheduleExceptionRepository).delete(free);
+        verify(shopScheduleExceptionRepository, never()).delete(reserved);
+        verify(shopScheduleExceptionRepository, never()).delete(otherDay);
+    }
+
+    @Test
+    @DisplayName("원래 휴무였던 요일에 연 시간은 함께 닫기로 지우지 않는다")
+    void updateBusinessHours_alreadyClosedDay_keepsOpenExceptions() {
+        ShopBusinessHour sunday = ShopBusinessHour.builder().shopId(owner.shopId()).dayOfWeek(BusinessDay.SUN)
+                .closed(true).build();
+        given(shopBusinessHourRepository.findByShopId(owner.shopId())).willReturn(List.of(sunday));
+        given(shopBusinessHourRepository.save(any(ShopBusinessHour.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        service.updateBusinessHours(owner, closeSunday(true));
+
+        verify(shopScheduleExceptionRepository, never()).delete(any(ShopScheduleException.class));
+    }
+
+    @Test
+    @DisplayName("휴무 전환 영향은 그 요일의 예약과 열기만 돌려주고 예약 있는 열기를 표시한다")
+    void getClosingImpact_returnsReservationsAndOpensOnClosingDays() {
+        given(reservationRepository.findActiveOverlapping(any(), any(), any()))
+                .willReturn(List.of(confirmedReservation(SUNDAY_14), confirmedReservation(SUNDAY_14.plusDays(1))));
+        given(shopScheduleExceptionRepository.findOverlapping(any(), any(), any()))
+                .willReturn(List.of(open(SUNDAY_14), open(SUNDAY_14.plusHours(4)), open(SUNDAY_14.plusDays(1))));
+
+        BusinessHourClosingImpactResponse impact = service.getClosingImpact(owner, List.of(BusinessDay.SUN));
+
+        assertThat(impact.reservations()).hasSize(1);
+        assertThat(impact.openExceptions()).extracting(BusinessHourClosingImpactResponse.OpenException::reserved)
+                .containsExactly(true, false);
+    }
+
+    @Test
+    @DisplayName("고객은 휴무 전환 영향을 조회할 수 없다")
+    void getClosingImpact_customer_throwsForbidden() {
+        assertThatThrownBy(() -> service.getClosingImpact(customer, List.of(BusinessDay.SUN)))
+                .extracting("errorCode").isEqualTo(ErrorCode.FORBIDDEN);
+    }
+
+    private ShopScheduleException open(LocalDateTime startsAt) {
+        return ShopScheduleException.builder()
+                .shopId(owner.shopId())
+                .exceptionType(ScheduleExceptionType.OPEN)
+                .startsAt(startsAt)
+                .endsAt(startsAt.plusHours(2))
+                .build();
+    }
+
+    private static BusinessHourSaveRequest closeSunday(Boolean closeOpenExceptions) {
+        List<BusinessHourSaveRequest.Day> days = week(10, 20);
+        days.replaceAll(day -> day.dayOfWeek() == BusinessDay.SUN
+                ? new BusinessHourSaveRequest.Day(BusinessDay.SUN, true, null, null) : day);
+        return new BusinessHourSaveRequest(days, closeOpenExceptions);
     }
 
     private static List<BusinessHourSaveRequest.Day> week(int openHour, int closeHour) {

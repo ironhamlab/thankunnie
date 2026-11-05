@@ -81,11 +81,20 @@ export const useScheduleStore = create((set, get) => ({
   fetchAvailableTimes: async (date) =>
     (await scheduleApi.getAvailableTimes(get().shopId, date)).startTimes,
 
-  saveBusinessHours: async (days) => {
+  saveBusinessHours: async (days, closeOpenExceptions = false) => {
     return get().runMutation(async () => {
-      const businessHours = await scheduleApi.updateBusinessHours(days);
+      const businessHours = await scheduleApi.updateBusinessHours(days, closeOpenExceptions);
       set({ businessHours });
     });
+  },
+
+  // 저장 전 확인창에만 쓰므로 store 에 두지 않고 값만 돌려준다
+  fetchClosingImpact: async (days) => {
+    try {
+      return await scheduleApi.getClosingImpact(days);
+    } catch (error) {
+      throw toError(error);
+    }
   },
 
   // 목록 새로고침은 변경 요청과 분리한다. 저장은 됐는데 목록 조회만 실패한 것을 저장 실패로 보이면

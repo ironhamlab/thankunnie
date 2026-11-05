@@ -14,9 +14,16 @@ import com.ucamp.app.domain.schedule.entity.BusinessDay;
 /**
  * 요일별 영업시간 저장 요청. 월~일 7개 요일을 한 번씩 보낸다.
  *
- * @param days 요일별 영업시간
+ * @param days                요일별 영업시간
+ * @param closeOpenExceptions true 면 이번에 휴무로 바뀐 요일의 시간대 열기 중 예약이 없는 것을 함께 지운다. 없으면 false
  */
-public record BusinessHourSaveRequest(@NotNull @Size(min = 7, max = 7) List<@Valid @NotNull Day> days) {
+public record BusinessHourSaveRequest(
+        @NotNull @Size(min = 7, max = 7) List<@Valid @NotNull Day> days,
+        Boolean closeOpenExceptions) {
+
+    public BusinessHourSaveRequest(List<Day> days) {
+        this(days, null);
+    }
 
     /**
      * 한 요일의 영업시간.
