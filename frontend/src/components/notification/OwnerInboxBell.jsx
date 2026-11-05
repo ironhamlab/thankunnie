@@ -20,6 +20,8 @@ const OWNER_INBOX_TABS = [
   { id: 'CANCELLED', label: '취소' },
 ];
 
+const INBOX_VISIBLE_COUNT = 10;
+
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
@@ -169,7 +171,9 @@ export default function OwnerInboxBell() {
     }
   };
 
-  const visibleItems = items.filter((item) => matchesOwnerInboxTab(item, tab));
+  const visibleItems = items
+    .filter((item) => matchesOwnerInboxTab(item, tab))
+    .slice(0, INBOX_VISIBLE_COUNT);
   const showPanel = open || leaving;
 
   return (
