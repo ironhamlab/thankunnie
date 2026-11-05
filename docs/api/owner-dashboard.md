@@ -86,8 +86,8 @@
       { "periodStart": "2025-11-07", "periodEnd": "2025-11-30", "completedCount": 11, "completedAmount": 330000,
         "upcomingCount": 0, "upcomingAmount": 0, "cancelledCount": 1 }
     ],
-    "byWeekday": [ { "dayOfWeek": "MONDAY", "count": 31, "amount": 930000 } ],
-    "heatmap": [ { "dayOfWeek": "SATURDAY", "hour": 14, "bookedMinutes": 1860 } ],
+    "byWeekday": [ { "dayOfWeek": "MONDAY", "count": 31, "amount": 930000, "openDays": 48 } ],
+    "heatmap": [ { "dayOfWeek": "SATURDAY", "hour": 14, "bookedMinutes": 1860, "openMinutes": 3000 } ],
     "treatments": [ { "treatmentId": 201, "treatmentName": "젤네일 원컬러", "count": 300, "amount": 10200000, "share": 77.0 } ]
   }
 }
@@ -98,8 +98,8 @@
 | `summary` | 기간 요약 | 핵심 지표 카드 |
 | `previous` | 바로 앞 같은 길이 기간의 요약. 그 기간이 서비스 이용 시작 전이면 `null` | 카드의 ▲▼ |
 | `trend` | 기간별 이용 추정·예정 건수·금액, 취소 완료 건수(유형 무관). 빈 구간도 0 으로 채움. `MONTH` 의 첫·마지막 칸은 조회 기간에 걸친 날짜만 담는다 | 추이 막대 |
-| `byWeekday` | 요일별 확정 예약(이용 추정 + 예정) 건수·금액. 월~일 7개 | 요일별 막대 |
-| `heatmap` | 요일 × 시간대(정시~정시) 확정 예약 점유 시간(분). 예약 시간을 시간대별로 나눠 더한다 (13:30~15:00 → 13시 30분, 14시 60분). 0 인 칸은 없음 | 예약이 차 있는 시간 |
+| `byWeekday` | 요일별 확정 예약(이용 추정 + 예정) 건수·금액과 그 요일에 영업한 날 수(`openDays`). 월~일 7개. `openDays` 는 휴무일(영업시간·열기가 없거나 닫기로 다 막힌 날)을 빼고, 확정 예약이 있던 날은 영업한 날로 센다. 하루 평균의 분모 | 요일별 막대, 가장 바쁜·한가한 요일 |
+| `heatmap` | 요일 × 시간대(정시~정시) 확정 예약 점유 시간(`bookedMinutes`)과 영업한 시간(`openMinutes`, 분). 예약 시간을 시간대별로 나눠 더한다 (13:30~15:00 → 13시 30분, 14시 60분). 영업한 시간 = 영업시간 ∪ 열기 − 닫기 ∪ 확정 예약 시간(노쇼 포함)이며 휴무·영업 외 시간은 빠진다. 영업시간은 현재 설정 기준. 둘 다 0 인 칸은 없음 | 예약이 차 있는 시간, 가장 바쁜·한가한 시간 |
 | `treatments` | 시술별 확정 예약 건수·금액과 금액 비중(%). 금액 → 건수 많은 순 | 시술별 비중 |
 
 ## 기간 요약 필드

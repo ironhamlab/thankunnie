@@ -1,34 +1,46 @@
 import { formatMoney } from '@/utils/reservationFormat';
-import { WEEKDAY_LABEL, countWeekdays, perDay } from '@/utils/ownerDashboardFormat';
+import { WEEKDAY_LABEL, perDay } from '@/utils/ownerDashboardFormat';
 import styles from './WeekdayBars.module.css';
 
 const WEEKEND = new Set(['SATURDAY', 'SUNDAY']);
 
 /**
- * 요일별 확정 예약. 기간 합계 대신 "하루 평균"으로 보여 줘 기간이 길어도 감이 오게 한다.
- * 기간 안에 요일마다 날짜 수가 다르므로(예: 금요일 5번, 화요일 4번) 막대도 하루 평균으로 그린다.
+ * 요일별 확정 예약. 기간 합계 대신 "영업일 하루 평균"으로 보여 줘 기간이 길어도 감이 오게 한다.
+ * 요일마다 영업한 날 수가 다르므로(예: 금요일 5번, 화요일은 임시 휴무로 3번) 막대도 하루 평균으로 그린다.
  * 위에는 가장 바쁜·한가한 요일과 주말 매출 비중을 요약한다.
  *
- * @param {{ dayOfWeek: string, count: number, amount: number }[]} weekdays 월~일 7개
- * @param {string} from 조회 기간 시작 YYYY-MM-DD
- * @param {string} to 조회 기간 끝 YYYY-MM-DD
+ * @param {{ dayOfWeek: string, count: number, amount: number, openDays: number }[]} weekdays 월~일 7개.
+ *   openDays 는 서버가 휴무일을 빼고 센 영업한 날 수
  */
-export default function WeekdayBars({ weekdays, from, to }) {
-  const dayCounts = countWeekdays(from, to);
+export default function WeekdayBars({ weekdays }) {
   const rows = weekdays.map((item) => ({
     ...item,
-    perDayCount: perDay(item.count, dayCounts[item.dayOfWeek]),
-    perDayAmount: Math.round(perDay(item.amount, dayCounts[item.dayOfWeek])),
+    perDayCount: perDay(item.count, item.openDays),
+    perDayAmount: Math.round(perDay(item.amount, item.openDays)),
   }));
   const max = Math.max(...rows.map((item) => item.perDayCount), 0.1);
-  // 기간 안에 한 번도 없는 요일(짧은 기간)은 바쁜·한가한 요일 비교에서 뺀다
-  const present = rows.filter((item) => dayCounts[item.dayOfWeek] > 0);
-  const busiest = present.reduce((best, item) =>
-    item.perDayCount > best.perDayCount ? item : best,
+  // 기간 안에 영업한 날이 없는 요일(정기 휴무, 짧은 기간)은 바쁜·한가한 요일 비교에서 뺀다
+  const open = rows.filter((item) => item.openDays > 0);
+  const busiest = open.reduce(
+    (best, item) => (!best || item.perDayCount > best.perDayCount ? item : best),
+    null,
   );
-  const quietest = present.reduce((best, item) =>
-    item.perDayCount < best.perDayCount ? item : best,
+  const quietest = open.reduce(
+    (best, item) => (!best || item.perDayCount < best.perDayCount ? item : best),
+    null,
   );
+  const summaryOf = (item) =>
+    item ? (
+      <dd>
+        <strong>{WEEKDAY_LABEL[item.dayOfWeek]}요일</strong>
+        <span>하루 {item.perDayCount}건</span>
+      </dd>
+    ) : (
+      <dd>
+        <strong>-</strong>
+        <span>영업일 없음</span>
+      </dd>
+    );
   const totalAmount = rows.reduce((sum, item) => sum + item.amount, 0);
   const weekendAmount = rows
     .filter((item) => WEEKEND.has(item.dayOfWeek))
@@ -40,17 +52,11 @@ export default function WeekdayBars({ weekdays, from, to }) {
       <dl className={styles.summary}>
         <div>
           <dt>가장 바쁜 요일</dt>
-          <dd>
-            <strong>{WEEKDAY_LABEL[busiest.dayOfWeek]}요일</strong>
-            <span>하루 {busiest.perDayCount}건</span>
-          </dd>
+          {summaryOf(busiest)}
         </div>
         <div>
           <dt>가장 한가한 요일</dt>
-          <dd>
-            <strong>{WEEKDAY_LABEL[quietest.dayOfWeek]}요일</strong>
-            <span>하루 {quietest.perDayCount}건</span>
-          </dd>
+          {summaryOf(quietest)}
         </div>
         <div>
           <dt>주말 매출 비중</dt>
@@ -73,12 +79,18 @@ export default function WeekdayBars({ weekdays, from, to }) {
               />
             </span>
             <span className={styles.value}>
-              하루 <strong>{item.perDayCount}건</strong> · {formatMoney(item.perDayAmount)}
+              {item.openDays > 0 ? (
+                <>
+                  하루 <strong>{item.perDayCount}건</strong> · {formatMoney(item.perDayAmount)}
+                </>
+              ) : (
+                '휴무'
+              )}
             </span>
           </li>
         ))}
       </ul>
-      <p className={styles.hint}>하루 평균 = 기간 안 예약 ÷ 그 요일이 기간에 있던 날 수</p>
+      <p className={styles.hint}>하루 평균 = 기간 안 예약 ÷ 그 요일에 영업한 날 수 (휴무일 제외)</p>
     </div>
   );
 }

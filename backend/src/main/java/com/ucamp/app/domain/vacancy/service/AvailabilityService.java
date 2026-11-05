@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -275,6 +276,58 @@ public class AvailabilityService {
             }
         }
         return false;
+    }
+
+    /**
+     * 기간 날짜마다 매장이 연 시간 (영업시간 ∪ 시간대 열기 − 시간대 닫기). 예약과 현재 시각은 보지 않는다
+     * (매장 분석: 휴무일·영업 외 시간을 빼고 평균 내기용). 요일 영업시간은 지금 설정 기준이다.
+     * 구간은 그 날짜 안으로 잘라 시간순으로 담고, 연 시간이 없는 날짜(휴무)는 담지 않는다.
+     *
+     * @param fromDate 첫 날짜
+     * @param toDate   마지막 날짜 (포함)
+     */
+    public Map<LocalDate, List<TimeRange>> getOpenRangesByDate(Long shopId, LocalDate fromDate, LocalDate toDate) {
+        LocalDateTime from = fromDate.atStartOfDay();
+        LocalDateTime to = toDate.plusDays(1).atStartOfDay();
+        Map<BusinessDay, ShopBusinessHour> hours = shopBusinessHourRepository.findByShopId(shopId).stream()
+                .collect(Collectors.toMap(ShopBusinessHour::getDayOfWeek, Function.identity()));
+        // 예외 일정을 걸친 날짜별로 잘라 둔다. 긴 기간도 날짜마다 예외 전체를 훑지 않으려는 것이다
+        Map<LocalDate, List<TimeRange>> opened = new HashMap<>();
+        Map<LocalDate, List<TimeRange>> closed = new HashMap<>();
+        for (ShopScheduleException exception : shopScheduleExceptionRepository.findOverlapping(shopId, from, to)) {
+            Map<LocalDate, List<TimeRange>> target =
+                    exception.getExceptionType() == ScheduleExceptionType.OPEN ? opened : closed;
+            LocalDate first = later(exception.getStartsAt().toLocalDate(), fromDate);
+            LocalDate last = earlier(exception.getEndsAt().minusNanos(1).toLocalDate(), toDate);
+            for (LocalDate date = first; !date.isAfter(last); date = date.plusDays(1)) {
+                LocalDateTime start = later(exception.getStartsAt(), date.atStartOfDay());
+                LocalDateTime end = earlier(exception.getEndsAt(), date.plusDays(1).atStartOfDay());
+                if (start.isBefore(end)) {
+                    target.computeIfAbsent(date, key -> new ArrayList<>()).add(new TimeRange(start, end));
+                }
+            }
+        }
+        Map<LocalDate, List<TimeRange>> result = new LinkedHashMap<>();
+        for (LocalDate date = fromDate; !date.isAfter(toDate); date = date.plusDays(1)) {
+            List<TimeRange> open = new ArrayList<>(opened.getOrDefault(date, List.of()));
+            ShopBusinessHour hour = hours.get(BusinessDay.of(date));
+            if (hour != null) {
+                hour.rangeOn(date).ifPresent(open::add);
+            }
+            List<TimeRange> ranges = TimeRange.subtract(open, closed.getOrDefault(date, List.of()));
+            if (!ranges.isEmpty()) {
+                result.put(date, ranges);
+            }
+        }
+        return result;
+    }
+
+    private static <T extends Comparable<? super T>> T later(T a, T b) {
+        return a.compareTo(b) >= 0 ? a : b;
+    }
+
+    private static <T extends Comparable<? super T>> T earlier(T a, T b) {
+        return a.compareTo(b) <= 0 ? a : b;
     }
 
     // 시술 데이터가 잘못돼 0분 이하가 오면 구간을 만들 수 없어 500 이 되므로 업무 오류로 바꾼다

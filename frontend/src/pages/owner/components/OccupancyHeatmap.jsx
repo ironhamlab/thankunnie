@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import {
-  WEEKDAYS,
-  WEEKDAY_LABEL,
-  countWeekdays,
-  occupancyRate,
-} from '@/utils/ownerDashboardFormat';
+import { WEEKDAYS, WEEKDAY_LABEL, occupancyRate } from '@/utils/ownerDashboardFormat';
 import Button from '@/components/common/Button';
 import ChartReveal from './ChartReveal';
 import NudgeArrow from './NudgeArrow';
@@ -33,20 +28,18 @@ const keyOf = (day, hour) => `${day}-${hour}`;
 const shortName = (cell) => `${WEEKDAY_LABEL[cell.dayOfWeek]} ${cell.hour}시`;
 
 /**
- * 요일 × 시간대 예약 점유. 칸마다 "그 시간대 1시간 중 평균 몇 %가 찼는지"를 보여 준다.
- * 매장은 한 번에 한 예약만 받으므로 예약 분 ÷ (기간 안의 그 요일 수 × 60분) 이다. 휴무일도 날짜 수에 들어간다.
+ * 요일 × 시간대 예약 점유. 칸마다 "그 시간대에 영업한 시간 중 몇 %가 찼는지"를 보여 준다.
+ * 매장은 한 번에 한 예약만 받으므로 예약 분 ÷ 영업한 분이다. 영업한 분은 서버가 휴무일·영업 외 시간을 빼고 센다.
  * 위에는 가장 바쁜·한가한 시간을 크게 보여 주고, 한가한 시간에서 빈자리 관리로 바로 간다.
- * 한가한 시간은 예약이 한 번이라도 있었던 칸 중에서 고른다. 0 인 칸은 휴무·영업 전일 수 있어서다.
+ * 한가한 시간은 영업한 칸 중에서 고르므로 예약이 없던 영업 시간(0%)도 후보가 되고, 휴무·영업 외 칸은 빠진다.
  *
- * @param {{ dayOfWeek: string, hour: number, bookedMinutes: number }[]} cells 0 인 칸은 없다
- * @param {string} from 조회 기간 시작 YYYY-MM-DD
- * @param {string} to 조회 기간 끝 YYYY-MM-DD
+ * @param {{ dayOfWeek: string, hour: number, bookedMinutes: number, openMinutes: number }[]} cells
+ *   영업도 예약도 없던 칸은 없다
  */
-export default function OccupancyHeatmap({ cells, from, to }) {
-  const dayCounts = countWeekdays(from, to);
+export default function OccupancyHeatmap({ cells }) {
   const rated = cells.map((cell) => ({
     ...cell,
-    rate: occupancyRate(cell.bookedMinutes, dayCounts[cell.dayOfWeek]),
+    rate: occupancyRate(cell.bookedMinutes, cell.openMinutes),
   }));
   const byKey = new Map(rated.map((cell) => [keyOf(cell.dayOfWeek, cell.hour), cell]));
   const hours = rated.map((cell) => cell.hour);
@@ -54,15 +47,17 @@ export default function OccupancyHeatmap({ cells, from, to }) {
   const lastHour = Math.max(...hours);
   const rows = Array.from({ length: lastHour - firstHour + 1 }, (_, index) => firstHour + index);
 
-  // 같은 % 면 예약 분이 많은 칸을 앞에 둔다
-  const sorted = [...rated].sort((a, b) => b.rate - a.rate || b.bookedMinutes - a.bookedMinutes);
-  const busy = sorted.slice(0, MORE_COUNT + 1);
+  // 바쁜 시간은 예약이 있던 칸에서 고른다. 같은 % 면 예약 분이 많은 칸을 앞에 둔다
+  const busy = rated
+    .filter((cell) => cell.bookedMinutes > 0)
+    .sort((a, b) => b.rate - a.rate || b.bookedMinutes - a.bookedMinutes)
+    .slice(0, MORE_COUNT + 1);
   const busyKeys = new Set(busy.map((cell) => keyOf(cell.dayOfWeek, cell.hour)));
-  // 칸이 적으면 바쁜 시간과 겹치지 않는 것만 한가한 시간으로 보여 준다
-  const quiet = sorted
-    .slice()
-    .reverse()
-    .filter((cell) => !busyKeys.has(keyOf(cell.dayOfWeek, cell.hour)))
+  // 한가한 시간은 영업한 칸에서 고른다. 같은 % 면 영업한 분이 많은(자주 비어 있던) 칸을 앞에 둔다.
+  // 칸이 적으면 바쁜 시간과 겹치지 않는 것만 보여 준다
+  const quiet = rated
+    .filter((cell) => cell.openMinutes > 0 && !busyKeys.has(keyOf(cell.dayOfWeek, cell.hour)))
+    .sort((a, b) => a.rate - b.rate || b.openMinutes - a.openMinutes)
     .slice(0, MORE_COUNT + 1);
 
   // 고른 칸. 처음에는 가장 바쁜 시간을 보여 준다
@@ -72,8 +67,14 @@ export default function OccupancyHeatmap({ cells, from, to }) {
   const selected = byKey.get(selectedKey);
   const [selectedDay, selectedHourText] = selectedKey ? selectedKey.split('-') : [];
 
-  const describe = (day, hour, rate) =>
-    `${WEEKDAY_LABEL[day]}요일 ${hour}~${hour + 1}시 · ${rate ? `평균 ${rate}% 찼어요` : '예약 없음'}`;
+  const describe = (day, hour, cell) => {
+    const state = !cell?.openMinutes
+      ? '영업 안 함'
+      : cell.rate
+        ? `평균 ${cell.rate}% 찼어요`
+        : '예약 없음';
+    return `${WEEKDAY_LABEL[day]}요일 ${hour}~${hour + 1}시 · ${state}`;
+  };
 
   const pick = (cell) => setSelectedKey(keyOf(cell.dayOfWeek, cell.hour));
   // 1위 옆(오른쪽)에 다음 후보를 점유율과 함께 세로로 보여 준다. 누르면 아래 표에서 그 칸을 고른다
@@ -150,7 +151,7 @@ export default function OccupancyHeatmap({ cells, from, to }) {
       {/* 고른 칸의 설명. 칸을 바꿀 때마다 화면 읽기 프로그램이 읽어 준다 */}
       <p className={styles.detail} aria-live="polite">
         {selectedKey
-          ? describe(selectedDay, Number(selectedHourText), selected?.rate ?? 0)
+          ? describe(selectedDay, Number(selectedHourText), selected)
           : '칸을 누르면 그 시간이 얼마나 찼는지 볼 수 있어요.'}
       </p>
 
@@ -170,8 +171,8 @@ export default function OccupancyHeatmap({ cells, from, to }) {
               </span>,
               ...WEEKDAYS.map((day, dayIndex) => {
                 const key = keyOf(day, hour);
-                const rate = byKey.get(key)?.rate ?? 0;
-                const level = levelOf(rate);
+                const cell = byKey.get(key);
+                const level = levelOf(cell?.rate ?? 0);
                 return (
                   <button
                     key={key}
@@ -180,7 +181,7 @@ export default function OccupancyHeatmap({ cells, from, to }) {
                     // 왼쪽 위 칸부터 대각선으로 퍼지듯 나타난다
                     style={{ '--wave-delay': `${(rowIndex + dayIndex) * CELL_WAVE_MS}ms` }}
                     aria-pressed={selectedKey === key}
-                    aria-label={describe(day, hour, rate)}
+                    aria-label={describe(day, hour, cell)}
                     onClick={() => setSelectedKey(key)}
                     onMouseEnter={() => setSelectedKey(key)}
                     onFocus={() => setSelectedKey(key)}

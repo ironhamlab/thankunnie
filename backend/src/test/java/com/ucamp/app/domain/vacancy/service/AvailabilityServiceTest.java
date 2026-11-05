@@ -39,6 +39,7 @@ import com.ucamp.app.domain.schedule.entity.ShopBusinessHour;
 import com.ucamp.app.domain.schedule.entity.ShopScheduleException;
 import com.ucamp.app.domain.schedule.repository.ShopBusinessHourRepository;
 import com.ucamp.app.domain.schedule.repository.ShopScheduleExceptionRepository;
+import com.ucamp.app.domain.vacancy.policy.TimeRange;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService.DayAvailability;
 
 @ExtendWith(MockitoExtension.class)
@@ -358,5 +359,34 @@ class AvailabilityServiceTest {
                         .build()));
 
         assertThat(service.hasOpenTime(SHOP_ID, DATE)).isFalse();
+    }
+
+    @Test
+    @DisplayName("기간 날짜별 연 시간은 영업시간과 열기를 합치고 닫기를 빼며, 연 시간이 없는 휴무일은 담지 않는다")
+    void getOpenRangesByDate_excludesClosedDays() {
+        LocalDate monday = DATE.plusDays(1);
+        LocalDate nextSunday = DATE.plusDays(7);
+        given(shopScheduleExceptionRepository.findOverlapping(eq(SHOP_ID), any(), any())).willReturn(List.of(
+                exception(ScheduleExceptionType.CLOSE, at(12, 0), at(13, 0)),
+                exception(ScheduleExceptionType.OPEN, monday.atTime(18, 0), monday.atTime(21, 0)),
+                exception(ScheduleExceptionType.CLOSE, nextSunday.atTime(9, 0), nextSunday.atTime(21, 0))));
+
+        var result = service.getOpenRangesByDate(SHOP_ID, DATE.minusDays(1), nextSunday);
+
+        assertThat(result).containsOnlyKeys(DATE, monday);
+        assertThat(result.get(DATE)).containsExactly(
+                new TimeRange(at(10, 0), at(12, 0)),
+                new TimeRange(at(13, 0), at(20, 0)));
+        assertThat(result.get(monday)).containsExactly(new TimeRange(monday.atTime(18, 0), monday.atTime(21, 0)));
+    }
+
+    private static ShopScheduleException exception(ScheduleExceptionType type, LocalDateTime startsAt,
+            LocalDateTime endsAt) {
+        return ShopScheduleException.builder()
+                .shopId(SHOP_ID)
+                .exceptionType(type)
+                .startsAt(startsAt)
+                .endsAt(endsAt)
+                .build();
     }
 }
