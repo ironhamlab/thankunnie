@@ -4,6 +4,27 @@ import Button from '@/components/common/Button';
 import OwnerImageEditor from './OwnerImageEditor';
 import styles from './TreatmentForm.module.css';
 
+const DURATION_STEP = 30;
+const MAX_DURATION_OPTION = 600;
+const DURATION_OPTIONS = Array.from(
+  { length: MAX_DURATION_OPTION / DURATION_STEP },
+  (_, index) => (index + 1) * DURATION_STEP,
+);
+
+// 기존 시술의 소요 시간이 목록 밖이어도 수정 화면에서 값이 사라지지 않도록 포함함
+function durationOptions(current) {
+  const minutes = Number(current);
+  if (!minutes || DURATION_OPTIONS.includes(minutes)) return DURATION_OPTIONS;
+  return [...DURATION_OPTIONS, minutes].sort((a, b) => a - b);
+}
+
+function formatDuration(minutes) {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (!hours) return `${rest}분`;
+  return rest ? `${hours}시간 ${rest}분` : `${hours}시간`;
+}
+
 export default function TreatmentForm({ treatment, imageUrl, isSaving, error, onSave, onClose }) {
   const [form, setForm] = useState({
     name: '',
@@ -135,18 +156,19 @@ export default function TreatmentForm({ treatment, imageUrl, isSaving, error, on
             />
           </label>
           <label>
-            소요 시간 (분) *
-            <input
-              type="number"
-              min="30"
-              max="9990"
-              step="30"
+            소요 시간 *
+            <select
               required
               name="durationMinutes"
-              value={form.durationMinutes}
+              value={String(form.durationMinutes)}
               onChange={change}
-            />
-            <small>30분 단위로 입력해 주세요.</small>
+            >
+              {durationOptions(form.durationMinutes).map((minutes) => (
+                <option key={minutes} value={minutes}>
+                  {formatDuration(minutes)}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             정상가 (원) *
