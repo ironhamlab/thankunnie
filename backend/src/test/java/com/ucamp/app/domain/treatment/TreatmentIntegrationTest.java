@@ -1,6 +1,7 @@
 package com.ucamp.app.domain.treatment;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -28,6 +29,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +45,8 @@ import com.ucamp.app.domain.shop.repository.ShopRepository;
 import com.ucamp.app.domain.treatment.controller.TreatmentController;
 import com.ucamp.app.domain.treatment.entity.Treatment;
 import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
+import com.ucamp.app.domain.shop.service.ShopImageStorage;
+import com.ucamp.app.domain.treatment.service.TreatmentImageService;
 import com.ucamp.app.domain.treatment.service.TreatmentService;
 
 @SpringBootTest(classes = TreatmentIntegrationTest.TreatmentTestConfiguration.class)
@@ -57,10 +61,14 @@ class TreatmentIntegrationTest {
     @EnableAutoConfiguration
     @EntityScan(basePackageClasses = {Shop.class, Treatment.class})
     @EnableJpaRepositories(basePackageClasses = {ShopRepository.class, TreatmentRepository.class})
-    @Import({TreatmentController.class, TreatmentService.class, GlobalExceptionHandler.class,
-            SecurityConfig.class, TimeConfig.class, WebConfig.class})
+    @Import({TreatmentController.class, TreatmentService.class, TreatmentImageService.class,
+            GlobalExceptionHandler.class, SecurityConfig.class, TimeConfig.class, WebConfig.class})
     static class TreatmentTestConfiguration {
     }
+
+    /** 시술 삭제 시 이미지 정리 경로만 필요하므로 파일 저장소는 대체한다. */
+    @MockitoBean
+    private ShopImageStorage storage;
 
     private static final String URL = "/api/v1/shops/1/treatments";
 
@@ -420,6 +428,120 @@ class TreatmentIntegrationTest {
                 .isEqualTo(vacancy);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM TREATMENT WHERE TREATMENT_ID = ?", Integer.class, id))
                 .isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("시술을 삭제하면 행과 예약은 남기고 DELETED로 바꿔 관리 API에서 제외한다")
+    void delete_existingTreatment_softDeletesAndHides() throws Exception {
+        long id = create(60, 50000).get("treatmentId").asLong();
+        jdbc.update("UPDATE TREATMENT SET IMAGE_URL = ? WHERE TREATMENT_ID = ?",
+                "/api/v1/shops/1/treatments/" + id + "/images/old.png", id);
+        // JDBC로 바꾼 이미지 URL을 JPA가 다시 읽도록 영속성 컨텍스트를 비운다.
+        entityManager.clear();
+        jdbc.update("""
+                INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
+                VALUES (9001, 'CHANGE_ME', 'CHANGE_ME', '고객', '010-0000-0000',
+                    TIMESTAMP '2026-10-23 12:00:00', TIMESTAMP '2026-10-23 12:00:00')
+                """);
+        jdbc.update("""
+                INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT,
+                    APPLIED_PRICE, DEPOSIT, HOLD_EXPIRES_AT, CREATED_AT, UPDATED_AT)
+                VALUES (9001, 9001, ?, 'CONFIRMED', TIMESTAMP '2026-10-25 12:00:00',
+                    TIMESTAMP '2026-10-25 13:00:00', 40000, 20000, TIMESTAMP '2026-10-23 12:05:00',
+                    TIMESTAMP '2026-10-23 12:00:00', TIMESTAMP '2026-10-23 12:00:00')
+                """, id);
+        var reservation = jdbc.queryForMap("SELECT * FROM RESERVATION WHERE RESERVATION_ID = 9001");
+
+        mvc.perform(delete(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_2"))
+                .andExpect(status().isForbidden());
+        mvc.perform(delete(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isNoContent());
+
+        assertThat(jdbc.queryForMap("SELECT STATUS, IMAGE_URL FROM TREATMENT WHERE TREATMENT_ID = ?", id))
+                .containsEntry("STATUS", "DELETED").containsEntry("IMAGE_URL", null);
+        assertThat(jdbc.queryForMap("SELECT * FROM RESERVATION WHERE RESERVATION_ID = 9001"))
+                .isEqualTo(reservation);
+        mvc.perform(get(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(jsonPath("$.data.length()").value(0));
+        mvc.perform(get(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isNotFound());
+        mvc.perform(patch(URL + "/" + id + "/status").header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"ACTIVE\"}"))
+                .andExpect(status().isNotFound());
+        mvc.perform(delete(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isNotFound());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "CONFIRMED,      2099-01-01 13:00:00, 2026-10-23 12:05:00, 409",
+            "HOLD,           2099-01-01 13:00:00, 2099-01-01 00:05:00, 409",
+            "CANCEL_PENDING, 2020-01-01 13:00:00, 2020-01-01 12:05:00, 409",
+            "CONFIRMED,      2020-01-01 13:00:00, 2020-01-01 12:05:00, 204",
+            "HOLD,           2099-01-01 13:00:00, 2020-01-01 12:05:00, 204",
+            "CANCELLED,      2099-01-01 13:00:00, 2099-01-01 00:05:00, 204",
+            "EXPIRED,        2099-01-01 13:00:00, 2099-01-01 00:05:00, 204"})
+    @DisplayName("끝나지 않은 예약(만료 전 결제 대기·종료 전 확정·환불 중 취소)이 있으면 삭제를 거절한다")
+    void delete_remainingReservation_returnsConflict(String reservationStatus, String endsAt,
+            String holdExpiresAt, int expectedStatus) throws Exception {
+        long id = create(60, 50000).get("treatmentId").asLong();
+        insertReservation(id, reservationStatus, endsAt, holdExpiresAt);
+        long remaining = expectedStatus == 409 ? 1 : 0;
+
+        mvc.perform(get(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(jsonPath("$.data[0].remainingReservationCount").value(remaining));
+        var result = mvc.perform(delete(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().is(expectedStatus));
+        if (expectedStatus == 409) {
+            result.andExpect(jsonPath("$.error.code").value("TREATMENT_002"));
+        }
+        assertThat(jdbc.queryForObject("SELECT STATUS FROM TREATMENT WHERE TREATMENT_ID = ?", String.class, id))
+                .isEqualTo(expectedStatus == 409 ? "ACTIVE" : "DELETED");
+    }
+
+    @Test
+    @DisplayName("남은 예약이 있어도 비활성화는 허용하고 남은 예약 수를 함께 돌려준다")
+    void deactivate_remainingReservation_allowsAndReturnsCount() throws Exception {
+        long id = create(60, 50000).get("treatmentId").asLong();
+        insertReservation(id, "CONFIRMED", "2099-01-01 13:00:00", "2026-10-23 12:05:00");
+
+        mvc.perform(patch(URL + "/" + id + "/status").header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"INACTIVE\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("INACTIVE"))
+                .andExpect(jsonPath("$.data.remainingReservationCount").value(1));
+        mvc.perform(delete(URL + "/" + id).header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("상태 변경·목록 필터로 DELETED를 지정하면 거절한다")
+    void status_deleted_returnsBadRequest() throws Exception {
+        long id = create(60, 50000).get("treatmentId").asLong();
+        mvc.perform(patch(URL + "/" + id + "/status").header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"DELETED\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get(URL).param("status", "DELETED").header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isBadRequest());
+        assertThat(jdbc.queryForObject("SELECT STATUS FROM TREATMENT WHERE TREATMENT_ID = ?", String.class, id))
+                .isEqualTo("ACTIVE");
+    }
+
+    /** 시작은 종료 1시간 전으로 둔다. 고객 계정은 테스트 전용 더미다. */
+    private void insertReservation(long treatmentId, String status, String endsAt, String holdExpiresAt) {
+        jdbc.update("""
+                INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
+                VALUES (9001, 'CHANGE_ME', 'CHANGE_ME', '고객', '010-0000-0000',
+                    TIMESTAMP '2026-10-23 12:00:00', TIMESTAMP '2026-10-23 12:00:00')
+                """);
+        var ends = java.sql.Timestamp.valueOf(endsAt);
+        jdbc.update("""
+                INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT,
+                    APPLIED_PRICE, DEPOSIT, HOLD_EXPIRES_AT, CREATED_AT, UPDATED_AT)
+                VALUES (9001, 9001, ?, ?, ?, ?, 40000, 20000, ?,
+                    TIMESTAMP '2026-10-23 12:00:00', TIMESTAMP '2026-10-23 12:00:00')
+                """, treatmentId, status, new java.sql.Timestamp(ends.getTime() - 3_600_000L), ends,
+                java.sql.Timestamp.valueOf(holdExpiresAt));
     }
 
     private JsonNode create(int duration, int price) throws Exception {

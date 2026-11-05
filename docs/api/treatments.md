@@ -16,6 +16,7 @@
 | POST | 기본 경로 | 시술 등록 | 201 |
 | PUT | `/{treatmentId}` | 기본 정보 전체 수정 | 200 |
 | PATCH | `/{treatmentId}/status` | 활성 상태 변경 | 200 |
+| DELETE | `/{treatmentId}` | 시술 삭제 (DELETED 소프트 삭제) | 204 |
 
 등록·수정 요청:
 
@@ -53,8 +54,19 @@
 - 기본 정보 수정은 직원, 준비 안내, 이미지, 활성 상태를 변경하지 않는다.
 - 기존 예약의 적용 가격·예약금·시작/종료 시각은 변경하지 않는다.
 
-상태 변경 요청: `{"status":"INACTIVE"}` 또는 `{"status":"ACTIVE"}`.
-물리 삭제 API는 제공하지 않는다.
+상태 변경 요청: `{"status":"INACTIVE"}` 또는 `{"status":"ACTIVE"}`. `DELETED`는 400으로 거절한다.
+
+## 시술 삭제 (UNNIE-235)
+
+- `DELETE /{treatmentId}`는 예약이 시술을 FK로 참조하므로 행을 지우지 않고 `STATUS`를 `DELETED`로 바꾼다.
+- 삭제된 시술은 관리 목록·단건 조회·수정·상태 변경·이미지 API에서 404로 취급하고, 고객 화면은 기존처럼 ACTIVE만 노출한다.
+- 같은 트랜잭션에서 대표 이미지 URL을 비우고 커밋 후 이미지 파일을 정리한다.
+- 그 시술에 끝나지 않은 예약(환불 처리 중 취소, 만료 전 결제 대기, 종료 전 확정)이 있으면 `TREATMENT_002`(409)로 거절한다.
+  예약 점유와 같은 SHOP 행 잠금 뒤 검사해, 검사를 통과한 뒤 새 예약이 생기지 않게 한다.
+- 비활성화는 새 예약만 막고 남은 예약은 그대로 진행되므로 남은 예약이 있어도 허용한다.
+- 시술 응답에 `remainingReservationCount`(끝나지 않은 예약 수)를 포함한다. 화면은 이 값으로 삭제 가능 여부와 비활성화 안내를 표시한다.
+- 기존 예약의 상태·가격·시각은 변경하지 않는다. `STATUS` 컬럼(VARCHAR2(10), CHECK 제약 없음)을 그대로 사용하므로 스키마 변경은 없다.
+- 목록의 `status=DELETED` 필터는 400으로 거절한다.
 
 ## 시술 비활성화 (A-05)
 
@@ -75,7 +87,7 @@
 
 시술 응답 필드: `treatmentId`, `shopId`, `name`, `description`, `regularPrice`, `price`, `lastMinutePrice`,
 `durationMinutes`, `status`, `treatmentType`,
-`modelCondition`, `photoNotice`, `imageUrl`, `createdAt`, `updatedAt`.
+`modelCondition`, `photoNotice`, `imageUrl`, `createdAt`, `updatedAt`, `remainingReservationCount`.
 시각은 `+09:00` 오프셋이다.
 
 ## 오류
@@ -88,6 +100,7 @@
 | COMMON_401 | 401 | 비로그인 |
 | COMMON_403 | 403 | 매장이 아니거나 경로의 매장이 본인 매장이 아님 |
 | COMMON_404 | 404 | 없는 매장/시술 또는 본인 매장 경로에 다른 매장 시술 ID 사용 |
+| TREATMENT_002 | 409 | 끝나지 않은 예약이 남은 시술 삭제 |
 
 ## 화면 및 로컬 확인
 

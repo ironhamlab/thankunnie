@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -78,5 +79,13 @@ public class TreatmentController {
             @LoginUser AuthUser user, @PathVariable Long shopId, @PathVariable Long treatmentId,
             @Valid @RequestBody TreatmentStatusUpdateRequest request) {
         return ApiResponse.success(treatmentService.updateStatus(user, shopId, treatmentId, request));
+    }
+
+    @Operation(summary = "시술 메뉴 삭제", description = "예약 이력 보존을 위해 DELETED 상태로 바꾸고 목록에서 제외한다.")
+    @DeleteMapping("/{treatmentId}")
+    public ResponseEntity<Void> deleteTreatment(
+            @LoginUser AuthUser user, @PathVariable Long shopId, @PathVariable Long treatmentId) {
+        treatmentService.deleteTreatment(user, shopId, treatmentId);
+        return ResponseEntity.noContent().build();
     }
 }

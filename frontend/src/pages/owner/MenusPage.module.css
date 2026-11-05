@@ -1,0 +1,4 @@
+/* 전역 .b-danger 의 위 여백 때문에 삭제 버튼만 내려가지 않게 같은 줄 버튼과 높이를 맞춘다 */
+.actions > :global(.b-button) {
+  margin-top: 0;
+}
