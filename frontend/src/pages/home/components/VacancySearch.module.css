@@ -264,8 +264,16 @@
   isolation: isolate;
   display: flex;
   gap: 8px;
+  /* 테두리와 초점 표시가 잘리지 않게 여백을 두고, 그만큼 바깥 여백을 줄여 자리는 그대로 둔다 */
+  margin: -3px -3px 0;
+  padding: 3px 3px 4px;
+  /* 분야가 넘칠 때만 옆으로 밀어 보고 스크롤 막대는 보이지 않게 한다 */
   overflow-x: auto;
-  padding-bottom: 4px;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.categoryRow::-webkit-scrollbar {
+  display: none;
 }
 .categoryRow button {
   flex-shrink: 0;
@@ -357,10 +365,6 @@
   .categoryRow {
     gap: 6px;
     padding-bottom: 2px;
-    scrollbar-width: none;
-  }
-  .categoryRow::-webkit-scrollbar {
-    display: none;
   }
   .categoryRow button {
     min-width: 0;

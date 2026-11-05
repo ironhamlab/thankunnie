@@ -4,8 +4,16 @@
   isolation: isolate;
   display: flex;
   gap: 8px;
-  margin: 4px 0 20px;
+  /* 탭이 위로 살짝 뜨고 테두리가 바깥으로 1px 나와도 잘리지 않게 여백을 두고, 그만큼 바깥 여백을 줄여 자리는 그대로 둔다 */
+  margin: 0 -3px 16px;
+  padding: 4px 3px;
+  /* 탭이 넘칠 때만 옆으로 밀어 보고 스크롤 막대는 보이지 않게 한다 */
   overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.root::-webkit-scrollbar {
+  display: none;
 }
 .root button {
   position: relative;
