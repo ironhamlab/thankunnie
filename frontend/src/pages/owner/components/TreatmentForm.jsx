@@ -4,14 +4,7 @@ import Button from '@/components/common/Button';
 import OwnerImageEditor from './OwnerImageEditor';
 import styles from './TreatmentForm.module.css';
 
-export default function TreatmentForm({
-  treatment,
-  imageUrl,
-  isSaving,
-  error,
-  onSave,
-  onClose,
-}) {
+export default function TreatmentForm({ treatment, imageUrl, isSaving, error, onSave, onClose }) {
   const [form, setForm] = useState({
     name: '',
     description: '',

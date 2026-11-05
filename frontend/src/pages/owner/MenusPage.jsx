@@ -75,13 +75,23 @@ export default function MenusPage() {
         treatment.treatmentId,
         treatment.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
       );
+      const remaining = updated.remainingReservationCount ?? 0;
       setNotice(
-        `${updated.name} 시술을 ${updated.status === 'ACTIVE' ? '활성화' : '비활성화'}했습니다.`,
+        `${updated.name} 시술을 ${updated.status === 'ACTIVE' ? '활성화' : '비활성화'}했습니다.${
+          updated.status === 'INACTIVE' && remaining > 0
+            ? ` 남은 예약 ${remaining}건은 그대로 진행됩니다.`
+            : ''
+        }`,
       );
     } catch (failure) {
       setActionError(failure);
     }
   };
+  // 서버 거절 뒤 목록을 다시 받으면 새 남은 예약 수로 안내가 바뀌도록 목록의 최신 값을 쓴다
+  const removeItem =
+    removeTarget &&
+    (treatments.find((item) => item.treatmentId === removeTarget.treatmentId) ?? removeTarget);
+  const removeRemaining = removeItem?.remainingReservationCount ?? 0;
   const confirmRemove = async () => {
     if (isSaving || !removeTarget) return;
     setIsSubmitting(true);
@@ -92,6 +102,8 @@ export default function MenusPage() {
       setRemoveTarget(null);
     } catch (failure) {
       setActionError(failure);
+      // 화면을 연 뒤 새 예약이 생겨 서버가 거절했으면 남은 예약 수를 다시 받아 안내를 맞춘다
+      if (failure.code === 'TREATMENT_002') load();
     } finally {
       setIsSubmitting(false);
     }
@@ -180,7 +192,12 @@ export default function MenusPage() {
                         <td>
                           <strong>{formatMoney(item.regularPrice)}</strong>
                         </td>
-                        <td>{item.status === 'ACTIVE' ? '활성' : '비활성'}</td>
+                        <td>
+                          {item.status === 'ACTIVE' ? '활성' : '비활성'}
+                          {item.remainingReservationCount > 0 && (
+                            <small>남은 예약 {item.remainingReservationCount}건</small>
+                          )}
+                        </td>
                         <td>
                           <div className={`b-flex ${styles.actions}`}>
                             <Button
@@ -235,19 +252,48 @@ export default function MenusPage() {
           }}
         >
           <div className="b-stack">
-            <p>
-              <strong>{removeTarget.name}</strong> 시술을 삭제할까요? 삭제한 시술은 목록과 신규
-              빈자리 선택에서 사라지며 되돌릴 수 없습니다. 이미 받은 예약과 이력은 그대로
-              유지됩니다.
-            </p>
-            {actionError && <p role="alert">{actionError.message}</p>}
+            {removeRemaining > 0 ? (
+              <p>
+                <strong>{removeItem.name}</strong> 시술에 남은 예약이 {removeRemaining}건 있어
+                지금은 삭제할 수 없습니다.{' '}
+                {removeItem.status === 'ACTIVE'
+                  ? '먼저 비활성화해 새 예약을 막고, 남은 예약이 끝난 뒤 삭제해 주세요.'
+                  : '남은 예약이 끝난 뒤 삭제해 주세요.'}
+              </p>
+            ) : (
+              <p>
+                <strong>{removeItem.name}</strong> 시술을 삭제할까요? 삭제한 시술은 목록과 신규
+                빈자리 선택에서 사라지며 되돌릴 수 없습니다. 지난 예약 이력은 그대로 유지됩니다.
+              </p>
+            )}
+            {actionError && !(actionError.code === 'TREATMENT_002' && removeRemaining > 0) && (
+              <p role="alert">{actionError.message}</p>
+            )}
             <div className={`b-flex ${styles.actions}`}>
               <Button disabled={isSaving} onClick={() => setRemoveTarget(null)}>
-                취소
+                {removeRemaining > 0 ? '닫기' : '취소'}
               </Button>
-              <Button variant="danger" disabled={isSaving} onClick={confirmRemove}>
-                {isSaving ? '삭제 중…' : '삭제'}
-              </Button>
+              {removeRemaining > 0 && removeItem.status === 'ACTIVE' && (
+                <Button
+                  variant="primary"
+                  disabled={isSaving || isRefreshing}
+                  onClick={async () => {
+                    setRemoveTarget(null);
+                    await toggle(removeItem);
+                  }}
+                >
+                  비활성화하기
+                </Button>
+              )}
+              {removeRemaining === 0 && (
+                <Button
+                  variant="danger"
+                  disabled={isSaving || isRefreshing}
+                  onClick={confirmRemove}
+                >
+                  {isSaving ? '삭제 중…' : '삭제'}
+                </Button>
+              )}
             </div>
           </div>
         </Dialog>

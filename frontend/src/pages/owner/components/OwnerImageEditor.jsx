@@ -102,9 +102,7 @@ export default function OwnerImageEditor({
         </Alert>
       )}
       {change && (
-        <small>
-          아직 반영되지 않았습니다. 저장을 누르면 {isRemoving ? '삭제' : '등록'}됩니다.
-        </small>
+        <small>아직 반영되지 않았습니다. 저장을 누르면 {isRemoving ? '삭제' : '등록'}됩니다.</small>
       )}
     </div>
   );

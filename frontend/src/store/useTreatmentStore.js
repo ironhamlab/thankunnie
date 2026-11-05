@@ -116,9 +116,7 @@ export const useTreatmentStore = create((set, get) => ({
       await treatmentApi.deleteTreatment(get().shopId, treatmentId);
       set((state) => ({
         treatments: state.treatments.filter((item) => item.treatmentId !== treatmentId),
-        activeTreatments: state.activeTreatments.filter(
-          (item) => item.treatmentId !== treatmentId,
-        ),
+        activeTreatments: state.activeTreatments.filter((item) => item.treatmentId !== treatmentId),
         mutationStatus: 'succeeded',
       }));
     } catch (error) {
