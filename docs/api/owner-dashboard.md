@@ -60,7 +60,7 @@
 | `monthToDate.completedAmount` | 이번 달 1일~오늘, 지금까지 끝난 확정 예약의 적용가 합계 |
 | `monthToDate.previousCompletedAmount` | 지난달 1일~같은 날(지난달이 짧으면 말일)의 같은 금액 |
 | `monthToDate.changeRate` | 증감률(%) 소수 첫째 자리. 지난달 금액이 0 이면 `null` |
-| `favoriteCustomerCount` | 이 매장을 찜(업장 구독, 사용 중)한 고객 수. 지역·카테고리 알림 구독은 세지 않는다 |
+| `favoriteCustomerCount` | 이 매장을 찜(업장 알림, 사용 중)한 고객 수. 지역·카테고리 알림은 세지 않는다 |
 
 ## GET /api/v1/owner/dashboard/stats
 

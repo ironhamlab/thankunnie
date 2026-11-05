@@ -13,7 +13,7 @@ import com.ucamp.app.domain.reservation.entity.Reservation;
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 
 /**
- * 매장 대시보드·통계 집계용 예약 조회. 시술·취소·결제·예외 일정·구독은 각 담당 도메인 소유라 엔티티 연관 없이 네이티브 쿼리로 읽는다.
+ * 매장 대시보드·통계 집계용 예약 조회. 시술·취소·결제·예외 일정·알림은 각 담당 도메인 소유라 엔티티 연관 없이 네이티브 쿼리로 읽는다.
  * 집계는 서비스에서 한다. 별칭은 대소문자를 지키도록 큰따옴표로 쓴다.
  */
 public interface ReservationDashboardRepository extends Repository<Reservation, Long> {
@@ -110,7 +110,7 @@ public interface ReservationDashboardRepository extends Repository<Reservation, 
             """, nativeQuery = true)
     Optional<ServiceStart> findServiceStart(@Param("shopId") Long shopId);
 
-    /** 이 매장을 찜(업장 구독)한 고객 수. 지역·카테고리 구독은 특정 매장을 고른 것이 아니라 세지 않는다 */
+    /** 이 매장을 찜(업장 알림)한 고객 수. 지역·카테고리 알림은 특정 매장을 고른 것이 아니라 세지 않는다 */
     @Query(value = """
             SELECT COUNT(DISTINCT n.USER_ID)
             FROM NOTIFICATION_SUBSCRIPTION n

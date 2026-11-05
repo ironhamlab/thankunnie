@@ -27,9 +27,9 @@ const formatHope = (startTime, endTime) =>
   `${monthDay(startTime)} ${timePart(startTime)} ~ ${monthDay(endTime)} ${timePart(endTime)}`;
 
 /**
- * 내 알림 구독 목록. 서버가 준 해제하지 않은 구독만 최근 등록 순으로 보여주고, 조건 수정과 해제를 한다.
+ * 내 알림 목록. 서버가 준 해제하지 않은 알림만 최근 등록 순으로 보여주고, 조건 수정과 해제를 한다.
  *
- * @param {boolean} [embedded] 구독 화면 탭 안에 넣을 때 바깥 여백을 빼기 위해 사용한다
+ * @param {boolean} [embedded] 알림 화면 탭 안에 넣을 때 바깥 여백을 빼기 위해 사용한다
  */
 export default function SubscriptionList({ embedded = false }) {
   const subscriptions = useNotificationStore((state) => state.subscriptions);

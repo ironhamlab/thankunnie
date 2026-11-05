@@ -13,13 +13,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import com.ucamp.app.domain.notification.entity.SubscriptionType;
 
 /**
- * 알림 구독 등록 요청. 업장 찜은 매장 ID만, 업장 알림은 매장 ID와 시술 ID를 보낸다. 카테고리 구독은 카테고리 ID와 지역코드만 보낸다.
+ * 알림 등록 요청. 업장 찜은 매장 ID만, 업장 알림은 매장 ID와 시술 ID를 보낸다. 카테고리 알림은 카테고리 ID와 지역코드만 보낸다.
  *
- * @param subscriptionType 구독 유형
- * @param shopId           매장 ID. 카테고리 구독이면 null
- * @param treatmentId      시술 ID. 업장 구독이면 고객이 고른 시술, 카테고리 구독이면 null
- * @param categoryId       카테고리 ID. 업장 구독이면 null
- * @param regionCode       지역코드. 업장 구독이면 null
+ * @param subscriptionType 알림 유형
+ * @param shopId           매장 ID. 카테고리 알림이면 null
+ * @param treatmentId      시술 ID. 업장 알림이면 고객이 고른 시술, 카테고리 알림이면 null
+ * @param categoryId       카테고리 ID. 업장 알림이면 null
+ * @param regionCode       지역코드. 업장 알림이면 null
  * @param startTime        알림 희망 시작 시각
  * @param endTime          알림 희망 종료 시각
  */

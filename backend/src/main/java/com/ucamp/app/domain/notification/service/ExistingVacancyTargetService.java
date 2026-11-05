@@ -42,7 +42,7 @@ public class ExistingVacancyTargetService {
      * 희망 시간 안이고 아직 예약 가능한 이벤트만 돌려준다.
      * 희망 시간이 없거나 희망 종료가 이미 지났으면 빈 목록이다.
      *
-     * @param shopId    업장 구독의 매장 ID
+     * @param shopId    업장 알림의 매장 ID
      * @param hopeStart 희망 시작
      * @param hopeEnd   희망 종료
      * @return 이 회원에게 추가로 보낼 수 있는 이벤트. 시작 시각이 빠른 순이다
@@ -52,7 +52,7 @@ public class ExistingVacancyTargetService {
             return List.of();
         }
         LocalDateTime now = LocalDateTime.now(clock);
-        // 구독 매칭과 같이, 희망 종료가 지금이거나 과거면 보낼 대상이 없다.
+        // 알림 매칭과 같이, 희망 종료가 지금이거나 과거면 보낼 대상이 없다.
         if (!hopeEnd.isAfter(now)) {
             return List.of();
         }
@@ -103,7 +103,7 @@ public class ExistingVacancyTargetService {
 
     /**
      * 이 카테고리·지역의 영업 중 매장에서, 희망 시간 안이고 아직 예약 가능한 이벤트를 모은다.
-     * 매장마다 업장 구독과 같은 기준으로 고르고, 시작 시각이 빠른 순으로 돌려준다.
+     * 매장마다 업장 알림과 같은 기준으로 고르고, 시작 시각이 빠른 순으로 돌려준다.
      *
      * @param categoryId 카테고리 ID
      * @param regionCode 지역코드

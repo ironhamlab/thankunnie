@@ -14,7 +14,7 @@ import com.ucamp.app.domain.notification.entity.SubscriptionType;
 import com.ucamp.app.domain.notification.repository.NotificationDispatchRepository;
 
 /**
- * 업장 구독에 희망 시간이 생긴 회원에게, 이미 열려 있는 빈자리 발송 줄을 추가한다.
+ * 업장 알림에 희망 시간이 생긴 회원에게, 이미 열려 있는 빈자리 발송 줄을 추가한다.
  * 문자는 여기서 보내지 않는다. 줄만 넣어 두면 기존 스케줄러가 보내고, 성공하면 종 알림도 그때 생긴다.
  */
 @Service
@@ -26,10 +26,10 @@ public class StoreSubscriptionDispatchService {
     private final NotificationDispatchRepository notificationDispatchRepository;
 
     /**
-     * 이 회원의 발송 줄을 만든다. 업장 구독이 아니거나 희망 시간이 없으면 아무것도 하지 않는다.
+     * 이 회원의 발송 줄을 만든다. 업장 알림이 아니거나 희망 시간이 없으면 아무것도 하지 않는다.
      * 같은 이벤트·회원의 줄이 이미 있으면 다시 만들지 않는다.
      *
-     * @param subscription 방금 저장한 구독
+     * @param subscription 방금 저장한 알림
      */
     @Transactional
     public void enqueue(NotificationSubscription subscription) {

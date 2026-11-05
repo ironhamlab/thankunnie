@@ -13,7 +13,7 @@ public enum TermsCode {
     PRIVACY(TermsTarget.CUSTOMER),
     /** 개인정보 제3자 제공 (예약한 매장에 이름·연락처 제공) */
     THIRD_PARTY(TermsTarget.CUSTOMER),
-    /** 관심 시간 알림 문자 수신. 구독 등록 전에 필요하다 */
+    /** 관심 시간 알림 문자 수신. 알림 등록 전에 필요하다 */
     SMS_NOTIFICATION(TermsTarget.CUSTOMER),
     /** 초보 시술 촬영·결과물 활용. 초보 시술 예약 전에 필요하다 */
     MODEL_PHOTO(TermsTarget.CUSTOMER),

@@ -14,7 +14,7 @@ import StoreHopeForm from './StoreHopeForm';
 import styles from './FavoriteShopList.module.css';
 
 /**
- * 알림 전 찜 매장. 희망 시간이 없는 업장 구독이다.
+ * 알림 전 찜 매장. 희망 시간이 없는 업장 알림이다.
  * 알림 받기는 문자 수신 동의가 있을 때만 시간 입력을 연다. 없으면 동의 모달을 띄운다.
  * 시간을 저장하면 이 목록에서 빠지고, 그때부터 빈자리 알림을 받는다.
  */

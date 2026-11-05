@@ -38,6 +38,7 @@
 |---|---|---|
 | `treatmentId` | O | 판매 중(ACTIVE)인 시술 ID |
 | `startsAt` | O | 시작 일시. 30분 단위, 오늘부터 60일 이내, 시작 20분 전까지 |
+| `replaceReservationId` | X | 풀고 바꿀 내 기존 점유 예약 ID. 결제 대기 중인 다른 예약이 있을 때만 보낸다 ([예약 생성의 점유 교체](#예약-생성의-점유-교체-r6)) |
 
 고객 요청사항은 이 요청에서 받지 않는다. 결제 화면에서 받아 예약 확정 때 저장한다 ([요청사항 저장](#요청사항-저장) 참고).
 
@@ -394,6 +395,7 @@ export default function App() {
   ```json
   {
     "impUid": "imp_123456789012",
+    "reservationId": 10,
     "customerRequest": "손톱은 라운드로 부탁드려요"
   }
   ```

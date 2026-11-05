@@ -25,7 +25,7 @@ import com.ucamp.app.common.exception.BusinessException;
 import com.ucamp.app.common.exception.ErrorCode;
 import com.ucamp.app.domain.user.dto.request.UserWithdrawRequest;
 
-// 진행 중 예약 판단과 구독·알림 일괄 정리 쿼리를 실제 DB 로 확인한다
+// 진행 중 예약 판단과 알림 일괄 정리 쿼리를 실제 DB 로 확인한다
 @SpringBootTest
 @ActiveProfiles("test")
 @TestPropertySource(properties = "spring.sql.init.data-locations=classpath:init-data.sql")
@@ -64,7 +64,7 @@ class UserWithdrawalServiceTest {
     }
 
     @Test
-    @DisplayName("탈퇴하면 상태를 바꾸고 이름을 가리며, 구독 해제·알림 삭제·대기 문자를 취소한다")
+    @DisplayName("탈퇴하면 상태를 바꾸고 이름을 가리며, 알림 해제·받은 알림 삭제·대기 문자를 취소한다")
     void withdraw_cleansUp() {
         // 지난 예약과 만료된 결제 대기는 탈퇴를 막지 않는다
         insertReservation(9901L, "HOLD", now.plusDays(1), now.minusMinutes(1));

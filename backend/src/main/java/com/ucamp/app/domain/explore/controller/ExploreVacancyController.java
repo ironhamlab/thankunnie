@@ -48,7 +48,7 @@ public class ExploreVacancyController {
     }
 
     @Operation(summary = "빈자리 목록",
-            description = "매장이 연 시간대 안에서 지금 예약할 수 있는 시술 × 시작 시각. 날짜를 생략하면 오늘부터 7일."
+            description = "영업시간 기준(매장이 연 시간 포함, 닫은 시간 제외)으로 지금 예약할 수 있는 시술 × 시작 시각. 날짜를 생략하면 오늘부터 7일."
                     + " 지도 범위(minLat·maxLat·minLng·maxLng)는 네 값을 함께 보낸다")
     @GetMapping("/vacancies")
     public ResponseEntity<ApiResponse<PageResponse<ExploreVacancyResponse>>> getVacancies(

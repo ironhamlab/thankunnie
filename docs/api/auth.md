@@ -109,7 +109,7 @@
 | loginId, password | 고객 가입과 같음 |
 | categoryId | 필수, 존재하는 카테고리 (`GET /api/v1/auth/shop-categories`) |
 | name | 필수, 100자 이하 |
-| regionCode | 필수, 20자 이하. 구독 알림의 지역 매칭 기준 |
+| regionCode | 필수, 20자 이하. 알림의 지역 매칭 기준 |
 | address | 필수, 300자 이하 |
 | addressDetail | 선택, 200자 이하 |
 | latitude / longitude | 필수, -90~90 / -180~180, 소수점 7자리 이하 |
@@ -145,7 +145,15 @@
 
 ## GET /api/v1/auth/me — 현재 사용자
 
-기존과 같다. 비로그인이면 `COMMON_401`.
+토큰의 사용자 ID·역할·매장 ID를 돌려준다. 비로그인이면 `COMMON_401`.
+
+```json
+{ "userId": 1, "role": "CUSTOMER", "shopId": null }
+```
+
+- `role`: `CUSTOMER`, `OWNER`, `ADMIN`
+- 매장(`OWNER`)은 `userId`·`shopId` 모두 매장 ID이고, 고객·관리자는 `shopId`가 null이다.
+- 이름·연락처 등 회원 정보는 `GET /api/v1/users/me` (`users.md`).
 
 ## 가입 사전 확인 (UNNIE-173)
 

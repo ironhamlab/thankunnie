@@ -148,7 +148,7 @@ Oracle DDL은 자동 커밋되므로 실행 전 대상 스키마와 백업을 �
 - `frontend/`: `node --test src/pages/design/useDesignStore.test.js` 2개 통과.
   비활성 시술 저장 거절과 기존 빈자리·예약·메뉴 스냅샷 보존을 검증했다.
 - 이번 작업에서 실제 브라우저의 서버 연동 및 Oracle 실행은 검증하지 않았다.
-- 이전 A-04 검증 당시 알림 구독 스키마 불일치로 전체 테스트가 실패했으나,
+- 이전 A-04 검증 당시 알림 스키마 불일치로 전체 테스트가 실패했으나,
   현재 dev를 반영한 이번 검증에서는 전체 테스트가 통과했다.
 - 설치된 Windows JDK의 Unix 소켓 임시 경로 문제를 피하기 위해 검증 프로세스에만
   `JAVA_TOOL_OPTIONS`의 `-Djdk.net.unixdomain.tmpdir`에 프로젝트 내부 `backend/build/socket-temp`의 절대 경로를 지정하고

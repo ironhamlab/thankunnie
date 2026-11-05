@@ -99,7 +99,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("업장 구독을 등록하면 매장 ID 와 희망 시간이 ACTIVE 상태로 저장된다")
+    @DisplayName("업장 알림을 등록하면 매장 ID 와 희망 시간이 ACTIVE 상태로 저장된다")
     void subscribe_store_savesActiveSubscription() {
         given(repository.existsByUserIdAndStatusAndShopIdAndTreatmentIdAndStartTimeAndEndTime(
                 eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(1L), eq(100L),
@@ -120,7 +120,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리 구독을 등록하면 카테고리 ID와 지역코드가 저장되고 매장 ID는 없다")
+    @DisplayName("카테고리 알림을 등록하면 카테고리 ID와 지역코드가 저장되고 매장 ID는 없다")
     void subscribe_categoryRegion_savesCategoryAndRegion() {
         given(repository.existsByUserIdAndStatusAndCategoryIdAndRegionCodeAndStartTimeAndEndTime(
                 eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(10L), eq("SEOUL_GANGNAM"),
@@ -139,7 +139,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("같은 매장·같은 시술·같은 희망 시간의 ACTIVE 구독이 있으면 등록할 수 없다")
+    @DisplayName("같은 매장·같은 시술·같은 희망 시간의 ACTIVE 알림이 있으면 등록할 수 없다")
     void subscribe_duplicateStore_throwsDuplicate() {
         given(repository.existsByUserIdAndStatusAndShopIdAndTreatmentIdAndStartTimeAndEndTime(
                 eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(1L), eq(100L),
@@ -152,7 +152,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("같은 카테고리·지역·희망 시간의 ACTIVE 구독이 있으면 등록할 수 없다")
+    @DisplayName("같은 카테고리·지역·희망 시간의 ACTIVE 알림이 있으면 등록할 수 없다")
     void subscribe_duplicateCategoryRegion_throwsDuplicate() {
         given(repository.existsByUserIdAndStatusAndCategoryIdAndRegionCodeAndStartTimeAndEndTime(
                 eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(10L), eq("SEOUL_GANGNAM"),
@@ -177,7 +177,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("구독 등록 시 알림 문자 수신 동의를 검사한다")
+    @DisplayName("알림 등록 시 알림 문자 수신 동의를 검사한다")
     void subscribe_checksSmsAgreement() {
         given(repository.existsByUserIdAndStatusAndShopIdAndTreatmentIdAndStartTimeAndEndTime(
                 eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(1L), eq(100L),
@@ -190,7 +190,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("고객이 아니면 구독을 등록할 수 없다")
+    @DisplayName("고객이 아니면 알림을 등록할 수 없다")
     void subscribe_owner_throwsForbidden() {
         assertErrorCode(() -> notificationService.subscribe(OWNER,
                 createRequest(SubscriptionType.STORE, 1L, 100L, null, null, start, end)), ErrorCode.FORBIDDEN);
@@ -198,7 +198,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("업장 구독에 카테고리가 함께 오면 대상 오류다")
+    @DisplayName("업장 알림에 카테고리가 함께 오면 대상 오류다")
     void subscribe_storeWithCategory_throwsInvalidTarget() {
         assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
                 createRequest(SubscriptionType.STORE, 1L, 100L, 10L, null, start, end)),
@@ -256,7 +256,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리 구독에 시술 ID가 있으면 대상 오류다")
+    @DisplayName("카테고리 알림에 시술 ID가 있으면 대상 오류다")
     void subscribe_categoryRegionWithTreatment_throwsInvalidTarget() {
         assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
                 createRequest(SubscriptionType.CATEGORY_REGION, null, 100L, 10L, "SEOUL_GANGNAM", start, end)),
@@ -264,7 +264,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("업장 구독에 매장 ID 가 없으면 대상 오류다")
+    @DisplayName("업장 알림에 매장 ID 가 없으면 대상 오류다")
     void subscribe_storeWithoutShop_throwsInvalidTarget() {
         assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
                 createRequest(SubscriptionType.STORE, null, 100L, null, null, start, end)),
@@ -272,7 +272,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리 구독에 지역코드가 없으면 대상 오류다")
+    @DisplayName("카테고리 알림에 지역코드가 없으면 대상 오류다")
     void subscribe_categoryRegionWithoutRegion_throwsInvalidTarget() {
         assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
                 createRequest(SubscriptionType.CATEGORY_REGION, null, null, 10L, " ", start, end)),
@@ -280,7 +280,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리 구독에 매장 ID가 있으면 대상 오류다")
+    @DisplayName("카테고리 알림에 매장 ID가 있으면 대상 오류다")
     void subscribe_categoryRegionWithShop_throwsInvalidTarget() {
         assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
                 createRequest(SubscriptionType.CATEGORY_REGION, 1L, null, 10L, "SEOUL_GANGNAM", start, end)),
@@ -329,7 +329,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리 구독은 희망 시간 없이 등록할 수 없다")
+    @DisplayName("카테고리 알림은 희망 시간 없이 등록할 수 없다")
     void subscribe_categoryRegionWithoutTime_throwsInvalidTime() {
         assertErrorCode(() -> notificationService.subscribe(CUSTOMER,
                 createRequest(SubscriptionType.CATEGORY_REGION, null, null, 10L, "SEOUL_GANGNAM", null, null)),
@@ -338,7 +338,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("시간 없는 업장 찜에 희망 시간을 넣으면 그 구독의 시간이 바뀐다")
+    @DisplayName("시간 없는 업장 찜에 희망 시간을 넣으면 그 알림의 시간이 바뀐다")
     void updateSubscription_favorite_setsHopeTime() {
         NotificationSubscription subscription = NotificationSubscription.builder()
                 .userId(CUSTOMER.userId())
@@ -400,14 +400,14 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("본인 구독을 수정하면 대상과 희망 시간이 바뀐다")
+    @DisplayName("본인 알림을 수정하면 대상과 희망 시간이 바뀐다")
     void updateSubscription_own_changesCondition() {
         NotificationSubscription subscription = storeSubscription();
         given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(subscription));
         OffsetDateTime newStart = start.plusDays(1);
         LocalDateTime newStartLocal = toLocal(newStart);
         LocalDateTime newEndLocal = toLocal(newStart.plusHours(2));
-        // ACTIVE 만 보고, 자기 구독 id=10 은 중복에서 뺀다
+        // ACTIVE 만 보고, 자기 알림 id=10 은 중복에서 뺀다
         given(repository.existsByUserIdAndStatusAndShopIdAndTreatmentIdAndStartTimeAndEndTimeAndIdNot(
                 eq(CUSTOMER.userId()), eq(SubscriptionStatus.ACTIVE), eq(2L), eq(100L),
                 eq(newStartLocal), eq(newEndLocal), eq(10L))).willReturn(false);
@@ -425,7 +425,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("수정 결과가 다른 ACTIVE 구독과 같으면 수정할 수 없다")
+    @DisplayName("수정 결과가 다른 ACTIVE 알림과 같으면 수정할 수 없다")
     void updateSubscription_duplicateOther_throwsDuplicate() {
         NotificationSubscription subscription = storeSubscription();
         given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(subscription));
@@ -442,7 +442,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("구독 유형에 맞지 않는 값으로 수정할 수 없다")
+    @DisplayName("알림 유형에 맞지 않는 값으로 수정할 수 없다")
     void updateSubscription_typeMismatch_throwsInvalidTarget() {
         given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(storeSubscription()));
 
@@ -459,7 +459,7 @@ class NotificationServiceTest {
     void updateSubscription_invalidTarget_notDuplicate() {
         given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(storeSubscription()));
 
-        // shopId=2 는 다른 구독과 겹칠 수 있는 값이지만, categoryId 가 있어 대상 오류가 먼저다
+        // shopId=2 는 다른 알림과 겹칠 수 있는 값이지만, categoryId 가 있어 대상 오류가 먼저다
         assertErrorCode(() -> notificationService.updateSubscription(CUSTOMER, 10L,
                 new NotificationSubscriptionUpdateRequest(2L, 100L, 10L, null, start, end)),
                 ErrorCode.SUBSCRIPTION_INVALID_TARGET);
@@ -468,7 +468,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("다른 고객의 구독은 수정할 수 없다")
+    @DisplayName("다른 고객의 알림은 수정할 수 없다")
     void updateSubscription_otherUser_throwsNotFound() {
         given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.empty());
 
@@ -478,7 +478,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("본인 구독을 해제하면 INACTIVE 가 된다")
+    @DisplayName("본인 알림을 해제하면 INACTIVE 가 된다")
     void unsubscribe_own_deactivates() {
         NotificationSubscription subscription = storeSubscription();
         given(repository.findByIdAndUserId(10L, CUSTOMER.userId())).willReturn(Optional.of(subscription));
@@ -489,7 +489,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("이미 해제한 구독은 다시 해제·수정할 수 없다")
+    @DisplayName("이미 해제한 알림은 다시 해제·수정할 수 없다")
     void unsubscribe_alreadyInactive_throwsNotFound() {
         NotificationSubscription subscription = storeSubscription();
         subscription.deactivate();
@@ -499,7 +499,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("문자 수신 동의가 없어도 매장 ID 가 빠진 업장 구독은 동의 필요가 아니라 대상 오류다")
+    @DisplayName("문자 수신 동의가 없어도 매장 ID 가 빠진 업장 알림은 동의 필요가 아니라 대상 오류다")
     void subscribe_withoutSmsAgreementAndShop_throwsInvalidTargetFirst() {
         denySmsAgreement();
 
@@ -521,7 +521,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("이미 알림이 켜진 구독은 문자 수신 동의 기록이 없어도 수정할 수 있다")
+    @DisplayName("이미 희망 시간이 있는 알림은 문자 수신 동의 기록이 없어도 수정할 수 있다")
     void updateSubscription_alreadyNotifyingWithoutSmsAgreement_updates() {
         denySmsAgreement();
         NotificationSubscription subscription = storeSubscription();
@@ -560,7 +560,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("토큰 검사 뒤 탈퇴가 먼저 끝났으면 회원 잠금 뒤 확인에서 막혀 구독을 저장하지 않는다")
+    @DisplayName("토큰 검사 뒤 탈퇴가 먼저 끝났으면 회원 잠금 뒤 확인에서 막혀 알림을 저장하지 않는다")
     void subscribe_withdrawnAfterTokenCheck_throwsUnauthorized() {
         given(appUserRepository.existsByUserIdAndStatus(CUSTOMER.userId(), AppUserStatus.ACTIVE)).willReturn(false);
 
@@ -573,7 +573,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("토큰 검사 뒤 탈퇴가 먼저 끝났으면 구독을 읽기 전에 막혀 해제된 구독을 되살리지 않는다")
+    @DisplayName("토큰 검사 뒤 탈퇴가 먼저 끝났으면 알림을 읽기 전에 막혀 해제된 알림을 되살리지 않는다")
     void updateSubscription_withdrawnAfterTokenCheck_throwsUnauthorized() {
         given(appUserRepository.existsByUserIdAndStatus(CUSTOMER.userId(), AppUserStatus.ACTIVE)).willReturn(false);
 

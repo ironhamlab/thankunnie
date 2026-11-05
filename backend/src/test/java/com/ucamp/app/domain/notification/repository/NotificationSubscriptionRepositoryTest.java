@@ -36,7 +36,7 @@ class NotificationSubscriptionRepositoryTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // 구독은 회원·매장·카테고리를 FK 로 참조한다
+    // 알림은 회원·매장·카테고리를 FK 로 참조한다
     @BeforeEach
     void setUp() {
         NotificationFixture.category(jdbcTemplate, 10L, "NAIL");
@@ -60,7 +60,7 @@ class NotificationSubscriptionRepositoryTest {
     }
 
     @Test
-    @DisplayName("내 구독 목록은 본인의 ACTIVE 구독만 최신 등록 순으로 반환한다")
+    @DisplayName("내 알림 목록은 본인의 ACTIVE 알림만 최신 등록 순으로 반환한다")
     void findAllByUserIdAndStatus_mixedSubscriptions_returnsOwnActiveOnly() {
         NotificationSubscription first = repository.save(store(1L, 1L, NOW, NOW.plusDays(1)));
         NotificationSubscription second = repository.save(categoryRegion(1L, 10L, "SEOUL_GANGNAM",
@@ -78,7 +78,7 @@ class NotificationSubscriptionRepositoryTest {
     }
 
     @Test
-    @DisplayName("업장 알림 대상은 같은 매장의 희망 시간에 빈자리 시작 시각이 포함된 ACTIVE 구독이다")
+    @DisplayName("업장 알림 대상은 같은 매장의 희망 시간에 빈자리 시작 시각이 포함된 ACTIVE 알림이다")
     void findNotifiableByShop_activeInRange_returnsSubscription() {
         NotificationSubscription target = repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
         repository.save(store(2L, 2L, NOW, NOW.plusHours(5)));
@@ -90,7 +90,7 @@ class NotificationSubscriptionRepositoryTest {
     }
 
     @Test
-    @DisplayName("해제한 구독은 알림 대상에서 제외된다")
+    @DisplayName("해제한 알림은 알림 대상에서 제외된다")
     void findNotifiableByShop_inactive_excluded() {
         NotificationSubscription subscription = store(1L, 1L, NOW, NOW.plusHours(5));
         subscription.deactivate();
@@ -100,7 +100,7 @@ class NotificationSubscriptionRepositoryTest {
     }
 
     @Test
-    @DisplayName("희망 종료 시각이 지난 만료 구독은 알림 대상에서 제외된다")
+    @DisplayName("희망 종료 시각이 지난 만료 알림은 알림 대상에서 제외된다")
     void findNotifiableByShop_expired_excluded() {
         repository.save(store(1L, 1L, NOW.minusHours(5), NOW.minusHours(1)));
 
@@ -108,7 +108,7 @@ class NotificationSubscriptionRepositoryTest {
     }
 
     @Test
-    @DisplayName("카테고리·지역 알림 대상은 카테고리와 지역이 모두 같은 ACTIVE 구독이다")
+    @DisplayName("카테고리·지역 알림 대상은 카테고리와 지역이 모두 같은 ACTIVE 알림이다")
     void findNotifiableByCategoryRegion_sameCategoryAndRegion_returnsSubscription() {
         NotificationSubscription target = repository.save(categoryRegion(1L, 10L, "SEOUL_GANGNAM",
                 NOW, NOW.plusHours(5)));

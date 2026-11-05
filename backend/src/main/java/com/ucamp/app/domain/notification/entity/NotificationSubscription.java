@@ -25,7 +25,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 알림 구독(찜). 매장 단위 또는 카테고리·지역 단위로 희망 시간대의 빈자리 알림을 받는다.
+ * 알림(찜). 매장 단위 또는 카테고리·지역 단위로 희망 시간대의 빈자리 알림을 받는다.
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -52,22 +52,22 @@ public class NotificationSubscription extends BaseTimeEntity {
     @Column(name = "SUBSCRIPTION_TYPE", nullable = false, length = 20)
     private SubscriptionType subscriptionType;
 
-    /** 업장 구독(STORE)일 때만 넣는다. */
+    /** 업장 알림(STORE)일 때만 넣는다. */
     @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "SHOP_ID")
     private Long shopId;
 
-    /** 업장 구독(STORE)일 때만 넣는다. 고객이 고른 시술이다. */
+    /** 업장 알림(STORE)일 때만 넣는다. 고객이 고른 시술이다. */
     @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "TREATMENT_ID")
     private Long treatmentId;
 
-    /** 카테고리 구독(CATEGORY_REGION)일 때만 넣는다. */
+    /** 카테고리 알림(CATEGORY_REGION)일 때만 넣는다. */
     @JdbcTypeCode(SqlTypes.NUMERIC)
     @Column(name = "CATEGORY_ID")
     private Long categoryId;
 
-    /** 카테고리 구독(CATEGORY_REGION)일 때만 넣는다. */
+    /** 카테고리 알림(CATEGORY_REGION)일 때만 넣는다. */
     @Column(name = "REGION_CODE", length = 20)
     private String regionCode;
 
@@ -101,12 +101,12 @@ public class NotificationSubscription extends BaseTimeEntity {
     }
 
     /**
-     * 구독 대상과 희망 시간을 변경한다. 구독 유형은 바꿀 수 없으며, 기존 유형에 맞는 대상만 허용한다.
+     * 알림 대상과 희망 시간을 변경한다. 알림 유형은 바꿀 수 없으며, 기존 유형에 맞는 대상만 허용한다.
      *
-     * @param shopId      매장 ID. 카테고리 구독이면 null
-     * @param treatmentId 시술 ID. 업장 구독이면 고객이 고른 시술, 카테고리 구독이면 null
-     * @param categoryId  카테고리 ID. 업장 구독이면 null
-     * @param regionCode  지역코드. 업장 구독이면 null
+     * @param shopId      매장 ID. 카테고리 알림이면 null
+     * @param treatmentId 시술 ID. 업장 알림이면 고객이 고른 시술, 카테고리 알림이면 null
+     * @param categoryId  카테고리 ID. 업장 알림이면 null
+     * @param regionCode  지역코드. 업장 알림이면 null
      * @param startTime   알림 희망 시작 시각
      * @param endTime     알림 희망 종료 시각
      */
@@ -123,24 +123,24 @@ public class NotificationSubscription extends BaseTimeEntity {
         this.endTime = endTime;
     }
 
-    /** 구독을 해제한다. 알림 대상에서 제외된다. */
+    /** 알림을 해제한다. 알림 대상에서 제외된다. */
     public void deactivate() {
         this.status = SubscriptionStatus.INACTIVE;
     }
 
     /**
-     * 해제하지 않은 구독인지 확인한다.
+     * 해제하지 않은 알림인지 확인한다.
      *
-     * @return 활성 구독이면 true
+     * @return 활성 알림이면 true
      */
     public boolean isActive() {
         return status == SubscriptionStatus.ACTIVE;
     }
 
     /**
-     * 구독 유형과 대상이 맞는지 확인한다.
-     * 업장 구독은 매장 ID만 필수다. 시술은 알림을 켤 때 따로 확인한다.
-     * 카테고리 구독은 카테고리 ID와 지역코드만 허용한다.
+     * 알림 유형과 대상이 맞는지 확인한다.
+     * 업장 알림은 매장 ID만 필수다. 시술은 알림을 켤 때 따로 확인한다.
+     * 카테고리 알림은 카테고리 ID와 지역코드만 허용한다.
      */
     private static void validateTarget(SubscriptionType subscriptionType, Long shopId, Long treatmentId,
             Long categoryId, String regionCode) {
@@ -161,7 +161,7 @@ public class NotificationSubscription extends BaseTimeEntity {
 
     /**
      * 업장 찜은 희망 시간을 둘 다 비울 수 있다. 비우면 알림 대상이 아니다.
-     * 시간을 넣으면 시작이 종료보다 앞이어야 한다. 하나만 비우거나 카테고리 구독의 빈 시간은 거절한다.
+     * 시간을 넣으면 시작이 종료보다 앞이어야 한다. 하나만 비우거나 카테고리 알림의 빈 시간은 거절한다.
      */
     private static void validateTime(SubscriptionType subscriptionType, LocalDateTime startTime,
             LocalDateTime endTime) {

@@ -62,7 +62,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("같은 매장이고 빈자리 시작이 희망 시간 안인 업장 구독만 고른다")
+    @DisplayName("같은 매장이고 빈자리 시작이 희망 시간 안인 업장 알림만 고른다")
     void findStoreMatches_sameShopAndTime_returnsThoseSubscriptions() {
         NotificationSubscription target = repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
         repository.save(store(2L, 2L, NOW, NOW.plusHours(5)));
@@ -79,7 +79,7 @@ class SubscriptionMatchServiceTest {
         NotificationSubscription target = repository.save(store(1L, 1L, SLOT_START, SLOT_START.plusHours(1)));
         repository.save(store(2L, 1L, SLOT_START.plusHours(1), SLOT_START.plusHours(2)));
 
-        // 희망 종료가 빈자리 시작과 같은 구독. 종료 시각도 희망 시간에 포함된다.
+        // 희망 종료가 빈자리 시작과 같은 알림. 종료 시각도 희망 시간에 포함된다.
         NotificationSubscription endsAtSlot = repository.save(store(2L, 1L, NOW, SLOT_START));
 
         List<NotificationSubscription> result = subscriptionMatchService.findStoreMatches(1L, SLOT_START);
@@ -89,7 +89,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("고른 시술이 없거나 판매 중이 아니면 업장 구독은 빠진다")
+    @DisplayName("고른 시술이 없거나 판매 중이 아니면 업장 알림은 빠진다")
     void findStoreMatches_missingOrInactiveTreatment_isExcluded() {
         repository.save(store(1L, 1L, 999L, NOW, NOW.plusHours(5)));
         jdbcTemplate.update("UPDATE TREATMENT SET STATUS = 'INACTIVE' WHERE TREATMENT_ID = 100");
@@ -99,7 +99,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("고른 시술을 그 시각에 예약할 수 없으면 업장 구독은 빠진다")
+    @DisplayName("고른 시술을 그 시각에 예약할 수 없으면 업장 알림은 빠진다")
     void findStoreMatches_treatmentNotBookable_isExcluded() {
         jdbcTemplate.update("UPDATE TREATMENT SET DURATION_MINUTES = 600 WHERE TREATMENT_ID = 100");
         repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
@@ -108,7 +108,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("같은 회원의 시술 알림이 여러 개 그 시각에 되면 구독은 모두 남고 회원은 한 번만 보낸다")
+    @DisplayName("같은 회원의 시술 알림이 여러 개 그 시각에 되면 알림은 모두 남고 회원은 한 번만 보낸다")
     void findStoreMatches_severalBookableTreatments_keepsSubscriptionsAndOneUser() {
         NotificationFixture.treatment(jdbcTemplate, 101L, 1L, "NORMAL");
         NotificationSubscription smaller = repository.save(store(1L, 1L, 100L, NOW, NOW.plusHours(5)));
@@ -121,7 +121,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("해제한 구독과 희망 종료가 지난 구독은 빠진다")
+    @DisplayName("해제한 알림과 희망 종료가 지난 알림은 빠진다")
     void findStoreMatches_inactiveOrExpired_isExcluded() {
         NotificationSubscription inactive = store(1L, 1L, NOW, NOW.plusHours(5));
         inactive.deactivate();
@@ -132,7 +132,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("매장 카테고리·지역코드와 같고 빈자리 시작이 희망 시간 안인 구독만 고른다")
+    @DisplayName("매장 카테고리·지역코드와 같고 빈자리 시작이 희망 시간 안인 알림만 고른다")
     void findCategoryRegionMatches_sameCategoryRegionAndTime_returnsThoseSubscriptions() {
         NotificationSubscription target = repository.save(
                 categoryRegion(1L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
@@ -155,7 +155,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리 구독도 희망 시간 경계는 포함하고 해제·만료는 뺀다")
+    @DisplayName("카테고리 알림도 희망 시간 경계는 포함하고 해제·만료는 뺀다")
     void findCategoryRegionMatches_timeBoundaryAndInactiveOrExpired() {
         NotificationSubscription startsAtSlot = repository.save(
                 categoryRegion(1L, 10L, "SEOUL_GANGNAM", SLOT_START, SLOT_START.plusHours(1)));
@@ -175,7 +175,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("매장이 없거나 매장 ID·빈자리 시작 시각이 없으면 카테고리 구독은 빈 목록이다")
+    @DisplayName("매장이 없거나 매장 ID·빈자리 시작 시각이 없으면 카테고리 알림은 빈 목록이다")
     void findCategoryRegionMatches_missingShopOrInput_returnsEmpty() {
         repository.save(categoryRegion(1L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
 
@@ -185,7 +185,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("업장 구독으로만 이 빈자리 알림을 받을 수 있어도 그 회원을 발송 대상으로 고른다")
+    @DisplayName("업장 알림으로만 이 빈자리 알림을 받을 수 있어도 그 회원을 발송 대상으로 고른다")
     void findRecipientUserIds_storeOnly_returnsThatUser() {
         repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
         repository.save(categoryRegion(2L, 10L, "SEOUL_MAPO", NOW, NOW.plusHours(5)));
@@ -194,7 +194,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리·지역 구독으로만 이 빈자리 알림을 받을 수 있어도 그 회원을 발송 대상으로 고른다")
+    @DisplayName("카테고리·지역 알림으로만 이 빈자리 알림을 받을 수 있어도 그 회원을 발송 대상으로 고른다")
     void findRecipientUserIds_categoryOnly_returnsThatUser() {
         repository.save(store(1L, 2L, NOW, NOW.plusHours(5)));
         repository.save(categoryRegion(2L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
@@ -203,7 +203,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("한 회원이 업장 구독과 카테고리 구독으로 모두 알림을 받을 수 있어도 한 번만 고른다")
+    @DisplayName("한 회원이 업장 알림과 카테고리 알림으로 모두 알림을 받을 수 있어도 한 번만 고른다")
     void findRecipientUserIds_bothConditions_returnsUserOnce() {
         repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
         repository.save(store(1L, 1L, NOW, NOW.plusHours(4)));
@@ -214,7 +214,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("둘 다 안 맞거나 해제·만료된 구독의 회원은 발송 대상이 아니다")
+    @DisplayName("둘 다 안 맞거나 해제·만료된 알림의 회원은 발송 대상이 아니다")
     void findRecipientUserIds_noMatchOrInactiveOrExpired_isExcluded() {
         repository.save(store(1L, 2L, NOW, NOW.plusHours(5)));
         repository.save(categoryRegion(2L, 10L, "SEOUL_MAPO", NOW, NOW.plusHours(5)));
@@ -237,7 +237,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("매장 구독으로 이 빈자리 알림을 받을 회원은 카테고리 구독이 여러 개여도 카테고리 목록에 넣지 않는다")
+    @DisplayName("매장 알림으로 이 빈자리 알림을 받을 회원은 카테고리 알림이 여러 개여도 카테고리 목록에 넣지 않는다")
     void findMatchGroups_storeUser_isRemovedFromCategorySubscriptions() {
         NotificationSubscription storeMatch = repository.save(store(1L, 1L, NOW, NOW.plusHours(5)));
         repository.save(store(1L, 1L, NOW, NOW.plusHours(4)));
@@ -255,7 +255,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("카테고리 구독으로만 이 빈자리 알림을 받을 회원은 구독이 두 개면 두 개 다 남긴다")
+    @DisplayName("카테고리 알림으로만 이 빈자리 알림을 받을 회원은 알림이 두 개면 두 개 다 남긴다")
     void findMatchGroups_categoryOnlyUser_keepsEverySubscription() {
         NotificationSubscription first = repository.save(
                 categoryRegion(1L, 10L, "SEOUL_GANGNAM", NOW, NOW.plusHours(5)));
@@ -272,7 +272,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("해제한 매장 구독은 같은 회원의 카테고리 구독을 빼지 않는다")
+    @DisplayName("해제한 매장 알림은 같은 회원의 카테고리 알림을 빼지 않는다")
     void findMatchGroups_inactiveStore_doesNotRemoveCategory() {
         NotificationSubscription inactiveStore = store(1L, 1L, NOW, NOW.plusHours(5));
         inactiveStore.deactivate();
@@ -289,7 +289,7 @@ class SubscriptionMatchServiceTest {
     }
 
     @Test
-    @DisplayName("이 빈자리의 매장 구독이 아니면 카테고리 구독은 빼지 않는다")
+    @DisplayName("이 빈자리의 매장 알림이 아니면 카테고리 알림은 빼지 않는다")
     void findMatchGroups_storeSubscriptionForAnotherShop_doesNotRemoveCategory() {
         repository.save(store(1L, 2L, NOW, NOW.plusHours(5)));
         NotificationSubscription category = repository.save(

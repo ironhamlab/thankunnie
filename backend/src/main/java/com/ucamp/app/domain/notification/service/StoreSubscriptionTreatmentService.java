@@ -28,7 +28,7 @@ public class StoreSubscriptionTreatmentService {
      * 그 매장에서 판매 중인 시술이고, 빈자리 시작 시각에 소요 시간만큼 예약할 수 있으면 true.
      * 시술이 없거나 판매 중이 아니면 false.
      *
-     * @param shopId       업장 구독의 매장
+     * @param shopId       업장 알림의 매장
      * @param treatmentId  고객이 고른 시술
      * @param slotStartsAt 빈자리 시작 시각
      * @return 그 시각에 그 시술을 예약할 수 있으면 true

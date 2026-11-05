@@ -77,7 +77,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    @DisplayName("업장 구독 등록에 성공하면 201 과 구독 정보를 반환한다")
+    @DisplayName("업장 알림 등록에 성공하면 201 과 알림 정보를 반환한다")
     void subscribe_validStoreRequest_returnsCreated() throws Exception {
         given(notificationService.subscribe(any(AuthUser.class), any(NotificationSubscriptionCreateRequest.class)))
                 .willReturn(storeResponse());
@@ -99,7 +99,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    @DisplayName("구독 유형이 없으면 400 을 반환한다")
+    @DisplayName("알림 유형이 없으면 400 을 반환한다")
     void subscribe_missingType_returnsBadRequest() throws Exception {
         mockMvc.perform(post(SUBSCRIPTIONS_URL)
                         .header(StubAuthFilter.HEADER_NAME, "CUSTOMER_1")
@@ -113,7 +113,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    @DisplayName("비로그인이면 구독을 등록할 수 없다")
+    @DisplayName("비로그인이면 알림을 등록할 수 없다")
     void subscribe_anonymous_returnsUnauthorized() throws Exception {
         mockMvc.perform(post(SUBSCRIPTIONS_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -126,7 +126,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    @DisplayName("내 구독 목록을 조회한다")
+    @DisplayName("내 알림 목록을 조회한다")
     void getMySubscriptions_customer_returnsList() throws Exception {
         given(notificationService.getMySubscriptions(any(AuthUser.class))).willReturn(List.of(storeResponse()));
 
@@ -137,7 +137,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    @DisplayName("구독 해제에 성공하면 본문 없이 204 를 반환한다")
+    @DisplayName("알림 해제에 성공하면 본문 없이 204 를 반환한다")
     void unsubscribe_own_returnsNoContent() throws Exception {
         mockMvc.perform(delete(SUBSCRIPTIONS_URL + "/1").header(StubAuthFilter.HEADER_NAME, "CUSTOMER_1"))
                 .andExpect(status().isNoContent())
@@ -145,7 +145,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    @DisplayName("없는 구독을 해제하면 404 를 반환한다")
+    @DisplayName("없는 알림을 해제하면 404 를 반환한다")
     void unsubscribe_notFound_returnsNotFound() throws Exception {
         willThrow(new BusinessException(ErrorCode.SUBSCRIPTION_NOT_FOUND))
                 .given(notificationService).unsubscribe(any(AuthUser.class), eq(99L));

@@ -17,8 +17,8 @@ import com.ucamp.app.domain.notification.entity.SubscriptionType;
 import com.ucamp.app.domain.notification.repository.NotificationDispatchRepository;
 
 /**
- * 카테고리·지역 구독을 방금 저장한 회원에게, 이미 열려 있는 빈자리를 넣는다.
- * 업장 구독과 같이 이벤트가 없는 먼 빈자리는 넣지 않는다.
+ * 카테고리·지역 알림을 방금 저장한 회원에게, 이미 열려 있는 빈자리를 넣는다.
+ * 업장 알림과 같이 이벤트가 없는 먼 빈자리는 넣지 않는다.
  * 여러 건이면 기존 묶음과 같이 첫 건만 발송 줄로 만들고, 그때부터 60분 안의 나머지는 묶음 메모장에 둔다.
  * 문자는 여기서 보내지 않는다. 발송 줄은 스케줄러가 보내고, 묶음은 60분이 지난 뒤 스케줄러가 보낸다.
  */
@@ -35,11 +35,11 @@ public class CategoryRegionSubscriptionDispatchService {
     private final Clock clock;
 
     /**
-     * 이 구독의 발송 줄 또는 묶음 메모장을 채운다.
-     * 카테고리·지역 구독이 아니거나 희망 시간이 없으면 아무것도 하지 않는다.
+     * 이 알림의 발송 줄 또는 묶음 메모장을 채운다.
+     * 카테고리·지역 알림이 아니거나 희망 시간이 없으면 아무것도 하지 않는다.
      * 같은 이벤트·회원의 줄이 이미 있으면 다시 만들지 않는다.
      *
-     * @param subscription 방금 저장한 구독. 묶음 메모장 키로 구독 ID가 필요하다
+     * @param subscription 방금 저장한 알림. 묶음 메모장 키로 알림 ID가 필요하다
      */
     @Transactional
     public void enqueue(NotificationSubscription subscription) {
