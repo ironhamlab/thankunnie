@@ -109,7 +109,7 @@
 | loginId, password | 고객 가입과 같음 |
 | categoryId | 필수, 존재하는 카테고리 (`GET /api/v1/auth/shop-categories`) |
 | name | 필수, 100자 이하 |
-| regionCode | 필수, 20자 이하. 구독 알림의 지역 매칭 기준 |
+| regionCode | 필수, 20자 이하. 알림의 지역 매칭 기준 |
 | address | 필수, 300자 이하 |
 | addressDetail | 선택, 200자 이하 |
 | latitude / longitude | 필수, -90~90 / -180~180, 소수점 7자리 이하 |
