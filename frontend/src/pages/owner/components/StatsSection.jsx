@@ -371,7 +371,7 @@ export default function StatsSection() {
             <Panel as="section" padded className="b-stack">
               <h2>요일별 예약</h2>
               <ChartReveal>
-                <WeekdayBars weekdays={current.byWeekday} from={summary.from} to={summary.to} />
+                <WeekdayBars weekdays={current.byWeekday} />
               </ChartReveal>
             </Panel>
             <Panel as="section" padded className="b-stack">
@@ -388,22 +388,20 @@ export default function StatsSection() {
 
           <Panel as="section" padded className="b-stack">
             <h2>예약이 차 있는 시간</h2>
-            {current.heatmap.length ? (
+            {current.heatmap.some((cell) => cell.bookedMinutes > 0) ? (
               <ChartReveal>
                 <OccupancyHeatmap
                   // 기간을 바꾸면 고른 칸을 그 기간의 가장 바쁜 시간으로 다시 잡는다
                   key={`${summary.from}-${summary.to}`}
                   cells={current.heatmap}
-                  from={summary.from}
-                  to={summary.to}
                 />
               </ChartReveal>
             ) : (
               <EmptyState as="p">이 기간에 확정된 예약이 없습니다.</EmptyState>
             )}
             <p className={styles.hint}>
-              색은 그 시간대 1시간 중 예약이 찬 비율(평균)이에요. 칸을 누르면 숫자를 볼 수 있어요.
-              기간 안 모든 날짜 기준이라 휴무일이 있으면 실제보다 조금 낮게 나와요.
+              색은 그 시간대에 영업한 시간 중 예약이 찬 비율이에요. 칸을 누르면 숫자를 볼 수 있어요.
+              휴무일·영업 외 시간은 계산에서 빠져요.
             </p>
           </Panel>
         </>

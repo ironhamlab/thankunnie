@@ -90,8 +90,8 @@ class OwnerDashboardControllerTest {
                 summary(LocalDate.of(2026, 10, 30), LocalDate.of(2026, 10, 31)),
                 List.of(new ReservationStatsResponse.Trend(from, from, 0, 0, 0, 0, 0),
                         new ReservationStatsResponse.Trend(to, to, 1, 30000, 0, 0, 0)),
-                List.of(new ReservationStatsResponse.Weekday(DayOfWeek.MONDAY, 1, 30000)),
-                List.of(new ReservationStatsResponse.HeatmapCell(DayOfWeek.MONDAY, 14, 60)),
+                List.of(new ReservationStatsResponse.Weekday(DayOfWeek.MONDAY, 1, 30000, 4)),
+                List.of(new ReservationStatsResponse.HeatmapCell(DayOfWeek.MONDAY, 14, 60, 240)),
                 List.of(new ReservationStatsResponse.Treatment(1L, "젤네일 원컬러", 2, 60000L, 100.0)));
         given(reservationDashboardService.getOwnerStats(any(AuthUser.class), eq(from), eq(to), eq(false)))
                 .willReturn(response);
@@ -107,7 +107,9 @@ class OwnerDashboardControllerTest {
                 .andExpect(jsonPath("$.data.trend.length()").value(2))
                 .andExpect(jsonPath("$.data.trend[1].completedAmount").value(30000))
                 .andExpect(jsonPath("$.data.byWeekday[0].dayOfWeek").value("MONDAY"))
+                .andExpect(jsonPath("$.data.byWeekday[0].openDays").value(4))
                 .andExpect(jsonPath("$.data.heatmap[0].bookedMinutes").value(60))
+                .andExpect(jsonPath("$.data.heatmap[0].openMinutes").value(240))
                 .andExpect(jsonPath("$.data.treatments[0].share").value(100.0));
     }
 

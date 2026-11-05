@@ -35,6 +35,7 @@ import com.ucamp.app.domain.reservation.repository.ReservationDashboardRepositor
 import com.ucamp.app.domain.reservation.repository.ReservationDashboardRow;
 import com.ucamp.app.domain.shop.policy.CustomerSegment;
 import com.ucamp.app.domain.vacancy.policy.PriceTier;
+import com.ucamp.app.domain.vacancy.policy.TimeRange;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 /**
@@ -164,14 +165,16 @@ public class ReservationDashboardService {
                 reservationDashboardRepository.findVisits(shopId, visitCutoff);
 
         List<ReservationDashboardRow> period = inPeriod(rows, start, end);
+        Map<LocalDate, List<TimeRange>> worked =
+                workedRanges(availabilityService.getOpenRangesByDate(shopId, start, end), period);
         return new ReservationStatsResponse(
                 granularity,
                 serviceStart,
                 summarize(rows, start, end, now, visits),
                 hasPrevious ? summarize(rows, previousStart, previousEnd, now, visits) : null,
                 trend(period, start, end, now, granularity),
-                byWeekday(period),
-                heatmap(period),
+                byWeekday(period, worked),
+                heatmap(period, worked),
                 byTreatment(period));
     }
 
@@ -389,12 +392,37 @@ public class ReservationDashboardService {
         return result;
     }
 
-    private static List<ReservationStatsResponse.Weekday> byWeekday(List<ReservationDashboardRow> period) {
+    /**
+     * 날짜별 영업한 시간 = 매장이 연 시간 ∪ 확정 예약 시간(노쇼 포함).
+     * 영업시간은 지금 설정이라, 예전 영업시간에 받은 예약이 휴무로 빠지지 않게 예약 시간을 함께 넣는다.
+     * 요일·시간대 평균의 분모로 쓰며, 영업한 시간이 없는 날짜(휴무)는 담지 않는다.
+     */
+    private static Map<LocalDate, List<TimeRange>> workedRanges(Map<LocalDate, List<TimeRange>> openRanges,
+            List<ReservationDashboardRow> period) {
+        Map<LocalDate, List<TimeRange>> ranges = new TreeMap<>();
+        openRanges.forEach((date, open) -> ranges.computeIfAbsent(date, key -> new ArrayList<>()).addAll(open));
+        for (ReservationDashboardRow row : period) {
+            if (row.confirmed() && row.endsAt().isAfter(row.startsAt())) {
+                ranges.computeIfAbsent(row.startsAt().toLocalDate(), key -> new ArrayList<>())
+                        .add(new TimeRange(row.startsAt(), row.endsAt()));
+            }
+        }
+        ranges.replaceAll((date, list) -> TimeRange.union(list));
+        return ranges;
+    }
+
+    private static List<ReservationStatsResponse.Weekday> byWeekday(List<ReservationDashboardRow> period,
+            Map<LocalDate, List<TimeRange>> worked) {
         Map<DayOfWeek, int[]> counts = new EnumMap<>(DayOfWeek.class);
         Map<DayOfWeek, long[]> amounts = new EnumMap<>(DayOfWeek.class);
+        Map<DayOfWeek, int[]> openDays = new EnumMap<>(DayOfWeek.class);
         for (DayOfWeek day : DayOfWeek.values()) {
             counts.put(day, new int[1]);
             amounts.put(day, new long[1]);
+            openDays.put(day, new int[1]);
+        }
+        for (LocalDate date : worked.keySet()) {
+            openDays.get(date.getDayOfWeek())[0]++;
         }
         for (ReservationDashboardRow row : period) {
             if (row.occupied()) {
@@ -405,32 +433,42 @@ public class ReservationDashboardService {
         }
         List<ReservationStatsResponse.Weekday> result = new ArrayList<>();
         for (DayOfWeek day : DayOfWeek.values()) {
-            result.add(new ReservationStatsResponse.Weekday(day, counts.get(day)[0], amounts.get(day)[0]));
+            result.add(new ReservationStatsResponse.Weekday(day, counts.get(day)[0], amounts.get(day)[0],
+                    openDays.get(day)[0]));
         }
         return result;
     }
 
-    // 예약 시간을 정시 경계로 잘라 요일·시간대 칸에 더한다
-    private static List<ReservationStatsResponse.HeatmapCell> heatmap(List<ReservationDashboardRow> period) {
-        Map<DayOfWeek, TreeMap<Integer, Long>> minutes = new EnumMap<>(DayOfWeek.class);
+    // 예약 시간과 영업한 시간을 정시 경계로 잘라 요일·시간대 칸에 더한다
+    private static List<ReservationStatsResponse.HeatmapCell> heatmap(List<ReservationDashboardRow> period,
+            Map<LocalDate, List<TimeRange>> worked) {
+        Map<DayOfWeek, TreeMap<Integer, long[]>> minutes = new EnumMap<>(DayOfWeek.class);
         for (ReservationDashboardRow row : period) {
-            if (!row.occupied()) {
-                continue;
+            if (row.occupied()) {
+                addByHour(minutes, row.startsAt(), row.endsAt(), 0);
             }
-            LocalDateTime cursor = row.startsAt();
-            while (cursor.isBefore(row.endsAt())) {
-                LocalDateTime nextHour = cursor.truncatedTo(ChronoUnit.HOURS).plusHours(1);
-                LocalDateTime sliceEnd = earlier(nextHour, row.endsAt());
-                long sliceMinutes = Duration.between(cursor, sliceEnd).toMinutes();
-                minutes.computeIfAbsent(cursor.getDayOfWeek(), day -> new TreeMap<>())
-                        .merge(cursor.getHour(), sliceMinutes, Long::sum);
-                cursor = sliceEnd;
-            }
+        }
+        for (List<TimeRange> ranges : worked.values()) {
+            ranges.forEach(range -> addByHour(minutes, range.start(), range.end(), 1));
         }
         List<ReservationStatsResponse.HeatmapCell> result = new ArrayList<>();
         minutes.forEach((day, byHour) -> byHour.forEach((hour, value) ->
-                result.add(new ReservationStatsResponse.HeatmapCell(day, hour, value))));
+                result.add(new ReservationStatsResponse.HeatmapCell(day, hour, value[0], value[1]))));
         return result;
+    }
+
+    // [start, end) 를 정시 경계로 잘라 칸의 index 번째 값(0: 예약, 1: 영업)에 분을 더한다
+    private static void addByHour(Map<DayOfWeek, TreeMap<Integer, long[]>> minutes, LocalDateTime start,
+            LocalDateTime end, int index) {
+        LocalDateTime cursor = start;
+        while (cursor.isBefore(end)) {
+            LocalDateTime nextHour = cursor.truncatedTo(ChronoUnit.HOURS).plusHours(1);
+            LocalDateTime sliceEnd = earlier(nextHour, end);
+            minutes.computeIfAbsent(cursor.getDayOfWeek(), day -> new TreeMap<>())
+                    .computeIfAbsent(cursor.getHour(), hour -> new long[2])[index] +=
+                    Duration.between(cursor, sliceEnd).toMinutes();
+            cursor = sliceEnd;
+        }
     }
 
     private static List<ReservationStatsResponse.Treatment> byTreatment(List<ReservationDashboardRow> period) {

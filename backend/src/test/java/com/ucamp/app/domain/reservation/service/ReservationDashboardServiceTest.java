@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,7 @@ import com.ucamp.app.domain.reservation.dto.response.ReservationStatsResponse.Gr
 import com.ucamp.app.domain.reservation.entity.ReservationStatus;
 import com.ucamp.app.domain.reservation.repository.ReservationDashboardRepository;
 import com.ucamp.app.domain.reservation.repository.ReservationDashboardRow;
+import com.ucamp.app.domain.vacancy.policy.TimeRange;
 import com.ucamp.app.domain.vacancy.service.AvailabilityService;
 
 class ReservationDashboardServiceTest {
@@ -319,15 +321,40 @@ class ReservationDashboardServiceTest {
 
         assertThat(response.byWeekday()).hasSize(7);
         assertThat(response.byWeekday().get(0)).isEqualTo(
-                new ReservationStatsResponse.Weekday(DayOfWeek.MONDAY, 0, 0));
+                new ReservationStatsResponse.Weekday(DayOfWeek.MONDAY, 0, 0, 0));
+        // 매장이 연 시간이 없어도 예약이 있던 날은 영업한 날로 센다
         assertThat(response.byWeekday().get(5)).isEqualTo(
-                new ReservationStatsResponse.Weekday(DayOfWeek.SATURDAY, 2, 40000));
+                new ReservationStatsResponse.Weekday(DayOfWeek.SATURDAY, 2, 40000, 2));
         assertThat(response.heatmap()).containsExactly(
-                new ReservationStatsResponse.HeatmapCell(DayOfWeek.SATURDAY, 13, 30),
-                new ReservationStatsResponse.HeatmapCell(DayOfWeek.SATURDAY, 14, 120));
+                new ReservationStatsResponse.HeatmapCell(DayOfWeek.SATURDAY, 13, 30, 30),
+                new ReservationStatsResponse.HeatmapCell(DayOfWeek.SATURDAY, 14, 120, 120));
         assertThat(response.treatments()).containsExactly(
                 new ReservationStatsResponse.Treatment(1L, "젤네일", 1, 30000, 75.0),
                 new ReservationStatsResponse.Treatment(2L, "손 케어", 1, 10000, 25.0));
+    }
+
+    @Test
+    @DisplayName("요일별 영업일 수와 시간대별 영업 시간은 휴무일·영업 외 시간을 빼고 센다")
+    void getOwnerStats_openDaysAndMinutes_excludeClosedDays() {
+        LocalDateTime createdAt = LocalDateTime.of(2027, 1, 20, 9, 0);
+        // 2/1~2/14: 월요일은 휴무, 수요일 2/3 은 10~11시, 토요일 2/6 은 10~12시 영업, 2/13 은 임시 휴무라 연 시간이 없다
+        given(availabilityService.getOpenRangesByDate(1L, FEB_1, at(14, 0, 0).toLocalDate())).willReturn(Map.of(
+                at(6, 0, 0).toLocalDate(), List.of(new TimeRange(at(6, 10, 0), at(6, 12, 0))),
+                at(3, 0, 0).toLocalDate(), List.of(new TimeRange(at(3, 10, 0), at(3, 11, 0)))));
+        given(reservationDashboardRepository.findRows(any(), any(), any())).willReturn(List.of(
+                confirmed(1L, 1L, at(6, 10, 0), 30, 30000, createdAt),
+                // 영업시간 밖(12:00~12:30)에 받은 예약도 영업한 시간으로 본다
+                confirmed(2L, 2L, at(6, 12, 0), 30, 10000, createdAt)));
+
+        ReservationStatsResponse response = stats(FEB_1, at(14, 0, 0).toLocalDate());
+
+        assertThat(response.byWeekday()).extracting(ReservationStatsResponse.Weekday::openDays)
+                .containsExactly(0, 0, 1, 0, 0, 1, 0);
+        assertThat(response.heatmap()).containsExactly(
+                new ReservationStatsResponse.HeatmapCell(DayOfWeek.WEDNESDAY, 10, 0, 60),
+                new ReservationStatsResponse.HeatmapCell(DayOfWeek.SATURDAY, 10, 30, 60),
+                new ReservationStatsResponse.HeatmapCell(DayOfWeek.SATURDAY, 11, 0, 60),
+                new ReservationStatsResponse.HeatmapCell(DayOfWeek.SATURDAY, 12, 30, 30));
     }
 
     @Test
@@ -436,7 +463,9 @@ class ReservationDashboardServiceTest {
         assertThat(summary.noShowRate()).isEqualTo(33.3);
         assertThat(summary.customerCount()).isEqualTo(2);
         assertThat(response.byWeekday().get(5).count()).isEqualTo(1);
-        assertThat(response.heatmap()).extracting(ReservationStatsResponse.HeatmapCell::hour).doesNotContain(13);
+        // 노쇼 시간은 예약 점유에서 빠지지만 매장은 그 시간에 영업했으므로 영업 시간에는 든다
+        assertThat(response.heatmap()).filteredOn(cell -> cell.hour() == 13).containsExactly(
+                new ReservationStatsResponse.HeatmapCell(DayOfWeek.SATURDAY, 13, 0, 60));
         assertThat(response.treatments().get(0).count()).isEqualTo(2);
     }
 
