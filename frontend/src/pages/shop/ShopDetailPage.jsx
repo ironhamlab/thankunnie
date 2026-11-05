@@ -35,8 +35,8 @@ const businessDay = (date) => BUSINESS_DAYS[new Date(`${date}T00:00:00Z`).getUTC
  * 탐색 화면(마감 임박·시간 버튼·매장 카드)에서 ?date=&treatmentId=&startsAt= 로 들어오면 처음 선택값으로만 쓴다.
  * ?view=info 로 들어오면 예약하기 대신 상세정보를 먼저 보여준다 (탐색 지도의 매장 보기).
  *
- * 매장 상세는 일반 시술만, 초보 시술 모집 상세(model, /shops/:shopId/models)는 초보 시술만 같은 흐름으로 보여준다.
- * 초보 시술 모집은 시술 선택 → 모집 안내 확인(참여 조건·촬영 안내 + 필수 체크) → 날짜·시간 선택 3단계다.
+ * 매장 상세는 판매 중인 모든 시술을, 초보 시술 모집 상세(model, /shops/:shopId/models)는 초보 시술만 같은 흐름으로 보여준다.
+ * 초보 시술을 고르면 어느 화면이든 시술 선택 → 모집 안내 확인(참여 조건·촬영 안내 + 필수 체크) → 날짜·시간 선택 3단계다.
  *
  * @param model 초보 시술 모집 상세로 보여줄지
  */
@@ -75,11 +75,17 @@ export default function ShopDetailPage({ model = false }) {
   }, [shopId, validShopId, loadShop, clearShop]);
 
   const loaded = status === 'succeeded' && shop && String(shop.shopId) === shopId;
-  const treatmentType = model ? 'MODEL' : 'NORMAL';
-  const treatments = loaded
-    ? shop.treatments.filter((item) => item.treatmentType === treatmentType)
+  const modelTreatments = loaded
+    ? shop.treatments.filter((item) => item.treatmentType === 'MODEL')
     : [];
+  const normalTreatments = loaded
+    ? shop.treatments.filter((item) => item.treatmentType !== 'MODEL')
+    : [];
+  // 매장 예약하기는 일반 시술 다음에 초보 시술을 이어 모두 보여준다
+  const treatments = model ? modelTreatments : [...normalTreatments, ...modelTreatments];
   const treatment = treatments.find((item) => String(item.treatmentId) === selected('treatmentId'));
+  // 모집 상세이거나 매장 예약하기에서 초보 시술을 고르면 모집 안내 확인 단계를 거친다
+  const modelFlow = model || treatment?.treatmentType === 'MODEL';
   const today = todayKst();
   const lastDate = addDays(today, BOOKING_MAX_DAYS - 1);
   const isClosed = (date) => {
@@ -101,14 +107,14 @@ export default function ShopDetailPage({ model = false }) {
   const view = VIEWS.includes(pickedView) ? pickedView : 'reserve';
   // 초보 시술 모집은 안내 확인 단계에서 체크해야 날짜·시간 단계로 갈 수 있다. 시술을 바꾸면 다시 체크한다
   const agreed = selected('agreed') === 'Y';
-  const steps = model ? MODEL_STEPS : NORMAL_STEPS;
+  const steps = modelFlow ? MODEL_STEPS : NORMAL_STEPS;
   const dateStep = steps.length;
   const canOpen = (number) =>
     number === 1 ||
     (Boolean(treatment) &&
       number > 1 &&
       number <= dateStep &&
-      (number < dateStep || !model || agreed));
+      (number < dateStep || !modelFlow || agreed));
   const pickedStep = Number(selected('step'));
   // 시술을 고르면 다음 단계로 넘어간다. 갈 수 없는 단계를 골랐으면 갈 수 있는 가장 앞 단계를 보여준다
   const step =
@@ -118,7 +124,7 @@ export default function ShopDetailPage({ model = false }) {
         ? 1
         : canOpen(pickedStep)
           ? pickedStep
-          : model && !agreed
+          : modelFlow && !agreed
             ? 2
             : dateStep;
   const durationMinutes = treatment?.durationMinutes;
@@ -279,7 +285,7 @@ export default function ShopDetailPage({ model = false }) {
                   </Button>
                 </div>
               )}
-              {model && step === 2 && (
+              {modelFlow && step === 2 && (
                 <ModelRecruitPanel
                   treatment={treatment}
                   agreed={agreed}
@@ -316,7 +322,7 @@ export default function ShopDetailPage({ model = false }) {
           <BookingSummary
             treatment={treatment}
             date={selectedDate}
-            time={!model || agreed ? time : null}
+            time={!modelFlow || agreed ? time : null}
             held={timeHeld}
           />
         </aside>
