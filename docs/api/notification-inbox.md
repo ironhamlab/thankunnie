@@ -29,6 +29,8 @@
 }
 ```
 
+빈자리·임박·초임박 문자와 카테고리·지역 묶음 문자는 문장 다음 줄에 `https://thankunnie.shop`과 아래 `linkPath`를 붙인다. 받은 알림 `body`에는 주소를 넣지 않는다.
+
 업장 알림 한 건의 `linkPath`는 `/shops/{shopId}?treatmentId={시술ID}&startsAt={시작시각}`이다. `startsAt`은 `2026-10-31T18:00:00`처럼 오프셋 없이 둔다. 그 회원에게 그 시각에 예약되는 시술이 여러 개면 ID가 가장 작은 시술을 넣는다. 맞는 시술을 못 찾으면 `/shops/{shopId}`만 둔다. 카테고리·지역 묶음 알림은 `/?view=list&category={categoryId}&region={regionCode}&date={yyyy-MM-dd}`를 유지한다. 이미 저장된 알림의 `linkPath`는 바꾸지 않는다.
 
 관심만 보려면 `GET /api/v1/notifications/inbox?category=INTEREST` 를 호출한다. 사장님이 이렇게 호출하면 200이고 `data` 는 빈 배열이다.

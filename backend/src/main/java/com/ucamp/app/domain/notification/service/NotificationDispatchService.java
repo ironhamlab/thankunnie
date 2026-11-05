@@ -55,6 +55,9 @@ public class NotificationDispatchService {
 
     private static final int FAIL_REASON_MAX_LENGTH = 500;
 
+    /** 빈자리·임박·초임박 문자에 붙이는 사이트 주소. */
+    private static final String SITE_ORIGIN = "https://thankunnie.shop";
+
     /** 문자 본문에 넣는 빈자리 시작 시각. 연도를 포함해 다른 해 예약과 구분한다. */
     private static final DateTimeFormatter SLOT_START_TEXT =
             DateTimeFormatter.ofPattern("yyyy년 M월 d일 HH:mm");
@@ -237,14 +240,16 @@ public class NotificationDispatchService {
         }
         int openSlotCount = openEvents.size();
         LocalDate earliestDate = earliestSlotDate(openEvents);
-        String messageBody = "땡 잡을 기회 " + openSlotCount + "건이 생겼어요!";
+        String sentence = "땡 잡을 기회 " + openSlotCount + "건이 생겼어요!";
+        String linkPath = NotificationInboxService.categoryRegionListPath(
+                subscription.getCategoryId(), subscription.getRegionCode(), earliestDate);
+        String messageBody = withPageLink(sentence, linkPath);
         SmsInbox inbox = new SmsInbox(
                 subscription.getUserId(),
                 NotificationInboxCategory.INTEREST,
                 "빈자리 알림",
-                messageBody,
-                NotificationInboxService.categoryRegionListPath(
-                        subscription.getCategoryId(), subscription.getRegionCode(), earliestDate));
+                sentence,
+                linkPath);
         // 문자 수신 동의는 문자에만 적용한다. 철회한 회원도 웹 알림함에는 같은 주기로 남긴다.
         if (!termsAgreementService.hasAgreed(subscription.getUserId(), TermsCode.SMS_NOTIFICATION)) {
             categoryRegionPendingQueue.clearPendingEvents(subscriptionId);
@@ -458,7 +463,7 @@ public class NotificationDispatchService {
             return null;
         }
 
-        String messageBody = buildMessage(event);
+        String messageBody = withPageLink(buildMessage(event), storeNotificationLink(event, latest.getUserId()));
         log.info("문자 발송 시작 dispatchId={}, userId={}, eventId={}, to={}",
                 latest.getId(), latest.getUserId(), event.getId(), maskPhone(phone.get()));
         SmsSendResult result = solapiSmsClient.send(phone.get(), messageBody);
@@ -471,7 +476,7 @@ public class NotificationDispatchService {
         return interestInbox(latest, event);
     }
 
-    // 업장 알림의 받은 알림 한 줄. 본문은 보내는 문자와 같다.
+    // 업장 알림의 받은 알림 한 줄. 종 목록 본문은 문장만 두고, 문자는 그 뒤에 사이트 주소를 붙인다.
     private SmsInbox interestInbox(NotificationDispatch job, NotificationEvent event) {
         return new SmsInbox(
                 job.getUserId(),
@@ -530,6 +535,18 @@ public class NotificationDispatchService {
             case REOPENED -> "땡! ";
         };
         return prefix + shopName + "-" + startsAtText + " 땡잡을 기회가 생겼어요!";
+    }
+
+    // 문자에만 사이트 주소를 붙인다. 받은 알림 본문에는 넣지 않는다.
+    private String withPageLink(String sentence, String path) {
+        return sentence + "\n" + absoluteUrl(path);
+    }
+
+    private String absoluteUrl(String path) {
+        if (path != null && path.startsWith("/")) {
+            return SITE_ORIGIN + path;
+        }
+        return SITE_ORIGIN + "/" + path;
     }
 
     private void applySendResult(NotificationDispatch job, SmsSendResult result) {
