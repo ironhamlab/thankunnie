@@ -139,6 +139,13 @@
 .nearestState {
   margin-top: 24px;
 }
+/* 빈 상태 안내는 가운데 정렬이라 버튼 줄도 가운데로 모은다 */
+.nearestStateActions {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
 .nearestPrices {
   margin-top: 12px;
   font-size: 11px;
@@ -176,6 +183,14 @@
   }
   .nearestWhen {
     width: 100%;
+  }
+  /* 좁은 화면에서는 두 버튼을 같은 너비로 세로로 쌓아 들쭉날쭉하지 않게 한다 */
+  .nearestStateActions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: 280px;
+    margin-inline: auto;
   }
 }
 .withdraw {

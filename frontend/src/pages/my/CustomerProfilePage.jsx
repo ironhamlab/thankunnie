@@ -173,7 +173,7 @@ export default function CustomerProfilePage() {
       {listStatus === 'succeeded' && !nearest && (
         <EmptyState className={`b-panel ${styles.nearestState}`}>
           <h2>다가오는 예약이 없어요</h2>
-          <div className="b-flex">
+          <div className={`b-flex ${styles.nearestStateActions}`}>
             <Button as={Link} variant="primary" to={ROUTES.HOME}>
               지금 빈자리 찾아보기
             </Button>
