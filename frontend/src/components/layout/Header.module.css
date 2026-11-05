@@ -286,10 +286,17 @@
   opacity: 0;
   transform: scale(0.4);
 }
+.notificationItem a {
+  display: block;
+  min-width: 0;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
 .notificationItem p {
   font-size: 12px;
   color: var(--color-text-secondary);
   margin-top: 5px;
+  overflow-wrap: anywhere;
 }
 .notificationItem small {
   color: var(--color-text-muted);
@@ -440,8 +447,16 @@
     color: var(--color-primary-text);
     font-weight: 700;
   }
+  /* 데스크탑과 같이 종 바로 아래에 붙인다. 오른쪽 아이콘·여백만큼 너비를 줄여 화면 안에 둔다 */
   .notifications {
-    right: -4px;
+    top: 44px;
+    right: 0;
+    left: auto;
+    width: min(360px, calc(100vw - 5.75rem));
+    max-width: none;
+  }
+  .notificationTabs {
+    flex-wrap: wrap;
   }
 }
 /* 상단 메뉴 움직임. 알림 벨과 같은 느낌으로 맞춘다 */

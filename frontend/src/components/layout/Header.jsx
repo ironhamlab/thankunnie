@@ -27,6 +27,8 @@ const INBOX_TABS = [
   { id: 'INTEREST', label: '관심' },
 ];
 
+const INBOX_VISIBLE_COUNT = 10;
+
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const wait = (ms) =>
@@ -217,7 +219,9 @@ export default function Header() {
       setIsClearing(false);
     }
   };
-  const visibleItems = items.filter((item) => tab === 'ALL' || item.category === tab);
+  const visibleItems = items
+    .filter((item) => tab === 'ALL' || item.category === tab)
+    .slice(0, INBOX_VISIBLE_COUNT);
   const showPanel = open || leaving;
   const current = (menu) => (activeMenu === menu ? 'page' : undefined);
   return (
