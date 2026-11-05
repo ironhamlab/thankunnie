@@ -276,6 +276,70 @@ class PaymentServiceTest {
     }
 
     @Test
+    @DisplayName("자동 취소에 성공하면 결제 기록을 남기지 않는다")
+    void verify_cancelSucceeds_savesNothing() {
+        portOnePayment("paid", "reservation-10-1730000000000");
+        given(confirmService.confirm(anyLong(), anyLong(), anyString(), anyInt(), any(), any()))
+                .willThrow(new BusinessException(ErrorCode.RESERVATION_HOLD_EXPIRED));
+        given(confirmService.findSaved("imp_123", RESERVATION_ID, 1L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.verify(CUSTOMER, verifyRequest()))
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.RESERVATION_HOLD_EXPIRED);
+        verify(confirmService, never()).saveCancelUnknown(anyLong(), anyString(), anyInt(), any());
+    }
+
+    @Test
+    @DisplayName("자동 취소를 포트원이 거절하면 운영자가 찾을 수 있게 결제를 UNKNOWN 으로 남긴다")
+    void verify_cancelRejected_savesUnknown() {
+        portOnePayment("paid", "reservation-10-1730000000000");
+        given(confirmService.confirm(anyLong(), anyLong(), anyString(), anyInt(), any(), any()))
+                .willThrow(new BusinessException(ErrorCode.RESERVATION_HOLD_EXPIRED));
+        given(confirmService.findSaved("imp_123", RESERVATION_ID, 1L)).willReturn(Optional.empty());
+        willThrow(new BusinessException(ErrorCode.PAYMENT_PORTONE_ERROR))
+                .given(portOneClient).cancelPayment(anyString(), anyInt(), anyString());
+
+        assertThatThrownBy(() -> paymentService.verify(CUSTOMER, verifyRequest()))
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.RESERVATION_HOLD_EXPIRED);
+        verify(confirmService).saveCancelUnknown(eq(RESERVATION_ID), eq("imp_123"), eq(20000),
+                eq(LocalDateTime.of(2026, 10, 29, 14, 58, 20)));
+    }
+
+    @Test
+    @DisplayName("자동 취소 결과를 알 수 없어도 결제를 UNKNOWN 으로 남긴다")
+    void verify_cancelUncertain_savesUnknown() {
+        portOnePayment("paid", "reservation-10-1730000000000");
+        given(confirmService.confirm(anyLong(), anyLong(), anyString(), anyInt(), any(), any()))
+                .willThrow(new BusinessException(ErrorCode.RESERVATION_HOLD_EXPIRED));
+        given(confirmService.findSaved("imp_123", RESERVATION_ID, 1L)).willReturn(Optional.empty());
+        willThrow(new ResourceAccessException("응답 읽기 실패"))
+                .given(portOneClient).cancelPayment(anyString(), anyInt(), anyString());
+
+        assertThatThrownBy(() -> paymentService.verify(CUSTOMER, verifyRequest()))
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.RESERVATION_HOLD_EXPIRED);
+        verify(confirmService).saveCancelUnknown(eq(RESERVATION_ID), eq("imp_123"), eq(20000), any());
+    }
+
+    @Test
+    @DisplayName("UNKNOWN 기록 저장까지 실패해도 고객에게는 원래 확정 실패 사유를 알린다")
+    void verify_saveUnknownFails_stillThrowsConfirmError() {
+        portOnePayment("paid", "reservation-10-1730000000000");
+        given(confirmService.confirm(anyLong(), anyLong(), anyString(), anyInt(), any(), any()))
+                .willThrow(new BusinessException(ErrorCode.RESERVATION_HOLD_EXPIRED));
+        given(confirmService.findSaved("imp_123", RESERVATION_ID, 1L)).willReturn(Optional.empty());
+        willThrow(new BusinessException(ErrorCode.PAYMENT_PORTONE_ERROR))
+                .given(portOneClient).cancelPayment(anyString(), anyInt(), anyString());
+        willThrow(new IllegalStateException("DB 오류"))
+                .given(confirmService).saveCancelUnknown(anyLong(), anyString(), anyInt(), any());
+
+        assertThatThrownBy(() -> paymentService.verify(CUSTOMER, verifyRequest()))
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.RESERVATION_HOLD_EXPIRED);
+    }
+
+    @Test
     @DisplayName("없는 예약이거나 다른 고객의 예약이면 남의 결제를 취소하지 않고 RESERVATION_001 이다")
     void verify_reservationNotFound_keepsPayment() {
         portOnePayment("paid", "reservation-10-1730000000000");

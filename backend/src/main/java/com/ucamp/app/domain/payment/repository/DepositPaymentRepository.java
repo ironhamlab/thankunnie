@@ -12,13 +12,21 @@ import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import com.ucamp.app.domain.payment.entity.DepositPayment;
+import com.ucamp.app.domain.payment.entity.DepositPaymentStatus;
 
 public interface DepositPaymentRepository extends JpaRepository<DepositPayment, Long> {
 
     /**
      * 포트원 결제 고유번호(imp_uid)로 저장된 예약금결제를 찾는다. 같은 결제를 두 번 확정하지 않으려고 쓴다.
+     * 자동 취소 실패 기록(UNKNOWN)은 확정된 결제가 아니므로 status 로 뺀다.
      */
-    Optional<DepositPayment> findByPgTransactionKey(String pgTransactionKey);
+    Optional<DepositPayment> findByPgTransactionKeyAndStatusNot(String pgTransactionKey,
+            DepositPaymentStatus status);
+
+    /**
+     * 이 결제 고유번호로 저장된 예약금결제가 상태와 상관없이 있는지 본다. 자동 취소 실패 기록을 한 줄만 남기려고 쓴다.
+     */
+    boolean existsByPgTransactionKey(String pgTransactionKey);
 
     /**
      * 환불 상태 변경용 조회. 같은 결제의 동시 환불을 막기 위해 행을 잠근다.
