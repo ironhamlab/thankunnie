@@ -88,6 +88,9 @@ public class TreatmentService {
         user.requireShopOwner(shopId);
         // 삭제는 전용 API로만 처리해 남은 예약 검사와 대표 이미지 정리가 빠지지 않게 한다.
         rejectDeletedStatus(request.status());
+        // 예약 생성의 상태 재검사와 같은 매장 잠금으로 직렬화한다.
+        shopRepository.findByIdForUpdate(shopId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
         Treatment treatment = findTreatment(shopId, treatmentId);
         treatment.changeStatus(request.status());
         treatmentRepository.flush();

@@ -31,7 +31,9 @@ const fetchImminentCards = async () => {
   const missing = previous.filter((card) => !bookable.some((next) => next.id === card.id));
   const details = await Promise.all(
     missing.map((card) =>
-      vacancyDetailApi.getDetail(card.treatmentId, card.startsAt.slice(0, 19)).catch(() => null),
+      vacancyDetailApi.getDetail(card.treatmentId, card.startsAt.slice(0, 19)).catch((error) =>
+        error.status === 404 ? { bookable: false, notBookableReason: 'REMOVED' } : null,
+      ),
     ),
   );
   // 확인하지 못한 카드는 마감으로 단정하지 않고 다음 주기까지 그대로 둔다
