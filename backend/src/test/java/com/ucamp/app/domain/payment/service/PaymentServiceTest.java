@@ -246,6 +246,20 @@ class PaymentServiceTest {
     }
 
     @Test
+    @DisplayName("결제창을 연 뒤 시술이 삭제돼 확정할 수 없으면 결제 전액을 자동 취소한다")
+    void verify_treatmentDeleted_cancelsPayment() {
+        portOnePayment("paid", "reservation-10-1730000000000");
+        given(confirmService.confirm(anyLong(), anyLong(), anyString(), anyInt(), any(), any()))
+                .willThrow(new BusinessException(ErrorCode.TREATMENT_NOT_FOUND));
+        given(confirmService.findSaved("imp_123", RESERVATION_ID, 1L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.verify(CUSTOMER, verifyRequest()))
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.TREATMENT_NOT_FOUND);
+        verify(portOneClient).cancelPayment(eq("imp_123"), eq(20000), anyString());
+    }
+
+    @Test
     @DisplayName("자동 취소가 실패해도 고객에게는 확정 실패 사유를 알린다")
     void verify_cancelFails_stillThrowsConfirmError() {
         portOnePayment("paid", "reservation-10-1730000000000");

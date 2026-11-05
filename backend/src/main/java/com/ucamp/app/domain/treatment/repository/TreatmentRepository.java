@@ -14,6 +14,10 @@ import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
 
 public interface TreatmentRepository extends JpaRepository<Treatment, Long> {
 
+    boolean existsByTreatmentIdAndStatusNot(Long treatmentId, TreatmentStatus status);
+
+    boolean existsByTreatmentIdAndStatus(Long treatmentId, TreatmentStatus status);
+
     boolean existsByImageUrlEndingWith(String suffix);
 
     @EntityGraph(attributePaths = "shop")

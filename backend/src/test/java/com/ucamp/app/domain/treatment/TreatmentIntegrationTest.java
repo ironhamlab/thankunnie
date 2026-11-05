@@ -44,6 +44,7 @@ import com.ucamp.app.domain.shop.entity.Shop;
 import com.ucamp.app.domain.shop.repository.ShopRepository;
 import com.ucamp.app.domain.treatment.controller.TreatmentController;
 import com.ucamp.app.domain.treatment.entity.Treatment;
+import com.ucamp.app.domain.treatment.entity.TreatmentStatus;
 import com.ucamp.app.domain.treatment.repository.TreatmentRepository;
 import com.ucamp.app.domain.shop.service.ShopImageStorage;
 import com.ucamp.app.domain.treatment.service.TreatmentImageService;
@@ -80,6 +81,22 @@ class TreatmentIntegrationTest {
     private ObjectMapper mapper;
     @Autowired
     private EntityManager entityManager;
+    @Autowired
+    private TreatmentRepository treatmentRepository;
+
+    @ParameterizedTest
+    @ValueSource(strings = {"INACTIVE", "DELETED"})
+    @DisplayName("잠금 전 엔티티가 캐시에 남아 있어도 예약 상태 조건 조회는 DB의 변경된 상태를 읽는다")
+    void statusQuery_cachedActiveTreatment_readsCurrentDatabaseStatus(String status) throws Exception {
+        long id = create(60, 50000).get("treatmentId").asLong();
+        Treatment cached = treatmentRepository.findById(id).orElseThrow();
+        jdbc.update("UPDATE TREATMENT SET STATUS = ? WHERE TREATMENT_ID = ?", status, id);
+
+        assertThat(cached.getStatus()).isEqualTo(TreatmentStatus.ACTIVE);
+        assertThat(treatmentRepository.existsByTreatmentIdAndStatusNot(id, TreatmentStatus.ACTIVE)).isTrue();
+        assertThat(treatmentRepository.existsByTreatmentIdAndStatus(id, TreatmentStatus.DELETED))
+                .isEqualTo(status.equals("DELETED"));
+    }
 
     @BeforeEach
     void setUp() {

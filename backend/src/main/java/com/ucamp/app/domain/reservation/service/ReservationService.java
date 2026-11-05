@@ -104,6 +104,10 @@ public class ReservationService {
         userLock.lock(loginUser.userId());
         // 같은 시간에 두 고객이 동시에 클릭해도 한 명만 점유하도록 매장 단위로 순서를 맞춘다
         shopLock.lock(shopId);
+        // 엔티티 재조회는 1차 캐시의 잠금 전 상태를 돌려줄 수 있어 DB 조건 조회로 확인한다.
+        if (treatmentRepository.existsByTreatmentIdAndStatusNot(request.treatmentId(), TreatmentStatus.ACTIVE)) {
+            throw new BusinessException(ErrorCode.TREATMENT_NOT_FOUND);
+        }
         // 잠금 대기 중 마감이 지나거나 점유가 만료될 수 있으므로 잠금 뒤 시각으로 검사·가격·만료를 정한다
         LocalDateTime now = LocalDateTime.now(clock);
         // 한 고객은 점유를 하나만 가진다. 회원 잠금 안에서 찾아야 두 탭에서 동시에 눌러도 하나만 남는다
@@ -168,6 +172,7 @@ public class ReservationService {
         reservation.validateConfirmable(paidAmount, now);
         // 점유가 유효하면 결제 마감(시작 15분 전) 전이지만, 정책 기준을 한 곳에서 확인하도록 함께 검사한다
         SalePolicy.validatePayable(reservation.getStartsAt(), now);
+        validateTreatmentNotDeleted(reservation.getTreatmentId());
         reservation.confirm(paidAmount, now, customerRequest);
         eventPublisher.publishEvent(new ReservationConfirmedEvent(reservationId));
         return reservation;
@@ -188,6 +193,14 @@ public class ReservationService {
         LocalDateTime now = LocalDateTime.now(clock);
         reservation.validateConfirmable(reservation.getDeposit(), now);
         SalePolicy.validatePayable(reservation.getStartsAt(), now);
+        validateTreatmentNotDeleted(reservation.getTreatmentId());
+    }
+
+    private void validateTreatmentNotDeleted(Long treatmentId) {
+        // 비활성화는 기존 점유의 결제를 허용하지만 삭제된 시술은 결제할 수 없다.
+        if (treatmentRepository.existsByTreatmentIdAndStatus(treatmentId, TreatmentStatus.DELETED)) {
+            throw new BusinessException(ErrorCode.TREATMENT_NOT_FOUND);
+        }
     }
 
     /**
