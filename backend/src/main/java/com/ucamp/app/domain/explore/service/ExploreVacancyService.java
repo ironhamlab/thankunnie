@@ -240,7 +240,7 @@ public class ExploreVacancyService {
         return availabilityService.loadSnapshot(shopIds, from.toLocalDate(), to.toLocalDate(), maxDuration);
     }
 
-    // 매장 상세는 일반 시술만, 초보 시술 모집 상세는 초보 시술만 보여준다. 카드 값이 연결되는 상세와 맞도록
+    // 매장 상세는 모든 시술을, 초보 시술 모집 상세는 초보 시술만 보여준다. 매장 카드는 일반 시술 기준으로 요약하도록
     // 일반 빈자리가 있으면 일반 빈자리로, 없으면 초보 시술 빈자리로 요약하고, 섞인 매장의 초보 시술 빈자리는 따로 담는다
     // 메인 합계(totalVacancyCount)만 결제 대기 점유로 막힌 시각까지 세어, 결제가 끝나 예약이 확정될 때 줄어들게 한다
     private static ExploreShopResponse toShop(List<Item> itemsWithHeld, LocalDateTime countUntil) {
@@ -271,7 +271,9 @@ public class ExploreVacancyService {
                 modelOnly,
                 countStartTimes(modelItems, countUntil),
                 modelItems.isEmpty() ? null : minSalePrice(modelItems),
-                countStartTimes(itemsWithHeld, countUntil));
+                countStartTimes(itemsWithHeld, countUntil),
+                modelItems.stream().map(Item::startsAt).min(Comparator.naturalOrder())
+                        .map(TimeUtils::toOffset).orElse(null));
     }
 
     // 한 시각에 예약이 잡히면 그 매장의 다른 시술도 그 시각엔 못 잡으므로 시술이 달라도 같은 시작 시각은 한 번만 센다
