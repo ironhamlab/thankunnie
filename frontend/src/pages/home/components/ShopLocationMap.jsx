@@ -4,6 +4,8 @@ import { formatMoney } from '@/utils/reservationFormat';
 import {
   PIN_KIND,
   hasModelVacancy,
+  modelLinkDate,
+  modelVacancySuffix,
   pinKind,
   shopPagePath,
   vacancySummary,
@@ -160,12 +162,12 @@ export default function ShopLocationMap({
                 <Link
                   className={styles.modelLink}
                   to={shopPagePath(selected.shopId, {
-                    date: datePart(selected.earliestStartsAt),
+                    date: modelLinkDate(selected),
                     model: true,
                   })}
                 >
                   ✦ 초보 시술 모집
-                  {selected.modelVacancyCount > 0 && ` ${selected.modelVacancyCount}개`} ·{' '}
+                  {modelVacancySuffix(selected, { weekly })} ·{' '}
                   {formatMoney(selected.modelMinSalePrice)}~
                 </Link>
               )}

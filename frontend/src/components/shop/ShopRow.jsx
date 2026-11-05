@@ -4,6 +4,8 @@ import {
   areaName,
   groupByTreatment,
   hasModelVacancy,
+  modelLinkDate,
+  modelVacancySuffix,
   pinKind,
   shopImage,
   shopPagePath,
@@ -147,16 +149,16 @@ export default function ShopRow({
           </button>
         )}
       </div>
-      {/* 일반·초보 시술이 섞인 매장은 위 카드가 매장 상세(일반 시술)로 가므로 초보 시술 빈자리는 초보 시술 모집 상세로 따로 보낸다 */}
+      {/* 위 카드의 값은 일반 시술 기준이므로, 일반·초보 시술이 섞인 매장의 초보 시술 빈자리는 초보 시술 모집 상세로 따로 보낸다 */}
       {!model && !shop.modelOnly && hasModelVacancy(shop) && (
         <Link
           className={styles.modelLink}
-          to={shopPagePath(shop.shopId, { date: datePart(shop.earliestStartsAt), model: true })}
+          to={shopPagePath(shop.shopId, { date: modelLinkDate(shop), model: true })}
         >
           <span className={styles.modelLinkLabel}>
             <SproutIcon size={16} />
             초보 시술 모집 빈자리
-            {shop.modelVacancyCount > 0 && ` ${shop.modelVacancyCount}개`}
+            {modelVacancySuffix(shop, { weekly })}
           </span>
           <b>{formatMoney(shop.modelMinSalePrice)}~</b>
         </Link>

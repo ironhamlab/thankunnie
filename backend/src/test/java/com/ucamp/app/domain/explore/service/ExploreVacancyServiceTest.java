@@ -252,8 +252,28 @@ class ExploreVacancyServiceTest {
         assertThat(shop.maxDiscountRate()).isEqualTo(14);
         assertThat(shop.modelVacancyCount()).isEqualTo(20);
         assertThat(shop.modelMinSalePrice()).isEqualTo(18000);
+        assertThat(shop.modelEarliestStartsAt()).isEqualTo(kst(2026, 11, 7, 10, 0));
         // 젤네일 시각은 손 케어 시각에 모두 들어가므로 합쳐도 20개다
         assertThat(shop.totalVacancyCount()).isEqualTo(20);
+    }
+
+    @Test
+    @DisplayName("초보 시술 빈자리가 뒤 시각에 있으면 그 시작 시각을 알려주고, 없으면 null 이다")
+    void searchShops_modelEarliestStartsAt_isFirstModelVacancy() {
+        assertThat(exploreVacancyService.searchShops(nextDay().shopId(1L).build().filter())
+                .shops().get(0).modelEarliestStartsAt()).isNull();
+
+        jdbcTemplate.update("UPDATE TREATMENT SET TREATMENT_TYPE = 'MODEL', MODEL_CONDITION = '조건',"
+                + " PHOTO_NOTICE = '안내' WHERE TREATMENT_ID = 2");
+        // 다음 날 10~15시를 닫아 일반 시술과 초보 시술 모두 15시부터 시작한다
+        jdbcTemplate.update("""
+                INSERT INTO SHOP_SCHEDULE_EXCEPTION (EXCEPTION_ID, SHOP_ID, EXCEPTION_TYPE, STARTS_AT, ENDS_AT,
+                                                     CREATED_AT, UPDATED_AT)
+                VALUES (900, 1, 'CLOSE', ?, ?, ?, ?)
+                """, NEXT_DAY.atTime(10, 0), NEXT_DAY.atTime(15, 0), NOW, NOW);
+
+        assertThat(exploreVacancyService.searchShops(nextDay().shopId(1L).build().filter())
+                .shops().get(0).modelEarliestStartsAt()).isEqualTo(kst(2026, 11, 7, 15, 0));
     }
 
     @Test

@@ -41,7 +41,7 @@ export function dayLabel(date, today = todayKst()) {
  * 시술·시작 시각까지 고른 곳(마감 임박 카드, 시간 버튼)은 그 날짜·시간이 골라진 채로 열리도록 값을 붙인다.
  * 예약 대신 매장 소개를 먼저 보여줄 곳(지도의 매장 보기)은 view 에 'info' 를 넣는다.
  *
- * 매장 상세는 일반 시술만 보여주므로, 초보 시술로 가는 곳은 model 을 붙여 초보 시술 모집 상세(/shops/:shopId/models)로 보낸다.
+ * 매장 상세는 모든 시술을 보여주지만, 초보 시술로 가는 곳은 model 을 붙여 초보 시술만 보이는 모집 상세(/shops/:shopId/models)로 보낸다.
  *
  * @param shopId    매장 ID
  * @param selection { date, treatmentId, startsAt, model, view } 중 아는 값
@@ -114,6 +114,25 @@ export function vacancySummary(shop, { weekly = false, today = todayKst() } = {}
 
 /** 일반·초보 시술이 섞인 매장에 초보 시술 빈자리가 있는지. 빈자리 수는 일요일까지만 세므로 조회 기간 전체의 최저가로 본다 */
 export const hasModelVacancy = (shop) => shop.modelMinSalePrice != null;
+
+/** 초보 시술 모집 상세를 열 날짜. 서버가 시작 시각을 주지 않으면 매장의 가장 빠른 날짜로 연다 */
+export const modelLinkDate = (shop) =>
+  datePart(shop.modelEarliestStartsAt ?? shop.earliestStartsAt);
+
+/**
+ * 초보 시술 링크 뒤에 붙일 "이번 주 2개 · 11.08 (일)부터". 이번 주에 없으면 수를 빼고, 시작 시각을 모르면 날짜를 뺀다.
+ * 조회 기간이 이번 주를 넘는 화면(weekly)에서만 수 앞에 "이번 주"를 붙인다
+ */
+export function modelVacancySuffix(shop, { weekly = false, today = todayKst() } = {}) {
+  const count =
+    shop.modelVacancyCount > 0
+      ? ` ${weekly ? '이번\u00a0주\u00a0' : ''}${shop.modelVacancyCount}개`
+      : '';
+  const from = shop.modelEarliestStartsAt
+    ? ` · ${dayLabel(datePart(shop.modelEarliestStartsAt), today)}부터`
+    : '';
+  return `${count}${from}`;
+}
 
 /** 빈자리를 시술별로 묶는다. 시작 시각 순서는 그대로 둔다 */
 export function groupByTreatment(vacancies) {
