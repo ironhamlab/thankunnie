@@ -197,10 +197,18 @@
   transform: scale(0.4);
 }
 
+.item a {
+  display: block;
+  min-width: 0;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+
 .item p {
   font-size: 12px;
   color: var(--color-text-secondary);
   margin-top: 5px;
+  overflow-wrap: anywhere;
 }
 
 .item small {
@@ -277,5 +285,37 @@
   .item.isClearing strong em {
     opacity: 0;
     transform: none;
+  }
+}
+
+@media (max-width: 540px) {
+  /* 종 오른쪽에 로그아웃이 있어, 패널을 종에 붙이면 화면 왼쪽 밖으로 나간다 */
+  .root {
+    position: static;
+  }
+
+  .panel {
+    top: calc(100% + 8px);
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+    max-height: calc(100dvh - 8rem - env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+  }
+
+  .title,
+  .tabs {
+    flex-shrink: 0;
+  }
+
+  .list {
+    max-height: none;
+    min-height: 0;
+  }
+
+  .tabs {
+    flex-wrap: wrap;
   }
 }
