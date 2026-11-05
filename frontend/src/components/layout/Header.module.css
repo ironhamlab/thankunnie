@@ -447,12 +447,15 @@
     color: var(--color-primary-text);
     font-weight: 700;
   }
-  /* 데스크탑과 같이 종 바로 아래에 붙인다. 오른쪽 아이콘·여백만큼 너비를 줄여 화면 안에 둔다 */
+  /* 종 아래·프로필 오른쪽까지 맞춰 아래 검색 돋보기도 가린다. 기준을 actions 로 둔다 */
+  .notificationRoot {
+    position: static;
+  }
   .notifications {
     top: 44px;
     right: 0;
     left: auto;
-    width: min(360px, calc(100vw - 5.75rem));
+    width: min(360px, calc(100vw - 1.5rem));
     max-width: none;
   }
   .notificationTabs {
