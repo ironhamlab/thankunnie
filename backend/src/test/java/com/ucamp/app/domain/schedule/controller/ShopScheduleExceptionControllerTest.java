@@ -1,8 +1,10 @@
 package com.ucamp.app.domain.schedule.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -15,6 +17,7 @@ import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -61,6 +64,29 @@ class ShopScheduleExceptionControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.exceptionId").value(1))
                 .andExpect(jsonPath("$.data.startsAt").value("2026-10-25T12:00:00+09:00"));
+    }
+
+    @Test
+    @DisplayName("예약 빼고 닫기 값을 서비스에 넘기고, 없으면 null 로 넘긴다")
+    void createException_excludeReserved_passedToService() throws Exception {
+        String withFlag = VALID_BODY.replace("{\"exceptionType\"", "{\"excludeReserved\":true,\"exceptionType\"");
+        OffsetDateTime noon = OffsetDateTime.of(2026, 10, 25, 12, 0, 0, 0, ZoneOffset.ofHours(9));
+        given(shopScheduleExceptionService.createException(any(AuthUser.class), any(ScheduleExceptionSaveRequest.class)))
+                .willReturn(new ScheduleExceptionResponse(1L, ScheduleExceptionType.CLOSE, noon, noon.plusHours(1),
+                        "점심시간", null));
+
+        mockMvc.perform(post(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content(withFlag))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content(VALID_BODY))
+                .andExpect(status().isCreated());
+
+        ArgumentCaptor<ScheduleExceptionSaveRequest> request =
+                ArgumentCaptor.forClass(ScheduleExceptionSaveRequest.class);
+        verify(shopScheduleExceptionService, times(2)).createException(any(AuthUser.class), request.capture());
+        assertThat(request.getAllValues()).extracting(ScheduleExceptionSaveRequest::excludeReserved)
+                .containsExactly(true, null);
     }
 
     @Test

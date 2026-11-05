@@ -259,8 +259,48 @@ class ShopBusinessHourServiceTest {
         BusinessHourClosingImpactResponse impact = service.getClosingImpact(owner, List.of(BusinessDay.SUN));
 
         assertThat(impact.reservations()).hasSize(1);
-        assertThat(impact.openExceptions()).extracting(BusinessHourClosingImpactResponse.OpenException::reserved)
-                .containsExactly(true, false);
+        assertThat(impact.openExceptions()).extracting(BusinessHourClosingImpactResponse.OpenException::closable)
+                .containsExactly(false, true);
+    }
+
+    @Test
+    @DisplayName("다른 요일까지 이어진 열기는 영향에 보여주되 함께 닫을 수 없다")
+    void getClosingImpact_multiDayOpen_isNotClosable() {
+        // 토요일 22시 ~ 일요일 2시. 일요일만 휴무로 바꾼다
+        ShopScheduleException overnight = open(LocalDateTime.of(2026, 10, 24, 22, 0), LocalDateTime.of(2026, 10, 25, 2, 0));
+        given(shopScheduleExceptionRepository.findOverlapping(any(), any(), any())).willReturn(List.of(overnight));
+
+        BusinessHourClosingImpactResponse impact = service.getClosingImpact(owner, List.of(BusinessDay.SUN));
+
+        assertThat(impact.openExceptions()).extracting(BusinessHourClosingImpactResponse.OpenException::closable)
+                .containsExactly(false);
+    }
+
+    @Test
+    @DisplayName("다음 날 0시에 끝나는 열기는 그 요일 하루의 열기로 본다")
+    void getClosingImpact_openEndingAtMidnight_isClosable() {
+        ShopScheduleException untilMidnight = open(LocalDateTime.of(2026, 10, 25, 22, 0), LocalDateTime.of(2026, 10, 26, 0, 0));
+        given(shopScheduleExceptionRepository.findOverlapping(any(), any(), any())).willReturn(List.of(untilMidnight));
+
+        BusinessHourClosingImpactResponse impact = service.getClosingImpact(owner, List.of(BusinessDay.SUN));
+
+        assertThat(impact.openExceptions()).extracting(BusinessHourClosingImpactResponse.OpenException::closable)
+                .containsExactly(true);
+    }
+
+    @Test
+    @DisplayName("다른 요일까지 이어진 열기는 함께 닫기로 지우지 않는다")
+    void updateBusinessHours_multiDayOpen_isKept() {
+        given(shopBusinessHourRepository.findByShopId(owner.shopId()))
+                .willReturn(List.of(hour(BusinessDay.SUN, 10, 20)));
+        given(shopBusinessHourRepository.save(any(ShopBusinessHour.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(shopScheduleExceptionRepository.findOverlapping(any(), any(), any()))
+                .willReturn(List.of(open(LocalDateTime.of(2026, 10, 24, 22, 0), LocalDateTime.of(2026, 10, 25, 2, 0))));
+
+        service.updateBusinessHours(owner, closeSunday(true));
+
+        verify(shopScheduleExceptionRepository, never()).delete(any(ShopScheduleException.class));
     }
 
     @Test
@@ -271,11 +311,15 @@ class ShopBusinessHourServiceTest {
     }
 
     private ShopScheduleException open(LocalDateTime startsAt) {
+        return open(startsAt, startsAt.plusHours(2));
+    }
+
+    private ShopScheduleException open(LocalDateTime startsAt, LocalDateTime endsAt) {
         return ShopScheduleException.builder()
                 .shopId(owner.shopId())
                 .exceptionType(ScheduleExceptionType.OPEN)
                 .startsAt(startsAt)
-                .endsAt(startsAt.plusHours(2))
+                .endsAt(endsAt)
                 .build();
     }
 

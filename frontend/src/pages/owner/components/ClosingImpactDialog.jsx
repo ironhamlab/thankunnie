@@ -24,7 +24,7 @@ function TimeList({ items }) {
 
 /**
  * 요일을 휴무로 저장하기 전 확인창. 그 요일의 예약은 유지되고, 등록해 둔 시간대 열기는 그대로 두면
- * 휴무여도 계속 판매되므로 함께 닫을지 묻는다. 예약이 있는 열기는 닫을 수 없어 유지된다.
+ * 휴무여도 계속 판매되므로 함께 닫을지 묻는다. 예약이 있거나 다른 요일까지 이어진 열기는 닫지 않고 유지한다.
  *
  * @param labels    휴무로 바꾸는 요일 이름 (예: 목, 금)
  * @param impact    { reservations, openExceptions }
@@ -32,8 +32,8 @@ function TimeList({ items }) {
  */
 export default function ClosingImpactDialog({ labels, impact, isSaving, onCancel, onConfirm }) {
   const { reservations, openExceptions } = impact;
-  const closable = openExceptions.filter((item) => !item.reserved);
-  const reserved = openExceptions.filter((item) => item.reserved);
+  const closable = openExceptions.filter((item) => item.closable);
+  const kept = openExceptions.filter((item) => !item.closable);
   const [closeOpens, setCloseOpens] = useState(true);
 
   return (
@@ -43,7 +43,7 @@ export default function ClosingImpactDialog({ labels, impact, isSaving, onCancel
           <section className={styles.section}>
             <h3>남은 예약 {reservations.length}건은 그대로 유지돼요</h3>
             <TimeList items={reservations} />
-            <p>새 예약만 막혀요. 이 날 쉬려면 예약 현황에서 예약을 취소해 주세요.</p>
+            <p>새 예약만 막혀요. 이 날 쉬려면 예약 관리에서 예약을 취소해 주세요.</p>
           </section>
         )}
         {closable.length > 0 && (
@@ -61,11 +61,14 @@ export default function ClosingImpactDialog({ labels, impact, isSaving, onCancel
             </label>
           </section>
         )}
-        {reserved.length > 0 && (
+        {kept.length > 0 && (
           <section className={styles.section}>
-            <h3>예약이 있는 연 시간 {reserved.length}건은 닫지 않아요</h3>
-            <TimeList items={reserved} />
-            <p>예약이 없는 나머지 시간도 계속 판매돼요. 필요하면 빈자리 화면에서 닫아 주세요.</p>
+            <h3>연 시간 {kept.length}건은 닫지 않아요</h3>
+            <TimeList items={kept} />
+            <p>
+              예약이 있거나 다른 요일까지 이어진 시간이에요. 남은 시간은 계속 판매돼요. 필요하면
+              빈자리 화면에서 닫아 주세요.
+            </p>
           </section>
         )}
         <div className="b-flex">

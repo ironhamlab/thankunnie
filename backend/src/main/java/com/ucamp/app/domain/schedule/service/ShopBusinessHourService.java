@@ -14,6 +14,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -101,7 +102,7 @@ public class ShopBusinessHourService {
                                 exception.getId(),
                                 TimeUtils.toOffset(exception.getStartsAt()),
                                 TimeUtils.toOffset(exception.getEndsAt()),
-                                hasReservation(exception, reservations)))
+                                isClosable(exception, closing, reservations)))
                         .toList());
     }
 
@@ -151,15 +152,27 @@ public class ShopBusinessHourService {
         LocalDateTime until = scheduleLimit(now);
         List<Reservation> reservations = occupyingReservations(shopId, now, until);
         openExceptionsOn(shopId, days, now, until).stream()
-                .filter(exception -> !hasReservation(exception, reservations))
+                .filter(exception -> isClosable(exception, days, reservations))
                 .forEach(shopScheduleExceptionRepository::delete);
+    }
+
+    // 다른 요일까지 이어진 열기를 지우면 쉬지 않는 날의 시간까지 사라지므로 함께 닫지 않는다
+    private static boolean isClosable(ShopScheduleException exception, Set<BusinessDay> days,
+            List<Reservation> reservations) {
+        return !hasReservation(exception, reservations) && spanDays(exception).allMatch(days::contains);
+    }
+
+    /** 열기가 걸친 요일들. 다음 날 0시에 끝나면 그날은 걸친 것으로 보지 않는다 */
+    private static Stream<BusinessDay> spanDays(ShopScheduleException exception) {
+        LocalDate lastDate = exception.getEndsAt().minusNanos(1).toLocalDate();
+        return exception.getStartsAt().toLocalDate().datesUntil(lastDate.plusDays(1)).map(BusinessDay::of);
     }
 
     private List<ShopScheduleException> openExceptionsOn(Long shopId, Set<BusinessDay> days, LocalDateTime now,
             LocalDateTime until) {
         return shopScheduleExceptionRepository.findOverlapping(shopId, now, until).stream()
                 .filter(exception -> exception.getExceptionType() == ScheduleExceptionType.OPEN)
-                .filter(exception -> days.contains(BusinessDay.of(exception.getStartsAt().toLocalDate())))
+                .filter(exception -> spanDays(exception).anyMatch(days::contains))
                 .toList();
     }
 

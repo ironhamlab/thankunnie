@@ -1,7 +1,11 @@
 package com.ucamp.app.domain.schedule.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -9,10 +13,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -25,6 +32,7 @@ import com.ucamp.app.common.auth.AuthUser;
 import com.ucamp.app.common.auth.StubAuthFilter;
 import com.ucamp.app.config.SecurityConfig;
 import com.ucamp.app.domain.schedule.dto.request.BusinessHourSaveRequest;
+import com.ucamp.app.domain.schedule.dto.response.BusinessHourClosingImpactResponse;
 import com.ucamp.app.domain.schedule.dto.response.BusinessHourResponse;
 import com.ucamp.app.domain.schedule.entity.BusinessDay;
 import com.ucamp.app.domain.schedule.service.ShopBusinessHourService;
@@ -77,6 +85,62 @@ class ShopBusinessHourControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("COMMON_400"));
+        verifyNoInteractions(shopBusinessHourService);
+    }
+
+    @Test
+    @DisplayName("함께 닫기 값을 서비스에 넘기고, 없으면 null 로 넘긴다")
+    void updateBusinessHours_closeOpenExceptions_passedToService() throws Exception {
+        String withFlag = WEEK_BODY.replace("{\"days\":", "{\"closeOpenExceptions\":true,\"days\":");
+
+        mockMvc.perform(put(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content(withFlag))
+                .andExpect(status().isOk());
+        mockMvc.perform(put(URL).header(StubAuthFilter.HEADER_NAME, "OWNER_1")
+                        .contentType(MediaType.APPLICATION_JSON).content(WEEK_BODY))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<BusinessHourSaveRequest> request = ArgumentCaptor.forClass(BusinessHourSaveRequest.class);
+        verify(shopBusinessHourService, times(2)).updateBusinessHours(any(AuthUser.class), request.capture());
+        assertThat(request.getAllValues()).extracting(BusinessHourSaveRequest::closeOpenExceptions)
+                .containsExactly(true, null);
+    }
+
+    @Test
+    @DisplayName("휴무 전환 영향은 여러 요일을 받아 예약과 열기를 반환한다")
+    void getClosingImpact_owner_returnsImpact() throws Exception {
+        OffsetDateTime start = OffsetDateTime.of(2026, 11, 26, 14, 0, 0, 0, ZoneOffset.ofHours(9));
+        given(shopBusinessHourService.getClosingImpact(any(AuthUser.class),
+                eq(List.of(BusinessDay.THU, BusinessDay.FRI))))
+                .willReturn(new BusinessHourClosingImpactResponse(
+                        List.of(new BusinessHourClosingImpactResponse.ReservationTime(start, start.plusHours(1))),
+                        List.of(new BusinessHourClosingImpactResponse.OpenException(3L, start.plusHours(7),
+                                start.plusHours(9), true))));
+
+        mockMvc.perform(get(URL + "/closing-impact").param("days", "THU", "FRI")
+                        .header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.reservations[0].startsAt").value("2026-11-26T14:00:00+09:00"))
+                .andExpect(jsonPath("$.data.openExceptions[0].exceptionId").value(3))
+                .andExpect(jsonPath("$.data.openExceptions[0].closable").value(true));
+    }
+
+    @Test
+    @DisplayName("휴무 전환 영향에 요일이 없거나 잘못되면 400 을 반환한다")
+    void getClosingImpact_invalidDays_returnsBadRequest() throws Exception {
+        mockMvc.perform(get(URL + "/closing-impact").header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get(URL + "/closing-impact").param("days", "HOLIDAY")
+                        .header(StubAuthFilter.HEADER_NAME, "OWNER_1"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(shopBusinessHourService);
+    }
+
+    @Test
+    @DisplayName("비로그인 휴무 전환 영향 조회는 401 을 반환한다")
+    void getClosingImpact_anonymous_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get(URL + "/closing-impact").param("days", "THU"))
+                .andExpect(status().isUnauthorized());
         verifyNoInteractions(shopBusinessHourService);
     }
 

@@ -100,14 +100,14 @@ export const useScheduleStore = create((set, get) => ({
   // 목록 새로고침은 변경 요청과 분리한다. 저장은 됐는데 목록 조회만 실패한 것을 저장 실패로 보이면
   // 사용자가 다시 눌러 같은 일정이 중복 등록될 수 있다.
   saveException: async (exceptionId, payload) => {
+    let saved;
     await get().runMutation(async () => {
-      if (exceptionId) {
-        await scheduleApi.updateException(exceptionId, payload);
-      } else {
-        await scheduleApi.createException(payload);
-      }
+      saved = exceptionId
+        ? await scheduleApi.updateException(exceptionId, payload)
+        : await scheduleApi.createException(payload);
     });
     await get().reloadExceptions();
+    return saved;
   },
 
   deleteException: async (exceptionId) => {

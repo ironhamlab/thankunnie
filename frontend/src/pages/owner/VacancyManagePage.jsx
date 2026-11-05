@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { VACANCY_POLICY as P } from '@/constants/vacancyPolicy';
 import { useScheduleStore } from '@/store/useScheduleStore';
 import useDaySlots from '@/hooks/useDaySlots';
-import { addDays, datePart, todayKst, toKstDateTime } from '@/utils/scheduleDate';
+import { addDays, datePart, timePart, todayKst, toKstDateTime } from '@/utils/scheduleDate';
 import { formatDayLabel, hasBookedSlot, unsellableTimes } from '@/utils/scheduleSlots';
 import { formOf, minStartOf, newForm } from '@/utils/scheduleForm';
 import AvailableTimesPanel from '@/pages/owner/components/AvailableTimesPanel';
@@ -75,7 +75,7 @@ export default function VacancyManagePage() {
       form.exceptionType === 'CLOSE' &&
       hasBookedSlot(slots, form.startTime, form.endTime);
     try {
-      await saveException(editingId, {
+      const saved = await saveException(editingId, {
         exceptionType: form.exceptionType,
         startsAt: toKstDateTime(form.date, form.startTime),
         endsAt: toKstDateTime(form.date, form.endTime),
@@ -85,7 +85,11 @@ export default function VacancyManagePage() {
       const label = `${formatDayLabel(form.date)} ${form.startTime}~${form.endTime}`;
       let text = `${label} ${EXCEPTION_TYPES[form.exceptionType].verb}를 저장했습니다.`;
       if (editingId) text = `${label} 일정을 수정했습니다.`;
-      if (excludeReserved) text = `${label}에서 예약 시간을 뺀 나머지를 닫았습니다.`;
+      // 그사이 예약이 풀렸으면 고른 구간이 그대로 닫힌다. 서버가 나눠 저장했을 때만 예약을 뺐다고 알린다
+      const splitAround =
+        excludeReserved &&
+        (timePart(saved.startsAt) !== form.startTime || timePart(saved.endsAt) !== form.endTime);
+      if (splitAround) text = `${label}에서 예약 시간을 뺀 나머지를 닫았습니다.`;
       setNotice({ tone: 'success', text });
       resetForm();
     } catch (error) {
