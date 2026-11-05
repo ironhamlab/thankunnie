@@ -106,7 +106,7 @@ public class PaymentService {
                 return PaymentVerifyResponse.of(payment, reservationId, saved.get());
             }
             if (AUTO_REFUND_ERRORS.contains(e.getErrorCode())) {
-                cancelUnconfirmedPayment(payment, paidAmount, e.getErrorCode());
+                cancelUnconfirmedPayment(reservationId, payment, paidAmount, e.getErrorCode());
             }
             throw e;
         }
@@ -119,11 +119,13 @@ public class PaymentService {
         return "reservation-" + reservationId + "-";
     }
 
-    // 취소에 실패하면 결제만 남으므로 운영자가 찾을 수 있게 남기고, 고객에게는 확정 실패 사유를 그대로 알린다
-    private void cancelUnconfirmedPayment(PortOnePayment payment, int amount, ErrorCode reason) {
+    // 취소에 실패하면 돈만 빠져나간 결제가 남으므로 운영자가 DB 에서 찾을 수 있게 UNKNOWN 으로 저장하고,
+    // 고객에게는 확정 실패 사유를 그대로 알린다
+    private void cancelUnconfirmedPayment(Long reservationId, PortOnePayment payment, int amount, ErrorCode reason) {
         try {
             portOneClient.cancelPayment(payment.impUid(), amount, AUTO_REFUND_REASON);
             log.info("예약 확정 실패로 결제 자동 취소: impUid={}, reason={}", payment.impUid(), reason);
+            return;
         } catch (BusinessException cancelError) {
             log.error("예약 확정 실패 후 결제 자동 취소 실패, 수동 확인 필요: impUid={}, amount={}, reason={}, cancelError={}",
                     payment.impUid(), amount, reason, cancelError.getErrorCode());
@@ -131,6 +133,17 @@ public class PaymentService {
             // 2xx 응답 본문을 읽지 못한 경우 등. 실제 취소 여부를 알 수 없으므로 원래 오류를 지키고 수동 확인으로 남긴다
             log.error("예약 확정 실패 후 결제 자동 취소 결과 확인 불가, 수동 확인 필요: impUid={}, amount={}, reason={}",
                     payment.impUid(), amount, reason, cancelError);
+        }
+        saveCancelUnknown(reservationId, payment, amount);
+    }
+
+    // 기록 저장이 실패해도 고객에게는 원래 확정 실패 사유를 알린다. 위 error 로그가 마지막 단서로 남는다
+    private void saveCancelUnknown(Long reservationId, PortOnePayment payment, int amount) {
+        try {
+            confirmService.saveCancelUnknown(reservationId, payment.impUid(), amount, approvedAt(payment));
+        } catch (RuntimeException saveError) {
+            log.error("자동 취소 실패 기록(UNKNOWN) 저장 실패, 수동 확인 필요: reservationId={}, impUid={}, amount={}",
+                    reservationId, payment.impUid(), amount, saveError);
         }
     }
 

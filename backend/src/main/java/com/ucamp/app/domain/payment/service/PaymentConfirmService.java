@@ -12,6 +12,7 @@ import com.ucamp.app.domain.payment.entity.DepositPayment;
 import com.ucamp.app.domain.payment.entity.DepositPaymentStatus;
 import com.ucamp.app.domain.payment.repository.DepositPaymentRepository;
 import com.ucamp.app.domain.reservation.entity.Reservation;
+import com.ucamp.app.domain.reservation.repository.ReservationRepository;
 import com.ucamp.app.domain.reservation.service.ReservationService;
 
 /**
@@ -26,11 +27,14 @@ public class PaymentConfirmService {
 
     private final DepositPaymentRepository depositPaymentRepository;
     private final ReservationService reservationService;
+    private final ReservationRepository reservationRepository;
 
     public PaymentConfirmService(DepositPaymentRepository depositPaymentRepository,
-                                 ReservationService reservationService) {
+                                 ReservationService reservationService,
+                                 ReservationRepository reservationRepository) {
         this.depositPaymentRepository = depositPaymentRepository;
         this.reservationService = reservationService;
+        this.reservationRepository = reservationRepository;
     }
 
     /**
@@ -64,6 +68,7 @@ public class PaymentConfirmService {
 
     /**
      * 이 결제가 이 고객의 이 예약으로 이미 저장돼 있으면 예약금결제 ID 를 돌려준다.
+     * 자동 취소 실패로 남긴 UNKNOWN 기록은 확정된 결제가 아니므로 보지 않는다.
      * 다른 고객이 결제 고유번호와 예약 ID 만으로 남의 결제 정보를 받지 못하게 예약 주인을 확인한다.
      *
      * @throws BusinessException 다른 예약에 저장된 결제면 PAYMENT_RESERVATION_MISMATCH,
@@ -71,7 +76,7 @@ public class PaymentConfirmService {
      */
     @Transactional(readOnly = true)
     public Optional<Long> findSaved(String impUid, Long reservationId, Long userId) {
-        return depositPaymentRepository.findByPgTransactionKey(impUid)
+        return depositPaymentRepository.findByPgTransactionKeyAndStatusNot(impUid, DepositPaymentStatus.UNKNOWN)
                 .map(payment -> {
                     Reservation reservation = payment.getReservation();
                     if (!reservation.getId().equals(reservationId)) {
@@ -82,5 +87,33 @@ public class PaymentConfirmService {
                     }
                     return payment.getDepositPaymentId();
                 });
+    }
+
+    /**
+     * 예약을 확정하지 못해 자동 취소를 시도했지만 취소가 실패했거나 결과를 알 수 없는 결제를 UNKNOWN 으로 남긴다.
+     * 돈은 빠져나갔을 수 있는데 확정 예약이 없으므로, 운영자가 DB 에서 찾아 포트원과 대조한 뒤 직접 처리한다.
+     * 예약 행을 잠근 뒤 같은 결제 고유번호의 기록이 있는지 보므로, 같은 결제를 다시 확인해도 한 줄만 남는다.
+     * 예약 주인을 확인한 뒤에만 나는 확정 오류에서 부르므로 예약은 항상 있다.
+     *
+     * @param reservationId 결제한 예약 ID
+     * @param impUid        포트원 결제 고유번호
+     * @param amount        결제 금액
+     * @param approvedAt    결제 시각
+     */
+    @Transactional
+    public void saveCancelUnknown(Long reservationId, String impUid, int amount, LocalDateTime approvedAt) {
+        Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESERVATION_NOT_FOUND));
+        if (depositPaymentRepository.existsByPgTransactionKey(impUid)) {
+            return;
+        }
+        depositPaymentRepository.save(DepositPayment.builder()
+                .reservation(reservation)
+                .pgProvider(PG_PROVIDER)
+                .pgTransactionKey(impUid)
+                .status(DepositPaymentStatus.UNKNOWN)
+                .amount(amount)
+                .approvedAt(approvedAt)
+                .build());
     }
 }

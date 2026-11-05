@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -154,6 +155,34 @@ class PaymentConfirmConcurrencyTest {
             assertThat(paidCount()).isZero();
             verify(portOneClient, times(1)).cancelPayment(eq(IMP_UID), eq(DEPOSIT), anyString());
         }
+    }
+
+    @Test
+    @DisplayName("해제가 먼저 끝난 뒤 온 결제의 자동 취소가 실패하면 UNKNOWN 한 줄만 남고, 같은 결제를 다시 확인해도 성공으로 보지 않는다")
+    void releasedThenVerify_cancelFails_savesUnknownOnce() {
+        willThrow(new BusinessException(ErrorCode.PAYMENT_PORTONE_ERROR))
+                .given(portOneClient).cancelPayment(anyString(), anyInt(), anyString());
+        reservationService.releaseHold(CUSTOMER, RESERVATION_ID);
+        PaymentVerifyRequest request = new PaymentVerifyRequest(IMP_UID, RESERVATION_ID, null);
+
+        for (int i = 0; i < 2; i++) {
+            ErrorCode errorCode = null;
+            try {
+                paymentService.verify(CUSTOMER, request);
+            } catch (BusinessException e) {
+                errorCode = e.getErrorCode();
+            }
+            // 두 번째 확인에서 UNKNOWN 기록을 "이미 확정된 결제"로 보면 돈만 빠진 결제가 성공으로 나간다
+            assertThat(errorCode).isEqualTo(ErrorCode.RESERVATION_HOLD_EXPIRED);
+        }
+
+        assertThat(statusOf()).isEqualTo("EXPIRED");
+        assertThat(paidCount()).isZero();
+        List<String> saved = jdbc.queryForList(
+                "SELECT STATUS FROM DEPOSIT_PAYMENT WHERE RESERVATION_ID = ? AND PG_TRANSACTION_KEY = ?",
+                String.class, RESERVATION_ID, IMP_UID);
+        assertThat(saved).containsExactly("UNKNOWN");
+        verify(portOneClient, times(2)).cancelPayment(eq(IMP_UID), eq(DEPOSIT), anyString());
     }
 
     // ---------------------------------------------------------------- 도우미

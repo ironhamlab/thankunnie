@@ -44,7 +44,10 @@ public interface ReservationDashboardRepository extends Repository<Reservation, 
             JOIN TREATMENT t ON t.TREATMENT_ID = r.TREATMENT_ID
             LEFT JOIN RESERVATION_CANCEL c ON c.RESERVATION_ID = r.RESERVATION_ID
             LEFT JOIN DEPOSIT_PAYMENT p ON p.DEPOSIT_PAYMENT_ID = (
-                SELECT MAX(p2.DEPOSIT_PAYMENT_ID) FROM DEPOSIT_PAYMENT p2 WHERE p2.RESERVATION_ID = r.RESERVATION_ID)
+                SELECT MAX(p2.DEPOSIT_PAYMENT_ID) FROM DEPOSIT_PAYMENT p2
+                WHERE p2.RESERVATION_ID = r.RESERVATION_ID
+                  -- 자동 취소 실패 기록은 확정된 결제가 아니라 운영자 확인용이므로 화면 결제로 보지 않는다
+                  AND p2.STATUS <> 'UNKNOWN')
             WHERE t.SHOP_ID = :shopId
               AND r.STATUS IN ('CONFIRMED', 'CANCELLED')
               AND r.STARTS_AT >= :startsFrom AND r.STARTS_AT < :startsBefore

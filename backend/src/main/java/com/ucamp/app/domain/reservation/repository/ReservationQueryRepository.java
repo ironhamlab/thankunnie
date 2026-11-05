@@ -40,7 +40,10 @@ public class ReservationQueryRepository {
             JOIN SHOP s ON s.SHOP_ID = t.SHOP_ID
             JOIN APP_USER u ON u.USER_ID = r.USER_ID
             LEFT JOIN DEPOSIT_PAYMENT p ON p.DEPOSIT_PAYMENT_ID = (
-                SELECT MAX(p2.DEPOSIT_PAYMENT_ID) FROM DEPOSIT_PAYMENT p2 WHERE p2.RESERVATION_ID = r.RESERVATION_ID)
+                SELECT MAX(p2.DEPOSIT_PAYMENT_ID) FROM DEPOSIT_PAYMENT p2
+                WHERE p2.RESERVATION_ID = r.RESERVATION_ID
+                  -- 자동 취소 실패 기록은 확정된 결제가 아니라 운영자 확인용이므로 화면 결제로 보지 않는다
+                  AND p2.STATUS <> 'UNKNOWN')
             LEFT JOIN RESERVATION_CANCEL c ON c.RESERVATION_ID = r.RESERVATION_ID
             """;
 
