@@ -7,6 +7,7 @@ import { DAY_LABELS } from '@/utils/scheduleSlots';
 import { TIME_OPTIONS, toMinutes, toTime } from '@/utils/vacancyPreview';
 import WeekHoursSummary from '@/pages/owner/components/WeekHoursSummary';
 import BusinessHoursTips from '@/pages/owner/components/BusinessHoursTips';
+import ClosingImpactDialog from '@/pages/owner/components/ClosingImpactDialog';
 import styles from './BusinessHoursPanel.module.css';
 import motion from './OwnerMotion.module.css';
 
@@ -22,13 +23,19 @@ const withCurrent = (options, current) =>
 
 /**
  * 요일별 영업시간·휴무 설정. 요일마다 한 줄로 영업·휴무와 30분 단위 시작~종료를 고른다.
- * 예약이 걸린 시간을 줄이면 서버가 거절한다. 저장하면 예약 가능 시간이 바뀌므로 onSaved 로 부모에게 알린다.
+ * 영업하는 요일의 예약이 걸린 시간을 줄이면 서버가 거절한다. 저장하면 예약 가능 시간이 바뀌므로 onSaved 로 부모에게 알린다.
+ * 요일을 휴무로 바꿀 때 그 요일에 예약이나 연 시간이 있으면 저장 전에 확인창으로 알린다.
  */
 export default function BusinessHoursPanel({ hours, onSaved }) {
   const saveBusinessHours = useScheduleStore((state) => state.saveBusinessHours);
+  const fetchClosingImpact = useScheduleStore((state) => state.fetchClosingImpact);
   const isSaving = useScheduleStore((state) => state.mutationStatus === 'loading');
   const [days, setDays] = useState(hours);
   const [message, setMessage] = useState(null);
+  // 확인창에 보여줄 내용. { labels, impact }
+  const [closing, setClosing] = useState(null);
+  const [isChecking, setIsChecking] = useState(false);
+  const isBusy = isSaving || isChecking;
   // 영업·휴무를 바꾼 요일만 시간 칸이 나타나는 효과를 준다 (처음 불러올 때는 움직이지 않게)
   const [toggledDays, setToggledDays] = useState(() => new Set());
 
@@ -68,8 +75,33 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
     );
   };
 
+  const save = async (closeOpenExceptions, keptReservations) => {
+    const payload = days.map(({ dayOfWeek, closed, openTime, closeTime }) => ({
+      dayOfWeek,
+      closed,
+      openTime: closed ? null : openTime,
+      closeTime: closed ? null : closeTime,
+    }));
+    try {
+      await saveBusinessHours(payload, closeOpenExceptions);
+      setMessage({
+        type: 'success',
+        text:
+          keptReservations > 0
+            ? `영업시간을 저장했습니다. 남은 예약 ${keptReservations}건은 그대로 유지됩니다.`
+            : '영업시간을 저장했습니다.',
+      });
+      onSaved?.();
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message });
+    } finally {
+      setClosing(null);
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (isBusy) return;
     // HH:mm 문자열은 사전순 비교가 시각 순서와 같다
     const invalidDay = days.find((day) => !day.closed && day.closeTime <= day.openTime);
     if (invalidDay) {
@@ -79,18 +111,29 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
       });
       return;
     }
-    const payload = days.map(({ dayOfWeek, closed, openTime, closeTime }) => ({
-      dayOfWeek,
-      closed,
-      openTime: closed ? null : openTime,
-      closeTime: closed ? null : closeTime,
-    }));
+    const newlyClosed = days.filter(
+      (day) => day.closed && !hours.find((saved) => saved.dayOfWeek === day.dayOfWeek)?.closed,
+    );
+    if (!newlyClosed.length) {
+      await save(false, 0);
+      return;
+    }
+    setMessage(null);
+    setIsChecking(true);
     try {
-      await saveBusinessHours(payload);
-      setMessage({ type: 'success', text: '영업시간을 저장했습니다.' });
-      onSaved?.();
+      const impact = await fetchClosingImpact(newlyClosed.map((day) => day.dayOfWeek));
+      if (impact.reservations.length || impact.openExceptions.length) {
+        setClosing({
+          labels: newlyClosed.map((day) => DAY_LABELS[day.dayOfWeek]).join(', '),
+          impact,
+        });
+      } else {
+        await save(false, 0);
+      }
     } catch (error) {
       setMessage({ type: 'error', text: error.message });
+    } finally {
+      setIsChecking(false);
     }
   };
 
@@ -101,7 +144,7 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
           <h2>요일별 영업시간</h2>
           <small className="b-muted">30분 단위 · 자정을 넘기는 영업은 지원하지 않습니다</small>
         </div>
-        <form className="b-stack" onSubmit={handleSubmit} aria-busy={isSaving}>
+        <form className="b-stack" onSubmit={handleSubmit} aria-busy={isBusy}>
           <ul className={styles.days}>
             {days.map((day) => {
               const label = DAY_LABELS[day.dayOfWeek];
@@ -177,11 +220,22 @@ export default function BusinessHoursPanel({ hours, onSaved }) {
               {message.text}
             </Alert>
           )}
-          <Button variant="primary" disabled={isSaving}>
+          <Button variant="primary" disabled={isBusy}>
             영업시간 저장
           </Button>
         </form>
       </Panel>
+      {closing && (
+        <ClosingImpactDialog
+          labels={closing.labels}
+          impact={closing.impact}
+          isSaving={isSaving}
+          onCancel={() => {
+            if (!isSaving) setClosing(null);
+          }}
+          onConfirm={(closeOpens) => save(closeOpens, closing.impact.reservations.length)}
+        />
+      )}
       <div className={styles.side}>
         <WeekHoursSummary days={days} />
         <BusinessHoursTips />

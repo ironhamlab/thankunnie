@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.time.Clock;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -258,6 +260,50 @@ class ShopScheduleExceptionServiceTest {
     }
 
     @Test
+    @DisplayName("예약 시간을 빼고 닫으면 예약 앞뒤 구간만 닫기로 저장한다")
+    void createException_excludeReserved_savesAroundReservations() {
+        given(reservationRepository.findActiveOverlapping(any(), any(), any()))
+                .willReturn(List.of(reservation(14, 15, ReservationStatus.CONFIRMED, NOW)));
+        given(shopScheduleExceptionRepository.save(any(ShopScheduleException.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        ScheduleExceptionResponse response = service.createException(owner, excludeReservedRequest(10, 20));
+
+        ArgumentCaptor<ShopScheduleException> saved = ArgumentCaptor.forClass(ShopScheduleException.class);
+        verify(shopScheduleExceptionRepository, times(2)).save(saved.capture());
+        assertThat(saved.getAllValues()).extracting(ShopScheduleException::getStartsAt)
+                .containsExactly(day(10), day(15));
+        assertThat(saved.getAllValues()).extracting(ShopScheduleException::getEndsAt)
+                .containsExactly(day(14), day(20));
+        assertThat(response.startsAt()).isEqualTo(OffsetDateTime.of(day(10), KST));
+    }
+
+    @Test
+    @DisplayName("예약 시간을 빼고 닫아도 만료된 점유는 예약으로 보지 않는다")
+    void createException_excludeReservedExpiredHold_savesWholeRange() {
+        given(reservationRepository.findActiveOverlapping(any(), any(), any()))
+                .willReturn(List.of(reservation(14, 15, ReservationStatus.HOLD, NOW.minusMinutes(1))));
+        given(shopScheduleExceptionRepository.save(any(ShopScheduleException.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        ScheduleExceptionResponse response = service.createException(owner, excludeReservedRequest(10, 20));
+
+        verify(shopScheduleExceptionRepository).save(any(ShopScheduleException.class));
+        assertThat(response.endsAt()).isEqualTo(OffsetDateTime.of(day(20), KST));
+    }
+
+    @Test
+    @DisplayName("전 구간에 예약이 있으면 예약 시간을 빼고 닫을 수 없다")
+    void createException_excludeReservedFullyBooked_throwsReservedTime() {
+        given(reservationRepository.findActiveOverlapping(any(), any(), any()))
+                .willReturn(List.of(reservation(12, 14, ReservationStatus.CONFIRMED, NOW)));
+
+        assertThatThrownBy(() -> service.createException(owner, excludeReservedRequest(12, 14)))
+                .extracting("errorCode").isEqualTo(ErrorCode.VACANCY_RESERVED_TIME);
+        verify(shopScheduleExceptionRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("점유가 만료된 예약만 있으면 닫을 수 있다")
     void createException_closeOverExpiredHold_saves() {
         given(reservationRepository.findActiveOverlapping(any(), any(), any()))
@@ -343,6 +389,15 @@ class ShopScheduleExceptionServiceTest {
         // 상태 변경 메서드는 예약 담당(D)이 추가하므로 테스트에서는 직접 넣는다
         ReflectionTestUtils.setField(reservation, "status", status);
         return reservation;
+    }
+
+    private static LocalDateTime day(int hour) {
+        return LocalDateTime.of(2026, 10, 25, hour, 0);
+    }
+
+    private static ScheduleExceptionSaveRequest excludeReservedRequest(int startHour, int endHour) {
+        return new ScheduleExceptionSaveRequest(ScheduleExceptionType.CLOSE,
+                OffsetDateTime.of(day(startHour), KST), OffsetDateTime.of(day(endHour), KST), "임시 휴무", true);
     }
 
     private static ScheduleExceptionSaveRequest closeRequest(int startHour, int endHour) {

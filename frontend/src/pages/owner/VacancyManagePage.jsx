@@ -3,8 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { VACANCY_POLICY as P } from '@/constants/vacancyPolicy';
 import { useScheduleStore } from '@/store/useScheduleStore';
 import useDaySlots from '@/hooks/useDaySlots';
-import { addDays, datePart, todayKst, toKstDateTime } from '@/utils/scheduleDate';
-import { formatDayLabel, unsellableTimes } from '@/utils/scheduleSlots';
+import { addDays, datePart, timePart, todayKst, toKstDateTime } from '@/utils/scheduleDate';
+import { formatDayLabel, hasBookedSlot, unsellableTimes } from '@/utils/scheduleSlots';
 import { formOf, minStartOf, newForm } from '@/utils/scheduleForm';
 import AvailableTimesPanel from '@/pages/owner/components/AvailableTimesPanel';
 import DayReservationsPanel from '@/pages/owner/components/DayReservationsPanel';
@@ -69,20 +69,28 @@ export default function VacancyManagePage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    // 새로 닫을 때 예약이 있는 칸이 섞여 있으면 폼이 안내한 대로 예약 시간을 뺀 나머지만 닫는다
+    const excludeReserved =
+      !editingId &&
+      form.exceptionType === 'CLOSE' &&
+      hasBookedSlot(slots, form.startTime, form.endTime);
     try {
-      await saveException(editingId, {
+      const saved = await saveException(editingId, {
         exceptionType: form.exceptionType,
         startsAt: toKstDateTime(form.date, form.startTime),
         endsAt: toKstDateTime(form.date, form.endTime),
         reason: form.reason.trim() || null,
+        excludeReserved,
       });
       const label = `${formatDayLabel(form.date)} ${form.startTime}~${form.endTime}`;
-      setNotice({
-        tone: 'success',
-        text: editingId
-          ? `${label} 일정을 수정했습니다.`
-          : `${label} ${EXCEPTION_TYPES[form.exceptionType].verb}를 저장했습니다.`,
-      });
+      let text = `${label} ${EXCEPTION_TYPES[form.exceptionType].verb}를 저장했습니다.`;
+      if (editingId) text = `${label} 일정을 수정했습니다.`;
+      // 그사이 예약이 풀렸으면 고른 구간이 그대로 닫힌다. 서버가 나눠 저장했을 때만 예약을 뺐다고 알린다
+      const splitAround =
+        excludeReserved &&
+        (timePart(saved.startsAt) !== form.startTime || timePart(saved.endsAt) !== form.endTime);
+      if (splitAround) text = `${label}에서 예약 시간을 뺀 나머지를 닫았습니다.`;
+      setNotice({ tone: 'success', text });
       resetForm();
     } catch (error) {
       setErrorMessage(error.message);
@@ -165,6 +173,7 @@ export default function VacancyManagePage() {
             failed={failed || scheduleFailed}
             onRetry={scheduleFailed ? loadSchedule : retry}
             exceptions={exceptions}
+            businessHours={businessHours}
             minStart={minStartOf(form.exceptionType, form.date)}
             minDate={today}
             maxDate={lastDate}

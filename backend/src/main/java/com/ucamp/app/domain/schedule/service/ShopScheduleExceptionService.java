@@ -3,6 +3,8 @@ package com.ucamp.app.domain.schedule.service;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -60,17 +62,55 @@ public class ShopScheduleExceptionService {
         shopLock.lock(shopId);
         requireNoSameTypeOverlap(shopId, request.exceptionType(), startsAt, endsAt, null);
         if (request.exceptionType() == ScheduleExceptionType.CLOSE) {
+            if (Boolean.TRUE.equals(request.excludeReserved())) {
+                return closeAroundReservations(shopId, startsAt, endsAt, request.reason(), now);
+            }
             requireNoReservation(shopId, startsAt, endsAt, now, reservation -> true);
         }
 
-        ShopScheduleException exception = ShopScheduleException.builder()
+        return ScheduleExceptionResponse.from(
+                save(shopId, request.exceptionType(), startsAt, endsAt, request.reason()));
+    }
+
+    /**
+     * 예약이 있는 시간을 뺀 나머지 구간만 닫는다. 구간마다 닫기 한 건을 저장하고 첫 건을 돌려준다.
+     * 전 구간에 예약이 있어 닫을 시간이 없으면 차단한다.
+     */
+    private ScheduleExceptionResponse closeAroundReservations(Long shopId, LocalDateTime startsAt,
+            LocalDateTime endsAt, String reason, LocalDateTime now) {
+        List<Reservation> reservations = reservationRepository.findActiveOverlapping(shopId, startsAt, endsAt).stream()
+                .filter(reservation -> SalePolicy.isOccupying(
+                        reservation.getStatus(), reservation.getHoldExpiresAt(), now))
+                .sorted(Comparator.comparing(Reservation::getStartsAt))
+                .toList();
+        List<ShopScheduleException> saved = new ArrayList<>();
+        LocalDateTime cursor = startsAt;
+        for (Reservation reservation : reservations) {
+            if (cursor.isBefore(reservation.getStartsAt())) {
+                saved.add(save(shopId, ScheduleExceptionType.CLOSE, cursor, reservation.getStartsAt(), reason));
+            }
+            if (cursor.isBefore(reservation.getEndsAt())) {
+                cursor = reservation.getEndsAt();
+            }
+        }
+        if (cursor.isBefore(endsAt)) {
+            saved.add(save(shopId, ScheduleExceptionType.CLOSE, cursor, endsAt, reason));
+        }
+        if (saved.isEmpty()) {
+            throw new BusinessException(ErrorCode.VACANCY_RESERVED_TIME);
+        }
+        return ScheduleExceptionResponse.from(saved.get(0));
+    }
+
+    private ShopScheduleException save(Long shopId, ScheduleExceptionType type, LocalDateTime startsAt,
+            LocalDateTime endsAt, String reason) {
+        return shopScheduleExceptionRepository.save(ShopScheduleException.builder()
                 .shopId(shopId)
-                .exceptionType(request.exceptionType())
+                .exceptionType(type)
                 .startsAt(startsAt)
                 .endsAt(endsAt)
-                .reason(request.reason())
-                .build();
-        return ScheduleExceptionResponse.from(shopScheduleExceptionRepository.save(exception));
+                .reason(reason)
+                .build());
     }
 
     /**
