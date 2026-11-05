@@ -108,5 +108,5 @@
 
 | 호출 위치 | 검사 |
 |---|---|
-| 알림 등록·수정 (`NotificationService.subscribe`, `updateSubscription`) | 등록: 희망 시간이 있을 때만 `requireAgreed(userId, SMS_NOTIFICATION)`. 희망 시간 없는 업장 찜은 문자가 나가지 않아 검사하지 않음. 수정: 찜(희망 시간 없음)에 희망 시간을 넣어 알림을 새로 켤 때만 검사하고, 이미 알림이 켜진 알림의 수정은 검사하지 않음(약관 도입 전 알림 포함). 대상·시간 검증이 동의 검사보다 먼저라 잘못된 요청은 400 으로 응답. 해제는 검사하지 않음 |
+| 알림 등록·수정 (`NotificationService.subscribe`, `updateSubscription`) | 등록: 희망 시간이 있을 때만 `requireAgreed(userId, SMS_NOTIFICATION)`. 희망 시간 없는 업장 찜은 문자가 나가지 않아 검사하지 않음. 수정: 찜(희망 시간 없음)에 희망 시간을 넣어 알림을 새로 켤 때만 검사하고, 이미 희망 시간이 있는 알림의 수정은 검사하지 않음(약관 도입 전 알림 포함). 대상·시간 검증이 동의 검사보다 먼저라 잘못된 요청은 400 으로 응답. 해제는 검사하지 않음 |
 | 예약 생성 (`ReservationService.createReservation`, 초보 시술만) | `requireAgreed(userId, MODEL_PHOTO)`. 회원·매장 잠금 전에 검사 |

@@ -354,7 +354,7 @@ GET /api/v1/explore/vacancies?startDate=2026-10-29&minLat=37.48&maxLat=37.52&min
    | 잠실/송파 | `11710` 송파구 |
    | 판교/분당 | `41135` 성남시 분당구 |
 
-   매장의 `REGION_CODE`는 매장 등록(A-03) 때 카카오 주소 검색 결과의 법정동 코드 앞 5자리로 채운다. 알림의 지역 알림(`NOTIFICATION_SUBSCRIPTION.REGION_CODE`)도 같은 코드를 쓴다.
+   매장의 `REGION_CODE`는 매장 등록(A-03) 때 카카오 주소 검색 결과의 법정동 코드 앞 5자리로 채운다. 지역 알림(`NOTIFICATION_SUBSCRIPTION.REGION_CODE`)도 같은 코드를 쓴다.
 4. **지도 범위 조회**: 지도를 움직일 때마다 화면 범위 안만 다시 불러온다 (`minLat`·`maxLat`·`minLng`·`maxLng`, 6장).
 5. **이미지 우선순위**: 시술 이미지 → 매장 이미지 → null.
 6. **지도 마커**: 매장당 마커 1개, 라벨은 최저 판매가 (C-02).

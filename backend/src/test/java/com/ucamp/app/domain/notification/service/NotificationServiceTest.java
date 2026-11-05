@@ -521,7 +521,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("이미 알림이 켜진 알림은 문자 수신 동의 기록이 없어도 수정할 수 있다")
+    @DisplayName("이미 희망 시간이 있는 알림은 문자 수신 동의 기록이 없어도 수정할 수 있다")
     void updateSubscription_alreadyNotifyingWithoutSmsAgreement_updates() {
         denySmsAgreement();
         NotificationSubscription subscription = storeSubscription();
