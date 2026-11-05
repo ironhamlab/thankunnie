@@ -10,6 +10,7 @@ import Panel from '@/components/common/Panel';
 import Notice from '@/components/common/Notice';
 import EmptyState from '@/components/common/EmptyState';
 import Alert from '@/components/common/Alert';
+import Dialog from '@/components/common/Dialog';
 
 export default function MenusPage() {
   const treatments = useTreatmentStore((state) => state.treatments);
@@ -25,7 +26,9 @@ export default function MenusPage() {
   const save = useTreatmentStore((state) => state.saveTreatment);
   const changeStatus = useTreatmentStore((state) => state.changeTreatmentStatus);
   const saveImage = useTreatmentStore((state) => state.saveImage);
+  const remove = useTreatmentStore((state) => state.deleteTreatment);
   const [edit, setEdit] = useState(null);
+  const [removeTarget, setRemoveTarget] = useState(null);
   const [notice, setNotice] = useState('');
   const [actionError, setActionError] = useState(null);
 
@@ -38,14 +41,16 @@ export default function MenusPage() {
     setActionError(null);
     setEdit({ treatment });
   };
-  const submit = async (treatmentId, payload, imageFile) => {
+  // 이미지 선택·삭제는 폼에서 대기만 하다가 저장을 누를 때 시술 정보와 함께 반영한다
+  const submit = async (treatmentId, payload, imageChange) => {
     if (isSaving) return;
     setIsSubmitting(true);
     setActionError(null);
     let saved;
     try {
       saved = await save(treatmentId, payload);
-      if (imageFile) await saveImage(saved.treatmentId, imageFile);
+      if (imageChange?.file) await saveImage(saved.treatmentId, imageChange.file);
+      if (imageChange?.remove) await saveImage(saved.treatmentId, null);
       setEdit(null);
       setNotice('시술 메뉴를 저장했습니다.');
     } catch (failure) {
@@ -54,7 +59,7 @@ export default function MenusPage() {
         setEdit({ treatment: saved });
         setActionError({
           ...failure,
-          message: `시술 정보는 저장됐지만 이미지 등록에 실패했습니다. 다시 저장해 주세요. ${failure.message}`,
+          message: `시술 정보는 저장됐지만 이미지 ${imageChange?.remove ? '삭제' : '등록'}에 실패했습니다. 다시 저장해 주세요. ${failure.message}`,
         });
       } else setActionError(failure);
     } finally {
@@ -74,6 +79,20 @@ export default function MenusPage() {
       );
     } catch (failure) {
       setActionError(failure);
+    }
+  };
+  const confirmRemove = async () => {
+    if (isSaving || !removeTarget) return;
+    setIsSubmitting(true);
+    setActionError(null);
+    try {
+      await remove(removeTarget.treatmentId);
+      setNotice(`${removeTarget.name} 시술을 삭제했습니다.`);
+      setRemoveTarget(null);
+    } catch (failure) {
+      setActionError(failure);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -177,6 +196,18 @@ export default function MenusPage() {
                             >
                               {item.status === 'ACTIVE' ? '비활성화' : '활성화'}
                             </Button>
+                            <Button
+                              size="small"
+                              variant="danger"
+                              disabled={isSaving || isRefreshing}
+                              onClick={() => {
+                                setNotice('');
+                                setActionError(null);
+                                setRemoveTarget(item);
+                              }}
+                            >
+                              삭제
+                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -193,14 +224,39 @@ export default function MenusPage() {
           {notice}
         </Alert>
       )}
-      {!edit && actionError && <p role="alert">{actionError.message}</p>}
+      {!edit && !removeTarget && actionError && <p role="alert">{actionError.message}</p>}
+      {removeTarget && (
+        <Dialog
+          title="시술 삭제"
+          closeOnBackdrop={false}
+          onClose={() => {
+            if (!isSaving) setRemoveTarget(null);
+          }}
+        >
+          <div className="b-stack">
+            <p>
+              <strong>{removeTarget.name}</strong> 시술을 삭제할까요? 삭제한 시술은 목록과 신규
+              빈자리 선택에서 사라지며 되돌릴 수 없습니다. 이미 받은 예약과 이력은 그대로
+              유지됩니다.
+            </p>
+            {actionError && <p role="alert">{actionError.message}</p>}
+            <div className="b-flex">
+              <Button disabled={isSaving} onClick={() => setRemoveTarget(null)}>
+                취소
+              </Button>
+              <Button variant="danger" disabled={isSaving} onClick={confirmRemove}>
+                {isSaving ? '삭제 중…' : '삭제'}
+              </Button>
+            </div>
+          </div>
+        </Dialog>
+      )}
       {edit && (
         <TreatmentForm
           treatment={edit.treatment}
           imageUrl={
             treatments.find((item) => item.treatmentId === edit.treatment?.treatmentId)?.imageUrl
           }
-          onImageSave={(file) => saveImage(edit.treatment.treatmentId, file)}
           isSaving={isSaving}
           error={actionError}
           onSave={submit}

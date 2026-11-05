@@ -109,6 +109,25 @@ export const useTreatmentStore = create((set, get) => ({
     }
   },
 
+  // 서버는 예약 이력 보존을 위해 소프트 삭제하므로 목록에서만 뺀다
+  deleteTreatment: async (treatmentId) => {
+    set({ mutationStatus: 'loading', mutationError: null });
+    try {
+      await treatmentApi.deleteTreatment(get().shopId, treatmentId);
+      set((state) => ({
+        treatments: state.treatments.filter((item) => item.treatmentId !== treatmentId),
+        activeTreatments: state.activeTreatments.filter(
+          (item) => item.treatmentId !== treatmentId,
+        ),
+        mutationStatus: 'succeeded',
+      }));
+    } catch (error) {
+      const failure = toError(error);
+      set({ mutationStatus: 'failed', mutationError: failure });
+      throw failure;
+    }
+  },
+
   changeTreatmentStatus: async (treatmentId, status) => {
     set({ mutationStatus: 'loading', mutationError: null });
     try {

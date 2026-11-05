@@ -2,13 +2,11 @@ import { useState } from 'react';
 import Dialog from '@/components/common/Dialog';
 import Button from '@/components/common/Button';
 import OwnerImageEditor from './OwnerImageEditor';
-import TreatmentImagePicker from './TreatmentImagePicker';
 import styles from './TreatmentForm.module.css';
 
 export default function TreatmentForm({
   treatment,
   imageUrl,
-  onImageSave,
   isSaving,
   error,
   onSave,
@@ -27,7 +25,7 @@ export default function TreatmentForm({
     ...treatment,
   });
   const [validationError, setValidationError] = useState('');
-  const [imageFile, setImageFile] = useState(null);
+  const [imageChange, setImageChange] = useState(null);
   const change = (event) => {
     const { name, value } = event.target;
     setForm((previous) => ({
@@ -81,7 +79,7 @@ export default function TreatmentForm({
           photoNotice: isModel ? form.photoNotice.trim() : null,
         },
       },
-      imageFile,
+      imageChange,
     );
   };
 
@@ -91,12 +89,12 @@ export default function TreatmentForm({
       closeOnBackdrop={false}
       onClose={onClose}
     >
-      {treatment && !imageFile && (
-        <OwnerImageEditor imageUrl={imageUrl} isSaving={isSaving} onSave={onImageSave} />
-      )}
-      {(!treatment || imageFile) && (
-        <TreatmentImagePicker file={imageFile} disabled={isSaving} onChange={setImageFile} />
-      )}
+      <OwnerImageEditor
+        imageUrl={treatment ? imageUrl : null}
+        change={imageChange}
+        disabled={isSaving}
+        onChange={setImageChange}
+      />
       <form onSubmit={submit} className="b-form-grid">
         <fieldset disabled={isSaving} className={`${styles.fields} b-span-two`}>
           <label className="b-span-two">

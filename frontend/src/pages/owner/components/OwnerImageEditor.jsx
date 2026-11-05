@@ -1,45 +1,99 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Button from '@/components/common/Button';
 import Alert from '@/components/common/Alert';
-import ImageFileInput from './ImageFileInput';
 import RepresentativeImage from '@/components/common/RepresentativeImage';
+import ImageFileInput from './ImageFileInput';
 import styles from './OwnerImageEditor.module.css';
 
-export default function OwnerImageEditor({ imageUrl, isSaving, onSave, kind = 'treatment' }) {
+/**
+ * 대표 이미지 변경을 바로 서버에 보내지 않고 저장 대기 값으로만 보관한다.
+ * change: null(변경 없음) | { file } (새 이미지로 교체) | { remove: true } (삭제)
+ * 실제 업로드·삭제는 화면의 저장 버튼에서 함께 처리한다.
+ */
+export default function OwnerImageEditor({
+  imageUrl,
+  change,
+  onChange,
+  disabled,
+  kind = 'treatment',
+}) {
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
-  const save = async (file) => {
-    setError('');
-    setMessage('');
-    if (file && (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024)) {
+  const [preview, setPreview] = useState('');
+  const file = change?.file;
+  const isRemoving = Boolean(change?.remove);
+  const label = kind === 'shop' ? '매장' : '시술';
+
+  useEffect(() => {
+    if (!file) {
+      setPreview('');
+      return undefined;
+    }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  const select = (selected) => {
+    if (!['image/jpeg', 'image/png'].includes(selected.type) || selected.size > 5 * 1024 * 1024) {
       setError('JPEG 또는 PNG 이미지를 5MB 이하로 선택해 주세요.');
       return;
     }
-    try {
-      await onSave(file);
-      setMessage(file ? '대표 이미지를 저장했습니다.' : '대표 이미지를 삭제했습니다.');
-    } catch (failure) {
-      setError(failure.message ?? '이미지 요청에 실패했습니다.');
-    }
+    setError('');
+    onChange({ file: selected });
   };
+
+  let caption = imageUrl ? '현재 등록된 이미지' : '기본 이미지';
+  if (file) caption = '저장하면 이 이미지로 바뀝니다';
+  if (isRemoving) caption = '저장하면 이미지가 삭제됩니다';
+
   return (
     <div className="b-stack">
       <div className={styles.editor}>
         <figure className={styles.currentImage}>
-          <RepresentativeImage
-            key={imageUrl ?? 'default'}
-            imageUrl={imageUrl}
-            kind={kind}
-            name={kind === 'shop' ? '매장' : '시술'}
-            className={styles.preview}
-          />
-          <figcaption>{imageUrl ? '현재 등록된 이미지' : '기본 이미지'}</figcaption>
+          {preview ? (
+            <img src={preview} className={styles.preview} alt={`등록할 ${label} 이미지 미리보기`} />
+          ) : (
+            <RepresentativeImage
+              key={isRemoving ? 'removed' : (imageUrl ?? 'default')}
+              imageUrl={isRemoving ? null : imageUrl}
+              kind={kind}
+              name={label}
+              className={styles.preview}
+            />
+          )}
+          <figcaption>{caption}</figcaption>
         </figure>
         <div className={styles.editorControls}>
-          <ImageFileInput disabled={isSaving} hasImage={Boolean(imageUrl)} onSelect={save} />
-          <Button type="button" disabled={isSaving || !imageUrl} onClick={() => save(null)}>
-            이미지 삭제
-          </Button>
+          <ImageFileInput
+            disabled={disabled}
+            hasImage={Boolean(file || (imageUrl && !isRemoving))}
+            fileName={file?.name}
+            onSelect={select}
+          />
+          <div className="b-flex">
+            <Button
+              type="button"
+              disabled={disabled || !imageUrl || isRemoving}
+              onClick={() => {
+                setError('');
+                onChange({ remove: true });
+              }}
+            >
+              이미지 삭제
+            </Button>
+            {change && (
+              <Button
+                type="button"
+                disabled={disabled}
+                onClick={() => {
+                  setError('');
+                  onChange(null);
+                }}
+              >
+                {isRemoving ? '삭제 취소' : '선택 취소'}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
       {error && (
@@ -47,10 +101,10 @@ export default function OwnerImageEditor({ imageUrl, isSaving, onSave, kind = 't
           {error}
         </Alert>
       )}
-      {message && (
-        <Alert tone="success" role="status">
-          {message}
-        </Alert>
+      {change && (
+        <small>
+          아직 반영되지 않았습니다. 저장을 누르면 {isRemoving ? '삭제' : '등록'}됩니다.
+        </small>
       )}
     </div>
   );

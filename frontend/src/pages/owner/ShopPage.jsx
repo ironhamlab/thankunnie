@@ -19,6 +19,8 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isLocating, setIsLocating] = useState(false);
+  // 이미지 선택·삭제는 대기만 하다가 변경사항 저장 시 함께 반영한다
+  const [imageChange, setImageChange] = useState(null);
   const submitting = useRef(false);
   const isBusy = isSaving || isLocating;
   let saveLabel = '변경사항 저장';
@@ -75,6 +77,17 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
         notice,
       });
       setForm(saved);
+      if (imageChange) {
+        try {
+          await onImage(imageChange.file ?? null);
+        } catch (imageFailure) {
+          // 매장 정보는 저장됐으므로 이미지 변경만 남겨 두고 다시 저장할 수 있게 한다
+          throw new Error(
+            `매장 정보는 저장됐지만 이미지 ${imageChange.remove ? '삭제' : '등록'}에 실패했습니다. 다시 저장해 주세요. ${imageFailure.message}`,
+          );
+        }
+        setImageChange(null);
+      }
       setMessage('매장 정보를 저장했습니다.');
     } catch (failure) {
       setError(failure.message);
@@ -89,10 +102,19 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
       <Panel padded>
         <h2>매장 대표 이미지</h2>
         <p>
-          아래에서 새 사진을 선택하면 대표 이미지가 바로 교체됩니다. 매장 정보 저장과 별도로
-          적용됩니다.
+          사진을 바꾸거나 삭제한 뒤 아래 <strong>변경사항 저장</strong>을 누르면 매장 정보와 함께
+          반영됩니다.
         </p>
-        <OwnerImageEditor imageUrl={shop.imageUrl} kind="shop" isSaving={isBusy} onSave={onImage} />
+        <OwnerImageEditor
+          imageUrl={shop.imageUrl}
+          kind="shop"
+          change={imageChange}
+          disabled={isBusy}
+          onChange={(next) => {
+            setImageChange(next);
+            setMessage('');
+          }}
+        />
       </Panel>
       <Panel padded>
         <form onSubmit={submit} className="b-stack">
@@ -165,6 +187,7 @@ function ShopForm({ shop, isSaving, onSave, onImage }) {
               disabled={isBusy}
               onClick={() => {
                 setForm(shop);
+                setImageChange(null);
                 setError('');
                 setMessage('변경사항을 취소했습니다.');
               }}
