@@ -38,7 +38,7 @@ export default function CustomerProfilePage() {
   const pageInfo = useReservationStore((s) => s.pageInfo);
   const listStatus = useReservationStore((s) => s.listStatus);
   const listError = useReservationStore((s) => s.listError);
-  // 구독 목록은 아래 알림 영역의 SubscriptionList가 불러온다
+  // 알림 목록은 아래 알림 영역의 SubscriptionList가 불러온다
   const subscriptions = useNotificationStore((s) => s.subscriptions);
   const subscriptionStatus = useNotificationStore((s) => s.listStatus);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
@@ -56,7 +56,7 @@ export default function CustomerProfilePage() {
     loadReservations('my', upcomingFilters(today));
   }, [loadReservations, today]);
 
-  // 찜은 희망 시간 없는 업장 구독으로 저장된다. 한 매장에 구독이 여러 건이어도 한 번만 센다
+  // 찜은 희망 시간 없는 업장 알림으로 저장된다. 한 매장에 알림이 여러 건이어도 한 번만 센다
   const favoriteShopIds = new Set(
     subscriptions
       .filter((item) => item.subscriptionType === 'STORE')

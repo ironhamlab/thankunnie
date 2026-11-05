@@ -17,8 +17,8 @@ const toStamp = (date, time) => `${date}T${time}`;
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
- * 구독 조건 수정. 구독 유형은 그대로 둔다.
- * 업장 구독은 매장을 바꾸지 않고 시술과 희망 시간을, 카테고리·지역 구독은 시술·지역과 희망 시간을 바꾼다.
+ * 알림 조건 수정. 알림 유형은 그대로 둔다.
+ * 업장 알림은 매장을 바꾸지 않고 시술과 희망 시간을, 카테고리·지역 알림은 시술·지역과 희망 시간을 바꾼다.
  * 희망 날짜는 오늘부터 30일 안만, 시각은 30분 단위 휠로 고른다.
  */
 export default function SubscriptionEditDialog({ subscription, categories, onClose, onSaved }) {
@@ -96,7 +96,7 @@ export default function SubscriptionEditDialog({ subscription, categories, onClo
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!canSubmit) return;
-    // 업장 구독의 매장 ID 는 원래 값을 그대로 보낸다. 화면에서 바꾸지 않는다.
+    // 업장 알림의 매장 ID 는 원래 값을 그대로 보낸다. 화면에서 바꾸지 않는다.
     const request = {
       shopId: isStore ? subscription.shopId : null,
       treatmentId: isStore ? Number(form.treatmentId) : null,
@@ -126,7 +126,7 @@ export default function SubscriptionEditDialog({ subscription, categories, onClo
         <p className={styles.lead}>
           {isStore
             ? '매장은 그대로 두고 시술과 희망 시간을 수정합니다.'
-            : '구독 유형은 바꿀 수 없습니다. 시술·지역과 희망 시간만 수정됩니다.'}
+            : '알림 유형은 바꿀 수 없습니다. 시술·지역과 희망 시간만 수정됩니다.'}
         </p>
         {isStore ? (
           <>

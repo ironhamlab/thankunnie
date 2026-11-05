@@ -28,7 +28,7 @@ const EMPTY_FORM = { loginId: '', password: '', passwordConfirm: '', name: '', p
 
 /**
  * 고객 회원가입 (REQ-003). 가입하면 바로 로그인되어, 로그인 화면에서 넘어왔으면 원래 보려던 화면으로, 아니면 홈으로 이동한다.
- * 휴대폰 번호는 관심 매장·조건 구독의 문자 알림 수신 번호로 쓰인다.
+ * 휴대폰 번호는 관심 매장·조건 알림의 문자 알림 수신 번호로 쓰인다.
  * 필수 약관은 모두 동의해야 하고, 선택 약관(문자 수신)은 동의한 경우에만 보낸다.
  * 초보 시술 촬영 동의는 가입 화면에 보이지 않고 첫 초보 시술 예약 때 받는다.
  */
@@ -113,7 +113,7 @@ export default function SignupPage() {
   return (
     <AuthCard
       title="회원가입"
-      description="가입하면 바로 빈자리 예약과 알림 구독을 이용할 수 있어요."
+      description="가입하면 바로 빈자리 예약과 알림을 이용할 수 있어요."
     >
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         <AccountFields

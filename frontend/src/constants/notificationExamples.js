@@ -1,6 +1,6 @@
 /**
  * 시술 목록을 서버에서 못 받을 때 등록 폼이 잠시 쓰는 예시.
- * 구독 목록 카드에는 쓰지 않는다.
+ * 알림 목록 카드에는 쓰지 않는다.
  */
 export const EXAMPLE_CATEGORIES = [
   { categoryId: 1, name: '네일' },

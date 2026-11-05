@@ -57,7 +57,7 @@ export const useTermsStore = create((set, get) => ({
     const isCurrent = () => get().pending?.id === pending.id;
     try {
       await termsApi.agree(pending.termsCode);
-      // 구독 등록 중에 동의해도 마이페이지 문자 수신 체크박스가 켜지게 한다
+      // 알림 등록 중에 동의해도 마이페이지 문자 수신 체크박스가 켜지게 한다
       if (pending.termsCode === TERMS_CODE.SMS_NOTIFICATION) {
         if (get().smsRequestId === pending.smsRequestId) {
           set({ smsAgreement: { ...get().smsAgreement, agreed: true } });

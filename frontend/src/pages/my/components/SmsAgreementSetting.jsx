@@ -8,7 +8,7 @@ import styles from './SmsAgreementSetting.module.css';
 
 /**
  * 마이페이지 알림 문자 수신 설정. 체크를 끄면 확인 후 동의를 철회하고,
- * 다시 켜면 구독 등록 때와 같은 동의 모달(TermsAgreementDialog)로 동의를 받는다.
+ * 다시 켜면 알림 등록 때와 같은 동의 모달(TermsAgreementDialog)로 동의를 받는다.
  */
 export default function SmsAgreementSetting() {
   const smsAgreement = useTermsStore((state) => state.smsAgreement);

@@ -31,7 +31,7 @@ const rejectIfInvalid = (subscriptions, candidate, excludeId) => {
   return null;
 };
 
-/** 고객 빈자리 알림 조건(구독). 마이페이지 알림 조건 탭과 요약 건수가 함께 쓴다. */
+/** 고객 빈자리 알림 조건. 마이페이지 알림 조건 탭과 요약 건수가 함께 쓴다. */
 export const useNotificationStore = create((set, get) => ({
   subscriptions: [],
   listStatus: 'idle',
@@ -39,7 +39,7 @@ export const useNotificationStore = create((set, get) => ({
   listRequestId: 0,
   categories: [],
   categoryStatus: 'idle',
-  // 업장 구독 카드용 매장명. 키는 매장 ID 문자열. 성공한 조회만 넣는다
+  // 업장 알림 카드용 매장명. 키는 매장 ID 문자열. 성공한 조회만 넣는다
   shopNames: {},
   // 그 매장 상세에 들어 있는 시술. 키는 매장 ID 문자열. 조회 전·실패면 키가 없다
   shopTreatments: {},
@@ -112,7 +112,7 @@ export const useNotificationStore = create((set, get) => ({
     try {
       // 문자 수신 동의가 없으면(TERMS_003) 동의 모달을 띄우고, 동의하면 한 번 다시 등록한다
       const created = await withTermsAgreement(() => notificationApi.createSubscription(request));
-      // 목록을 온전히 받지 못한 상태면 새 구독만으로 성공 처리하지 않고 서버 목록을 다시 받는다
+      // 목록을 온전히 받지 못한 상태면 새 알림만으로 성공 처리하지 않고 서버 목록을 다시 받는다
       const listLoaded = get().listStatus === 'succeeded';
       set((state) => ({
         subscriptions: [created, ...state.subscriptions],
@@ -128,7 +128,7 @@ export const useNotificationStore = create((set, get) => ({
     }
   },
 
-  /** 구독 유형은 유지한 채 대상과 희망 시간만 바꾼다 */
+  /** 알림 유형은 유지한 채 대상과 희망 시간만 바꾼다 */
   updateSubscription: async (subscriptionId, request) => {
     const current = get().subscriptions.find((item) =>
       sameSubscriptionId(item.subscriptionId, subscriptionId),

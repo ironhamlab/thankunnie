@@ -37,7 +37,7 @@ const category = (id, categoryId, regionCode, startTime, endTime) => ({
   endTime,
 });
 
-test('같은 매장의 업장 구독만 고르고 최근 등록 순을 유지한다', () => {
+test('같은 매장의 업장 알림만 고르고 최근 등록 순을 유지한다', () => {
   const subscriptions = [
     store(3, 10, '2026-11-01T10:00:00+09:00', '2026-11-02T10:00:00+09:00'),
     store(2, 11, '2026-11-01T10:00:00+09:00', '2026-11-02T10:00:00+09:00'),
@@ -58,7 +58,7 @@ test('매장명이 있으면 그 이름을 쓰고 없으면 매장 번호를 쓴
   assert.equal(shopLabel(2, null), '매장 2');
 });
 
-test('업장 구독을 하나만 지워도 같은 매장 구독이 남으면 하트는 유지된다', () => {
+test('업장 알림을 하나만 지워도 같은 매장 알림이 남으면 하트는 유지된다', () => {
   const subscriptions = [
     store(2, 10, '2026-11-03T10:00:00+09:00', '2026-11-04T10:00:00+09:00'),
     store(1, 10, '2026-11-01T10:00:00+09:00', '2026-11-02T10:00:00+09:00'),
@@ -129,7 +129,7 @@ test('카테고리·지역은 시술과 지역과 시간이 모두 같아야 중
   assert.equal(findDuplicateSubscription(subscriptions, otherRegion), undefined);
 });
 
-test('업장 구독 수정은 매장 ID를 유지하고 유형은 보내지 않는다', () => {
+test('업장 알림 수정은 매장 ID를 유지하고 유형은 보내지 않는다', () => {
   const current = store(1, 10, '2026-11-01T10:00:00+09:00', '2026-11-02T18:00:00+09:00');
   const body = toUpdateBody(current, {
     shopId: 99,
@@ -217,7 +217,7 @@ test('카테고리·지역 등록은 업장 ID 없이 +09:00 시각을 보낸다
   );
 });
 
-test('카테고리 구독 수정은 매장 ID를 비우고 시술·지역을 반영한다', () => {
+test('카테고리 알림 수정은 매장 ID를 비우고 시술·지역을 반영한다', () => {
   const current = category(8, 1, '11680', '2026-11-01T10:00:00+09:00', '2026-11-02T18:00:00+09:00');
   const body = toUpdateBody(current, {
     shopId: 10,
