@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -21,6 +22,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -516,6 +519,52 @@ class ReservationServiceTest {
         given(reservationRepository.expireHolds(NOW)).willReturn(3);
 
         assertThat(reservationService.expireHolds()).isEqualTo(3);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TreatmentStatus.class, names = {"INACTIVE", "DELETED"})
+    @DisplayName("잠금 전에는 판매 중이었어도 잠금 획득 후 비활성화·삭제된 시술은 점유하지 않는다")
+    void createReservation_statusChangedWhileWaiting_doesNotSave(TreatmentStatus status) {
+        givenTreatment(TreatmentStatus.ACTIVE);
+        // 잠금 전 엔티티는 ACTIVE로 남아 있는 상황을 재현한다.
+        doAnswer(invocation -> {
+            given(treatmentRepository.existsByTreatmentIdAndStatusNot(TREATMENT_ID, TreatmentStatus.ACTIVE))
+                    .willReturn(status != TreatmentStatus.ACTIVE);
+            return null;
+        }).when(shopLock).lock(SHOP_ID);
+
+        assertErrorCode(() -> reservationService.createReservation(CUSTOMER, request(NOW.plusHours(11))),
+                ErrorCode.TREATMENT_NOT_FOUND);
+
+        verify(reservationRepository, never()).save(any());
+        verify(reservationRepository, never()).findByUserIdAndStatusForUpdate(any(), any());
+    }
+
+    @Test
+    @DisplayName("삭제된 시술의 기존 점유는 결제창을 열 수 없다")
+    void validatePayable_deletedTreatment_throwsNotFound() {
+        Reservation hold = userReservation(NOW.plusMinutes(5));
+        given(reservationRepository.findById(RESERVATION_ID)).willReturn(Optional.of(hold));
+        given(treatmentRepository.existsByTreatmentIdAndStatus(hold.getTreatmentId(), TreatmentStatus.DELETED))
+                .willReturn(true);
+
+        assertErrorCode(() -> reservationService.validatePayable(CUSTOMER.userId(), RESERVATION_ID),
+                ErrorCode.TREATMENT_NOT_FOUND);
+        assertThat(hold.getStatus()).isEqualTo(ReservationStatus.HOLD);
+    }
+
+    @Test
+    @DisplayName("결제창을 연 뒤 삭제된 시술의 점유는 확정하거나 확정 이벤트를 발행하지 않는다")
+    void confirmReservation_deletedTreatment_doesNotConfirm() {
+        Reservation hold = userReservation(NOW.plusMinutes(5));
+        given(reservationRepository.findByIdForUpdate(RESERVATION_ID)).willReturn(Optional.of(hold));
+        given(treatmentRepository.existsByTreatmentIdAndStatus(hold.getTreatmentId(), TreatmentStatus.DELETED))
+                .willReturn(true);
+
+        assertErrorCode(() -> reservationService.confirmReservation(CUSTOMER.userId(), RESERVATION_ID,
+                20_000, null), ErrorCode.TREATMENT_NOT_FOUND);
+        assertThat(hold.getStatus()).isEqualTo(ReservationStatus.HOLD);
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     private void givenTreatment(TreatmentStatus status) {

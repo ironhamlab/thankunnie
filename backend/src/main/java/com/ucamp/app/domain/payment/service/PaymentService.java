@@ -41,6 +41,7 @@ public class PaymentService {
             ErrorCode.RESERVATION_HOLD_EXPIRED,
             ErrorCode.RESERVATION_NOT_HOLD,
             ErrorCode.RESERVATION_DEPOSIT_MISMATCH,
+            ErrorCode.TREATMENT_NOT_FOUND,
             ErrorCode.VACANCY_PAYMENT_CLOSED);
 
     private final PortOneClient portOneClient;
