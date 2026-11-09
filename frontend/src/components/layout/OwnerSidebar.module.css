@@ -1,0 +1,248 @@
+.root {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  background: white;
+  border-right: 1px solid var(--color-border);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.brand {
+  display: flex;
+  flex-direction: column;
+  padding-left: 8px;
+}
+.brand strong {
+  color: var(--color-primary-text);
+  font-size: 22px;
+}
+.brand small {
+  color: var(--color-text-secondary);
+}
+.shop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+}
+.shopPlaceholder {
+  /* 사진(40px) + 위아래 여백(12px) + 테두리(1px) */
+  min-height: 66px;
+}
+.shop img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+.shop small {
+  display: block;
+}
+.root nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.root nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+}
+.root a:global(.active) {
+  background: var(--color-primary-tint);
+  color: var(--color-primary-text);
+  font-weight: 700;
+}
+/* 메뉴를 옮기면 선택 표시가 미끄러져 따라간다. 메뉴 글자 뒤에 깔리도록 묶음을 쌓임 맥락으로 둔다 */
+.root nav {
+  position: relative;
+  isolation: isolate;
+}
+.root nav a:global(.active) {
+  background: none;
+}
+.navIndicator {
+  border-radius: var(--radius-md);
+  background: var(--color-primary-tint);
+}
+/* 매장 센터에 들어오면 메뉴가 위에서부터 차례로 나타난다 */
+.root nav a {
+  animation: navEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  transition:
+    color 0.2s,
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.root nav a:nth-of-type(2) {
+  animation-delay: 0.05s;
+}
+.root nav a:nth-of-type(3) {
+  animation-delay: 0.1s;
+}
+.root nav a:nth-of-type(4) {
+  animation-delay: 0.15s;
+}
+.root nav a:nth-of-type(5) {
+  animation-delay: 0.2s;
+}
+.root nav a:nth-of-type(6) {
+  animation-delay: 0.25s;
+}
+@keyframes navEnter {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+.root nav a:active {
+  transform: scale(0.97);
+}
+.root nav a svg {
+  flex-shrink: 0;
+  transform-origin: top center;
+}
+.root > :global(.b-button) {
+  transition:
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.25s;
+}
+.root > :global(.b-button):active {
+  transform: scale(0.97);
+}
+.plus {
+  display: inline-block;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.brand strong {
+  transform-origin: left center;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.shop {
+  transition:
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.25s;
+}
+.shop img {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@media (hover: hover) {
+  .root nav a:hover {
+    color: var(--color-primary-text);
+    transform: translateX(4px);
+  }
+  .root nav a:hover svg {
+    animation: iconRing 420ms ease;
+  }
+  .root > :global(.b-button):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--color-primary) 28%, transparent);
+  }
+  .root > :global(.b-button):hover .plus {
+    transform: rotate(90deg) scale(1.15);
+  }
+  .brand:hover strong {
+    transform: scale(1.04);
+  }
+  .shop:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--color-primary) 12%, transparent);
+  }
+  .shop:hover img {
+    transform: rotate(-4deg) scale(1.08);
+  }
+}
+/* 상단 메뉴·알림 벨과 같은 흔들림 */
+@keyframes iconRing {
+  20% {
+    transform: rotate(14deg);
+  }
+  45% {
+    transform: rotate(-10deg);
+  }
+  70% {
+    transform: rotate(6deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .root nav a {
+    animation: none;
+    transition: none;
+  }
+  .root > :global(.b-button),
+  .plus,
+  .brand strong,
+  .shop,
+  .shop img {
+    transition: none;
+  }
+  .root nav a:hover svg {
+    animation: none;
+  }
+  .root nav a:hover,
+  .root nav a:active,
+  .root > :global(.b-button):hover,
+  .root > :global(.b-button):active,
+  .root > :global(.b-button):hover .plus,
+  .brand:hover strong,
+  .shop:hover,
+  .shop:hover img {
+    transform: none;
+  }
+}
+@media (max-width: 900px) {
+  .root {
+    position: static;
+    height: auto;
+    padding: 16px 24px;
+    gap: 16px;
+  }
+  .root nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  /* 빈자리 열기·닫기 버튼은 메뉴에 따로 없어 모바일에서도 남긴다 (가로 메뉴 위에 꽉 찬 너비) */
+  .root .shop {
+    display: none;
+  }
+  .brand {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+}
+@media (max-width: 540px) {
+  .root {
+    padding: 12px 16px 8px;
+    gap: 10px;
+    border-right: 0;
+  }
+  .brand strong {
+    font-size: 20px;
+  }
+  /* 메뉴가 두 줄로 나뉘지 않게 여섯 칸을 같은 너비로 둔다. 아이콘 위·글자 아래 */
+  .root nav {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .root nav a {
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    min-height: 56px;
+    padding: 6px 2px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .root > :global(.b-button) {
+    min-height: 44px;
+  }
+}

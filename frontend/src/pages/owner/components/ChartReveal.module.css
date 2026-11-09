@@ -1,0 +1,5 @@
+/* 시작 전 모습(막대 0, 칸 숨김)에 멈춰 둔다. 공용 효과보다 앞서야 해서 !important 를 쓴다 */
+.waiting *,
+.waiting *::after {
+  animation-play-state: paused !important;
+}

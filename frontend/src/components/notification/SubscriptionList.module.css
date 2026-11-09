@@ -1,0 +1,237 @@
+.root,
+.embedded {
+  max-width: 880px;
+  margin-inline: auto;
+}
+.intro {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.eyebrow {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+.intro h1 {
+  margin-top: 4px;
+}
+.lead {
+  margin-top: 8px;
+  color: var(--color-text-secondary);
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.card,
+.cardLeaving {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cardLeaving {
+  animation: cardOut 320ms ease forwards;
+  pointer-events: none;
+}
+@keyframes cardOut {
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.result,
+.error {
+  margin: 8px 0 28px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+.result {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  animation: resultIn 320ms ease;
+}
+.resultText {
+  flex: 1;
+  min-width: 0;
+}
+.resultClose {
+  flex-shrink: 0;
+  margin: -4px -6px -4px 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  opacity: 0.7;
+  padding: 4px 8px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.resultClose:hover,
+.resultClose:focus-visible {
+  opacity: 1;
+  background: color-mix(in srgb, var(--color-success-text) 8%, transparent);
+}
+@keyframes resultIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.editDialog {
+  animation: editIn 320ms ease;
+}
+.editDialogClosing {
+  animation: editOut 280ms ease forwards;
+}
+@keyframes editIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes editOut {
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.title {
+  flex: 1;
+  min-width: 0;
+  font-size: 18px;
+}
+.titleLink {
+  color: inherit;
+  text-decoration: none;
+}
+.titleLink:hover,
+.titleLink:focus-visible {
+  text-decoration: underline;
+}
+.storeBadge {
+  color: var(--color-white);
+  background: var(--color-primary);
+}
+.categoryBadge {
+  color: var(--color-info);
+  background: var(--color-surface-blue);
+}
+.treatment {
+  color: var(--color-text-secondary);
+}
+.period {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary);
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.editButton {
+  color: var(--color-primary-text);
+  border-color: var(--color-primary-soft);
+  background: var(--color-white);
+}
+.note {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 20px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+}
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+.timeRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.field label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+.hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-danger);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cardLeaving,
+  .result,
+  .editDialog,
+  .editDialogClosing {
+    animation: none;
+  }
+}
+@media (max-width: 767px) {
+  .intro {
+    margin-bottom: 16px;
+    text-align: left;
+  }
+  .head {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .title {
+    flex: 1 1 100%;
+    order: 3;
+    overflow-wrap: anywhere;
+  }
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .actions > * {
+    min-height: 44px;
+  }
+  .note {
+    justify-content: flex-start;
+    text-align: left;
+    word-break: keep-all;
+  }
+  .timeRow {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,220 @@
+package com.ucamp.app.domain.notification.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.auditing.DateTimeProvider;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import com.ucamp.app.common.auth.AuthUser;
+import com.ucamp.app.common.auth.TestUser;
+import com.ucamp.app.common.exception.BusinessException;
+import com.ucamp.app.common.exception.ErrorCode;
+import com.ucamp.app.common.util.TimeUtils;
+import com.ucamp.app.domain.notification.NotificationFixture;
+import com.ucamp.app.domain.notification.dto.response.NotificationInboxResponse;
+import com.ucamp.app.domain.notification.entity.NotificationInboxCategory;
+
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import({NotificationInboxService.class, NotificationInboxConnections.class,
+        NotificationInboxQueryTest.FixedClock.class})
+@ActiveProfiles("test")
+class NotificationInboxQueryTest {
+
+    private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 31, 15, 0);
+    private static final AuthUser CUSTOMER = TestUser.CUSTOMER_1.toAuthUser();
+    private static final AuthUser OTHER_CUSTOMER = TestUser.CUSTOMER_2.toAuthUser();
+    private static final AuthUser OWNER = TestUser.OWNER_1.toAuthUser();
+    private static final AuthUser ADMIN = TestUser.ADMIN.toAuthUser();
+
+    @Autowired
+    private NotificationInboxService notificationInboxService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    @BeforeEach
+    void setUp() {
+        // save() 는 별도 트랜잭션이라, 회원은 그 전에 커밋되어 있어야 한다.
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        template.executeWithoutResult(status -> {
+            jdbcTemplate.update("DELETE FROM NOTIFICATION_INBOX");
+            jdbcTemplate.update("DELETE FROM APP_USER WHERE USER_ID IN (?, ?)",
+                    CUSTOMER.userId(), OTHER_CUSTOMER.userId());
+            NotificationFixture.user(jdbcTemplate, CUSTOMER.userId());
+            NotificationFixture.user(jdbcTemplate, OTHER_CUSTOMER.userId());
+        });
+    }
+
+    @Test
+    @DisplayName("본인 알림만 최신순으로 보여주고 다른 고객 알림은 빠진다")
+    void getMyInbox_returnsOnlyOwnNewestFirst() {
+        notificationInboxService.save(CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,
+                "예약이 확정되었어요", "확정 문자", "/my-reservations");
+        notificationInboxService.save(CUSTOMER.userId(), NotificationInboxCategory.INTEREST,
+                "임박 알림", "임박 문자", "/shops/1");
+        notificationInboxService.save(OTHER_CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,
+                "다른 고객", "다른 고객 문자", "/my-reservations");
+
+        assertThat(notificationInboxService.getMyInbox(CUSTOMER, null))
+                .extracting(NotificationInboxResponse::title)
+                .containsExactly("임박 알림", "예약이 확정되었어요");
+        assertThat(notificationInboxService.getMyInbox(CUSTOMER, NotificationInboxCategory.RESERVATION))
+                .extracting(NotificationInboxResponse::title)
+                .containsExactly("예약이 확정되었어요");
+    }
+
+    @Test
+    @DisplayName("받은 알림은 최신 50건만 반환한다")
+    void getMyInbox_returnsAtMost50Newest() {
+        for (int index = 1; index <= 51; index++) {
+            notificationInboxService.save(CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,
+                    "알림" + index, "본문", "/my-reservations");
+        }
+
+        assertThat(notificationInboxService.getMyInbox(CUSTOMER, null))
+                .extracting(NotificationInboxResponse::title)
+                .hasSize(50)
+                .first()
+                .isEqualTo("알림51");
+        assertThat(notificationInboxService.getMyInbox(CUSTOMER, NotificationInboxCategory.RESERVATION))
+                .extracting(NotificationInboxResponse::title)
+                .hasSize(50)
+                .doesNotContain("알림1");
+    }
+
+    @Test
+    @DisplayName("안 읽은 수만 세고 모두 읽으면 0이 되며 이미 읽은 시각은 유지한다")
+    void countUnread_andMarkAllRead_keepsFirstReadAt() {
+        notificationInboxService.save(CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,
+                "예약이 확정되었어요", "확정 문자", "/my-reservations");
+        notificationInboxService.save(OTHER_CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,
+                "다른 고객", "다른 고객 문자", "/my-reservations");
+
+        assertThat(notificationInboxService.countUnread(CUSTOMER)).isEqualTo(1);
+
+        assertThat(notificationInboxService.markAllRead(CUSTOMER)).isZero();
+        OffsetDateTime firstReadAt = notificationInboxService.getMyInbox(CUSTOMER, null).get(0).readAt();
+        assertThat(firstReadAt).isEqualTo(NOW.atZone(TimeUtils.KST).toOffsetDateTime());
+
+        notificationInboxService.markAllRead(CUSTOMER);
+        assertThat(notificationInboxService.getMyInbox(CUSTOMER, null).get(0).readAt()).isEqualTo(firstReadAt);
+        assertThat(notificationInboxService.countUnread(OTHER_CUSTOMER)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("한 건만 읽으면 그 알림만 읽음이 되고 남의 알림은 읽지 못한다")
+    void markRead_marksOwnInboxOnly() {
+        notificationInboxService.save(CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,
+                "첫 알림", "본문1", "/my-reservations");
+        notificationInboxService.save(CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,
+                "둘째 알림", "본문2", "/my-reservations");
+        notificationInboxService.save(OTHER_CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,
+                "다른 고객", "본문3", "/my-reservations");
+
+        Long secondId = notificationInboxService.getMyInbox(CUSTOMER, null).get(0).inboxId();
+        Long otherId = notificationInboxService.getMyInbox(OTHER_CUSTOMER, null).get(0).inboxId();
+
+        assertThat(notificationInboxService.markRead(CUSTOMER, secondId)).isEqualTo(1);
+        assertThat(notificationInboxService.getMyInbox(CUSTOMER, null))
+                .filteredOn(item -> item.inboxId().equals(secondId))
+                .extracting(NotificationInboxResponse::readAt)
+                .isNotEmpty()
+                .allSatisfy(readAt -> assertThat(readAt).isNotNull());
+        assertThat(notificationInboxService.getMyInbox(CUSTOMER, null))
+                .filteredOn(item -> !item.inboxId().equals(secondId))
+                .extracting(NotificationInboxResponse::readAt)
+                .containsOnlyNulls();
+
+        assertThatThrownBy(() -> notificationInboxService.markRead(CUSTOMER, otherId))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INBOX_NOT_FOUND);
+        assertThat(notificationInboxService.countUnread(OTHER_CUSTOMER)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("매장은 본인 매장 예약 알림만 보고 같은 숫자의 고객 알림은 보지 않는다")
+    void getMyInbox_owner_returnsOwnShopOnly() {
+        commitShops();
+        notificationInboxService.saveForShop(OWNER.shopId(), NotificationInboxCategory.RESERVATION,
+                "우리 매장", "김고객 님 · 젤네일 · 11월 2일 10:00 예약이 확정되었습니다.", "/owner/bookings");
+        notificationInboxService.saveForShop(2L, NotificationInboxCategory.RESERVATION,
+                "다른 매장", "다른 매장 예약", "/owner/bookings");
+        notificationInboxService.save(CUSTOMER.userId(), NotificationInboxCategory.RESERVATION,
+                "고객 알림", "고객 문자", "/my-reservations");
+
+        assertThat(notificationInboxService.getMyInbox(OWNER, null))
+                .extracting(NotificationInboxResponse::title)
+                .containsExactly("우리 매장");
+        assertThat(notificationInboxService.getMyInbox(OWNER, NotificationInboxCategory.RESERVATION))
+                .extracting(NotificationInboxResponse::title)
+                .containsExactly("우리 매장");
+        assertThat(notificationInboxService.getMyInbox(OWNER, NotificationInboxCategory.INTEREST)).isEmpty();
+        assertThat(notificationInboxService.getMyInbox(CUSTOMER, null))
+                .extracting(NotificationInboxResponse::title)
+                .containsExactly("고객 알림");
+
+        assertThat(notificationInboxService.countUnread(OWNER)).isEqualTo(1);
+        assertThat(notificationInboxService.markAllRead(OWNER)).isZero();
+        assertThat(notificationInboxService.countUnread(CUSTOMER)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("관리자는 받은 알림을 조회할 수 없다")
+    void getMyInbox_admin_isForbidden() {
+        assertThatThrownBy(() -> notificationInboxService.getMyInbox(ADMIN, null))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.FORBIDDEN);
+    }
+
+    private void commitShops() {
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        template.executeWithoutResult(status -> {
+            NotificationFixture.category(jdbcTemplate, 10L, "네일");
+            NotificationFixture.shop(jdbcTemplate, OWNER.shopId(), 10L, "11680", "ACTIVE");
+            NotificationFixture.shop(jdbcTemplate, 2L, 10L, "11680", "ACTIVE");
+        });
+    }
+
+    /** 모두 읽음 시각을 NOW 로 고정한다. */
+    @TestConfiguration
+    @EnableJpaAuditing(dateTimeProviderRef = "auditingDateTimeProvider")
+    static class FixedClock {
+
+        @Bean
+        Clock clock() {
+            return Clock.fixed(NOW.atZone(TimeUtils.KST).toInstant(), TimeUtils.KST);
+        }
+
+        @Bean
+        DateTimeProvider auditingDateTimeProvider(Clock clock) {
+            return () -> java.util.Optional.of(LocalDateTime.now(clock));
+        }
+    }
+}

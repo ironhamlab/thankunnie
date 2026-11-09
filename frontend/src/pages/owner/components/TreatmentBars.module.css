@@ -1,0 +1,125 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.list li {
+  display: grid;
+  grid-template-columns: minmax(80px, 160px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.track {
+  height: 10px;
+  background: var(--color-primary-soft);
+  border-radius: 0 4px 4px 0;
+}
+.bar {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  background: var(--color-primary);
+  border-radius: 0 4px 4px 0;
+}
+.value {
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.value {
+  animation: valueFade 0.6s ease 1.2s backwards;
+}
+@keyframes valueFade {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+.list li {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@media (hover: hover) {
+  .list li:hover {
+    transform: translateX(3px);
+  }
+  .list li:hover .bar {
+    filter: brightness(1.08)
+      drop-shadow(0 2px 6px color-mix(in srgb, var(--color-primary) 45%, transparent));
+  }
+}
+/* 막대가 많은 시술부터 차례로 왼쪽에서 자라고, 자란 뒤 빛이 한 번 지나간다 */
+.bar {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, var(--color-primary-light), var(--color-primary));
+  transform-origin: left center;
+  transition: filter 0.2s;
+  animation: barGrow 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.2s backwards;
+}
+.bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    color-mix(in srgb, white 70%, transparent) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: barShine 1s ease 1.8s;
+}
+@keyframes barShine {
+  to {
+    transform: translateX(100%);
+  }
+}
+.list li:nth-child(2) .bar {
+  animation-delay: 0.26s;
+}
+.list li:nth-child(3) .bar {
+  animation-delay: 0.32s;
+}
+.list li:nth-child(4) .bar {
+  animation-delay: 0.38s;
+}
+.list li:nth-child(n + 5) .bar {
+  animation-delay: 0.44s;
+}
+@keyframes barGrow {
+  from {
+    transform: scaleX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar,
+  .list li:nth-child(n) .bar,
+  .bar::after,
+  .value {
+    animation: none;
+  }
+  .list li,
+  .bar {
+    transition: none;
+  }
+  .list li:hover {
+    transform: none;
+  }
+}
+@media (max-width: 640px) {
+  .list li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

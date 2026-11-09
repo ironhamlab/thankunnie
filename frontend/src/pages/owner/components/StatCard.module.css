@@ -1,0 +1,128 @@
+.values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 6px;
+}
+.values > * + * {
+  padding-left: 20px;
+  border-left: 1px solid var(--color-border);
+}
+.valueLabel {
+  display: block;
+  color: var(--color-text-secondary);
+}
+.values h2 {
+  margin-top: 2px;
+}
+.note {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+.good {
+  color: var(--color-success-text);
+  font-weight: 700;
+}
+.bad {
+  color: var(--color-danger-text);
+  font-weight: 700;
+}
+.flat {
+  font-weight: 700;
+}
+/* 같은 줄 카드끼리 바로가기 버튼이 바닥에 나란히 오게 버튼을 아래로 민다 */
+.card {
+  display: flex;
+  flex-direction: column;
+}
+.action {
+  margin-top: auto;
+  padding-top: 12px;
+  font-size: 13px;
+}
+/* 카드 아래 이동 링크(고객 관리·예약 관리 등)는 눈에 띄게 알약 모양 버튼으로 둔다 */
+.action a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border: 1px solid var(--color-primary-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-faint);
+  color: var(--color-primary-text);
+  font-weight: 700;
+}
+.action a:hover {
+  background: var(--color-primary-tint);
+}
+/* 카드가 앞에서부터 차례로 튀어 오르고, 마우스를 올리면 살짝 떠오른다 */
+.card {
+  animation: cardPop 0.28s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
+  transition:
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.25s;
+}
+.card:nth-child(2) {
+  animation-delay: 0.02s;
+}
+.card:nth-child(3) {
+  animation-delay: 0.04s;
+}
+.card:nth-child(4) {
+  animation-delay: 0.06s;
+}
+.card:nth-child(n + 5) {
+  animation-delay: 0.08s;
+}
+@keyframes cardPop {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+}
+.action a {
+  transition:
+    background-color 0.2s,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.action a:active {
+  transform: scale(0.95);
+}
+@media (hover: hover) {
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px color-mix(in srgb, var(--color-primary) 14%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card:nth-child(n) {
+    animation: none;
+    transition: none;
+  }
+  .action a {
+    transition: none;
+  }
+  .card:hover,
+  .action a:active {
+    transform: none;
+  }
+}
+/* 폰에서는 카드를 두 개씩 놓으므로 숫자와 여백을 줄인다 */
+@media (max-width: 640px) {
+  .card.card {
+    padding: 14px;
+  }
+  .card h2 {
+    font-size: 20px;
+    margin: 4px 0;
+  }
+  .values > * + * {
+    padding-left: 12px;
+  }
+  .note {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}

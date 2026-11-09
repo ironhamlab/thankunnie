@@ -20,6 +20,7 @@ frontend/
 │   ├── assets/                 # 이미지, 폰트, 전역 스타일
 │   ├── components/             # 페이지에 종속되지 않는 재사용 UI
 │   │   ├── common/             # Button, Input, Modal, Spinner
+│   │   ├── icons/              # 색이 바뀌는 SVG 아이콘 컴포넌트: SearchIcon, CalendarIcon 등
 │   │   └── layout/             # Header, Footer, Sidebar, MainLayout
 │   ├── pages/                  # 라우트에 연결되는 페이지 컴포넌트
 │   │   ├── auth/               # LoginPage.jsx, SignupPage.jsx
@@ -67,7 +68,7 @@ frontend/
 | boolean | `is`, `has`, `can` 접두사 | `isOpen`, `hasError`, `canSubmit` |
 | 이벤트 핸들러 | `handle{대상}{이벤트}` | `handleSubmit`, `handleEmailChange` |
 | 이벤트 props | `on{이벤트}` | `onClick`, `onSubmit`, `onClose` |
-| CSS 클래스 | kebab-case, CSS Modules는 camelCase | `login-form`, `productCard` |
+| CSS 클래스 | CSS Modules는 camelCase. 이름 짓는 법은 9.1절 참고 | `styles.dealCard`, `styles.root` |
 | 폴더 | 소문자 kebab-case | `pages/product-detail/` |
 
 - 컴포넌트별 폴더를 만드는 경우에는 예외적으로 PascalCase를 허용한다.
@@ -301,9 +302,43 @@ generatePath(ROUTES.PRODUCT_DETAIL, { id: productId });
 ## 9. 스타일링
 
 - reset, 공통 CSS 변수, 폰트 등 전역 스타일은 `assets/styles/global.css`에 작성한다.
-- 컴포넌트 스타일은 같은 폴더에 `{컴포넌트명}.module.css` 또는 `{컴포넌트명}.css`로 배치한다.
-- 공통으로 사용하는 색상·간격·폰트 크기는 CSS 변수로 정의한다.
-  - 예: `--color-primary`, `--spacing-md`
+- 컴포넌트 스타일은 같은 폴더에 `{컴포넌트명}.module.css`로 배치하고 `import styles from './{컴포넌트명}.module.css'`로 사용한다.
+  - 공통 클래스를 함께 써야 하는 선택자는 `:global(.b-xxx)`로 감싼다.
+- 새 전역 클래스는 만들지 않는다. `assets/styles/design.css`의 공통 클래스(`b-flex`, `b-row` 등)는 기존 화면 호환용이며, 공통 컴포넌트로 옮기면서 줄여 나간다.
+- 아래 요소는 직접 꾸미지 않고 `components/common`의 공통 컴포넌트를 사용한다.
+
+| 요소 | 컴포넌트 | 예 |
+|---|---|---|
+| 버튼, 버튼 모양 링크 | `Button` | `<Button variant="primary">저장</Button>`, `<Button as={Link} to={ROUTES.HOME} size="small">홈</Button>` |
+| 상태·안내 라벨 | `Badge` | `<Badge tone="neutral">예약 확정</Badge>`, `<Badge tone="success">완료</Badge>` |
+| 흰 바탕 상자 | `Panel` | `<Panel as="section" padded>…</Panel>` |
+| 안내 문구 상자 | `Notice` | `<Notice>시연용 데이터입니다.</Notice>` |
+| 처리 결과 메시지 | `Alert` | `<Alert tone="error" role="alert">저장하지 못했습니다.</Alert>` |
+| 빈 목록·불러오는 중·없음 | `EmptyState` | `<EmptyState role="status">불러오는 중입니다.</EmptyState>` |
+
+- 공통 컴포넌트의 종류 값(`variant`, `tone`)은 색 이름이 아니라 의미로 짓는다. 예: `success`, `error`, `danger` (`green`, `pink` 사용 금지)
+- 아이콘은 색이 바뀌는지에 따라 둘 곳을 나눈다.
+  - 선택·강조 상태에 따라 색이 바뀌는 아이콘은 `components/icons/{이름}Icon.jsx` 컴포넌트로 만든다. SVG 의 선·면 색은 `currentColor`로 두어 글자색을 따르게 한다.
+  - 아이콘 컴포넌트는 같은 규격으로 만든다: `viewBox="0 0 24 24"`(모양은 가운데 20×20 안), 크기는 `size` 하나로 받고 기본값 24, 쓰는 곳에서는 16·20·24 중 하나를 쓴다. 예: `<SearchIcon size={16} />`
+  - 색이 고정된 그림(피그마에서 받은 이미지·일러스트 등)은 `assets/` 아래에 `.svg` 파일로 두고 `Asset` 컴포넌트로 불러온다. 파일로 불러온 SVG 는 CSS 로 색을 바꿀 수 없다.
+  - 아이콘을 한 화면 파일 안에 함수로 만들지 않는다. 다른 화면에서 다시 쓸 때 복사본이 생긴다.
+
+### 9.1 CSS 모듈 클래스 이름 짓기
+
+| 규칙 | 좋은 예 | 나쁜 예 |
+|---|---|---|
+| camelCase로 쓴다 | `dealCard` | `deal-card`, `deal_card` |
+| 컴포넌트·화면 이름을 접두사로 붙이지 않는다 (파일마다 이름이 따로 구분됨) | `HomePage.module.css`의 `dealCard` | `homeDealCard` |
+| 컴포넌트 맨 바깥 요소는 `root` | `<section className={styles.root}>` | `serviceCardWrapper` |
+| 생김새가 아니라 역할로 짓는다 | `priceTag`, `summary`, `actions` | `pinkBox`, `leftArea`, `bigText` |
+| 안쪽 요소는 부모 이름 + 부분 이름 | `card`, `cardTitle`, `cardPrice` | `title2`, `cardInnerTextBox` |
+| 상태는 `is` + 상태 | `isSelected`, `isActive`, `isDisabled` | `selected2`, `on` |
+| 의미가 맞는 aria 속성이 있으면 상태 클래스 대신 그 속성으로 스타일을 준다 | `.tab[aria-selected='true']`, `.link[aria-current='page']` | |
+| 줄임말은 널리 쓰는 것만 | `nav`, `info` | `bkCrd`, `rsvBtn` |
+- 색·글꼴·모서리 값은 직접 적지 않고 `global.css`의 CSS 변수를 사용한다.
+  - 예: `var(--color-primary)`, `var(--font-body)`, `var(--radius-md)`, `var(--spacing-md)`
+  - 새 공통 값이 필요하면 `global.css`에 변수를 추가하고 PR에 적는다.
+- 전역 CSS(`global.css`, `design.css` 등)는 `main.jsx`에서 컴포넌트보다 먼저 불러온다. 순서가 바뀌면 같은 우선순위의 전역 규칙이 모듈 규칙을 덮어쓴다.
 - 반응형 브레이크포인트는 팀에서 정한 값을 CSS 미디어 쿼리에 일관되게 사용한다.
 - JavaScript에서도 같은 기준이 필요하면 `constants/breakpoints.js`의 값을 CSS와 맞춘다.
 - CSS 미디어 쿼리 조건에 일반 CSS 변수인 `var(...)`를 사용할 수 있다고 가정하지 않는다.

@@ -1,0 +1,62 @@
+/* 스크롤해도 헤더 아래에 남는 남은 시간 띠. top 은 헤더 실제 높이로 화면에서 지정하고, 헤더(z-index 40)보다는 아래에 둔다 */
+.holdBar {
+  position: sticky;
+  z-index: 30;
+}
+/* 남은 시간 1분 이하 */
+.holdBarWarning {
+  background: var(--color-warning-bg);
+  border-bottom-color: var(--color-warning);
+}
+.holdBarWarning strong {
+  color: var(--color-warning);
+}
+/* 점유 만료 */
+.holdBarExpired {
+  background: var(--color-surface);
+  border-bottom-color: var(--color-border);
+}
+.holdBarExpired strong {
+  color: var(--color-text);
+}
+.holdBarAction {
+  color: var(--color-primary-text);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.dialogActions {
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-top: 12px;
+  font-size: 12px;
+}
+.check input {
+  accent-color: var(--color-primary);
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.check small {
+  display: block;
+  margin-top: 6px;
+  color: var(--color-text-secondary);
+}
+/* 좁은 화면에서는 매장 사진을 옆에 작게 두지 않고 위에 넓게 보여준다 */
+@media (max-width: 540px) {
+  .service {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .service :global(.b-thumb) {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+}

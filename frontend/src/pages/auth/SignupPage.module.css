@@ -1,0 +1,18 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.form > button {
+  min-height: 46px;
+  margin: 0;
+}
+.links {
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.links a {
+  color: var(--color-primary-text);
+  font-weight: 700;
+}

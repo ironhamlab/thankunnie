@@ -1,0 +1,214 @@
+[
+  {
+    "file": "01-explore.gif",
+    "source": "시연영상1.mov",
+    "segments": [
+      {
+        "start": 18,
+        "length": 14,
+        "speed": 1.3,
+        "caption": "지도에서 위치·가격을 비교하며 빈자리 찾기"
+      }
+    ],
+    "frames": 86,
+    "seconds": 10.76,
+    "bytes": 3140291,
+    "width": 840,
+    "height": 502
+  },
+  {
+    "file": "02-owner-dashboard.gif",
+    "source": "시연영상2.mov",
+    "segments": [
+      {
+        "start": 17,
+        "length": 13,
+        "speed": 1.4,
+        "caption": "매장 센터에서 운영 현황과 예약 흐름 확인"
+      }
+    ],
+    "frames": 74,
+    "seconds": 9.26,
+    "bytes": 2893546,
+    "width": 840,
+    "height": 502
+  },
+  {
+    "file": "03-treatment.gif",
+    "source": "시연영상3.mov",
+    "segments": [
+      {
+        "start": 0,
+        "length": 19,
+        "speed": 1.6,
+        "caption": "일반·초보 시술과 가격 정보를 등록하기"
+      }
+    ],
+    "frames": 96,
+    "seconds": 12.01,
+    "bytes": 457037,
+    "width": 840,
+    "height": 502
+  },
+  {
+    "file": "04-payment.gif",
+    "source": "시연영상4~5.mov",
+    "segments": [
+      {
+        "start": 38,
+        "length": 13,
+        "speed": 1.2,
+        "caption": "예약금 결제 완료 → 예약 확정·토스트 알림"
+      }
+    ],
+    "frames": 90,
+    "seconds": 11.26,
+    "bytes": 796828,
+    "width": 840,
+    "height": 502
+  },
+  {
+    "file": "05-customer-cancel.gif",
+    "source": "시연영상4~5.mov",
+    "segments": [
+      {
+        "start": 82,
+        "length": 20,
+        "speed": 1.6,
+        "caption": "환불 견적 확인 → 고객 취소 → 결과 안내"
+      }
+    ],
+    "frames": 100,
+    "seconds": 12.51,
+    "bytes": 882620,
+    "width": 840,
+    "height": 502
+  },
+  {
+    "file": "06-concurrent-booking.gif",
+    "source": "진짜최종의최종의최종의마지막영.mov",
+    "segments": [
+      {
+        "start": 27,
+        "length": 17,
+        "speed": 1.5,
+        "caption": "사용자 2 이탈 → 사용자 3 입장 · 사용자 1 대기 순번 변경"
+      },
+      {
+        "start": 57,
+        "length": 5,
+        "speed": 1,
+        "caption": "사용자 3 결제 완료 → 다른 사용자 예약 마감 안내"
+      }
+    ],
+    "frames": 131,
+    "seconds": 16.38,
+    "bytes": 2946669,
+    "width": 1120,
+    "height": 712
+  },
+  {
+    "file": "07-shop-approval.gif",
+    "source": "진짜최종의최종의최종의마지막영.mov",
+    "segments": [
+      {
+        "start": 124,
+        "length": 9,
+        "speed": 1.4,
+        "caption": "관리자 승인 처리"
+      },
+      {
+        "start": 138,
+        "length": 9,
+        "speed": 1.3,
+        "caption": "매장에 승인 문자 도착 → 로그인 가능"
+      },
+      {
+        "start": 153,
+        "length": 6,
+        "speed": 1.5,
+        "caption": "거절 사유 선택 후 가입 거절"
+      },
+      {
+        "start": 169,
+        "length": 6,
+        "speed": 1.3,
+        "caption": "거절 문자 도착 → 매장 로그인 제한"
+      }
+    ],
+    "frames": 175,
+    "seconds": 21.88,
+    "bytes": 2040556,
+    "width": 1120,
+    "height": 712
+  },
+  {
+    "file": "08-cancel-notification.gif",
+    "source": "진짜최종의최종의최종의마지막영.mov",
+    "segments": [
+      {
+        "start": 212,
+        "length": 9,
+        "speed": 1.1,
+        "caption": "매장 사유로 취소 · 해당 시간은 다시 공개"
+      },
+      {
+        "start": 221,
+        "length": 6,
+        "speed": 1,
+        "caption": "예약 고객에게 취소 알림 · 관심 고객에게 빈자리 문자·알림"
+      }
+    ],
+    "frames": 113,
+    "seconds": 14.13,
+    "bytes": 2865472,
+    "width": 1120,
+    "height": 712
+  },
+  {
+    "file": "09-holiday.gif",
+    "source": "진짜최종의최종의최종의마지막영.mov",
+    "segments": [
+      {
+        "start": 245,
+        "length": 10,
+        "speed": 1.3,
+        "caption": "휴무 설정 → 기존 예약은 유지"
+      },
+      {
+        "start": 265,
+        "length": 10,
+        "speed": 1.5,
+        "caption": "기존 예약 별도 취소 → 양측 취소 알림"
+      }
+    ],
+    "frames": 115,
+    "seconds": 14.38,
+    "bytes": 1394317,
+    "width": 1120,
+    "height": 712
+  },
+  {
+    "file": "10-open-close.gif",
+    "source": "진짜최종의최종의최종의마지막영.mov",
+    "segments": [
+      {
+        "start": 284,
+        "length": 9,
+        "speed": 1.4,
+        "caption": "빈자리 닫기 → 고객 화면에서도 선택 불가"
+      },
+      {
+        "start": 294,
+        "length": 12,
+        "speed": 1.4,
+        "caption": "닫기 지우기 → 고객 화면에 예약 시간 재공개"
+      }
+    ],
+    "frames": 120,
+    "seconds": 15.01,
+    "bytes": 2094743,
+    "width": 1120,
+    "height": 712
+  }
+]

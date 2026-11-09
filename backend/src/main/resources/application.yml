@@ -1,0 +1,76 @@
+# 공통 설정: 환경별 값은 application-{profile}.yml 에 둔다
+spring:
+  application:
+    name: thankunnie
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  jackson:
+    time-zone: Asia/Seoul
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        # H2 에서만 NUMBER 컬럼 검증을 맞춘 방언을 쓴다 (Oracle 은 기본 방언)
+        dialect_resolvers: com.ucamp.app.config.H2OracleModeDialectResolver
+  sql:
+    init:
+      # 내장 DB(H2)일 때만 schema.sql(빌드 시 docs/erd/01_schema_ddl.sql 에서 복사)로 테이블을 만든다.
+      # Oracle(prod)에는 실행하지 않는다
+      mode: embedded
+      schema-locations: classpath:schema.sql
+
+server:
+  tomcat:
+    # 용량 초과 응답을 보내기 전에 남은 요청 본문 때문에 연결이 끊기지 않도록 요청 한도와 맞춘다.
+    max-swallow-size: 6MB
+
+app:
+  shop-image:
+    storage: ${SHOP_IMAGE_STORAGE:s3}
+    s3:
+      bucket: ${SHOP_IMAGE_S3_BUCKET:}
+      region: ${AWS_REGION:ap-northeast-2}
+      prefix: ${SHOP_IMAGE_S3_PREFIX:shop-images/}
+  cors:
+    # 쉼표로 여러 Origin 지정 가능
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  jwt:
+    # HS256 서명 키(32바이트 이상). 기본값은 로컬·테스트 전용 더미이며, prod 는 JWT_SECRET 이 없으면 기동하지 않는다
+    secret: ${JWT_SECRET:CHANGE_ME-local-dev-only-jwt-secret-0000}
+    # ISO-8601 기간. 리프레시 토큰 없이 하루 유지한다
+    access-token-validity: ${JWT_ACCESS_TOKEN_VALIDITY:PT24H}
+
+iamport:
+  base-url: https://api.iamport.kr
+  # 실제 키는 application-local.yml 또는 환경변수로 주입한다
+  imp-key: ${IAMPORT_IMP_KEY:}
+  imp-secret: ${IAMPORT_IMP_SECRET:}
+  # 테스트 채널 결제까지 조회할지 여부. 운영에서는 반드시 false
+  include-sandbox: ${IAMPORT_INCLUDE_SANDBOX:false}
+
+# 문자 발송(Solapi). 실제 키는 application-local.yml 또는 환경변수로 주입한다
+solapi:
+  api-key: ${SOLAPI_API_KEY:}
+  api-secret: ${SOLAPI_API_SECRET:}
+  # 콘솔에 등록한 발신번호. 숫자만 (예: 01012345678)
+  from-number: ${SOLAPI_FROM_NUMBER:}
+
+nts:
+  service-key: ${NTS_SERVICE_KEY:}
+
+---
+# local 프로필 H2 에만 초기 데이터(docs/erd/02_init_data_dml.sql)와 시연 데이터(03_demo_data_dml.sql)를 순서대로 넣는다.
+# test 는 각 테스트가 데이터를 넣는다
+spring:
+  config:
+    activate:
+      on-profile: local
+  sql:
+    init:
+      data-locations: classpath:init-data.sql, classpath:demo-data.sql

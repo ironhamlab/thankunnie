@@ -1,0 +1,222 @@
+.wrapper {
+  position: absolute;
+  inset: 0;
+  /* 지도 안의 핀·묶음이 지도 밖 도구 막대·미리보기 위로 올라오지 않게 지도 전체를 한 층으로 묶는다 */
+  z-index: 0;
+}
+.map {
+  width: 100%;
+  height: 100%;
+}
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 카카오맵 위에 띄우는 매장 핀. 위치는 지도 오버레이가 정한다.
+   종류(today·lastMinute·later·model·none)마다 테두리·배경 색만 바꾸고, 고르면 그 색으로 채워 조금 키운다 */
+.pin {
+  --pin-color: var(--color-primary);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 1.5px solid var(--pin-color);
+  border-radius: var(--radius-xl);
+  padding: 5px 10px;
+  background: white;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--color-shadow) 13%, transparent);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.pin:global(.is-selected) {
+  background: var(--pin-color);
+  color: white;
+  transform: scale(1.12);
+  z-index: 1;
+}
+.pinIcon {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+}
+/* 오늘 빈자리: 주황 테두리 */
+.today {
+  color: var(--color-primary-text);
+}
+/* 초임박 특가: 주황으로 채우고 바깥 고리가 퍼져 가장 먼저 눈에 띄게 한다 */
+.lastMinute {
+  background: var(--color-primary);
+  color: white;
+}
+.lastMinute::after {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  animation: pinPulse 1.8s ease-out infinite;
+  pointer-events: none;
+}
+/* 고른 초임박 핀은 흰 바탕·검은 글자로 뒤집어, 주황으로 채운 다른 초임박 핀 사이에서도 어느 매장인지 바로 보이게 한다 */
+.lastMinute:global(.is-selected) {
+  border-width: 2px;
+  background: white;
+  color: var(--color-text);
+}
+.lastMinute:global(.is-selected) .pinIcon {
+  color: var(--color-primary);
+}
+@keyframes pinPulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 55%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+}
+/* 다른 날 빈자리: 회색으로 한 발 물러나 보이게 한다 */
+.later {
+  --pin-color: var(--color-text-muted);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+.later:global(.is-selected) {
+  border-color: var(--pin-color);
+}
+/* 초보 시술 빈자리만 있는 매장: 초록 테두리와 새싹 */
+.model {
+  --pin-color: var(--color-success);
+  color: var(--color-success-text);
+}
+/* 일반·초보 시술이 섞인 매장은 오른쪽 위에 작은 새싹 배지를 붙인다 (초보 시술 핀과 같은 새싹) */
+.modelBadge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  /* 지도 위에서도 눈에 띄게 초록 바탕에 흰 새싹, 흰 테두리로 핀과 떼어 보이게 한다 */
+  border: 1.5px solid white;
+  border-radius: 50%;
+  background: var(--color-success);
+  color: white;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-shadow) 25%, transparent);
+}
+.modelBadge .pinIcon {
+  width: 11px;
+  height: 11px;
+}
+/* 빈자리가 없는 매장은 가격 없이 이름만 보여준다. 흐리면 지도에서 있는지도 모르므로 흰 바탕에 진한 회색 점선 테두리로
+   또렷하게 두고, 다른 날 핀(실선 테두리)과는 점선으로 구분한다 */
+.none {
+  --pin-color: var(--color-text-secondary);
+  border: 1.5px dashed var(--color-text-secondary);
+  background: white;
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 600;
+}
+.none:global(.is-selected) {
+  border-style: solid;
+}
+/* 묶음 안 글자. 묶음 겉모양은 ExploreMap.jsx 의 CLUSTER_STYLE 이다 */
+.clusterCount {
+  font-size: 12px;
+  font-weight: 800;
+}
+.clusterPrice {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.92;
+}
+/* 묶음 안 초임박 매장 수. 모서리에 붙은 흰 배지라 주황 묶음 위에서도 잘 보인다 */
+.clusterBadge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 2px 5px;
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-pill);
+  background: white;
+  color: var(--color-primary-text);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+/* 목록의 다른 페이지 매장. 고른 핀은 흐리게 두지 않는다 */
+.dimmed:not(:global(.is-selected)) {
+  opacity: 0.7;
+}
+.dimmed.lastMinute::after {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pin {
+    transition: none;
+  }
+  .lastMinute::after {
+    animation: none;
+  }
+}
+/* 내 위치 버튼. 홈 지도처럼 낮은 지도에서도 위 도구 막대·아래 미리보기와 겹치지 않게 왼쪽 가운데에 둔다 */
+.locate {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  /* 지도 안에서는 핀보다 위에 둔다 */
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: white;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--color-shadow) 13%, transparent);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary-text);
+  cursor: pointer;
+}
+.locate:disabled {
+  color: var(--color-text-secondary);
+  cursor: default;
+}
+.locateMessage {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  z-index: 11;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, black 75%, transparent);
+  color: white;
+  font-size: 12px;
+  text-align: center;
+}
+/* 내 위치 점 */
+.myLocation {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: var(--color-map-me);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-map-me) 20%, transparent);
+}

@@ -1,0 +1,143 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.root h2 {
+  margin: 0;
+}
+.day {
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: white;
+}
+.dayHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.date {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.date:hover {
+  color: var(--color-primary-text);
+  text-decoration: underline;
+}
+.bar {
+  position: relative;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--color-surface);
+}
+.segment {
+  position: absolute;
+  top: 0;
+  height: 12px;
+  border-radius: 3px;
+}
+.business {
+  background: var(--color-border);
+}
+.open {
+  background: var(--color-success-strong);
+}
+.close {
+  background: var(--color-danger);
+}
+.axis {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0 6px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.rows li {
+  /* 첫 줄: 구분·시간·버튼, 둘째 줄(펼친 사유·경고): 구분 아래 '사유:', 시간 첫 글자 아래 내용 */
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  grid-template-areas:
+    'badge time . actions'
+    'label reason reason reason';
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 6px;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+}
+.badge {
+  grid-area: badge;
+}
+.time {
+  grid-area: time;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+/* 전역 '.beauty-app button { font: inherit }' 이 글자 크기를 덮어써서 한 단계 강하게 지정한다 */
+.rows .toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 8px;
+  line-height: 1;
+  cursor: pointer;
+}
+.rows .toggle:hover,
+.rows .toggle[aria-expanded='true'] {
+  background: var(--color-primary-faint);
+  color: var(--color-primary-text);
+}
+.reasonLabel {
+  grid-area: label;
+  justify-self: center;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.rows li.editing {
+  background: var(--color-primary-faint);
+}
+.reason {
+  grid-area: reason;
+  color: var(--color-text-secondary);
+}
+.warning {
+  grid-area: reason;
+  color: var(--color-danger);
+  font-weight: 600;
+}
+.actions {
+  grid-area: actions;
+  display: flex;
+  gap: 6px;
+}
+@media (max-width: 560px) {
+  /* 휴대폰 폭에서도 수정·삭제를 시간과 같은 줄에 두도록 간격과 버튼을 줄인다 */
+  .rows li {
+    column-gap: 8px;
+  }
+  .actions {
+    gap: 4px;
+  }
+  .actions button {
+    padding: 6px 10px;
+  }
+}

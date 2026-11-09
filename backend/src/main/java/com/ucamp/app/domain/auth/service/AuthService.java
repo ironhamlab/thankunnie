@@ -1,0 +1,277 @@
+package com.ucamp.app.domain.auth.service;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.function.Supplier;
+
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.ucamp.app.common.auth.AuthUser;
+import com.ucamp.app.common.auth.JwtProvider;
+import com.ucamp.app.common.exception.BusinessException;
+import com.ucamp.app.common.exception.ErrorCode;
+import com.ucamp.app.domain.auth.dto.request.AuthCustomerSignupRequest;
+import com.ucamp.app.domain.auth.dto.request.AuthBusinessVerificationRequest;
+import com.ucamp.app.domain.auth.dto.request.AuthLoginRequest;
+import com.ucamp.app.domain.auth.dto.request.AuthShopSignupRequest;
+import com.ucamp.app.domain.auth.dto.response.AuthShopCategoryResponse;
+import com.ucamp.app.domain.auth.dto.response.AuthShopSignupResponse;
+import com.ucamp.app.domain.auth.dto.response.AuthTokenResponse;
+import com.ucamp.app.domain.auth.entity.ShopAccount;
+import com.ucamp.app.domain.auth.repository.ShopAccountRepository;
+import com.ucamp.app.domain.auth.service.LoginAttemptLimiter.LoginAccountType;
+import com.ucamp.app.domain.shop.repository.ShopCategoryRepository;
+import com.ucamp.app.domain.user.entity.AppUser;
+import com.ucamp.app.domain.user.entity.AppUserRole;
+import com.ucamp.app.domain.user.entity.AppUserStatus;
+import com.ucamp.app.domain.user.repository.AppUserRepository;
+import com.ucamp.app.domain.user.service.TermsAgreementService;
+
+/**
+ * 고객·매장 회원가입과 로그인. 성공하면 액세스 토큰을 발급한다.
+ *
+ * <p>고객·관리자는 APP_USER, 매장은 SHOP 에 계정이 있어 아이디 중복과 로그인을 각 테이블 기준으로 처리한다.
+ * 가입은 아이디 사전 확인 후 저장하고, 동시에 같은 아이디로 가입하면 UNIQUE 제약 위반을 중복 아이디로 바꾼다.
+ */
+@Service
+@Transactional(readOnly = true)
+public class AuthService {
+
+    // BCrypt 가 처리할 수 있는 비밀번호 최대 길이 (UTF-8). 가입에서도 같은 기준으로 막는다
+    private static final int BCRYPT_MAX_PASSWORD_BYTES = 72;
+    private static final String DUMMY_PASSWORD = "dummy-password-for-unknown-login-id";
+
+    private final AppUserRepository appUserRepository;
+    private final ShopAccountRepository shopAccountRepository;
+    private final ShopCategoryRepository shopCategoryRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtProvider jwtProvider;
+    private final TermsAgreementService termsAgreementService;
+    private final AuthPhoneVerificationService phoneVerificationService;
+    private final AuthBusinessVerificationService businessVerificationService;
+    private final LoginAttemptLimiter loginAttemptLimiter;
+    // 없는 아이디로 로그인할 때 비교할 해시. 같은 인코더로 만들어 실제 계정과 비교 비용이 같다
+    private final String dummyPasswordHash;
+
+    public AuthService(AppUserRepository appUserRepository, ShopAccountRepository shopAccountRepository,
+            ShopCategoryRepository shopCategoryRepository, PasswordEncoder passwordEncoder,
+            JwtProvider jwtProvider, TermsAgreementService termsAgreementService,
+            AuthPhoneVerificationService phoneVerificationService,
+            AuthBusinessVerificationService businessVerificationService,
+            LoginAttemptLimiter loginAttemptLimiter) {
+        this.appUserRepository = appUserRepository;
+        this.shopAccountRepository = shopAccountRepository;
+        this.shopCategoryRepository = shopCategoryRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtProvider = jwtProvider;
+        this.termsAgreementService = termsAgreementService;
+        this.phoneVerificationService = phoneVerificationService;
+        this.businessVerificationService = businessVerificationService;
+        this.loginAttemptLimiter = loginAttemptLimiter;
+        this.dummyPasswordHash = passwordEncoder.encode(DUMMY_PASSWORD);
+    }
+
+    /** 고객으로 가입하고 바로 로그인한다. 약관 동의도 같은 트랜잭션에서 저장한다. */
+    @Transactional
+    public AuthTokenResponse signupCustomer(AuthCustomerSignupRequest request) {
+        if (appUserRepository.existsByLoginId(request.loginId())) {
+            throw new BusinessException(ErrorCode.AUTH_DUPLICATE_LOGIN_ID);
+        }
+        termsAgreementService.validateSignupAgreements(request.agreedTerms());
+        validatePhoneAvailable(request.phone());
+        phoneVerificationService.consume(request.phone(), request.phoneVerificationId());
+        releaseWithdrawnPhone(normalizeMobilePhone(request.phone()));
+        AppUser user = AppUser.builder()
+                .loginId(request.loginId())
+                .passwordHash(passwordEncoder.encode(request.password()))
+                .name(request.name().trim())
+                .phone(normalizeMobilePhone(request.phone()))
+                .role(AppUserRole.USER)
+                .build();
+        AppUser saved = saveUniqueLoginId(() -> appUserRepository.saveAndFlush(user));
+        termsAgreementService.agreeOnSignup(saved.getUserId(), request.agreedTerms());
+        return issue(saved.toAuthUser());
+    }
+
+    /**
+     * 매장 정보와 함께 매장 계정으로 가입 신청한다. 매장 약관 동의도 같은 트랜잭션에서 저장한다.
+     * 관리자 승인 전이라 토큰을 발급하지 않는다.
+     */
+    @Transactional
+    public AuthShopSignupResponse signupShop(AuthShopSignupRequest request) {
+        if (shopAccountRepository.existsByLoginId(request.loginId())) {
+            throw new BusinessException(ErrorCode.AUTH_DUPLICATE_LOGIN_ID);
+        }
+        if (!shopCategoryRepository.existsById(request.categoryId())) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "존재하지 않는 매장 카테고리입니다.");
+        }
+        termsAgreementService.validateShopSignupAgreements(request.agreedTerms());
+        // 매장 번호는 고객·다른 매장과 겹쳐도 되므로 인증만 확인하고 중복은 검사하지 않는다
+        phoneVerificationService.consume(request.phone(), request.phoneVerificationId());
+        businessVerificationService.verify(new AuthBusinessVerificationRequest(request.businessNumber(),
+                request.representativeName(), request.openedOn()));
+        ShopAccount account = ShopAccount.builder()
+                .loginId(request.loginId())
+                .businessNumber(request.businessNumber())
+                .passwordHash(passwordEncoder.encode(request.password()))
+                .categoryId(request.categoryId())
+                .name(request.name().trim())
+                .regionCode(request.regionCode())
+                .address(request.address())
+                .addressDetail(request.addressDetail())
+                .latitude(request.latitude())
+                .longitude(request.longitude())
+                .phone(normalizeMobilePhone(request.phone()))
+                .description(request.description())
+                .notice(request.notice())
+                .build();
+        ShopAccount saved = saveShopAccount(account);
+        termsAgreementService.agreeOnShopSignup(saved.getShopId(), request.agreedTerms());
+        return AuthShopSignupResponse.from(saved);
+    }
+
+    /**
+     * 고객·관리자 로그인. 아이디가 없을 때와 비밀번호가 틀릴 때를 구분하지 않는다.
+     * 연속으로 실패하면 잠시 로그인을 막는다 ({@link LoginAttemptLimiter}).
+     */
+    public AuthTokenResponse loginCustomer(AuthLoginRequest request) {
+        loginAttemptLimiter.checkAllowed(LoginAccountType.CUSTOMER, request.loginId());
+        AppUser user = appUserRepository.findByLoginId(request.loginId()).orElse(null);
+        if (!matchesPassword(request.password(), user == null ? null : user.getPasswordHash())) {
+            loginAttemptLimiter.recordFailure(LoginAccountType.CUSTOMER, request.loginId());
+            throw new BusinessException(ErrorCode.AUTH_LOGIN_FAILED);
+        }
+        loginAttemptLimiter.recordSuccess(LoginAccountType.CUSTOMER, request.loginId());
+        // 비밀번호가 맞은 뒤에만 비활성 여부를 알려 계정 존재 여부가 드러나지 않게 한다
+        if (!user.isActive()) {
+            throw new BusinessException(ErrorCode.AUTH_INACTIVE_ACCOUNT);
+        }
+        return issue(user.toAuthUser());
+    }
+
+    /**
+     * 매장 계정 로그인. 관리자 승인 전(PENDING)·거절(REJECTED) 매장은 로그인할 수 없다.
+     * INACTIVE 는 노출 중지일 뿐이라 로그인해서 매장을 관리할 수 있어야 한다.
+     * 연속으로 실패하면 잠시 로그인을 막는다 ({@link LoginAttemptLimiter}).
+     */
+    public AuthTokenResponse loginShop(AuthLoginRequest request) {
+        loginAttemptLimiter.checkAllowed(LoginAccountType.SHOP, request.loginId());
+        ShopAccount account = shopAccountRepository.findByLoginId(request.loginId()).orElse(null);
+        if (!matchesPassword(request.password(), account == null ? null : account.getPasswordHash())) {
+            loginAttemptLimiter.recordFailure(LoginAccountType.SHOP, request.loginId());
+            throw new BusinessException(ErrorCode.AUTH_LOGIN_FAILED);
+        }
+        loginAttemptLimiter.recordSuccess(LoginAccountType.SHOP, request.loginId());
+        // 비밀번호가 맞은 뒤에만 승인 상태를 알려 계정 존재 여부가 드러나지 않게 한다
+        switch (account.getStatus()) {
+            case PENDING -> throw new BusinessException(ErrorCode.AUTH_SHOP_PENDING);
+            case REJECTED -> throw new BusinessException(ErrorCode.AUTH_SHOP_REJECTED, rejectedMessage(account));
+            default -> {
+            }
+        }
+        return issue(account.toAuthUser());
+    }
+
+    /** 매장 가입 화면의 카테고리 선택지. */
+    public List<AuthShopCategoryResponse> getShopCategories() {
+        return shopCategoryRepository.findAllByOrderByNameAsc().stream()
+                .map(AuthShopCategoryResponse::from)
+                .toList();
+    }
+
+    /** 고객과 매장 계정은 기존 로그인 정책과 동일하게 각각 중복을 검사한다. */
+    public boolean isLoginIdAvailable(String loginId, String accountType) {
+        return switch (accountType) {
+            case "customer" -> !appUserRepository.existsByLoginId(loginId);
+            case "shop" -> !shopAccountRepository.existsByLoginId(loginId);
+            default -> throw new BusinessException(ErrorCode.INVALID_INPUT, "계정 종류가 올바르지 않습니다.");
+        };
+    }
+
+    /**
+     * 고객은 번호당 사용 중인 계정 하나만 허용한다. 탈퇴 계정의 번호는 다시 쓸 수 있다.
+     * 매장 가입은 번호 중복을 허용하므로 호출하지 않는다.
+     */
+    public void validatePhoneAvailable(String phone) {
+        if (appUserRepository.existsByPhoneAndStatus(normalizeMobilePhone(phone), AppUserStatus.ACTIVE)) {
+            throw new BusinessException(ErrorCode.AUTH_DUPLICATE_PHONE);
+        }
+    }
+
+    // Hibernate 는 flush 때 INSERT 를 UPDATE 보다 먼저 실행하므로, 번호를 비운 것을 먼저 반영해야 새 계정이 UNIQUE 에 걸리지 않는다
+    private void releaseWithdrawnPhone(String phone) {
+        appUserRepository.findByPhoneAndStatus(phone, AppUserStatus.INACTIVE).ifPresent(withdrawn -> {
+            withdrawn.releasePhone();
+            appUserRepository.flush();
+        });
+    }
+
+    // 계정이 없어도 같은 비용의 BCrypt 비교를 한 번 수행해 응답 시간으로 아이디 존재 여부가 드러나지 않게 한다.
+    // 72바이트를 넘는 입력은 BCrypt 가 예외(500)를 던지므로 비교하지 않고 실패로 본다. 가입에서 막아 그런 계정은 없다
+    private boolean matchesPassword(String rawPassword, String passwordHash) {
+        boolean comparable = passwordHash != null
+                && rawPassword.getBytes(StandardCharsets.UTF_8).length <= BCRYPT_MAX_PASSWORD_BYTES;
+        if (!comparable) {
+            passwordEncoder.matches(DUMMY_PASSWORD, dummyPasswordHash);
+            return false;
+        }
+        return passwordEncoder.matches(rawPassword, passwordHash);
+    }
+
+    private static String rejectedMessage(ShopAccount account) {
+        String message = ErrorCode.AUTH_SHOP_REJECTED.getMessage();
+        String reason = account.getRejectReason();
+        return reason == null || reason.isBlank() ? message : message + " 사유: " + reason;
+    }
+
+    private AuthTokenResponse issue(AuthUser authUser) {
+        return AuthTokenResponse.of(jwtProvider.issue(authUser), authUser);
+    }
+
+    private ShopAccount saveShopAccount(ShopAccount account) {
+        try {
+            return shopAccountRepository.saveAndFlush(account);
+        } catch (DataIntegrityViolationException e) {
+            // 사전 확인 뒤 동시에 같은 번호로 가입해도 DB의 UNIQUE 제약으로 차단한다.
+            if (violates(e, "UK_SHOP_BUSINESS_NUMBER")) {
+                throw new BusinessException(ErrorCode.AUTH_DUPLICATE_BUSINESS_NUMBER);
+            }
+            if (violates(e, "UK_SHOP_LOGIN_ID")) {
+                throw new BusinessException(ErrorCode.AUTH_DUPLICATE_LOGIN_ID);
+            }
+            throw e;
+        }
+    }
+
+    // 사전 확인과 저장 사이에 같은 아이디나 휴대폰 번호가 먼저 가입되면 UNIQUE 위반이 난다.
+    // 필수값·길이·카테고리는 앞에서 검증했으므로 휴대폰 제약이 아닌 위반은 아이디 중복으로 본다
+    private static <T> T saveUniqueLoginId(Supplier<T> save) {
+        try {
+            return save.get();
+        } catch (DataIntegrityViolationException e) {
+            ErrorCode errorCode = violates(e, "UK_APP_USER_PHONE")
+                    ? ErrorCode.AUTH_DUPLICATE_PHONE : ErrorCode.AUTH_DUPLICATE_LOGIN_ID;
+            throw new BusinessException(errorCode, errorCode.getMessage(), e);
+        }
+    }
+
+    private static boolean violates(Throwable e, String constraint) {
+        for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+            String message = cause.getMessage();
+            if (message != null && message.toUpperCase(java.util.Locale.ROOT).contains(constraint)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // 요청 검증을 통과한 휴대폰 번호를 문자 발송·초기 데이터와 같은 010-0000-0000 형식으로 맞춘다
+    private static String normalizeMobilePhone(String phone) {
+        String digits = phone.replaceAll("\\D", "");
+        int middleEnd = digits.length() - 4;
+        return digits.substring(0, 3) + "-" + digits.substring(3, middleEnd) + "-" + digits.substring(middleEnd);
+    }
+}

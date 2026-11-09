@@ -1,0 +1,96 @@
+package com.ucamp.app.domain.notification;
+
+import java.time.LocalDateTime;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+
+/**
+ * 알림 테스트용 다른 도메인 테이블 데이터. 해당 엔티티가 없으므로 SQL 로 직접 넣는다.
+ */
+public final class NotificationFixture {
+
+    private NotificationFixture() {
+    }
+
+    public static void category(JdbcTemplate jdbc, long categoryId, String name) {
+        jdbc.update("INSERT INTO CATEGORY (CATEGORY_ID, NAME) VALUES (?, ?)", categoryId, name);
+    }
+
+    public static void shop(JdbcTemplate jdbc, long shopId, long categoryId, String regionCode, String status) {
+        jdbc.update("""
+                INSERT INTO SHOP (SHOP_ID, CATEGORY_ID, LOGIN_ID, PASSWORD_HASH, NAME, REGION_CODE, ADDRESS,
+                                  LATITUDE, LONGITUDE, PHONE, STATUS, CREATED_AT, UPDATED_AT)
+                VALUES (?, ?, ?, 'hash', ?, ?, '주소', 37.5, 127.0, '010-0000-0000', ?,
+                        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """, shopId, categoryId, "shop" + shopId, "매장" + shopId, regionCode, status);
+    }
+
+    public static void user(JdbcTemplate jdbc, long userId) {
+        jdbc.update("""
+                INSERT INTO APP_USER (USER_ID, LOGIN_ID, PASSWORD_HASH, NAME, PHONE, CREATED_AT, UPDATED_AT)
+                VALUES (?, ?, 'hash', '회원', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """, userId, "user" + userId, phoneOf(userId));
+    }
+
+    /**
+     * APP_USER.PHONE 은 UNIQUE 라 회원마다 다른 번호를 쓴다. 1번은 010-1111-1111, 2번은 010-2222-2222 이며
+     * 1111 과 10000 이 서로소라 회원 ID 가 1만 이내로 다르면 번호도 다르다.
+     */
+    public static String phoneOf(long userId) {
+        String part = String.format(java.util.Locale.ROOT, "%04d", userId * 1111 % 10000);
+        return "010-" + part + "-" + part;
+    }
+
+    /** 알림 문자 수신 약관(TERMS_ID 9105). 알림 문자는 이 약관에 동의한 회원에게만 나간다. */
+    public static void smsTerms(JdbcTemplate jdbc) {
+        jdbc.update("""
+                INSERT INTO TERMS (TERMS_ID, CODE, VERSION, TITLE, IS_REQUIRED, CREATED_AT, UPDATED_AT)
+                VALUES (9105, 'SMS_NOTIFICATION', 1, '알림 문자 수신', 'N', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """);
+    }
+
+    /** 회원의 알림 문자 수신 동의. {@link #smsTerms(JdbcTemplate)} 를 먼저 넣는다. */
+    public static void smsAgreement(JdbcTemplate jdbc, long userId) {
+        jdbc.update("""
+                INSERT INTO USER_TERMS_AGREEMENT
+                    (AGREEMENT_ID, USER_ID, TERMS_ID, AGREED_AT, CREATED_AT, UPDATED_AT)
+                VALUES (?, ?, 9105, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """, 9000 + userId, userId);
+    }
+
+    public static void treatment(JdbcTemplate jdbc, long treatmentId, long shopId, String treatmentType) {
+        jdbc.update("""
+                INSERT INTO TREATMENT (TREATMENT_ID, SHOP_ID, NAME, REGULAR_PRICE, PRICE, LAST_MINUTE_PRICE,
+                                       DURATION_MINUTES, TREATMENT_TYPE, CREATED_AT, UPDATED_AT)
+                VALUES (?, ?, '시술',
+                        50000, 40000, 30000, 60, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """, treatmentId, shopId, treatmentType);
+    }
+
+    /** 요일 영업시간. dayOfWeek 는 MON~SUN, open/close 는 HH:MM. */
+    public static void businessHour(JdbcTemplate jdbc, long businessHourId, long shopId, String dayOfWeek,
+            String openTime, String closeTime) {
+        jdbc.update("""
+                INSERT INTO SHOP_BUSINESS_HOUR (BUSINESS_HOUR_ID, SHOP_ID, DAY_OF_WEEK, OPEN_TIME, CLOSE_TIME, IS_CLOSED)
+                VALUES (?, ?, ?, ?, ?, 'N')
+                """, businessHourId, shopId, dayOfWeek, openTime, closeTime);
+    }
+
+    public static void exception(JdbcTemplate jdbc, long exceptionId, long shopId, Long reservationId,
+            String exceptionType, LocalDateTime startsAt, LocalDateTime endsAt) {
+        jdbc.update("""
+                INSERT INTO SHOP_SCHEDULE_EXCEPTION (EXCEPTION_ID, SHOP_ID, RESERVATION_ID, EXCEPTION_TYPE,
+                                                     STARTS_AT, ENDS_AT, CREATED_AT, UPDATED_AT)
+                VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """, exceptionId, shopId, reservationId, exceptionType, startsAt, endsAt);
+    }
+
+    public static void reservation(JdbcTemplate jdbc, long reservationId, long userId, long treatmentId,
+            String status, LocalDateTime startsAt, LocalDateTime endsAt, LocalDateTime holdExpiresAt) {
+        jdbc.update("""
+                INSERT INTO RESERVATION (RESERVATION_ID, USER_ID, TREATMENT_ID, STATUS, STARTS_AT, ENDS_AT,
+                                         APPLIED_PRICE, DEPOSIT, HOLD_EXPIRES_AT, CREATED_AT, UPDATED_AT)
+                VALUES (?, ?, ?, ?, ?, ?, 40000, 20000, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """, reservationId, userId, treatmentId, status, startsAt, endsAt, holdExpiresAt);
+    }
+}

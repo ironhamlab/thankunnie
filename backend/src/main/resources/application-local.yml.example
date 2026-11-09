@@ -1,0 +1,72 @@
+# 복사해서 application-local.yml 로 사용 (Git 제외 파일)
+# 로컬 개발: H2 (Oracle 호환 모드)
+spring:
+  datasource:
+    # DB_CLOSE_DELAY=-1 을 붙이면 devtools 재시작 때 기존 테이블이 남아 스키마 생성이 실패한다
+    url: jdbc:h2:mem:thankunnie;MODE=Oracle;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        # JDBC 로 시각을 저장·조회할 때 한국 시간 기준으로 맞춘다 (PC 시간대가 달라도 동일하게 동작)
+        jdbc:
+          time_zone: Asia/Seoul
+  h2:
+    console:
+      enabled: true
+
+# 공통 multipart 한도: 파일 5MB, 전체 요청 6MB (application.yml)
+app:
+  shop-image:
+    # 기본 S3. AWS 연결 없이 로컬 파일로 개발하려면 SHOP_IMAGE_STORAGE=local을 지정한다.
+    storage: ${SHOP_IMAGE_STORAGE:s3}
+    s3:
+      bucket: ${SHOP_IMAGE_S3_BUCKET:}
+      region: ${AWS_REGION:ap-northeast-2}
+      prefix: ${SHOP_IMAGE_S3_PREFIX:shop-images/}
+    # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY (임시 키는 AWS_SESSION_TOKEN도 필요)는
+    # 실행 환경에 사람이 직접 설정한다. EC2/ECS 배포 시에는 IAM 역할을 사용할 수 있다.
+    # 아래 directory는 storage=local일 때만 사용한다.
+    directory: ${user.home}/.thankunnie/shop-images
+  cors:
+    allowed-origins: http://localhost:5173
+  jwt:
+    # 생략하면 application.yml 의 로컬 전용 더미 키를 쓴다. 바꾸려면 32바이트 이상으로 직접 입력
+    # secret: CHANGE_ME
+    access-token-validity: PT24H
+  scheduling:
+    # 임박 알림 감지·이미지 삭제 실패 재시도 등 주기 작업. 생략하면 true
+    enabled: true
+
+# Oracle 전용 기능 확인이 필요하면 루트에서 docker compose up -d 후 위 datasource 를 아래로 교체
+# Oracle 에는 테이블이 자동 생성되지 않으므로 docs/erd/01_schema_ddl.sql 을 먼저 SCOTT 계정에 실행할 것
+#  datasource:
+#    url: jdbc:oracle:thin:@localhost:1521/FREEPDB1
+#    username: SCOTT
+#    password: TIGER
+#    driver-class-name: oracle.jdbc.OracleDriver
+
+
+iamport:
+  imp-key: CHANGE_ME
+  imp-secret: CHANGE_ME
+  # 테스트 채널 결제 조회용. 로컬에서만 true
+  include-sandbox: true
+
+# Solapi 콘솔에서 확인한 값을 사람이 직접 넣는다. 실제 키를 Git 에 올리지 않는다
+solapi:
+  api-key: CHANGE_ME
+  api-secret: CHANGE_ME
+  # 콘솔에 등록한 발신번호. 숫자만 (예: 01012345678)
+  from-number: CHANGE_ME
+
+# 공공데이터포털 국세청 API의 일반 인증키(Decoding)를 사람이 직접 입력한다.
+# 실제 키는 Git 또는 프론트 환경변수에 넣지 않는다.
+nts:
+  service-key: ${NTS_SERVICE_KEY:CHANGE_ME}
+  # true 면 국세청을 호출하지 않는 로컬 가짜 조회를 쓴다 (local 프로필 전용). 테스트 값은 docs/api/auth.md 참고
+  fake: false

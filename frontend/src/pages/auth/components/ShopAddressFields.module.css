@@ -1,0 +1,38 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.addressRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+}
+/* 라벨 높이만큼 내려 입력칸과 버튼 줄을 맞춘다 */
+.addressRow > button {
+  margin: 26px 0 0;
+  min-height: 42px;
+  white-space: nowrap;
+}
+.manualToggle {
+  align-self: flex-start;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--color-primary-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+.manualGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 540px) {
+  .manualGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

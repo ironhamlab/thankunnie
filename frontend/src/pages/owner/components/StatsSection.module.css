@@ -1,0 +1,105 @@
+.filters {
+  flex-wrap: wrap;
+  gap: 16px;
+}
+/* 통계를 받으면 그래프 묶음이 차례로 올라온다. 기간을 바꾸면 다시 그려져 또 올라온다 */
+.section > :global(.b-panel):not(.filters),
+.twoColumns > * {
+  animation: panelRise 0.25s cubic-bezier(0.22, 1, 0.36, 1) 0.02s backwards;
+}
+.twoColumns > :nth-child(2) {
+  animation-delay: 0.05s;
+}
+@keyframes panelRise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .section > :global(.b-panel):not(.filters),
+  .twoColumns > *,
+  .twoColumns > :nth-child(2) {
+    animation: none;
+  }
+}
+.notice {
+  font-size: 12px;
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin: 0;
+}
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.table summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.table table {
+  margin-top: 12px;
+  width: 100%;
+}
+.chartHeader {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.chartHeader h2 {
+  white-space: nowrap;
+}
+.hint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+.twoColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .twoColumns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  text-align: center;
+}
+.empty p {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+.kpis h2 {
+  font-size: 26px;
+  white-space: nowrap;
+}
+/* 폰: 지표 카드 8개를 2×4 로 둬서 한 줄씩 쌓일 때보다 스크롤을 줄인다 */
+@media (max-width: 640px) {
+  .kpis.kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .kpis h2 {
+    font-size: 20px;
+  }
+  .filters label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+  .filters input {
+    flex: 1;
+  }
+}

@@ -1,0 +1,117 @@
+/* 넓은 화면에서는 입력 폼 오른쪽에 주간 요약·안내를 붙여 빈 공간을 쓰고, 좁으면 아래로 내린다 */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 720px) minmax(260px, 360px);
+  gap: 20px;
+}
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.days {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+/* 요일 줄이 월요일부터 이어서 나타난다 */
+.days > li {
+  animation: dayEnter 0.22s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.days > li:nth-child(2) {
+  animation-delay: 0.01s;
+}
+.days > li:nth-child(3) {
+  animation-delay: 0.02s;
+}
+.days > li:nth-child(4) {
+  animation-delay: 0.03s;
+}
+.days > li:nth-child(5) {
+  animation-delay: 0.04s;
+}
+.days > li:nth-child(n + 6) {
+  animation-delay: 0.05s;
+}
+@keyframes dayEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .days > li,
+  .days > li:nth-child(n) {
+    animation: none;
+  }
+}
+/* 요일·영업 여부·시간을 한 줄에 모아 넓은 화면에서도 시작~종료가 멀어지지 않게 한다 */
+.day {
+  display: grid;
+  grid-template-columns: 32px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px 16px;
+  min-height: 64px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--color-border);
+}
+.day:last-child {
+  border-bottom: 0;
+}
+.label {
+  font-size: 15px;
+}
+.toggle {
+  flex-wrap: nowrap;
+}
+.day .toggle button {
+  min-width: 56px;
+  min-height: 36px;
+  font-size: 13px;
+}
+.times {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-secondary);
+}
+.times select {
+  width: 140px;
+}
+.off {
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+/* 폰에서는 요일·영업 여부를 윗줄, 시간을 아랫줄로 내려 옆으로 넘기지 않게 한다 */
+@media (max-width: 540px) {
+  .layout,
+  .side {
+    gap: 12px;
+  }
+  .day {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 8px 12px;
+    padding: 12px 0;
+  }
+  .toggle {
+    justify-self: end;
+  }
+  .day .toggle button {
+    min-height: 44px;
+  }
+  .times,
+  .off {
+    grid-column: 1 / -1;
+  }
+  .times select {
+    flex: 1;
+    width: auto;
+  }
+}

@@ -1,0 +1,127 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hint {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary-text);
+}
+.rule {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.swatch {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: white;
+}
+.period + .period {
+  margin-top: 14px;
+}
+.period h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+.grid {
+  display: grid;
+  /* 한 줄 6칸(3시간)으로 고정해 넓은 화면에서도 가로로 늘어지지 않게 한다 */
+  grid-template-columns: repeat(6, minmax(0, 84px));
+  gap: 8px;
+}
+.slot {
+  height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: white;
+  color: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.slot:hover:not(:disabled) {
+  border-color: var(--color-primary);
+}
+.slot:disabled {
+  color: var(--color-text-muted);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.booked {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+.closed {
+  border-color: var(--color-danger);
+  background: var(--color-primary-faint);
+  color: var(--color-danger);
+}
+.off {
+  border-style: dashed;
+  color: var(--color-text-muted);
+}
+.passed {
+  color: var(--color-text-muted);
+}
+.selected,
+.selected:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+  font-weight: 700;
+}
+/* 고른 구간 안의 닫음·예약됨 칸은 선택 색을 옅게 하고 안쪽 흰 테두리로 다른 칸과 구분한다 */
+.selected.closed,
+.selected.booked {
+  background: var(--color-primary-light);
+  box-shadow: inset 0 0 0 2px white;
+}
+.more {
+  align-self: flex-start;
+  min-height: 36px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary-text);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+@media (max-width: 540px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .slot {
+    font-size: 14px;
+  }
+  .period + .period {
+    margin-top: 12px;
+  }
+  .more {
+    min-height: 44px;
+    padding: 0;
+  }
+}

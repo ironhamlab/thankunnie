@@ -1,0 +1,147 @@
+.discover {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 24px 0;
+}
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.sectionHeading h2 {
+  font-size: 20px;
+}
+.sectionHeading p {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-top: 3px;
+}
+.sectionHeading > a {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary-text);
+  flex-shrink: 0;
+}
+@media (max-width: 1000px) {
+  .discover {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 767px) {
+  .sectionHeading {
+    align-items: flex-start;
+  }
+  .sectionHeading h2 {
+    font-size: 18px;
+  }
+  .sectionHeading p {
+    font-size: 12px;
+  }
+}
+.arrow {
+  display: inline-block;
+  transition: transform 0.2s;
+}
+@media (hover: hover) {
+  .sectionHeading > a:hover .arrow {
+    animation: arrowNudge 0.6s ease infinite;
+  }
+}
+@keyframes arrowNudge {
+  50% {
+    transform: translateX(5px);
+  }
+}
+/* 메인에 들어올 때 위에서부터 차례로 나타난다. 임박 카드·지도는 위치를 건드리지 않고 투명도만 바꾼다 */
+.riseIn {
+  animation: riseIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.fadeIn {
+  animation: fadeIn 0.65s ease 0.12s backwards;
+}
+.later {
+  animation-delay: 0.24s;
+}
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+/* 탭을 바꾸면 매장 카드가 앞에서부터 차례로 튀어 오른다 */
+.shopGrid > * {
+  animation: cardPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+.shopGrid > :nth-child(2) {
+  animation-delay: 0.05s;
+}
+.shopGrid > :nth-child(3) {
+  animation-delay: 0.1s;
+}
+.shopGrid > :nth-child(4) {
+  animation-delay: 0.15s;
+}
+.shopGrid > :nth-child(n + 5) {
+  animation-delay: 0.2s;
+}
+@keyframes cardPop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.95);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arrow,
+  .riseIn,
+  .fadeIn,
+  .shopGrid > * {
+    animation: none !important;
+  }
+}
+.shopGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 1000px) {
+  .shopGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767px) {
+  .shopGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+.page .demoNote {
+  margin: 24px 0 36px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+.page {
+  font-family: var(--font-display);
+  padding-top: 24px;
+  padding-bottom: 0;
+}
+.page button {
+  color: inherit;
+}
+.deals {
+  padding-top: 12px;
+  scroll-margin-top: 100px;
+}
+@media (max-width: 767px) {
+  .page {
+    padding: 20px 16px 0;
+  }
+}

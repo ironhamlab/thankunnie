@@ -1,0 +1,18 @@
+.arrow {
+  display: inline-block;
+}
+@media (hover: hover) {
+  :is(a, button):hover > .arrow {
+    animation: arrowNudge 0.6s ease infinite;
+  }
+}
+@keyframes arrowNudge {
+  50% {
+    transform: translateX(5px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(a, button):hover > .arrow {
+    animation: none;
+  }
+}

@@ -1,0 +1,342 @@
+.title {
+  font-size: 24px;
+  margin: 0 0 6px;
+}
+/* 넓은 화면: 목록은 촘촘하게 두고 예약 이력·메모를 보는 상세에 더 많은 폭을 준다.
+   상세는 목록을 내려도 따라오게 붙여 둔다. 1180px 이하는 상세를 창으로 연다 (CustomersPage.jsx) */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.list {
+  min-width: 0;
+}
+.detail {
+  min-width: 0;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+@media (max-width: 1180px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+}
+.search {
+  display: flex;
+  gap: 6px;
+  flex: 1 1 220px;
+}
+.search input {
+  flex: 1;
+  min-width: 0;
+}
+.sort select {
+  min-height: 36px;
+}
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.count {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.row {
+  width: 100%;
+  display: grid;
+  /* 고객(이름·배지) | 연락처 | 이용 | 최근 이용. 누적 금액은 상세에서 본다 */
+  grid-template-columns: minmax(0, 1fr) 112px 48px 88px;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-size: 14px;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.row:hover {
+  background: var(--color-primary-faint);
+}
+.selected {
+  background: var(--color-primary-tint);
+}
+/* 고객 줄이 위에서부터 이어서 나타난다 */
+.rows > li {
+  animation: rowEnter 0.22s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.rows > li:nth-child(2) {
+  animation-delay: 0.01s;
+}
+.rows > li:nth-child(3) {
+  animation-delay: 0.02s;
+}
+.rows > li:nth-child(4) {
+  animation-delay: 0.03s;
+}
+.rows > li:nth-child(5) {
+  animation-delay: 0.04s;
+}
+.rows > li:nth-child(n + 6) {
+  animation-delay: 0.05s;
+}
+@keyframes rowEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.rows .row {
+  transition:
+    background-color 0.2s,
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.rows .row:active {
+  transform: scale(0.99);
+}
+@media (hover: hover) {
+  .rows .row:hover {
+    transform: translateX(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rows > li,
+  .rows > li:nth-child(n) {
+    animation: none;
+  }
+  .rows .row {
+    transition: none;
+  }
+  .rows .row:hover,
+  .rows .row:active {
+    transform: none;
+  }
+}
+.head.head {
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 8px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  cursor: default;
+}
+.head:hover {
+  background: transparent;
+}
+.who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+}
+.phone,
+.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.phone {
+  color: var(--color-text-secondary);
+}
+.num {
+  text-align: right;
+}
+.recent {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+.head .recent {
+  font-size: inherit;
+  color: inherit;
+}
+/* 목록 폭이 좁아 이름 옆 배지가 다음 줄로 밀릴 만하면 최근 이용 칸을 뺀다 (상세에서 볼 수 있다) */
+.table {
+  container-type: inline-size;
+}
+@container (max-width: 540px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr) 112px 48px;
+  }
+  .recent {
+    display: none;
+  }
+}
+/* 목록 칸이 아주 좁을 때만(폰 세로 등) 이름 줄 아래에 연락처·이용을 이어 둔다. 머리글은 숨긴다.
+   그보다 넓으면 한 줄을 유지하고, 배지가 많으면 이름 칸 안에서만 줄을 바꾼다 */
+@container (max-width: 360px) {
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+  }
+  .who {
+    width: 100%;
+  }
+  .head.head {
+    display: none;
+  }
+  .visits::before {
+    content: '이용 ';
+    color: var(--color-text-muted);
+  }
+}
+.hint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+.detailName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.detailName h2 {
+  margin: 0;
+}
+.miniStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (max-width: 480px) {
+  .miniStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.miniStats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--color-primary-faint);
+  border-radius: var(--radius-sm);
+}
+.miniStats strong {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.miniStats small {
+  color: var(--color-text-secondary);
+}
+.memoLabel {
+  font-weight: 700;
+}
+.memoLabel small {
+  font-weight: 400;
+  color: var(--color-text-muted);
+  margin-left: 6px;
+}
+.memoActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.historyTitle {
+  font-size: 15px;
+  margin: 0;
+}
+.historyTitle small {
+  font-weight: 400;
+  color: var(--color-text-muted);
+  margin-left: 6px;
+}
+.history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.history li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0;
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+}
+.request {
+  background: var(--color-primary-faint);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}
+/* 상태 배지. 기본 배지 대신 신규(성공 배지)처럼 옅은 바탕에 진한 글자로 맞춘다 */
+/* 재방문: 취소(빨강)와 구분되게 오류색에 정보색을 섞은 분홍 */
+.returningBadge.returningBadge {
+  --badge-color: color-mix(in srgb, var(--color-danger) 70%, var(--color-info));
+  color: var(--badge-color);
+  background: color-mix(in srgb, var(--badge-color) 7%, var(--color-white));
+  border: 1px solid color-mix(in srgb, var(--badge-color) 30%, var(--color-white));
+}
+.upcomingBadge.upcomingBadge {
+  color: var(--color-warning);
+  background: var(--color-primary-faint);
+  border: 1px solid var(--color-primary-line);
+}
+.cancelledBadge.cancelledBadge {
+  color: var(--color-danger-text);
+  background: var(--color-danger-bg);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 30%, var(--color-white));
+}
+/* 페이지 이동은 다른 목록 화면(예약 현황·내 예약·입점 신청)처럼 오른쪽에 둔다.
+   목록 아래 여백이 커지지 않게 공용 여백(b-pad)은 뺀다 */
+.pager {
+  margin-left: auto;
+}
+.pager > :global(.b-flex) {
+  justify-content: flex-end;
+  padding: 0;
+}
+.listFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+/* 태블릿·폰의 고객 상세 창. 창이 이미 테두리·여백을 가지므로 안의 패널 테두리는 뺀다 */
+html:has(.detailDialog[open]) {
+  overflow: hidden;
+}
+.detailDialog {
+  overscroll-behavior: contain;
+}
+.detailDialog.detailDialog aside {
+  position: static;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+@media (max-width: 640px) {
+  .miniStats strong {
+    font-size: 13px;
+  }
+  .miniStats > div {
+    padding: 8px 10px;
+  }
+}

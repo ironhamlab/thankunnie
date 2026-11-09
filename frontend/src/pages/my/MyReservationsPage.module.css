@@ -1,0 +1,178 @@
+.cards.cards {
+  gap: 12px;
+}
+/* 페이지가 여러 개일 때만, 건수가 달라도 이전·다음 버튼이 움직이지 않도록 카드 10장 높이를 잡는다 */
+.cards.fullPage {
+  min-height: 841px;
+}
+/* 넓은 화면에서는 예약 한 건을 한 줄로 펼쳐, 건수가 적어도 화면 양쪽이 비지 않게 한다 */
+.card.card {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  grid-template-areas:
+    'status treatment time chevron'
+    'status shop time chevron';
+  align-items: center;
+  gap: 2px 20px;
+  width: 100%;
+  padding: 14px 24px;
+}
+.status {
+  grid-area: status;
+}
+.treatment {
+  grid-area: treatment;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.shop {
+  grid-area: shop;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.time {
+  grid-area: time;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.chevron {
+  grid-area: chevron;
+  color: var(--color-text-muted);
+  font-size: 20px;
+  line-height: 1;
+}
+/* 공용 페이지 이동을 이 화면에서만 오른쪽 아래에 둔다 */
+.pager > :global(.b-flex) {
+  justify-content: flex-end;
+}
+/* 창이 떠 있는 동안 뒤 목록이 함께 스크롤되지 않게 하고, 스크롤바 자리는 남겨 화면이 옆으로 밀리지 않게 한다 */
+html:has(.detailDialog[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+/* 지도까지 넣으면 창 안에서 스크롤하게 되는데, 막대가 창 모서리를 깨뜨려 숨긴다 */
+.detailDialog {
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.detailDialog::-webkit-scrollbar {
+  display: none;
+}
+/* 창 안에서는 창 자체가 카드라 상세 패널의 테두리와 여백을 빼고, 한눈에 보도록 간격을 줄인다 */
+.detailDialog.detailDialog section {
+  gap: 14px;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+.detailDialog :global(.b-panel-heading) {
+  padding-bottom: 12px;
+  margin-bottom: 0 !important;
+}
+.detailDialog :global(.b-notice) {
+  padding: 12px 14px;
+}
+.detailDialog :global(.b-details) > div {
+  padding: 9px 0;
+}
+/* 폰에서는 한 줄에 다 들어가지 않아 세 줄 카드로 바꾼다 */
+@media (max-width: 640px) {
+  .cards.fullPage {
+    min-height: 0;
+  }
+  .card.card {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'status status chevron'
+      'treatment treatment chevron'
+      'shop time chevron';
+    gap: 4px 8px;
+    padding: 14px 18px;
+  }
+  .time {
+    font-size: 12px;
+  }
+}
+/* 선택 표시가 뒤에서 미끄러져 오므로 고른 탭의 배경은 비운다 */
+.tabs {
+  position: relative;
+  isolation: isolate;
+}
+.tabs:global(.b-tabs) button:global(.is-selected) {
+  background: none;
+}
+.tabs button {
+  transition: color 0.2s;
+}
+.tabIndicator {
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+}
+/* 화면에 들어올 때 살짝 올라오고, 목록을 받으면 예약 카드가 차례로 튀어 오른다 */
+.page {
+  animation: pageEnter 0.65s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+.cards > * {
+  animation: cardEnter 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
+}
+.cards > :nth-child(2) {
+  animation-delay: 0.05s;
+}
+.cards > :nth-child(3) {
+  animation-delay: 0.1s;
+}
+.cards > :nth-child(4) {
+  animation-delay: 0.15s;
+}
+.cards > :nth-child(n + 5) {
+  animation-delay: 0.2s;
+}
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+}
+.card.card {
+  transition:
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.25s;
+}
+.card.card:active {
+  transform: scale(0.98);
+}
+.chevron {
+  transition: transform 0.2s;
+}
+@media (hover: hover) {
+  .card.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px color-mix(in srgb, var(--color-primary) 14%, transparent);
+  }
+  .card:hover .chevron {
+    transform: translateX(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .cards > * {
+    animation: none;
+  }
+  .card.card,
+  .chevron {
+    transition: none;
+  }
+  .card.card:hover,
+  .card.card:active,
+  .card:hover .chevron {
+    transform: none;
+  }
+}

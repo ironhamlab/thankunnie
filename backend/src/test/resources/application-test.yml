@@ -1,0 +1,15 @@
+# 테스트: H2 (Oracle 호환 모드)
+spring:
+  datasource:
+    # 테스트 컨텍스트마다 별도 DB 를 써서 스키마 생성이 겹치지 않게 한다
+    url: jdbc:h2:mem:thankunnie-test-${random.uuid};MODE=Oracle;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+app:
+  shop-image:
+    storage: local
+  scheduling:
+    # 주기 작업이 테스트 데이터에 끼어들지 않게 끈다
+    enabled: false

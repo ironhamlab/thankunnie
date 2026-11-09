@@ -1,0 +1,100 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.16'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
+}
+
+group = 'com.ucamp'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17'
+    // 문자 발송(Solapi). 파트장·담당자 승인 후 추가
+    implementation 'com.solapi:sdk:1.2.0'
+    implementation platform('software.amazon.awssdk:bom:2.57.3')
+    implementation('software.amazon.awssdk:s3') {
+        exclude group: 'software.amazon.awssdk', module: 'apache-client'
+        exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+    }
+    implementation 'software.amazon.awssdk:url-connection-client'
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    runtimeOnly 'com.h2database:h2'
+    runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    systemProperty 'user.timezone', 'Asia/Seoul'
+    // 테스트가 끝나면 커버리지 리포트를 만든다 (기준 미달로 빌드를 실패시키지는 않는다)
+    finalizedBy 'jacocoTestReport'
+}
+
+jacoco {
+    toolVersion = '0.8.12'
+}
+
+// 설정·요청/응답 DTO·실행 진입점은 커버리지 대상에서 뺀다. Lombok 생성 코드는 lombok.config 로 자동 제외된다
+def jacocoExcludes = [
+        'com/ucamp/app/Application*',
+        'com/ucamp/app/config/**',
+        'com/ucamp/app/**/dto/**',
+]
+
+tasks.named('jacocoTestReport') {
+    dependsOn 'test'
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+    classDirectories.setFrom(files(classDirectories.files.collect {
+        fileTree(dir: it, exclude: jacocoExcludes)
+    }))
+}
+
+// 스키마 기준 파일(docs/erd)을 복사해 로컬·테스트 H2 가 같은 DDL 로 테이블을 만들게 한다
+tasks.named('processResources') {
+    from('../docs/erd') {
+        include '01_schema_ddl.sql'
+        rename '01_schema_ddl.sql', 'schema.sql'
+    }
+    // 초기 데이터는 local 프로필에서만 넣는다. data.sql 이름이면 test 에도 자동 실행되므로 다른 이름을 쓴다
+    from('../docs/erd') {
+        include '02_init_data_dml.sql'
+        rename '02_init_data_dml.sql', 'init-data.sql'
+    }
+    // 시연 데이터도 local 프로필에서만 초기 데이터 다음에 넣는다. init-data.sql 로 검증하는 테스트에는 섞이지 않는다
+    from('../docs/erd') {
+        include '03_demo_data_dml.sql'
+        rename '03_demo_data_dml.sql', 'demo-data.sql'
+    }
+}

@@ -1,0 +1,89 @@
+name: unnie-app
+
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-unnie-backend:local}
+
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+
+    restart: unless-stopped
+    mem_limit: 2g
+
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: Asia/Seoul
+      DB_URL: jdbc:oracle:thin:@//oracle:1521/XEPDB1
+      DB_USERNAME: ${APP_USER:?Required}
+      DB_PASSWORD: ${APP_USER_PASSWORD:?Required}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?Required}
+      JWT_SECRET: ${JWT_SECRET:?Required}
+      IAMPORT_IMP_KEY: ${IAMPORT_IMP_KEY:-}
+      IAMPORT_IMP_SECRET: ${IAMPORT_IMP_SECRET:-}
+      IAMPORT_INCLUDE_SANDBOX: ${IAMPORT_INCLUDE_SANDBOX:-false}
+      # 매장·시술 대표 이미지 저장소. AWS 자격 증명은 EC2 IAM 역할로 받는다
+      SHOP_IMAGE_STORAGE: ${SHOP_IMAGE_STORAGE:-s3}
+      SHOP_IMAGE_S3_BUCKET: ${SHOP_IMAGE_S3_BUCKET:-}
+      SHOP_IMAGE_S3_PREFIX: ${SHOP_IMAGE_S3_PREFIX:-shop-images/}
+      AWS_REGION: ${AWS_REGION:-ap-northeast-2}
+      # 알림 문자 발송 (Solapi)
+      SOLAPI_API_KEY: ${SOLAPI_API_KEY:-}
+      SOLAPI_API_SECRET: ${SOLAPI_API_SECRET:-}
+      SOLAPI_FROM_NUMBER: ${SOLAPI_FROM_NUMBER:-}
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+      SPRINGDOC_APIDOCS_ENABLED: ${SWAGGER_ENABLED:-false}
+      SPRINGDOC_SWAGGERUI_ENABLED: ${SWAGGER_ENABLED:-false}
+      NTS_SERVICE_KEY: ${NTS_SERVICE_KEY:?Required}
+
+    networks:
+      - unnie-network
+
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-unnie-frontend:local}
+
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+        VITE_KAKAO_MAP_APP_KEY: ${VITE_KAKAO_MAP_APP_KEY:-}
+
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+
+    depends_on:
+      - backend
+
+    networks:
+      - unnie-network
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  unnie-network:
+    external: true

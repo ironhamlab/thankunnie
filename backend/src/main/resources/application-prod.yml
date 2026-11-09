@@ -1,0 +1,27 @@
+# 운영: Oracle, 접속 정보는 환경변수로 주입한다
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: oracle.jdbc.OracleDriver
+  jpa:
+    show-sql: false
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  jwt:
+    # 기본값 없이 환경변수로만 받는다. 없으면 기동 실패로 더미 키 사용을 막는다
+    secret: ${JWT_SECRET}
+
+# 운영에서는 API 문서를 노출하지 않는다
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    root: info

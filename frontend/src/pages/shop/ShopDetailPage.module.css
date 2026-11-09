@@ -1,0 +1,587 @@
+.root {
+  padding-top: 18px;
+}
+.root :global(.b-columns) {
+  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr);
+  gap: 28px;
+}
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin-bottom: 22px;
+}
+.header {
+  overflow: hidden;
+}
+.photo {
+  overflow: hidden;
+  aspect-ratio: 1.7;
+}
+.headerBody {
+  padding: 22px 24px 24px;
+}
+.address {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+/* 예약하기를 넓게, 상세정보는 옆에 작게 둔다 */
+.menu {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.menu button {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.menu li:last-child button {
+  padding: 12px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+.menu button:global(.is-selected) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-faint);
+  box-shadow: 0 0 0 1px var(--color-primary);
+  color: var(--color-primary-text);
+}
+/* 매장 상세는 2단계, 초보 시술 모집은 3단계라 단계 수만큼 같은 너비로 나눈다 */
+.steps {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  text-align: center;
+}
+.steps button {
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+.steps button:not(:disabled):hover {
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+}
+.steps button:disabled {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+.steps .currentStep {
+  background: var(--color-primary);
+  color: var(--color-white);
+  font-weight: 700;
+}
+.selectedTreatment {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-faint);
+  font-size: 13px;
+}
+.selectedTreatment small {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.subheading {
+  font-size: 14px;
+}
+.photo > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.content {
+  gap: 20px;
+}
+.content h1 {
+  font-size: 24px;
+}
+.content h2 {
+  font-size: 16px;
+}
+.content :global(.b-panel-heading) > button {
+  flex-shrink: 0;
+}
+.category {
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--color-primary-text);
+  font-weight: 700;
+}
+.shopInfo {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 22px;
+  font-size: 13px;
+}
+.shopInfo > div {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+}
+.shopInfo dt {
+  color: var(--color-text-muted);
+}
+.shopInfo dd {
+  margin: 0;
+}
+.shopInfo a {
+  color: inherit;
+}
+.hours {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hours span {
+  display: inline-block;
+  width: 20px;
+  color: var(--color-text-muted);
+}
+.intro {
+  margin: 8px 0 16px;
+  font-size: 13px;
+  line-height: 1.8;
+  white-space: pre-line;
+}
+.shop :global(.b-highlight) p {
+  white-space: pre-line;
+}
+/* 참여 조건·촬영 안내는 여러 줄로 등록되므로 줄바꿈을 그대로 보여준다 */
+.modelNotice {
+  font-size: 13px;
+  line-height: 1.7;
+}
+.modelNotice + .modelNotice {
+  margin-top: 12px;
+}
+.modelNotice p {
+  margin: 0;
+  white-space: pre-line;
+}
+/* 결제 화면의 필수 동의 체크와 같은 모양으로 둔다 */
+.agree {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  cursor: pointer;
+}
+.agree input {
+  accent-color: var(--color-primary);
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.agree small {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.next {
+  margin-top: 16px;
+}
+.treatments {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.treatments button {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  text-align: left;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.treatments button:global(.is-selected) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-faint);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+.treatmentName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--color-text);
+}
+.treatmentMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.treatmentMeta del {
+  margin-right: 6px;
+  color: var(--color-text-muted);
+}
+.treatmentMeta strong {
+  font-size: 14px;
+  color: var(--color-primary-text);
+}
+.help {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.calendar {
+  max-width: 460px;
+  margin: 0 auto 20px;
+}
+.calendarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+.calendarHeader button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-white);
+  font-size: 18px;
+  line-height: 1;
+}
+.calendarHeader button:disabled {
+  opacity: 0.35;
+}
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  text-align: center;
+}
+.weekday {
+  padding: 4px 0;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.weekday:first-child {
+  color: var(--color-primary-text);
+}
+.calendarGrid button {
+  display: grid;
+  place-content: center;
+  min-height: 46px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  font-size: 13px;
+  line-height: 1.2;
+}
+.calendarGrid button:not(:disabled):hover {
+  border-color: var(--color-border-strong);
+}
+.calendarGrid button:disabled {
+  color: var(--color-border-strong);
+}
+.calendarGrid button small {
+  font-size: 9px;
+  color: var(--color-text-muted);
+}
+.calendarGrid .closedDay {
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+.calendarGrid .today {
+  font-weight: 800;
+  border-color: var(--color-border);
+}
+.calendarGrid button:global(.is-selected) {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+.calendarGrid button:global(.is-selected) small {
+  color: var(--color-white);
+}
+.slotDate {
+  margin-bottom: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  font-size: 14px;
+}
+.tier {
+  margin-left: 6px;
+  color: var(--color-text);
+  background: var(--color-accent);
+}
+.slots {
+  margin-bottom: 4px;
+}
+.slots button {
+  position: relative;
+}
+/* 영업시간 밖 연장 영업 시각: 칸 크기를 바꾸지 않도록 오른쪽 위 모서리에 작게 붙인다 */
+.extendedTag {
+  position: absolute;
+  top: -7px;
+  right: -4px;
+  padding: 1px 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-white);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-decoration: none;
+}
+/* 다른 고객이 결제 중인 시각: 고를 수 있지만 바로 예약되지 않고 대기열에 선다 */
+.heldTag {
+  position: absolute;
+  top: -7px;
+  right: -4px;
+  padding: 1px 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-text-secondary);
+  color: var(--color-white);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.extendedNotice {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  font-size: 12px;
+  font-weight: 600;
+  word-break: keep-all;
+}
+/* 공통 시간 칸(b-time-grid)의 선택 색 대신 앱 기본 색을 쓴다 */
+.slots button:global(.is-selected) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-text);
+  color: var(--color-white);
+}
+.favorite {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.favorite button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-white);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+.favorite button span {
+  font-size: 16px;
+  line-height: 1;
+}
+.favorite button:global(.is-selected) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+}
+.favoriteError {
+  max-width: 200px;
+  font-size: 11px;
+  color: var(--color-primary-text);
+  text-align: right;
+}
+.alertDialog,
+.alertDialogForm {
+  border: 0;
+  border-top: 4px solid var(--color-primary);
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  transition: width 320ms ease;
+}
+.alertDialog {
+  width: min(440px, calc(100vw - 32px));
+}
+.alertDialogForm {
+  width: min(520px, calc(100vw - 32px));
+}
+.alertDialog :global(.b-pad),
+.alertDialogForm :global(.b-pad) {
+  padding: 22px 22px 18px;
+  background: var(--color-white);
+}
+.alertDialog :global(.b-panel-heading),
+.alertDialogForm :global(.b-panel-heading) {
+  justify-content: center;
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.alertDialog h2,
+.alertDialogForm h2 {
+  font-size: 17px;
+  line-height: 1.45;
+  text-align: center;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+.alertShop {
+  margin: 4px 0 0;
+  text-align: center;
+  color: var(--color-primary-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.formError {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-danger);
+}
+.doneCopy {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  word-break: keep-all;
+}
+.doneActions {
+  margin-top: 16px;
+}
+.doneActions :global(.b-button) {
+  width: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .alertDialog,
+  .alertDialogForm {
+    transition: none;
+  }
+}
+.confirmActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 16px;
+}
+.confirmActions :global(.b-button) {
+  width: 100%;
+}
+.confirmYes {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
+}
+@media (max-width: 540px) {
+  .alertDialogForm {
+    width: min(440px, calc(100vw - 40px));
+    max-height: min(520px, 70dvh);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+}
+/* 고른 시각 이후 소요 시간 동안 이어지는 칸. 시작으로 고를 수 없는 칸이어도 같은 색으로 보인다 */
+.slots button.inRange,
+.slots button.inRange:disabled {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  text-decoration: none;
+}
+.empty {
+  padding: 16px 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+.timesError {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+.aside {
+  position: sticky;
+  top: 20px;
+  gap: 16px;
+}
+.aside :global(.b-summary) {
+  position: static;
+  gap: 18px;
+  border-color: var(--color-border-strong);
+  border-top: 3px solid var(--color-primary);
+}
+/* 예약 요약 안의 안내 상자도 파란 공통 안내 대신 화면의 분홍 톤으로 맞춘다 */
+.aside :global(.b-summary) :global(.b-notice) {
+  border-color: var(--color-border-strong);
+  background: var(--color-primary-faint);
+  color: var(--color-text-secondary);
+}
+/* 공통 비활성 버튼은 기본 색을 반투명하게 해 탁한 분홍이 되므로, 연한 기본 색 바탕으로 비활성을 보여준다 */
+.aside :global(.b-summary) :global(.b-primary):disabled {
+  opacity: 1;
+  border-color: var(--color-border-strong);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+}
+.aside :global(.b-summary) :global(.b-details) dt {
+  color: var(--color-text-secondary);
+}
+@media (max-width: 1100px) {
+  .root :global(.b-columns) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .aside {
+    position: static;
+  }
+}
+@media (max-width: 540px) {
+  .content h1 {
+    font-size: 21px;
+  }
+  .photo {
+    aspect-ratio: 1.3;
+  }
+  .calendarGrid button {
+    min-height: 40px;
+  }
+}

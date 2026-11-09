@@ -1,0 +1,60 @@
+package com.ucamp.app.domain.notification.repository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import com.ucamp.app.domain.notification.entity.NotificationEvent;
+import com.ucamp.app.domain.notification.entity.NotificationEventStatus;
+import com.ucamp.app.domain.notification.entity.NotificationEventType;
+
+/**
+ * 알림 소식을 저장하고 찾는 곳.
+ * 재공개는 같은 예약 번호가 이미 있으면 다시 만들지 않는다.
+ */
+public interface NotificationEventRepository extends JpaRepository<NotificationEvent, Long> {
+
+    /**
+     * 이 예약의 재공개 소식이 이미 있는지 본다.
+     * 같은 취소가 두 번 들어와도 한 건만 남기려는 확인이다.
+     * 예약 번호가 다르면 시작 시각이 같아도 없는 것으로 본다.
+     *
+     * @param eventType     재공개(REOPENED)
+     * @param reservationId 취소된 예약 번호
+     * @return 이미 있으면 true
+     */
+    boolean existsByEventTypeAndReservationId(NotificationEventType eventType, Long reservationId);
+
+    /**
+     * 해당 상태의 이벤트 중 ID가 가장 작은 하나를 조회한다.
+     *
+     * @param status 아직 받을 사람을 고르기 전인지, 고른 뒤인지
+     * @return 있으면 그 소식. 없으면 빈 값
+     */
+    Optional<NotificationEvent> findFirstByStatusOrderByIdAsc(NotificationEventStatus status);
+
+    /**
+     * 이 매장에서 이미 만든 알림 중, 빈자리 시작이 희망 시간 안인 것을 시작 시각 순으로 가져온다.
+     * 희망 시작·종료와 같은 시각도 포함한다. 아직 이벤트가 없는 먼 빈자리는 여기 없다.
+     *
+     * @param shopId    매장 ID
+     * @param hopeStart 희망 시작
+     * @param hopeEnd   희망 종료
+     * @return 희망 시간 안의 알림 이벤트
+     */
+    @Query("""
+            select e from NotificationEvent e
+            where e.shopId = :shopId
+              and e.slotStartsAt >= :hopeStart
+              and e.slotStartsAt <= :hopeEnd
+            order by e.slotStartsAt asc, e.id asc
+            """)
+    List<NotificationEvent> findByShopAndSlotStartInHopeTime(
+            @Param("shopId") Long shopId,
+            @Param("hopeStart") LocalDateTime hopeStart,
+            @Param("hopeEnd") LocalDateTime hopeEnd);
+}

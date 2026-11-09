@@ -1,0 +1,56 @@
+.root > :global(.b-title-row) p {
+  font-size: 13px;
+  margin-top: 6px;
+}
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr);
+  gap: 24px;
+  align-items: start;
+}
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+@media (max-width: 1100px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* 시간 칸 선택이 예약됨·닫음·마감을 같은 색으로 보여줘 한 단에서는 중복이다 */
+  .timesPanel {
+    display: none;
+  } /* 한 단에서는 폼 칸과 오른쪽 패널을 한 줄로 늘어놓아, 그날 예약·고객 미리보기를 본 뒤에 저장하게 한다.
+     요약·저장 묶음은 폼 CSS 에서 order 로 맨 뒤에 둔다 */
+  .columns {
+    gap: 16px;
+  }
+  .columns > form {
+    display: contents;
+  }
+  .side {
+    order: 1;
+  }
+  /* 그날 예약이 많아도 저장 전에 고객 미리보기를 바로 볼 수 있게 먼저 둔다 */
+  .side > :last-child {
+    order: -1;
+  }
+}
+@media (max-width: 540px) {
+  .root > :global(.b-title-row) p {
+    display: none;
+  }
+  .root > :global(.b-title-row) {
+    margin-bottom: 0;
+  }
+  .root > :global(.b-tabs) {
+    margin: 0;
+  }
+  .columns {
+    gap: 12px;
+  }
+  .side {
+    gap: 12px;
+  }
+}

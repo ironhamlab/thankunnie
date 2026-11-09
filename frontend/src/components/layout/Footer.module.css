@@ -1,0 +1,27 @@
+.links {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  white-space: nowrap;
+}
+.links button,
+.links a {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+@media (max-width: 540px) {
+  .links {
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 767px) {
+  /* 휴대폰 폭에서는 화면 아래에 고정된 메뉴 막대(Header)가 푸터 끝을 가리지 않게 여백을 둔다 */
+  .root {
+    padding-bottom: calc(85px + env(safe-area-inset-bottom));
+  }
+}

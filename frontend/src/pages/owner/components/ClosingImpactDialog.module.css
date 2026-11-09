@@ -1,0 +1,29 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.section h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.section p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+}
+.check input {
+  flex-shrink: 0;
+  margin-top: 3px;
+}

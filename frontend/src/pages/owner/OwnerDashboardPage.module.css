@@ -1,0 +1,287 @@
+.profile {
+  flex-wrap: wrap;
+}
+.profile h2 {
+  margin-bottom: 6px;
+}
+.profile p {
+  font-size: 12px;
+  margin-bottom: 10px;
+  color: var(--color-text-secondary);
+}
+@media (max-width: 540px) {
+  /* 레이아웃의 오른쪽 밀기 규칙보다 우선해 매장 정보를 왼쪽에 두고, 버튼은 칸을 채워 줄을 맞춘다 */
+  .profile.profile:global(.b-panel):global(.b-row) > :global(.b-flex) {
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+    margin-left: 0;
+  }
+  .profile p {
+    margin-bottom: 0;
+  }
+  .profile > :global(.b-button) {
+    width: 100%;
+  }
+}
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-self: flex-start;
+  padding: 4px;
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+}
+.tabs button {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 14px;
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.tabs button[aria-selected='true'] {
+  color: var(--color-text);
+  font-weight: 700;
+}
+/* 고른 탭의 흰 배경은 뒤에서 미끄러져 온다 */
+.tabs {
+  position: relative;
+  isolation: isolate;
+}
+.tabIndicator {
+  border-radius: var(--radius-pill);
+  background: var(--color-white);
+  box-shadow: var(--shadow-sm);
+}
+.tabs button {
+  transition:
+    color 0.2s,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.tabs button:active {
+  transform: scale(0.96);
+}
+/* 대표 사진은 마우스를 올리면 살짝 기울고, 오늘 예약은 줄마다 이어서, 남은 시간 칩은 차례로 튀어 오른다 */
+.profile :global(.b-thumb) {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.timeline li {
+  animation: rowEnter 0.22s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.timeline li:nth-child(2) {
+  animation-delay: 0.02s;
+}
+.timeline li:nth-child(3) {
+  animation-delay: 0.04s;
+}
+.timeline li:nth-child(n + 4) {
+  animation-delay: 0.06s;
+}
+@keyframes rowEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.ranges li {
+  animation: chipPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) 0.06s backwards;
+}
+.ranges li:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.ranges li:nth-child(n + 3) {
+  animation-delay: 0.1s;
+}
+@keyframes chipPop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+@media (hover: hover) {
+  .profile:hover :global(.b-thumb) {
+    transform: rotate(-3deg) scale(1.05);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tabs button,
+  .profile :global(.b-thumb) {
+    transition: none;
+  }
+  .tabs button:active,
+  .profile:hover :global(.b-thumb) {
+    transform: none;
+  }
+  .timeline li,
+  .timeline li:nth-child(n),
+  .ranges li,
+  .ranges li:nth-child(n) {
+    animation: none;
+  }
+}
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.timeline li {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 13px;
+}
+.timeline li:last-child {
+  border-bottom: none;
+}
+.time {
+  font-variant-numeric: tabular-nums;
+}
+/* 폰: 시각과 상태 배지를 한 줄에, 시술과 고객 이름을 다음 줄에 둔다 */
+@media (max-width: 640px) {
+  .timeline li {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'time badge'
+      'treatment customer';
+    gap: 4px 12px;
+  }
+  .time {
+    grid-area: time;
+  }
+  .treatment {
+    grid-area: treatment;
+    color: var(--color-text-secondary);
+  }
+  .customer {
+    grid-area: customer;
+    justify-self: end;
+  }
+  .badge {
+    grid-area: badge;
+    justify-self: end;
+  }
+}
+/* 카드 5개: 넓으면 한 줄, 중간 폭은 2개·3개 두 줄로 나눠 한 개만 떨어지지 않게 한다 */
+.todayGrid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+@media (max-width: 1100px) {
+  .todayGrid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .todayGrid > :nth-child(-n + 2) {
+    grid-column: span 3;
+  }
+  .todayGrid > :nth-child(n + 3) {
+    grid-column: span 2;
+  }
+}
+/* 폰: 오늘 예약만 한 줄을 다 쓰고 나머지 네 개는 2×2 로 둬서 스크롤을 줄인다 */
+@media (max-width: 640px) {
+  .todayGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .todayGrid > :nth-child(n) {
+    grid-column: auto;
+  }
+  .todayGrid > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+.todayGrid h2 {
+  font-size: 26px;
+}
+@media (max-width: 640px) {
+  .todayGrid h2 {
+    font-size: 20px;
+  }
+}
+.statsLink {
+  flex-wrap: wrap;
+  gap: 12px;
+  background: var(--color-surface);
+}
+.statsLink h2 {
+  margin-bottom: 4px;
+}
+.statsLink p {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  text-align: center;
+}
+.empty p {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+/* 오늘 남은 빈 시간대 칩. 바로가기 버튼(주황)과 헷갈리지 않게 회색 테두리로 둔다 */
+.ranges {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  /* 카드 폭에 따라 한 줄에 1~2개 */
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 6px;
+}
+.ranges li {
+  padding: 2px 4px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-white);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.2px;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--color-text);
+}
+/* 폰 반쪽 카드에서도 두 개씩 들어가게 조금 줄인다 */
+@media (max-width: 640px) {
+  .ranges {
+    grid-template-columns: repeat(auto-fill, minmax(66px, 1fr));
+    gap: 4px;
+  }
+  .ranges li {
+    padding: 2px;
+    font-size: 11px;
+  }
+}
+/* 오늘 예약 카드의 다음 예약. 두 줄을 넘지 않게 줄마다 말줄임한다 */
+.next {
+  margin-top: 6px;
+  font-size: 13px;
+  min-width: 0;
+}
+.next p {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.next .treatment {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}

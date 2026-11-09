@@ -1,0 +1,590 @@
+.root {
+  font-family: var(--font-display);
+}
+.root {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--color-surface-glass);
+  border-bottom: 1px solid var(--color-border);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-sm);
+}
+.inner {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.root :global(.b-brand) {
+  font-size: 26px;
+  white-space: nowrap;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.logo {
+  flex-shrink: 0;
+  width: 1.3em;
+  height: 1.3em;
+}
+.search {
+  flex: 1;
+  max-width: 360px;
+  position: relative;
+}
+.search input {
+  width: 100%;
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  padding: 9px 42px 9px 16px;
+  font-size: 13px;
+}
+.search button {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-white);
+  display: grid;
+  place-items: center;
+}
+.root nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.root nav a[aria-current='page'] {
+  color: var(--color-primary-text);
+  font-weight: 700;
+}
+.root nav button {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font-size: 12px;
+}
+.actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ownerLink,
+.loginLink {
+  padding: 5px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  white-space: nowrap;
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+.loginLink {
+  color: var(--color-primary-text);
+  border-color: var(--color-border-strong);
+  font-weight: 700;
+}
+.logoutButton {
+  background: var(--color-white);
+}
+.actions > a[aria-current='page'] {
+  color: var(--color-primary-text);
+}
+.notificationRoot {
+  position: relative;
+}
+.notificationButton {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  border-radius: 50%;
+  color: var(--color-text);
+  transition: transform 160ms ease, background-color 160ms ease;
+}
+.notificationButton:hover {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+.notificationButton:active {
+  transform: scale(0.92);
+}
+.profileLink {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--color-text-secondary);
+}
+.profileLink svg,
+.notificationButton svg {
+  width: 21px;
+  height: 21px;
+}
+.notificationButton svg {
+  transform-origin: top center;
+  transition: transform 160ms ease;
+}
+.notificationButton[aria-expanded='true'] svg {
+  animation: bellRing 420ms ease;
+}
+/* 읽지 않은 개수·탭 개수 등 작은 숫자 뱃지 */
+.count {
+  position: absolute;
+  top: -1px;
+  right: -2px;
+  z-index: 1;
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-radius: var(--radius-xl);
+  font-size: 10px;
+  min-width: 17px;
+  line-height: 17px;
+  text-align: center;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 45%, transparent);
+  transform-origin: center;
+}
+/* 개수가 늘면 통통 튀며 한 번 번쩍 보이게 한다 */
+.count.isIncreased {
+  animation: countAttend 0.55s cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+@keyframes countAttend {
+  0% {
+    transform: scale(0.55);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 50%, transparent);
+  }
+  45% {
+    transform: scale(1.35);
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+  70% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+}
+@keyframes bellRing {
+  0% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(14deg);
+  }
+  45% {
+    transform: rotate(-10deg);
+  }
+  70% {
+    transform: rotate(6deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+.notifications {
+  position: absolute;
+  z-index: 30;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  top: 44px;
+  right: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  box-shadow: var(--shadow-popover);
+  overflow: hidden;
+  transform-origin: top right;
+  animation: panelEnter 320ms ease;
+}
+.notifications.isLeaving {
+  animation: panelLeave 280ms ease forwards;
+  pointer-events: none;
+}
+.notifications button {
+  border: 0;
+  background: none;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  transition: color 160ms ease, background-color 160ms ease, opacity 160ms ease;
+}
+.notifications button:disabled {
+  opacity: 0.45;
+}
+.notificationsTitle {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-surface);
+}
+.notificationsTitle strong {
+  font-size: 13px;
+  transition: opacity 200ms ease;
+}
+.notificationsTitle strong.isCleared {
+  animation: titlePulse 320ms ease;
+}
+.notificationTabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+.notificationTabs button {
+  padding: 4px 9px;
+  border-radius: var(--radius-xl);
+}
+.notificationTabs button[aria-pressed='true'] {
+  color: var(--color-white);
+  background: var(--color-primary);
+}
+.notificationList {
+  max-height: min(60vh, 420px);
+  overflow: auto;
+  animation: listEnter 320ms ease;
+}
+.notificationItem {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+.notificationItem .notificationItemButton {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+.notificationItem strong {
+  display: block;
+  font-size: 13px;
+}
+.notificationItem strong em {
+  font-style: normal;
+  color: var(--color-primary);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+.notificationItem.isClearing strong em {
+  opacity: 0;
+  transform: scale(0.4);
+}
+.notificationItem a {
+  display: block;
+  min-width: 0;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+.notificationItem p {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+}
+.notificationItem small {
+  color: var(--color-text-muted);
+}
+@keyframes panelEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes panelLeave {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+@keyframes listEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes titlePulse {
+  0% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .notificationButton,
+  .notificationButton svg,
+  .notifications button,
+  .notificationsTitle strong,
+  .notificationItem strong em {
+    transition: none;
+  }
+  .notificationButton:active {
+    transform: none;
+  }
+  .notificationButton[aria-expanded='true'] svg,
+  .count.isIncreased,
+  .notifications,
+  .notifications.isLeaving,
+  .notificationList,
+  .notificationsTitle strong.isCleared {
+    animation: none;
+  }
+  .notificationItem.isClearing strong em {
+    opacity: 0;
+    transform: none;
+  }
+}
+.mobileNav {
+  display: none;
+}
+@media (max-width: 1200px) {
+  .inner {
+    gap: 16px;
+  }
+  .ownerLink {
+    display: none;
+  }
+}
+@media (max-width: 1000px) {
+  .root nav {
+    gap: 10px;
+  }
+  .search {
+    max-width: 250px;
+  }
+}
+@media (max-width: 767px) {
+  /* design.css 의 540px 이하 18px !important 보다 앞서게 헤더 로고만 따로 정한다 */
+  .root :global(.b-brand) {
+    font-size: 22px !important;
+  }
+  .root nav {
+    display: none;
+  }
+  .inner {
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: 16px;
+    padding-bottom: 12px;
+    gap: 12px;
+  }
+  .search {
+    order: 3;
+    max-width: none;
+    flex-basis: 100%;
+  }
+  .mobileNav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 35;
+    padding: 9px 12px calc(9px + env(safe-area-inset-bottom));
+    background: var(--color-surface-glass);
+    border-top: 1px solid var(--color-border);
+    justify-content: space-around;
+    font-size: 10px;
+    backdrop-filter: blur(10px);
+  }
+  .mobileNav a,
+  .mobileNav button {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    line-height: 14px;
+    white-space: nowrap;
+    background: none;
+    border: 0;
+    font: inherit;
+    color: var(--color-text-secondary);
+  }
+  .mobileNav a > svg {
+    flex: none;
+    width: 20px;
+    height: 20px;
+  }
+  .mobileNav span svg {
+    width: 20px;
+    height: 20px;
+  }
+  .mobileNav a[aria-current='page'] {
+    color: var(--color-primary-text);
+    font-weight: 700;
+  }
+  /* 종 아래·프로필 오른쪽까지 맞춰 아래 검색 돋보기도 가린다. 기준을 actions 로 둔다 */
+  .notificationRoot {
+    position: static;
+  }
+  .notifications {
+    top: 44px;
+    right: 0;
+    left: auto;
+    width: min(360px, calc(100vw - 1.5rem));
+    max-width: none;
+  }
+  .notificationTabs {
+    flex-wrap: wrap;
+  }
+}
+/* 상단 메뉴 움직임. 알림 벨과 같은 느낌으로 맞춘다 */
+.root nav a {
+  position: relative;
+  transition: color 0.2s;
+}
+.root nav a::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -6px;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-primary);
+  transform: scaleX(0);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.root nav a[aria-current='page']::after {
+  transform: scaleX(1);
+}
+.root nav a svg {
+  transform-origin: top center;
+}
+/* 메뉴마다 아이콘 색을 뜻에 맞춘다. 글자·밑줄은 모든 메뉴가 같다 */
+.iconShop {
+  color: var(--color-primary);
+}
+/* 목록의 초보 시술 초록 표시와 같은 색 */
+.iconModel {
+  color: var(--color-success);
+}
+/* 마감이 임박한 느낌 */
+.iconSale {
+  color: var(--color-danger);
+}
+.iconMine {
+  color: var(--color-info);
+}
+/* 폰의 하단 메뉴는 현재 위치를 색으로 보여주므로 밑줄을 쓰지 않는다 */
+@media (max-width: 767px) {
+  .root nav a::after {
+    display: none;
+  }
+}
+.root nav a:active {
+  transform: scale(0.95);
+}
+.brand .logo {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.search button {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.search button:active {
+  transform: scale(0.9);
+}
+.ownerLink,
+.loginLink {
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s;
+}
+.ownerLink:active,
+.loginLink:active {
+  transform: scale(0.95);
+}
+.profileLink {
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.16s;
+}
+.profileLink:active {
+  transform: scale(0.92);
+}
+@media (hover: hover) {
+  .root nav a:hover {
+    color: var(--color-primary-text);
+  }
+  .root nav a:hover::after {
+    transform: scaleX(1);
+  }
+  .root nav a:hover svg {
+    animation: bellRing 420ms ease;
+  }
+  .brand:hover .logo {
+    transform: rotate(-8deg) scale(1.12);
+  }
+  .search button:hover {
+    transform: scale(1.12);
+  }
+  .ownerLink:hover,
+  .loginLink:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px color-mix(in srgb, var(--color-primary) 16%, transparent);
+  }
+  .profileLink:hover {
+    transform: scale(1.1);
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .root nav a,
+  .root nav a::after,
+  .brand .logo,
+  .search button,
+  .ownerLink,
+  .loginLink,
+  .profileLink {
+    transition: none;
+  }
+  .root nav a:hover svg {
+    animation: none;
+  }
+  .root nav a:active,
+  .brand:hover .logo,
+  .search button:hover,
+  .search button:active,
+  .ownerLink:hover,
+  .ownerLink:active,
+  .loginLink:hover,
+  .loginLink:active,
+  .profileLink:hover,
+  .profileLink:active {
+    transform: none;
+  }
+}

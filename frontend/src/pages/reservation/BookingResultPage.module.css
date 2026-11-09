@@ -1,0 +1,116 @@
+.root {
+  padding-top: 20px;
+}
+.root > :global(.b-demo-disclaimer) {
+  margin-bottom: 28px;
+  padding: 8px 16px;
+}
+.card {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 34px;
+  background: radial-gradient(circle at 100% 0, var(--color-primary-faint), transparent 36%), var(--color-white);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: 0 5px 16px color-mix(in srgb, var(--color-primary) 4%, transparent);
+}
+.header {
+  text-align: center;
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px;
+  color: var(--color-primary-text);
+  background: var(--color-primary-soft);
+  border: 6px solid var(--color-primary-faint);
+  border-radius: 50%;
+  font-size: 40px;
+  line-height: 1;
+}
+.header h1 {
+  font-size: 25px;
+  margin-bottom: 10px;
+}
+.header p {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.badges {
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+.header > :global(.b-help) {
+  display: block;
+}
+.reservation > :global(.b-row) {
+  font-size: 11px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--color-border-soft);
+  margin-bottom: 18px;
+}
+.reservation strong {
+  overflow-wrap: anywhere;
+}
+.reservation :global(.b-two-grid) > div > small {
+  display: block;
+  color: var(--color-text-muted);
+  margin-bottom: 5px;
+}
+.reservation :global(.b-two-grid) p {
+  font-size: 11px;
+}
+.reservation :global(.b-two-grid) strong {
+  font-size: 12px;
+  display: block;
+}
+.request {
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.card > :global(.b-notice) {
+  font-size: 12px;
+}
+.actions {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.actions :global(.b-danger) {
+  margin-top: 0;
+}
+.problem {
+  min-height: 460px;
+  justify-content: center;
+}
+@media (max-width: 700px) {
+  .card {
+    padding: 24px;
+  }
+  .header h1 {
+    font-size: 22px;
+  }
+  .reservation :global(.b-two-grid) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 540px) {
+  .card {
+    padding: 20px;
+    gap: 20px;
+  }
+  .reservation :global(.b-row) {
+    flex-wrap: wrap;
+  }
+  .actions {
+    flex-direction: column;
+  }
+  .actions :global(.b-button) {
+    width: 100%;
+  }
+}

@@ -1,0 +1,84 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.card,
+.cardOpen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.cardOpen {
+  background: var(--color-primary-faint);
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.shopLink {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.favorite {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-white);
+  color: var(--color-primary-text);
+  font-size: 22px;
+}
+.photo {
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+.info {
+  min-width: 0;
+}
+.info h2 {
+  font-size: 16px;
+}
+.info p {
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+.expand {
+  padding-top: 4px;
+}
+
+@media (max-width: 700px) {
+  .row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .actions {
+    width: 100%;
+  }
+  .actions > :last-child {
+    flex: 1;
+    min-height: 44px;
+  }
+  .favorite {
+    width: 44px;
+    height: 44px;
+  }
+  .info h2 {
+    overflow-wrap: anywhere;
+  }
+}

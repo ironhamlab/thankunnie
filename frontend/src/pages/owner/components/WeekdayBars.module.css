@@ -1,0 +1,213 @@
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.summary > div {
+  padding: 12px 14px;
+  background: var(--color-primary-faint);
+  border-radius: var(--radius-md);
+}
+.summary dt {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.summary dd {
+  margin: 4px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 6px;
+}
+.summary strong {
+  font-size: 18px;
+}
+.summary span {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+/* 폰: 세 칸이 좁아 글이 꺾이므로 한 줄씩 쌓고 라벨·값을 양쪽에 둔다 */
+@media (max-width: 480px) {
+  .summary {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  .summary > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+  .summary dd {
+    margin: 0;
+    justify-content: flex-end;
+  }
+  .summary strong {
+    font-size: 16px;
+  }
+}
+.hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.list li {
+  display: grid;
+  /* 숫자 칸 폭을 고정해 막대 길이가 요일마다 같은 기준이 되게 한다 */
+  grid-template-columns: 24px minmax(0, 1fr) 11.5em;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+.day {
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+.track {
+  height: 14px;
+  background: var(--color-surface);
+  border-radius: 0 4px 4px 0;
+}
+.bar {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  background: var(--color-primary-light);
+  border-radius: 0 4px 4px 0;
+}
+.peak {
+  background: var(--color-primary);
+}
+/* 위 요약 칸이 차례로 튀어 오르고, 마우스를 올린 요일은 막대가 빛난다 */
+.summary > div {
+  animation: tilePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+.summary > div:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.summary > div:nth-child(3) {
+  animation-delay: 0.14s;
+}
+@keyframes tilePop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+  }
+}
+.list li {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@media (hover: hover) {
+  .list li:hover {
+    transform: translateX(3px);
+  }
+  .list li:hover .bar {
+    filter: brightness(1.08)
+      drop-shadow(0 2px 6px color-mix(in srgb, var(--color-primary) 45%, transparent));
+  }
+}
+.value {
+  animation: valueFade 0.6s ease 1.2s backwards;
+}
+@keyframes valueFade {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+/* 막대가 월요일부터 차례로 왼쪽에서 자라고, 자란 뒤 빛이 한 번 지나간다 */
+.bar {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, var(--color-primary-soft), var(--color-primary-light));
+  transform-origin: left center;
+  transition: filter 0.2s;
+  animation: barGrow 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.15s backwards;
+}
+.peak {
+  background: linear-gradient(90deg, var(--color-primary-light), var(--color-primary));
+}
+.bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    color-mix(in srgb, white 70%, transparent) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: barShine 1s ease 1.9s;
+}
+@keyframes barShine {
+  to {
+    transform: translateX(100%);
+  }
+}
+.list li:nth-child(2) .bar {
+  animation-delay: 0.23s;
+}
+.list li:nth-child(3) .bar {
+  animation-delay: 0.31s;
+}
+.list li:nth-child(4) .bar {
+  animation-delay: 0.39s;
+}
+.list li:nth-child(5) .bar {
+  animation-delay: 0.47s;
+}
+.list li:nth-child(6) .bar {
+  animation-delay: 0.55s;
+}
+.list li:nth-child(7) .bar {
+  animation-delay: 0.63s;
+}
+@keyframes barGrow {
+  from {
+    transform: scaleX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar,
+  .list li:nth-child(n) .bar,
+  .bar::after,
+  .value,
+  .summary > div,
+  .summary > div:nth-child(n) {
+    animation: none;
+  }
+  .list li,
+  .bar {
+    transition: none;
+  }
+  .list li:hover {
+    transform: none;
+  }
+}
+.value strong {
+  color: var(--color-text);
+}
+.value {
+  text-align: right;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .list li {
+    grid-template-columns: 20px minmax(0, 1fr) 11.5em;
+    gap: 8px;
+    font-size: 12px;
+  }
+}
